@@ -1,0 +1,143 @@
+{
+  "appBinary": {
+    "name": "cmdy",
+    "sha256": "5405ba3b1305bbb0e79169951818d413a0030c3279bf0b501a599e35abe0f50f",
+    "size": 11688752
+  },
+  "captureCount": 14,
+  "captures": [
+    {
+      "file": "00-shell.png",
+      "height": 1080,
+      "sha256": "6ace70ab0704d7f3ee38be37f213ab115d09c1bdf2b5f37fb83be0208ff88c14",
+      "size": 57933,
+      "stationID": "00-shell",
+      "width": 1720
+    },
+    {
+      "file": "01-vim-open.png",
+      "height": 1080,
+      "sha256": "0b5a4682969e90403ba3ede4bd31e1a193809876aeaa7b0580103c17a63c298a",
+      "size": 179224,
+      "stationID": "01-vim-open",
+      "width": 1720
+    },
+    {
+      "file": "02-vim-scrolled.png",
+      "height": 1080,
+      "sha256": "9f8e336de1fbd62b16df32a7db6fb18e0dd777f8718249eef039dbd184bb0a6c",
+      "size": 151918,
+      "stationID": "02-vim-scrolled",
+      "width": 1720
+    },
+    {
+      "file": "03-vim-split.png",
+      "height": 1080,
+      "sha256": "df0f68cbb69e82772ae9d369b8c5a167f6fba24384d5fe53dcf0fe085bf82adf",
+      "size": 180987,
+      "stationID": "03-vim-split",
+      "width": 1720
+    },
+    {
+      "file": "04-man.png",
+      "height": 1080,
+      "sha256": "d1c015a73eb295966ad2711cecb90b2c9f36d99821603bed20042a5ffae18d07",
+      "size": 196644,
+      "stationID": "04-man",
+      "width": 1720
+    },
+    {
+      "file": "05-less.png",
+      "height": 1080,
+      "sha256": "b1ae978fcb9aa1b8bd899c951a3c0251b094b4557022985c3efe2e5469b66b83",
+      "size": 77270,
+      "stationID": "05-less",
+      "width": 1720
+    },
+    {
+      "file": "06-less-end.png",
+      "height": 1080,
+      "sha256": "bfb38b337c3a6eea6cad22b3746bfd98d432a704c05203522c95dc22656cd1ca",
+      "size": 95364,
+      "stationID": "06-less-end",
+      "width": 1720
+    },
+    {
+      "file": "07-htop.png",
+      "height": 1080,
+      "sha256": "64f24487f6106026515c8c1cb66ba66affc2f70b88ce7ef2d3d57b7373bdf8eb",
+      "size": 338604,
+      "stationID": "07-htop",
+      "width": 1720
+    },
+    {
+      "file": "08-tmux.png",
+      "height": 1080,
+      "sha256": "eef4bb6c06589fbb71bca39eaa4fab5b54dae5f9c0fecbe680805aec975b4871",
+      "size": 73344,
+      "stationID": "08-tmux",
+      "width": 1720
+    },
+    {
+      "file": "09-tmux-echo.png",
+      "height": 1080,
+      "sha256": "ce48fefc0b7dfe0170056b3bac03e9ae14e22917e0ec86514314fbff89807866",
+      "size": 89993,
+      "stationID": "09-tmux-echo",
+      "width": 1720
+    },
+    {
+      "file": "10-tmux-split.png",
+      "height": 1080,
+      "sha256": "98066c7128f5343164cdbd09d4ba2a5c41e2b95f8a00cd377370308e09cf5b14",
+      "size": 94515,
+      "stationID": "10-tmux-split",
+      "width": 1720
+    },
+    {
+      "file": "11-cat-10mb.png",
+      "height": 1080,
+      "sha256": "4385abc850b01f7c825e05976c5c8ed768b43cafbd2443b27816edb3ba775cf4",
+      "size": 508365,
+      "stationID": "11-cat-10mb",
+      "width": 1720
+    },
+    {
+      "file": "12-claude-code.png",
+      "height": 1080,
+      "sha256": "c42ca21dfded89313a69880d1278be9df062f48a765d9eaa6a42c6917dab4e53",
+      "size": 105285,
+      "stationID": "12-claude-code",
+      "width": 1720
+    },
+    {
+      "file": "99-shell-after.png",
+      "height": 1080,
+      "sha256": "c7bec191874b788fa52299179eb206774dc6b88dab82d54d75e099863f7f6236",
+      "size": 495476,
+      "stationID": "99-shell-after",
+      "width": 1720
+    }
+  ],
+  "claude": {
+    "stationID": "12-claude-code",
+    "status": "present"
+  },
+  "kind": "cmdy-tui-zoo-capture-manifest",
+  "requiredStationIDs": [
+    "00-shell",
+    "01-vim-open",
+    "02-vim-scrolled",
+    "03-vim-split",
+    "04-man",
+    "05-less",
+    "06-less-end",
+    "07-htop",
+    "08-tmux",
+    "09-tmux-echo",
+    "10-tmux-split",
+    "11-cat-10mb",
+    "99-shell-after"
+  ],
+  "schemaVersion": 1
+}

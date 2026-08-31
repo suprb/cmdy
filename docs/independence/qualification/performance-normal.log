@@ -1,0 +1,23 @@
+2026-08-31 14:16:07.930 cmdy[4501:143012316] cmdy: plugin API listening on 127.0.0.1:4664
+cmdy perf gate — pid 4501, port 4664
+  ✓ idle frames / 6s (settled)              0  (budget <= 2)
+  ✓ frames for 200-line burst              35  (budget <= 120)
+  ✓ rows rebuilt for 200-line scroll       27  (budget <= 500)
+  ✓ rows rebuilt for prompt edit            1  (budget <= 8)
+  ✓ rows reused ≥ rebuilt (cache wins)    971  (budget >= 1)
+  ✓ rows rebuilt for 20 prompt redraws      1  (budget <= 80)
+  ✓ rows advanced for 20 Returns (min)     20  (budget >= 20)
+  ✓ rows advanced for 20 Returns (max)     20  (budget <= 20)
+  ✓ rows rebuilt for 20 Returns            40  (budget <= 200)
+  ✓ rows rebuilt for 20 one-line scroll-ups      0  (budget <= 60)
+  ✓ rows rebuilt for 20 one-line scroll-downs      0  (budget <= 60)
+  ✓ idle frames / 5s (re-settled)           0  (budget <= 2)
+  ✓ 3MB dump wall-time (ms)               288  (budget <= 6000)
+  ✓ static-shader idle / 6s                 0  (budget <= 2)
+  ✓ plasma focused frames / 5s (≥ 40fps)    278  (budget >= 200)
+  ✓ plasma focused frames / 5s (≤ 70fps)    278  (budget <= 350)
+  ✓ two-pane concurrent drain markers       2  (budget >= 2)
+  ✓ two-pane concurrent 2MB (ms)         1232  (budget <= 6000)
+
+passed 18 · failed 0
+Tests/perf-gate.sh: line 21:  4501 Terminated: 15          CMDY_DEFAULTS_DOMAIN="$DEFAULTS_DOMAIN" CMDY_CONFIG_DIR="$GATE" "$BIN"

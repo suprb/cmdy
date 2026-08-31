@@ -1,0 +1,992 @@
+{
+  "kind": "cmdy-active-terminal-source-manifest",
+  "policy": {
+    "descriptor": {
+      "activeRoots": [
+        {
+          "path": "Core/Sources/CmdyCore",
+          "suffixes": [
+            ".swift"
+          ]
+        },
+        {
+          "path": "Core/Sources/CmdyPTY",
+          "suffixes": [
+            ".swift"
+          ]
+        },
+        {
+          "path": "Core/Sources/CmdyPTYShim",
+          "suffixes": [
+            ".c",
+            ".h"
+          ]
+        },
+        {
+          "path": "Core/Sources/CmdyC",
+          "suffixes": [
+            ".swift"
+          ]
+        },
+        {
+          "path": "Renderer/Sources/CmdyGPU",
+          "suffixes": [
+            ".swift",
+            ".metal"
+          ]
+        },
+        {
+          "path": "Kit/Sources/CmdyKit",
+          "suffixes": [
+            ".swift"
+          ]
+        },
+        {
+          "path": "Identity/Sources/ProductIdentity",
+          "suffixes": [
+            ".swift"
+          ]
+        },
+        {
+          "path": "Plugins/CmdySDK/Sources/CmdySDK",
+          "suffixes": [
+            ".swift"
+          ]
+        },
+        {
+          "path": "Plugins/chromium/Support/Sources/ChromiumSupport",
+          "suffixes": [
+            ".swift"
+          ]
+        }
+      ],
+      "appSourceRule": "all-recursive-swift",
+      "importScanRoots": [
+        "App",
+        "Core/Sources",
+        "Renderer/Sources",
+        "Kit/Sources",
+        "Identity/Sources",
+        "Plugins/CmdySDK/Sources",
+        "Plugins/chromium/Support/Sources"
+      ],
+      "modeRule": "git-regular-100644-or-100755",
+      "packageGraphInputs": [
+        "Package.swift",
+        "Core/Package.swift",
+        "Renderer/Package.swift",
+        "Kit/Package.swift",
+        "Identity/Package.swift",
+        "Plugins/CmdySDK/Package.swift",
+        "Plugins/chromium/Support/Package.swift",
+        "Identity/Sources/ProductIdentity/Resources/product-identity.json"
+      ],
+      "packageManifests": [
+        "Package.swift",
+        "Core/Package.swift",
+        "Renderer/Package.swift",
+        "Kit/Package.swift",
+        "Identity/Package.swift",
+        "Plugins/CmdySDK/Package.swift",
+        "Plugins/chromium/Support/Package.swift"
+      ],
+      "policyId": "cmdy-active-terminal-source-policy-v2",
+      "requiredAppSources": [
+        "App/CmdyCoreAdapter.swift",
+        "App/CmdySnapshotShaper.swift",
+        "App/CmdyTerminalSurface.swift",
+        "App/EngineFactory.swift",
+        "App/TerminalModel.swift"
+      ],
+      "retiredAppGlobs": [
+        "Termite*.swift",
+        "SwiftTerm*.swift"
+      ],
+      "retiredModulePattern": "(?:SwiftTerm|Termite[A-Za-z0-9_]*)",
+      "retiredModules": [
+        "SwiftTerm",
+        "TermiteApp",
+        "TermiteC",
+        "TermiteCore",
+        "TermiteEditor",
+        "TermiteGPU",
+        "TermiteKit",
+        "TermitePTY",
+        "TermiteSDK"
+      ],
+      "retiredRoots": [
+        "Vendor/SwiftTerm",
+        "Core/Sources/TermiteCore",
+        "Core/Sources/TermitePTY",
+        "Core/Tests/TermiteCoreTests",
+        "Renderer/Sources/TermiteGPU",
+        "Renderer/Tests/TermiteGPUTests",
+        "Kit/Sources/TermiteKit",
+        "Kit/Tests/TermiteKitTests",
+        "Plugins/TermiteSDK"
+      ],
+      "sourceParents": [
+        "Core/Sources",
+        "Renderer/Sources",
+        "Kit/Sources",
+        "Identity/Sources",
+        "Plugins/CmdySDK/Sources",
+        "Plugins/chromium/Support/Sources"
+      ],
+      "sourceSuffixes": [
+        ".H",
+        ".S",
+        ".apinotes",
+        ".c",
+        ".cc",
+        ".cpp",
+        ".cxx",
+        ".def",
+        ".h",
+        ".h++",
+        ".hh",
+        ".hp",
+        ".hpp",
+        ".hxx",
+        ".inc",
+        ".inl",
+        ".ipp",
+        ".m",
+        ".metal",
+        ".mm",
+        ".modulemap",
+        ".s",
+        ".swift",
+        ".tcc"
+      ],
+      "symlinkRule": "reject-in-governed-source-trees"
+    },
+    "descriptorSHA256": "fd7bc6c8448fda41a66a5a0190eea139b02fe084ec2a122e940e7bca4ccf1665",
+    "implementationPath": "scripts/check-active-source-manifest.py",
+    "implementationSHA256": "1bb64a39b90d16c71b647c470a5045583483928149afe399a2cab424afaed612"
+  },
+  "reviewState": "unreviewed",
+  "schemaVersion": 2,
+  "sourceCount": 128,
+  "sources": [
+    {
+      "mode": "100644",
+      "path": "App/AIKit.swift",
+      "sha256": "185bbea1b4e81f3a95f9433260dd09495965e3c05349f2eed836310d2e23de00",
+      "size": 7615
+    },
+    {
+      "mode": "100644",
+      "path": "App/AIResponseWindow.swift",
+      "sha256": "d5251084c3d3f3994ff291c5b29c59ee93ca9d439220c37c784e796463a62eb7",
+      "size": 1719
+    },
+    {
+      "mode": "100644",
+      "path": "App/AgentKit.swift",
+      "sha256": "553b60396ba1ad5887415087281cc242a976c79f92ac246c33b6916f9a1ba657",
+      "size": 7352
+    },
+    {
+      "mode": "100644",
+      "path": "App/AppDelegate.swift",
+      "sha256": "f2fc128b913ea511dd817f430c5c8fe8dfa376cfb8bda2b5284e15b2cbe3ed78",
+      "size": 273436
+    },
+    {
+      "mode": "100644",
+      "path": "App/AppUpdateWindow.swift",
+      "sha256": "2510960dd22f5736451ff3c60fc73bcdaf4cc5927215c4faab19623f8c8277e0",
+      "size": 9027
+    },
+    {
+      "mode": "100644",
+      "path": "App/BeamKit.swift",
+      "sha256": "368db5a9530e140da21df3a29a7bb68b5caf0e220ae5577eccf69fc77928f17c",
+      "size": 11829
+    },
+    {
+      "mode": "100644",
+      "path": "App/BlockOverlayView.swift",
+      "sha256": "62f9b120845ab96214dc75898da7bdc3823c30d6bfb5db1f19fcb82af6cdbdb2",
+      "size": 15554
+    },
+    {
+      "mode": "100644",
+      "path": "App/ChannelManagerWindow.swift",
+      "sha256": "d429ff2e6a5e3422909fa362e09fbf293c04d4f5241232cf787150a1e88be198",
+      "size": 26236
+    },
+    {
+      "mode": "100644",
+      "path": "App/CmdyActionsUI.swift",
+      "sha256": "0018e40ea33d1e45217f17c64e1d1d062691d09d442c8e1cf2a25c0a1fed40aa",
+      "size": 22329
+    },
+    {
+      "mode": "100644",
+      "path": "App/CmdyCellImageHarness.swift",
+      "sha256": "a659f4024c751c5b38835240af485bfd716027aeaeb1aea6f09d850c11230aeb",
+      "size": 9838
+    },
+    {
+      "mode": "100644",
+      "path": "App/CmdyChannelsUI.swift",
+      "sha256": "c445398d55b423172fa8dbd6db329339774bf1fd770d2a8454a4a927afc8f9e8",
+      "size": 41237
+    },
+    {
+      "mode": "100644",
+      "path": "App/CmdyCoreAdapter.swift",
+      "sha256": "78298c32d8177fbb85327fbdb93d0f19032c18395f92f02c5e6a9e4467e7b263",
+      "size": 764
+    },
+    {
+      "mode": "100644",
+      "path": "App/CmdyEditor.swift",
+      "sha256": "893e4a44be075d2336c7eca4c96f65ccf4352fd4335ff60be54d360f04bae5b9",
+      "size": 35719
+    },
+    {
+      "mode": "100644",
+      "path": "App/CmdySnapshotShaper.swift",
+      "sha256": "9f05853fb1dc697da19ceed42fa94839bfe44654134cad95166eb3edda6d6f8f",
+      "size": 20886
+    },
+    {
+      "mode": "100644",
+      "path": "App/CmdySurfaceContractHarness.swift",
+      "sha256": "5158539dc01712333948be71828379d420f8fa3d8f9406168fa2f9ca6c0512f0",
+      "size": 19836
+    },
+    {
+      "mode": "100644",
+      "path": "App/CmdyTerminalSurface.swift",
+      "sha256": "6a9dfbe2e0172ceee4975310c0e3e41a58e4b064c76dbd52f9abc21654e78cd7",
+      "size": 65995
+    },
+    {
+      "mode": "100644",
+      "path": "App/CrashLogger.swift",
+      "sha256": "f043fd2beb9726f1c677a50110a77dd313c415c25262140940e410148b3b43a3",
+      "size": 1274
+    },
+    {
+      "mode": "100644",
+      "path": "App/DropView.swift",
+      "sha256": "546b4eceb4f8b59ec5ad15eb6c8e4afa00e2dec032ab96082cac9441da8d7eb4",
+      "size": 1328
+    },
+    {
+      "mode": "100644",
+      "path": "App/EmbeddedChromium.swift",
+      "sha256": "fdbfff3730538bce54bdaa6f9d4381f67bde0312cc1ae2b80e2035fac0e1c6f1",
+      "size": 28365
+    },
+    {
+      "mode": "100644",
+      "path": "App/EngineFactory.swift",
+      "sha256": "d41a4789c00243c6a3e79415bac32f11ea96eeb7de9bbb4f6d55ee332e9b84ef",
+      "size": 471
+    },
+    {
+      "mode": "100644",
+      "path": "App/ErrorAssistant.swift",
+      "sha256": "9afbae9113088fddf45e70c147c7099a9e941f9533ebe524ae5abb83ec73e95b",
+      "size": 27944
+    },
+    {
+      "mode": "100644",
+      "path": "App/FindBar.swift",
+      "sha256": "a76fba88936f520524de68b42803d9ac6bcca391987d9a256637d633f6d28257",
+      "size": 7357
+    },
+    {
+      "mode": "100644",
+      "path": "App/HistoryStore.swift",
+      "sha256": "ef33d5ab7a8599236689ef23ca96cf00f501535034d4a65d239fe14e8580991f",
+      "size": 6365
+    },
+    {
+      "mode": "100644",
+      "path": "App/IconGenerator.swift",
+      "sha256": "3e7edd7e870ec8df0e987bcc88498345092d77af2fbdb37bd36a0c26ed14c5bb",
+      "size": 3781
+    },
+    {
+      "mode": "100644",
+      "path": "App/IntegrationDoctor.swift",
+      "sha256": "314dcfe2eaabb25b5545e12efd07bea751a8c24f25214d0b230ed0ee29529412",
+      "size": 41873
+    },
+    {
+      "mode": "100644",
+      "path": "App/KeybindingImportUI.swift",
+      "sha256": "10e66b1b973584d3dc6cd885636d0b172c9bd6b5c2fb1c56491825eddbacaabd",
+      "size": 6662
+    },
+    {
+      "mode": "100644",
+      "path": "App/MarketplaceUI.swift",
+      "sha256": "19e77bd85ed0bce629eebc5e73fc3dcd3e3672248afdd7503389e5b40b7bd2ff",
+      "size": 58276
+    },
+    {
+      "mode": "100644",
+      "path": "App/MenuUtilities.swift",
+      "sha256": "fe56e796f95be68df7be61ccac10b9d741a663d76ee22d4d0ccefb9866ebf72e",
+      "size": 9054
+    },
+    {
+      "mode": "100644",
+      "path": "App/NamedWorkspacesUI.swift",
+      "sha256": "e12df2e9634fbd5b2058921868d44dab0f3ba2a834cab061f3549b41db8a140a",
+      "size": 11854
+    },
+    {
+      "mode": "100644",
+      "path": "App/PaneComposition.swift",
+      "sha256": "819e2792b129acfb6bc8fc578a77d7860a68933d5600b4bbc6d24668915f9d22",
+      "size": 4260
+    },
+    {
+      "mode": "100644",
+      "path": "App/Retrobleeps.swift",
+      "sha256": "94d6e4f3509526710450c5857157c48c0b8aef7b03e2ddeef394ab7778774099",
+      "size": 2515
+    },
+    {
+      "mode": "100644",
+      "path": "App/SelfTest.swift",
+      "sha256": "5a941c8734bcdba5356a8325c9db19fbc920af431c2b8f78612bce08b373bd4e",
+      "size": 57121
+    },
+    {
+      "mode": "100644",
+      "path": "App/ShellIntegration.swift",
+      "sha256": "f1600364ba84cba93be06723fed9bcfc1d922d99c6b93c3bbc9913325ec89a28",
+      "size": 5923
+    },
+    {
+      "mode": "100644",
+      "path": "App/StandardKeybindings.swift",
+      "sha256": "3441f678f97f7a656a86fd470e4943e6d5d6e9058c82d04d6d7f9a8b68b203ed",
+      "size": 19300
+    },
+    {
+      "mode": "100644",
+      "path": "App/SystemInfo.swift",
+      "sha256": "a0f0064ed2376880b492179923ffe86193226f5beb185bd0fac102f3b1fcb8f4",
+      "size": 5000
+    },
+    {
+      "mode": "100644",
+      "path": "App/TerminalLinkOpener.swift",
+      "sha256": "64390c54e918990d9692552de9a22a7ba2685b250f8d9b161dc71ed115a0689d",
+      "size": 2196
+    },
+    {
+      "mode": "100644",
+      "path": "App/TerminalModel.swift",
+      "sha256": "212bec21a10577ce855ea7cbbf781da6de53f953f68ae629c7b83497aa78f403",
+      "size": 17379
+    },
+    {
+      "mode": "100644",
+      "path": "App/TerminalPane.swift",
+      "sha256": "8aa64540823a6101b7d2c07c1bffcc420c6fbfa2470e657fd5c47afbaa1adf97",
+      "size": 86319
+    },
+    {
+      "mode": "100644",
+      "path": "App/TerminalWindowController.swift",
+      "sha256": "4e0bff2ae9412c0c508342531c3b5535e7b573c9444612da95e2e38c13b01d08",
+      "size": 262523
+    },
+    {
+      "mode": "100644",
+      "path": "App/ToolbarCustomizationView.swift",
+      "sha256": "7063ca6be7d263a9cbe1d172a135ef29daef4287a3303ecfd74543078f0577c0",
+      "size": 6222
+    },
+    {
+      "mode": "100644",
+      "path": "App/WindowChromeLayout.swift",
+      "sha256": "f428105449afedbcaa6947f9458788bfb36bc0f8087ac858945b642368cf96d1",
+      "size": 1003
+    },
+    {
+      "mode": "100644",
+      "path": "App/WindowDock.swift",
+      "sha256": "db1023697f45b6532b5c3f01ebfdf80661c56be614f90cfbe9e3ca0ed0ae7fe8",
+      "size": 38810
+    },
+    {
+      "mode": "100644",
+      "path": "App/WindowGridCoordinator.swift",
+      "sha256": "f93d25b7f46a85f912ac09ed6c495335d1aa25e52e896359af0fb5b1abb66c8f",
+      "size": 46162
+    },
+    {
+      "mode": "100644",
+      "path": "App/WorkspaceContext.swift",
+      "sha256": "a7937697e975eff414b9a3f5411336acbbfdb73bb9de27f5a8df0d2983bf0097",
+      "size": 8925
+    },
+    {
+      "mode": "100644",
+      "path": "App/WorkspaceFrameView.swift",
+      "sha256": "2a4b6de53a7446bb885e0965c4141d27f7e877779ac9e82664d0549d0a7bd8c0",
+      "size": 30754
+    },
+    {
+      "mode": "100644",
+      "path": "App/main.swift",
+      "sha256": "06e8ee7584b45662fea6312d47ca67aef5ca34a08634add7bc6f3c53fdd290a1",
+      "size": 64491
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyC/lib_cmdy.swift",
+      "sha256": "59d0b1db2710414145746ca04ce3397be497dfb3387cc5b023bf8bc793e6dd3b",
+      "size": 6638
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyCore/Blocks.swift",
+      "sha256": "ebfe9302dfa9cf159e3f9fb90600c64e1aae0644597bf7f608075186f364897d",
+      "size": 4392
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyCore/Cell.swift",
+      "sha256": "b5c972474e01a1d8ac8e7bf740e9765da661a29bb622319900bce221346a2a1a",
+      "size": 4537
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyCore/CmdyTerminal.swift",
+      "sha256": "6ea35b0cc10c4435e97374a0ceb25f37f70b684cd724c16bae5aee2d400b8af6",
+      "size": 182617
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyCore/CmdyUnicodeWidthPolicy.swift",
+      "sha256": "b34d5db198484fe76c9461c2cb9a886bb3fc4459108573228691187093412479",
+      "size": 1999
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyCore/CoreTerminalSnapshotViewport.swift",
+      "sha256": "bf6cf1e12db6c80aff29171d6e41cfded6b597a34016c287abe3bd0f2b907613",
+      "size": 1093
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyCore/Generated/UnicodeWidthTables.swift",
+      "sha256": "130c70f355d036b66fb9ed67d64e700230f1b8965297d1169d2eb9d28d82cdf8",
+      "size": 29440
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyCore/KittyUnicodePlaceholder.swift",
+      "sha256": "506616e5e6429355e58c324463ca464101a3e78d06d5e45912c21ab59e391deb",
+      "size": 8343
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyCore/Line.swift",
+      "sha256": "67e5aaf846dc95e9aab66aaf040857ecbe5c3470339c6174b5a4e76545a32155",
+      "size": 16986
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyCore/Replay.swift",
+      "sha256": "349d772382dc22ada13fb3bb146da6fdffaa932a673c999d384e99999b515718",
+      "size": 5280
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyCore/ScreenBuffer.swift",
+      "sha256": "00a8d0f426f88edaa657b14a5ebd52f5cc10e7b9a98f6ef838c81e6689ab494f",
+      "size": 17024
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyCore/SixelDecoder.swift",
+      "sha256": "743b0774c8aae42af931ea541e3a10c46d638a5e7223be7774d5185b63d94ba7",
+      "size": 8434
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyCore/TerminalDispatch.swift",
+      "sha256": "adc4dccb5438689db6b7fff9a07c6d2613395fe29657f08d2fbc97cfbe2b31e5",
+      "size": 52793
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyCore/TerminalGraphics.swift",
+      "sha256": "29a70f365bbd6f260890a11bfffab7bcbb23c13398c3726635b1d4740a46f3a6",
+      "size": 39115
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyCore/TerminalModes.swift",
+      "sha256": "c821bcc1ffeadb76503d05151508d5dc10265cb2ab003651fbf6081ff9131690",
+      "size": 8772
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyCore/TerminalOSC.swift",
+      "sha256": "aabdf1c24918cc02810d0940c316b95e37734669eab786300b59ab901e62464c",
+      "size": 6342
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyCore/TerminalReflow.swift",
+      "sha256": "8a1ca3908fde5c576e9900ffe2b4741e8c6473183a39f54794ad42b53d0fa9db",
+      "size": 25543
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyCore/TerminalSGR.swift",
+      "sha256": "bda23f805f8c3542d3d7a423f9334bb79874467deb565815d94d6299ac517999",
+      "size": 8344
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyCore/TerminalSupport.swift",
+      "sha256": "d5745c6fa7870ce717d430791bf14291f0d36cc375a4afe7cdc5e4315d18a966",
+      "size": 6644
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyCore/UnicodeWidth.swift",
+      "sha256": "9f467d2505416b92649dc3b511e6600875a924689a278b34316a43ad65ab8822",
+      "size": 718
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyCore/VTParser.swift",
+      "sha256": "ef6de5a1b7edd2318b5c62640cd00c9048612305cc4ca1ef4a0f57368248753a",
+      "size": 26237
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyPTY/LocalProcess.swift",
+      "sha256": "b91890b2f4d6201092573ea3f1d545f6c4613214e20ed1d0faf3cdb527ee82b8",
+      "size": 26764
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyPTY/Pty.swift",
+      "sha256": "e871d003975ed4bdfead199278b9294d00cc8ba302dcb15cb06b43f75302f5e9",
+      "size": 3111
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyPTYShim/CmdyPTYShim.c",
+      "sha256": "477ae0b38901ba341fd368252c0fd97f653e608420970865af7c32cf69636594",
+      "size": 2594
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyPTYShim/include/CmdyPTYShim.h",
+      "sha256": "285754939f65d03dd4ee6d06ef64442a78390637a7c74a0304bfd8624276b10c",
+      "size": 1270
+    },
+    {
+      "mode": "100644",
+      "path": "Identity/Sources/ProductIdentity/ProductIdentity.swift",
+      "sha256": "c92e8854d2f1661caeb0ac21273e4f05e3a23e7fc89fde1c44cf8c696c97c680",
+      "size": 9313
+    },
+    {
+      "mode": "100644",
+      "path": "Kit/Sources/CmdyKit/AnnotationOverlay.swift",
+      "sha256": "6771f2c5b94f7986b57b2ba124922d2aab7c4cda726b8dc1edaa0d8391ab3cea",
+      "size": 7826
+    },
+    {
+      "mode": "100644",
+      "path": "Kit/Sources/CmdyKit/AppUpdates.swift",
+      "sha256": "aa24b3016e273e823073e94988e81e34554674d77e1d4065132b8d162e92927b",
+      "size": 28368
+    },
+    {
+      "mode": "100644",
+      "path": "Kit/Sources/CmdyKit/Blocks.swift",
+      "sha256": "bf66d6c3f03815bdb9e586a94c7e22815ed7132575eff3f9b83cabc9022a737f",
+      "size": 5544
+    },
+    {
+      "mode": "100644",
+      "path": "Kit/Sources/CmdyKit/BottomMenu.swift",
+      "sha256": "6681b45655f7b14afdc447c87e347b20be954c03acddb867e7bcc69bf00c125d",
+      "size": 654
+    },
+    {
+      "mode": "100644",
+      "path": "Kit/Sources/CmdyKit/BoundedFileReader.swift",
+      "sha256": "50d05cba016e5efe278d448c1484935166e8ad6973667933fcc037a1e33b8e61",
+      "size": 1986
+    },
+    {
+      "mode": "100644",
+      "path": "Kit/Sources/CmdyKit/CmdyActions.swift",
+      "sha256": "54b02b4f22a70bdc43beda9202df37324e6c0ab229b5b5ce545c9ee87251e22a",
+      "size": 33125
+    },
+    {
+      "mode": "100644",
+      "path": "Kit/Sources/CmdyKit/CmdyChannels.swift",
+      "sha256": "db98cc4f901b06b23f5f50d731f84574ff30bc4b904c956802813d604b4756fa",
+      "size": 45810
+    },
+    {
+      "mode": "100644",
+      "path": "Kit/Sources/CmdyKit/CmdyManagementUI.swift",
+      "sha256": "1402b0c24f79bde190efb79db45bfeb55fbd58c049ba7dcea431881ac7f2a512",
+      "size": 9663
+    },
+    {
+      "mode": "100644",
+      "path": "Kit/Sources/CmdyKit/CmdyProductGuide.swift",
+      "sha256": "1fce22f6678a5b607efeda1c11cce678489cba63e8def6a14d23bb19b4435f5e",
+      "size": 19521
+    },
+    {
+      "mode": "100644",
+      "path": "Kit/Sources/CmdyKit/CmdyStarterActions.swift",
+      "sha256": "4256c0ccb471f7f1b75dbb46176c3cdaad1ef5e51aa1589364e8e0a2dabb7a7f",
+      "size": 10796
+    },
+    {
+      "mode": "100644",
+      "path": "Kit/Sources/CmdyKit/CommandPalette.swift",
+      "sha256": "c2761f03b6978ffcf81511f24f7b9a5f464f0eb40c8dcacf76e4695336074dfe",
+      "size": 2623
+    },
+    {
+      "mode": "100644",
+      "path": "Kit/Sources/CmdyKit/ConfigFile.swift",
+      "sha256": "289bf7ef5e21f550f07e881844bb65825041d5bb35f04f2c9141fc97d528bd9f",
+      "size": 24704
+    },
+    {
+      "mode": "100644",
+      "path": "Kit/Sources/CmdyKit/ExtensionCLI.swift",
+      "sha256": "7231a7e5facfb71f88266b81d1f169966a366df05f2ad65c43a1a1a05cf05cd2",
+      "size": 43935
+    },
+    {
+      "mode": "100644",
+      "path": "Kit/Sources/CmdyKit/ExtensionControlBar.swift",
+      "sha256": "51cec69a609b5ff1e057586e9a8b8f5f4381ca092ddd0cb9c8e9f5e2fee82d56",
+      "size": 22863
+    },
+    {
+      "mode": "100644",
+      "path": "Kit/Sources/CmdyKit/ExtensionProtocol.swift",
+      "sha256": "7d6b097ca17624daa1a65a9f3b18817115941b42ffb5545ba9c21e4d8ac7a1a5",
+      "size": 18569
+    },
+    {
+      "mode": "100644",
+      "path": "Kit/Sources/CmdyKit/FontLoader.swift",
+      "sha256": "41b341812302f7d6996b664ea8f8974d798f843850452042ad09e69a3acf748d",
+      "size": 1451
+    },
+    {
+      "mode": "100644",
+      "path": "Kit/Sources/CmdyKit/HotKeyCenter.swift",
+      "sha256": "f953f5bcb09c3e0be14d4eaa6c83807ac7cccfcc15b7fda0e1533403bf3b78b9",
+      "size": 2388
+    },
+    {
+      "mode": "100644",
+      "path": "Kit/Sources/CmdyKit/InlinePanel.swift",
+      "sha256": "ee56224ca46b357eac3772e5370248c31522df40355121067fcbb70eec89305e",
+      "size": 54252
+    },
+    {
+      "mode": "100644",
+      "path": "Kit/Sources/CmdyKit/KeybindingImport.swift",
+      "sha256": "a2cfb149fb27418334bf83bc64f79cb945fb22324ff02846541c193b9fc34b87",
+      "size": 52594
+    },
+    {
+      "mode": "100644",
+      "path": "Kit/Sources/CmdyKit/LocalHTTPServer.swift",
+      "sha256": "854cac90ccbd4ab94f4c8e69d53793ed731d4936a611714c151f156f9acf21fb",
+      "size": 21190
+    },
+    {
+      "mode": "100644",
+      "path": "Kit/Sources/CmdyKit/Marketplace.swift",
+      "sha256": "df9073bd54711cbdf1c8320fc2c94119d8342cd3809e933e9490d7f69c323a24",
+      "size": 41539
+    },
+    {
+      "mode": "100644",
+      "path": "Kit/Sources/CmdyKit/MarketplaceUpdates.swift",
+      "sha256": "817b05c09a0ca16dddda5504f9789cdc641ef6c396d9a51f0e20622e71b008e2",
+      "size": 8167
+    },
+    {
+      "mode": "100644",
+      "path": "Kit/Sources/CmdyKit/NativeSurfaceView.swift",
+      "sha256": "c4b3a38203e37e462fca83b5b6fa3cc5d23b30d954ee0b66c895e77639a03c26",
+      "size": 36352
+    },
+    {
+      "mode": "100644",
+      "path": "Kit/Sources/CmdyKit/Notifier.swift",
+      "sha256": "4511bd69f85f687b83fde33310bb210e4ed7a5e691ee00bbd42f77a70dd98a8d",
+      "size": 2663
+    },
+    {
+      "mode": "100644",
+      "path": "Kit/Sources/CmdyKit/PluginKit.swift",
+      "sha256": "c26ed4b15531e47235969c1ac2f668462b1e3a642dad1f37a390b34a0e5b6181",
+      "size": 179680
+    },
+    {
+      "mode": "100644",
+      "path": "Kit/Sources/CmdyKit/PluginsWindow.swift",
+      "sha256": "e8de56cc3fedacf0a660ebe4c22671c15176395bdaafdb6e3e7bfed56f6c6848",
+      "size": 34151
+    },
+    {
+      "mode": "100644",
+      "path": "Kit/Sources/CmdyKit/Preferences.swift",
+      "sha256": "29568b1c6171d118c9ab0dbb7b674ad6cafba156deb1c0f8eb3fde5aaba3a25d",
+      "size": 25167
+    },
+    {
+      "mode": "100644",
+      "path": "Kit/Sources/CmdyKit/ProcessCapture.swift",
+      "sha256": "ad9093315eac71dc161d1b8d9b4c75318f3bd019eb40e55431b0fd4fba0a162b",
+      "size": 5030
+    },
+    {
+      "mode": "100644",
+      "path": "Kit/Sources/CmdyKit/SessionStore.swift",
+      "sha256": "fed0ddf9e468160d35fdc65ee67bfce8d7910c668256114c80e5c95dfece1654",
+      "size": 4649
+    },
+    {
+      "mode": "100644",
+      "path": "Kit/Sources/CmdyKit/SurfaceCLI.swift",
+      "sha256": "121fd082a0d6a1585398565e785a1221fcd474c5368f46782768c57416cf820c",
+      "size": 12000
+    },
+    {
+      "mode": "100644",
+      "path": "Kit/Sources/CmdyKit/SurfaceProtocol.swift",
+      "sha256": "81c826f8727f6c4e639473c3d4066abcab8ce3e029b425a28fba6c75fc770718",
+      "size": 25367
+    },
+    {
+      "mode": "100644",
+      "path": "Kit/Sources/CmdyKit/TerminalCoreProtocols.swift",
+      "sha256": "85d6c44ab0e62d0a7150f6c47c180bcf2b196a7c5ed7a7c4fa48096b16b17b14",
+      "size": 14958
+    },
+    {
+      "mode": "100644",
+      "path": "Kit/Sources/CmdyKit/Theme.swift",
+      "sha256": "47777477c4f85db3cb4b5ed59ccba3f3cba8ee0e4a2c998cef7bff0768ed0a40",
+      "size": 10221
+    },
+    {
+      "mode": "100644",
+      "path": "Kit/Sources/CmdyKit/UserShaders.swift",
+      "sha256": "58d7f58f0910f8a6db631aa9dc6ea6689f77cd4aa48f5ff9c21ca63991f437dd",
+      "size": 4435
+    },
+    {
+      "mode": "100644",
+      "path": "Kit/Sources/CmdyKit/WindowGridLayout.swift",
+      "sha256": "489f2ba74dfc6f5a6c2f20424eea1e59034a23a9153969c500633d3ce166d9bc",
+      "size": 22580
+    },
+    {
+      "mode": "100644",
+      "path": "Kit/Sources/CmdyKit/WorkspaceContributions.swift",
+      "sha256": "d3ed36c3cea72aa0a0672baa52cb8aaf17b8fe97e7e5499372e8676e8cf00e9d",
+      "size": 3028
+    },
+    {
+      "mode": "100644",
+      "path": "Kit/Sources/CmdyKit/WorkspaceFrame.swift",
+      "sha256": "6ae3b31eaf7081faf499695fa4601c37bff0aed9d9208cfef2334483d48d458e",
+      "size": 4023
+    },
+    {
+      "mode": "100644",
+      "path": "Kit/Sources/CmdyKit/WorkspaceStore.swift",
+      "sha256": "c2e3617095b9f3258748db0a5aaf2ad22123bf8af8aa740b9e10d52d6e3996b6",
+      "size": 20093
+    },
+    {
+      "mode": "100644",
+      "path": "Plugins/CmdySDK/Sources/CmdySDK/Channels.swift",
+      "sha256": "6a8213480dac1792f2e3ae8f19e510397f8eade5b82b9459c22be981d388dc97",
+      "size": 12612
+    },
+    {
+      "mode": "100644",
+      "path": "Plugins/CmdySDK/Sources/CmdySDK/CmdySDK.swift",
+      "sha256": "f372858e9f67ead6daa5bc40a4da8b46ce4c0922168a79d6236e3236e79a6cc3",
+      "size": 24843
+    },
+    {
+      "mode": "100644",
+      "path": "Plugins/CmdySDK/Sources/CmdySDK/Feedback.swift",
+      "sha256": "af1335b0a5f9bd42bee0acdc1d47b744798fc0f1144b99e22db32a5e34181c40",
+      "size": 2394
+    },
+    {
+      "mode": "100644",
+      "path": "Plugins/CmdySDK/Sources/CmdySDK/Surfaces.swift",
+      "sha256": "82b701b929b913e66d3c6197d0010c7f598abea6bb02d0cb40706c2f55d3cd9e",
+      "size": 8522
+    },
+    {
+      "mode": "100644",
+      "path": "Plugins/CmdySDK/Sources/CmdySDK/Workspace.swift",
+      "sha256": "c4fab6c1b0110c0d7a3ffc9370158b2d1bcec1c71ab0565c6f83d7032e5e8916",
+      "size": 3863
+    },
+    {
+      "mode": "100644",
+      "path": "Plugins/chromium/Support/Sources/ChromiumSupport/BrowserAPI.swift",
+      "sha256": "bd3d3a03908c0951ca1554ebd97cdf2a7d0c9e8b229d4a6231ec778e090b9b49",
+      "size": 38101
+    },
+    {
+      "mode": "100644",
+      "path": "Plugins/chromium/Support/Sources/ChromiumSupport/BrowserHTTP.swift",
+      "sha256": "a86f92c587355976d8814fb6dfd28e0ed91da2ff84c6fe496734c8dc02da0e8f",
+      "size": 9777
+    },
+    {
+      "mode": "100644",
+      "path": "Plugins/chromium/Support/Sources/ChromiumSupport/BrowserStartPage.swift",
+      "sha256": "a45fe74ecd7681dcaeff77690100f5451feddae9485f24e327e9a1473c27453c",
+      "size": 2588
+    },
+    {
+      "mode": "100644",
+      "path": "Plugins/chromium/Support/Sources/ChromiumSupport/DOMFeedback.swift",
+      "sha256": "f05b4a24994c547343c6d8ed1e25c5c7c2170b3bdc4bc196be288e673c0530df",
+      "size": 19857
+    },
+    {
+      "mode": "100644",
+      "path": "Plugins/chromium/Support/Sources/ChromiumSupport/SidecarCapturePolicy.swift",
+      "sha256": "9a800a676d1211054041bf4d8f537ebf38b59e41e5284ff78afd9776f973418d",
+      "size": 847
+    },
+    {
+      "mode": "100644",
+      "path": "Renderer/Sources/CmdyGPU/BuiltInEffectShaders.swift",
+      "sha256": "e2f1223e7390b45399c7c440adb8df8a837ad9ac7faf546036cb707506e623e6",
+      "size": 68557
+    },
+    {
+      "mode": "100644",
+      "path": "Renderer/Sources/CmdyGPU/CompatibilityUtilities.swift",
+      "sha256": "ea810343057aa9c27eda541548875cfdd40915cbf21c3f2745e8c4f913986f85",
+      "size": 21699
+    },
+    {
+      "mode": "100644",
+      "path": "Renderer/Sources/CmdyGPU/GeometryAndScheduling.swift",
+      "sha256": "7a3642ba83d37b4e24fab721afbd4a195fc3d6399000ab8d3d27a85946b6a79c",
+      "size": 22013
+    },
+    {
+      "mode": "100644",
+      "path": "Renderer/Sources/CmdyGPU/MetalCore.swift",
+      "sha256": "746039dbe6033829cdbfa851042247d6f8543dea684ae6232cddce615437b3a7",
+      "size": 12036
+    },
+    {
+      "mode": "100644",
+      "path": "Renderer/Sources/CmdyGPU/MetalTerminalRenderer.swift",
+      "sha256": "005acbcdc7f90eacbd4301824003dd4fcca1803a166f8335f2665223db9fd903",
+      "size": 86827
+    },
+    {
+      "mode": "100644",
+      "path": "Renderer/Sources/CmdyGPU/ProceduralGlyphs.swift",
+      "sha256": "d9be6ebad13b0036dec6bc223fea7b6fbd6e490249690d4d7be60a3b99ee16df",
+      "size": 33512
+    },
+    {
+      "mode": "100644",
+      "path": "Renderer/Sources/CmdyGPU/RenderContract.swift",
+      "sha256": "e1e3a4d848c665e8f83da1725c7232f9ca75cb1b3700d1d8e50d77616bc3684b",
+      "size": 13010
+    },
+    {
+      "mode": "100644",
+      "path": "Renderer/Sources/CmdyGPU/RowRasterCache.swift",
+      "sha256": "17a18b7bf2e591e66bdb2fa046f53f21b33385b34c7985d53d80992b7bce4ff7",
+      "size": 39495
+    }
+  ],
+  "trustFileCount": 8,
+  "trustFiles": [
+    {
+      "mode": "100644",
+      "path": "Core/Package.swift",
+      "sha256": "8de0ffbe87548a2a8b833c9712657164d3ad8aa1efba40bda35d3f56f313d48c",
+      "size": 1614
+    },
+    {
+      "mode": "100644",
+      "path": "Identity/Package.swift",
+      "sha256": "5e4d240e0f5f0fa528e16b69661ad2f625b26a14317785a4c9bc6f47a97ecbce",
+      "size": 507
+    },
+    {
+      "mode": "100644",
+      "path": "Identity/Sources/ProductIdentity/Resources/product-identity.json",
+      "sha256": "b98bf649bee7043f151d5f575a82d79d6959b8f90a5566460815ab5cf8e25e33",
+      "size": 257
+    },
+    {
+      "mode": "100644",
+      "path": "Kit/Package.swift",
+      "sha256": "8c3ff091fdfdc53ced82821639421cdba89274f6904452a8deb944a2e909bd47",
+      "size": 995
+    },
+    {
+      "mode": "100644",
+      "path": "Package.swift",
+      "sha256": "5f80a4c8ec138551a5169e416423520f13ed76caab183e5649abf9340fc47fd6",
+      "size": 2282
+    },
+    {
+      "mode": "100644",
+      "path": "Plugins/CmdySDK/Package.swift",
+      "sha256": "b3d622e06ddb9910a9e6d980466acc7a1c7d73ff6aea46ab20e1d9d0cd3b7783",
+      "size": 675
+    },
+    {
+      "mode": "100644",
+      "path": "Plugins/chromium/Support/Package.swift",
+      "sha256": "cc239601d51c4dc1a6ef55ba8e019a47bbb7263540e8d913ad9ac128bd154aa0",
+      "size": 767
+    },
+    {
+      "mode": "100644",
+      "path": "Renderer/Package.swift",
+      "sha256": "a7960cec040e572a0d855c549c6c264d0a5d69233ab0aeafe02818a6885ae61c",
+      "size": 641
+    }
+  ]
+}

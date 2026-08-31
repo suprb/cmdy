@@ -1,0 +1,3507 @@
+{
+  "activeSources": [
+    {
+      "path": "App/AIKit.swift",
+      "sha256": "185bbea1b4e81f3a95f9433260dd09495965e3c05349f2eed836310d2e23de00"
+    },
+    {
+      "path": "App/AIResponseWindow.swift",
+      "sha256": "d5251084c3d3f3994ff291c5b29c59ee93ca9d439220c37c784e796463a62eb7"
+    },
+    {
+      "path": "App/AgentKit.swift",
+      "sha256": "553b60396ba1ad5887415087281cc242a976c79f92ac246c33b6916f9a1ba657"
+    },
+    {
+      "path": "App/AppDelegate.swift",
+      "sha256": "f2fc128b913ea511dd817f430c5c8fe8dfa376cfb8bda2b5284e15b2cbe3ed78"
+    },
+    {
+      "path": "App/AppUpdateWindow.swift",
+      "sha256": "2510960dd22f5736451ff3c60fc73bcdaf4cc5927215c4faab19623f8c8277e0"
+    },
+    {
+      "path": "App/BeamKit.swift",
+      "sha256": "368db5a9530e140da21df3a29a7bb68b5caf0e220ae5577eccf69fc77928f17c"
+    },
+    {
+      "path": "App/BlockOverlayView.swift",
+      "sha256": "62f9b120845ab96214dc75898da7bdc3823c30d6bfb5db1f19fcb82af6cdbdb2"
+    },
+    {
+      "path": "App/ChannelManagerWindow.swift",
+      "sha256": "d429ff2e6a5e3422909fa362e09fbf293c04d4f5241232cf787150a1e88be198"
+    },
+    {
+      "path": "App/CmdyActionsUI.swift",
+      "sha256": "0018e40ea33d1e45217f17c64e1d1d062691d09d442c8e1cf2a25c0a1fed40aa"
+    },
+    {
+      "path": "App/CmdyCellImageHarness.swift",
+      "sha256": "a659f4024c751c5b38835240af485bfd716027aeaeb1aea6f09d850c11230aeb"
+    },
+    {
+      "path": "App/CmdyChannelsUI.swift",
+      "sha256": "c445398d55b423172fa8dbd6db329339774bf1fd770d2a8454a4a927afc8f9e8"
+    },
+    {
+      "path": "App/CmdyCoreAdapter.swift",
+      "sha256": "78298c32d8177fbb85327fbdb93d0f19032c18395f92f02c5e6a9e4467e7b263"
+    },
+    {
+      "path": "App/CmdyEditor.swift",
+      "sha256": "893e4a44be075d2336c7eca4c96f65ccf4352fd4335ff60be54d360f04bae5b9"
+    },
+    {
+      "path": "App/CmdySnapshotShaper.swift",
+      "sha256": "9f05853fb1dc697da19ceed42fa94839bfe44654134cad95166eb3edda6d6f8f"
+    },
+    {
+      "path": "App/CmdySurfaceContractHarness.swift",
+      "sha256": "5158539dc01712333948be71828379d420f8fa3d8f9406168fa2f9ca6c0512f0"
+    },
+    {
+      "path": "App/CmdyTerminalSurface.swift",
+      "sha256": "6a9dfbe2e0172ceee4975310c0e3e41a58e4b064c76dbd52f9abc21654e78cd7"
+    },
+    {
+      "path": "App/CrashLogger.swift",
+      "sha256": "f043fd2beb9726f1c677a50110a77dd313c415c25262140940e410148b3b43a3"
+    },
+    {
+      "path": "App/DropView.swift",
+      "sha256": "546b4eceb4f8b59ec5ad15eb6c8e4afa00e2dec032ab96082cac9441da8d7eb4"
+    },
+    {
+      "path": "App/EmbeddedChromium.swift",
+      "sha256": "fdbfff3730538bce54bdaa6f9d4381f67bde0312cc1ae2b80e2035fac0e1c6f1"
+    },
+    {
+      "path": "App/EngineFactory.swift",
+      "sha256": "d41a4789c00243c6a3e79415bac32f11ea96eeb7de9bbb4f6d55ee332e9b84ef"
+    },
+    {
+      "path": "App/ErrorAssistant.swift",
+      "sha256": "9afbae9113088fddf45e70c147c7099a9e941f9533ebe524ae5abb83ec73e95b"
+    },
+    {
+      "path": "App/FindBar.swift",
+      "sha256": "a76fba88936f520524de68b42803d9ac6bcca391987d9a256637d633f6d28257"
+    },
+    {
+      "path": "App/HistoryStore.swift",
+      "sha256": "ef33d5ab7a8599236689ef23ca96cf00f501535034d4a65d239fe14e8580991f"
+    },
+    {
+      "path": "App/IconGenerator.swift",
+      "sha256": "3e7edd7e870ec8df0e987bcc88498345092d77af2fbdb37bd36a0c26ed14c5bb"
+    },
+    {
+      "path": "App/IntegrationDoctor.swift",
+      "sha256": "314dcfe2eaabb25b5545e12efd07bea751a8c24f25214d0b230ed0ee29529412"
+    },
+    {
+      "path": "App/KeybindingImportUI.swift",
+      "sha256": "10e66b1b973584d3dc6cd885636d0b172c9bd6b5c2fb1c56491825eddbacaabd"
+    },
+    {
+      "path": "App/MarketplaceUI.swift",
+      "sha256": "19e77bd85ed0bce629eebc5e73fc3dcd3e3672248afdd7503389e5b40b7bd2ff"
+    },
+    {
+      "path": "App/MenuUtilities.swift",
+      "sha256": "fe56e796f95be68df7be61ccac10b9d741a663d76ee22d4d0ccefb9866ebf72e"
+    },
+    {
+      "path": "App/NamedWorkspacesUI.swift",
+      "sha256": "e12df2e9634fbd5b2058921868d44dab0f3ba2a834cab061f3549b41db8a140a"
+    },
+    {
+      "path": "App/PaneComposition.swift",
+      "sha256": "819e2792b129acfb6bc8fc578a77d7860a68933d5600b4bbc6d24668915f9d22"
+    },
+    {
+      "path": "App/Retrobleeps.swift",
+      "sha256": "94d6e4f3509526710450c5857157c48c0b8aef7b03e2ddeef394ab7778774099"
+    },
+    {
+      "path": "App/SelfTest.swift",
+      "sha256": "5a941c8734bcdba5356a8325c9db19fbc920af431c2b8f78612bce08b373bd4e"
+    },
+    {
+      "path": "App/ShellIntegration.swift",
+      "sha256": "f1600364ba84cba93be06723fed9bcfc1d922d99c6b93c3bbc9913325ec89a28"
+    },
+    {
+      "path": "App/StandardKeybindings.swift",
+      "sha256": "3441f678f97f7a656a86fd470e4943e6d5d6e9058c82d04d6d7f9a8b68b203ed"
+    },
+    {
+      "path": "App/SystemInfo.swift",
+      "sha256": "a0f0064ed2376880b492179923ffe86193226f5beb185bd0fac102f3b1fcb8f4"
+    },
+    {
+      "path": "App/TerminalLinkOpener.swift",
+      "sha256": "64390c54e918990d9692552de9a22a7ba2685b250f8d9b161dc71ed115a0689d"
+    },
+    {
+      "path": "App/TerminalModel.swift",
+      "sha256": "212bec21a10577ce855ea7cbbf781da6de53f953f68ae629c7b83497aa78f403"
+    },
+    {
+      "path": "App/TerminalPane.swift",
+      "sha256": "8aa64540823a6101b7d2c07c1bffcc420c6fbfa2470e657fd5c47afbaa1adf97"
+    },
+    {
+      "path": "App/TerminalWindowController.swift",
+      "sha256": "4e0bff2ae9412c0c508342531c3b5535e7b573c9444612da95e2e38c13b01d08"
+    },
+    {
+      "path": "App/ToolbarCustomizationView.swift",
+      "sha256": "7063ca6be7d263a9cbe1d172a135ef29daef4287a3303ecfd74543078f0577c0"
+    },
+    {
+      "path": "App/WindowChromeLayout.swift",
+      "sha256": "f428105449afedbcaa6947f9458788bfb36bc0f8087ac858945b642368cf96d1"
+    },
+    {
+      "path": "App/WindowDock.swift",
+      "sha256": "db1023697f45b6532b5c3f01ebfdf80661c56be614f90cfbe9e3ca0ed0ae7fe8"
+    },
+    {
+      "path": "App/WindowGridCoordinator.swift",
+      "sha256": "f93d25b7f46a85f912ac09ed6c495335d1aa25e52e896359af0fb5b1abb66c8f"
+    },
+    {
+      "path": "App/WorkspaceContext.swift",
+      "sha256": "a7937697e975eff414b9a3f5411336acbbfdb73bb9de27f5a8df0d2983bf0097"
+    },
+    {
+      "path": "App/WorkspaceFrameView.swift",
+      "sha256": "2a4b6de53a7446bb885e0965c4141d27f7e877779ac9e82664d0549d0a7bd8c0"
+    },
+    {
+      "path": "App/main.swift",
+      "sha256": "06e8ee7584b45662fea6312d47ca67aef5ca34a08634add7bc6f3c53fdd290a1"
+    },
+    {
+      "path": "Core/Sources/CmdyC/lib_cmdy.swift",
+      "sha256": "59d0b1db2710414145746ca04ce3397be497dfb3387cc5b023bf8bc793e6dd3b"
+    },
+    {
+      "path": "Core/Sources/CmdyCore/Blocks.swift",
+      "sha256": "ebfe9302dfa9cf159e3f9fb90600c64e1aae0644597bf7f608075186f364897d"
+    },
+    {
+      "path": "Core/Sources/CmdyCore/Cell.swift",
+      "sha256": "b5c972474e01a1d8ac8e7bf740e9765da661a29bb622319900bce221346a2a1a"
+    },
+    {
+      "path": "Core/Sources/CmdyCore/CmdyTerminal.swift",
+      "sha256": "6ea35b0cc10c4435e97374a0ceb25f37f70b684cd724c16bae5aee2d400b8af6"
+    },
+    {
+      "path": "Core/Sources/CmdyCore/CmdyUnicodeWidthPolicy.swift",
+      "sha256": "b34d5db198484fe76c9461c2cb9a886bb3fc4459108573228691187093412479"
+    },
+    {
+      "path": "Core/Sources/CmdyCore/CoreTerminalSnapshotViewport.swift",
+      "sha256": "bf6cf1e12db6c80aff29171d6e41cfded6b597a34016c287abe3bd0f2b907613"
+    },
+    {
+      "path": "Core/Sources/CmdyCore/Generated/UnicodeWidthTables.swift",
+      "sha256": "130c70f355d036b66fb9ed67d64e700230f1b8965297d1169d2eb9d28d82cdf8"
+    },
+    {
+      "path": "Core/Sources/CmdyCore/KittyUnicodePlaceholder.swift",
+      "sha256": "506616e5e6429355e58c324463ca464101a3e78d06d5e45912c21ab59e391deb"
+    },
+    {
+      "path": "Core/Sources/CmdyCore/Line.swift",
+      "sha256": "67e5aaf846dc95e9aab66aaf040857ecbe5c3470339c6174b5a4e76545a32155"
+    },
+    {
+      "path": "Core/Sources/CmdyCore/Replay.swift",
+      "sha256": "349d772382dc22ada13fb3bb146da6fdffaa932a673c999d384e99999b515718"
+    },
+    {
+      "path": "Core/Sources/CmdyCore/ScreenBuffer.swift",
+      "sha256": "00a8d0f426f88edaa657b14a5ebd52f5cc10e7b9a98f6ef838c81e6689ab494f"
+    },
+    {
+      "path": "Core/Sources/CmdyCore/SixelDecoder.swift",
+      "sha256": "743b0774c8aae42af931ea541e3a10c46d638a5e7223be7774d5185b63d94ba7"
+    },
+    {
+      "path": "Core/Sources/CmdyCore/TerminalDispatch.swift",
+      "sha256": "adc4dccb5438689db6b7fff9a07c6d2613395fe29657f08d2fbc97cfbe2b31e5"
+    },
+    {
+      "path": "Core/Sources/CmdyCore/TerminalGraphics.swift",
+      "sha256": "29a70f365bbd6f260890a11bfffab7bcbb23c13398c3726635b1d4740a46f3a6"
+    },
+    {
+      "path": "Core/Sources/CmdyCore/TerminalModes.swift",
+      "sha256": "c821bcc1ffeadb76503d05151508d5dc10265cb2ab003651fbf6081ff9131690"
+    },
+    {
+      "path": "Core/Sources/CmdyCore/TerminalOSC.swift",
+      "sha256": "aabdf1c24918cc02810d0940c316b95e37734669eab786300b59ab901e62464c"
+    },
+    {
+      "path": "Core/Sources/CmdyCore/TerminalReflow.swift",
+      "sha256": "8a1ca3908fde5c576e9900ffe2b4741e8c6473183a39f54794ad42b53d0fa9db"
+    },
+    {
+      "path": "Core/Sources/CmdyCore/TerminalSGR.swift",
+      "sha256": "bda23f805f8c3542d3d7a423f9334bb79874467deb565815d94d6299ac517999"
+    },
+    {
+      "path": "Core/Sources/CmdyCore/TerminalSupport.swift",
+      "sha256": "d5745c6fa7870ce717d430791bf14291f0d36cc375a4afe7cdc5e4315d18a966"
+    },
+    {
+      "path": "Core/Sources/CmdyCore/UnicodeWidth.swift",
+      "sha256": "9f467d2505416b92649dc3b511e6600875a924689a278b34316a43ad65ab8822"
+    },
+    {
+      "path": "Core/Sources/CmdyCore/VTParser.swift",
+      "sha256": "ef6de5a1b7edd2318b5c62640cd00c9048612305cc4ca1ef4a0f57368248753a"
+    },
+    {
+      "path": "Core/Sources/CmdyPTY/LocalProcess.swift",
+      "sha256": "b91890b2f4d6201092573ea3f1d545f6c4613214e20ed1d0faf3cdb527ee82b8"
+    },
+    {
+      "path": "Core/Sources/CmdyPTY/Pty.swift",
+      "sha256": "e871d003975ed4bdfead199278b9294d00cc8ba302dcb15cb06b43f75302f5e9"
+    },
+    {
+      "path": "Core/Sources/CmdyPTYShim/CmdyPTYShim.c",
+      "sha256": "477ae0b38901ba341fd368252c0fd97f653e608420970865af7c32cf69636594"
+    },
+    {
+      "path": "Core/Sources/CmdyPTYShim/include/CmdyPTYShim.h",
+      "sha256": "285754939f65d03dd4ee6d06ef64442a78390637a7c74a0304bfd8624276b10c"
+    },
+    {
+      "path": "Identity/Sources/ProductIdentity/ProductIdentity.swift",
+      "sha256": "c92e8854d2f1661caeb0ac21273e4f05e3a23e7fc89fde1c44cf8c696c97c680"
+    },
+    {
+      "path": "Kit/Sources/CmdyKit/AnnotationOverlay.swift",
+      "sha256": "6771f2c5b94f7986b57b2ba124922d2aab7c4cda726b8dc1edaa0d8391ab3cea"
+    },
+    {
+      "path": "Kit/Sources/CmdyKit/AppUpdates.swift",
+      "sha256": "aa24b3016e273e823073e94988e81e34554674d77e1d4065132b8d162e92927b"
+    },
+    {
+      "path": "Kit/Sources/CmdyKit/Blocks.swift",
+      "sha256": "bf66d6c3f03815bdb9e586a94c7e22815ed7132575eff3f9b83cabc9022a737f"
+    },
+    {
+      "path": "Kit/Sources/CmdyKit/BottomMenu.swift",
+      "sha256": "6681b45655f7b14afdc447c87e347b20be954c03acddb867e7bcc69bf00c125d"
+    },
+    {
+      "path": "Kit/Sources/CmdyKit/BoundedFileReader.swift",
+      "sha256": "50d05cba016e5efe278d448c1484935166e8ad6973667933fcc037a1e33b8e61"
+    },
+    {
+      "path": "Kit/Sources/CmdyKit/CmdyActions.swift",
+      "sha256": "54b02b4f22a70bdc43beda9202df37324e6c0ab229b5b5ce545c9ee87251e22a"
+    },
+    {
+      "path": "Kit/Sources/CmdyKit/CmdyChannels.swift",
+      "sha256": "db98cc4f901b06b23f5f50d731f84574ff30bc4b904c956802813d604b4756fa"
+    },
+    {
+      "path": "Kit/Sources/CmdyKit/CmdyManagementUI.swift",
+      "sha256": "1402b0c24f79bde190efb79db45bfeb55fbd58c049ba7dcea431881ac7f2a512"
+    },
+    {
+      "path": "Kit/Sources/CmdyKit/CmdyProductGuide.swift",
+      "sha256": "1fce22f6678a5b607efeda1c11cce678489cba63e8def6a14d23bb19b4435f5e"
+    },
+    {
+      "path": "Kit/Sources/CmdyKit/CmdyStarterActions.swift",
+      "sha256": "4256c0ccb471f7f1b75dbb46176c3cdaad1ef5e51aa1589364e8e0a2dabb7a7f"
+    },
+    {
+      "path": "Kit/Sources/CmdyKit/CommandPalette.swift",
+      "sha256": "c2761f03b6978ffcf81511f24f7b9a5f464f0eb40c8dcacf76e4695336074dfe"
+    },
+    {
+      "path": "Kit/Sources/CmdyKit/ConfigFile.swift",
+      "sha256": "289bf7ef5e21f550f07e881844bb65825041d5bb35f04f2c9141fc97d528bd9f"
+    },
+    {
+      "path": "Kit/Sources/CmdyKit/ExtensionCLI.swift",
+      "sha256": "7231a7e5facfb71f88266b81d1f169966a366df05f2ad65c43a1a1a05cf05cd2"
+    },
+    {
+      "path": "Kit/Sources/CmdyKit/ExtensionControlBar.swift",
+      "sha256": "51cec69a609b5ff1e057586e9a8b8f5f4381ca092ddd0cb9c8e9f5e2fee82d56"
+    },
+    {
+      "path": "Kit/Sources/CmdyKit/ExtensionProtocol.swift",
+      "sha256": "7d6b097ca17624daa1a65a9f3b18817115941b42ffb5545ba9c21e4d8ac7a1a5"
+    },
+    {
+      "path": "Kit/Sources/CmdyKit/FontLoader.swift",
+      "sha256": "41b341812302f7d6996b664ea8f8974d798f843850452042ad09e69a3acf748d"
+    },
+    {
+      "path": "Kit/Sources/CmdyKit/HotKeyCenter.swift",
+      "sha256": "f953f5bcb09c3e0be14d4eaa6c83807ac7cccfcc15b7fda0e1533403bf3b78b9"
+    },
+    {
+      "path": "Kit/Sources/CmdyKit/InlinePanel.swift",
+      "sha256": "ee56224ca46b357eac3772e5370248c31522df40355121067fcbb70eec89305e"
+    },
+    {
+      "path": "Kit/Sources/CmdyKit/KeybindingImport.swift",
+      "sha256": "a2cfb149fb27418334bf83bc64f79cb945fb22324ff02846541c193b9fc34b87"
+    },
+    {
+      "path": "Kit/Sources/CmdyKit/LocalHTTPServer.swift",
+      "sha256": "854cac90ccbd4ab94f4c8e69d53793ed731d4936a611714c151f156f9acf21fb"
+    },
+    {
+      "path": "Kit/Sources/CmdyKit/Marketplace.swift",
+      "sha256": "df9073bd54711cbdf1c8320fc2c94119d8342cd3809e933e9490d7f69c323a24"
+    },
+    {
+      "path": "Kit/Sources/CmdyKit/MarketplaceUpdates.swift",
+      "sha256": "817b05c09a0ca16dddda5504f9789cdc641ef6c396d9a51f0e20622e71b008e2"
+    },
+    {
+      "path": "Kit/Sources/CmdyKit/NativeSurfaceView.swift",
+      "sha256": "c4b3a38203e37e462fca83b5b6fa3cc5d23b30d954ee0b66c895e77639a03c26"
+    },
+    {
+      "path": "Kit/Sources/CmdyKit/Notifier.swift",
+      "sha256": "4511bd69f85f687b83fde33310bb210e4ed7a5e691ee00bbd42f77a70dd98a8d"
+    },
+    {
+      "path": "Kit/Sources/CmdyKit/PluginKit.swift",
+      "sha256": "c26ed4b15531e47235969c1ac2f668462b1e3a642dad1f37a390b34a0e5b6181"
+    },
+    {
+      "path": "Kit/Sources/CmdyKit/PluginsWindow.swift",
+      "sha256": "e8de56cc3fedacf0a660ebe4c22671c15176395bdaafdb6e3e7bfed56f6c6848"
+    },
+    {
+      "path": "Kit/Sources/CmdyKit/Preferences.swift",
+      "sha256": "29568b1c6171d118c9ab0dbb7b674ad6cafba156deb1c0f8eb3fde5aaba3a25d"
+    },
+    {
+      "path": "Kit/Sources/CmdyKit/ProcessCapture.swift",
+      "sha256": "ad9093315eac71dc161d1b8d9b4c75318f3bd019eb40e55431b0fd4fba0a162b"
+    },
+    {
+      "path": "Kit/Sources/CmdyKit/SessionStore.swift",
+      "sha256": "fed0ddf9e468160d35fdc65ee67bfce8d7910c668256114c80e5c95dfece1654"
+    },
+    {
+      "path": "Kit/Sources/CmdyKit/SurfaceCLI.swift",
+      "sha256": "121fd082a0d6a1585398565e785a1221fcd474c5368f46782768c57416cf820c"
+    },
+    {
+      "path": "Kit/Sources/CmdyKit/SurfaceProtocol.swift",
+      "sha256": "81c826f8727f6c4e639473c3d4066abcab8ce3e029b425a28fba6c75fc770718"
+    },
+    {
+      "path": "Kit/Sources/CmdyKit/TerminalCoreProtocols.swift",
+      "sha256": "85d6c44ab0e62d0a7150f6c47c180bcf2b196a7c5ed7a7c4fa48096b16b17b14"
+    },
+    {
+      "path": "Kit/Sources/CmdyKit/Theme.swift",
+      "sha256": "47777477c4f85db3cb4b5ed59ccba3f3cba8ee0e4a2c998cef7bff0768ed0a40"
+    },
+    {
+      "path": "Kit/Sources/CmdyKit/UserShaders.swift",
+      "sha256": "58d7f58f0910f8a6db631aa9dc6ea6689f77cd4aa48f5ff9c21ca63991f437dd"
+    },
+    {
+      "path": "Kit/Sources/CmdyKit/WindowGridLayout.swift",
+      "sha256": "489f2ba74dfc6f5a6c2f20424eea1e59034a23a9153969c500633d3ce166d9bc"
+    },
+    {
+      "path": "Kit/Sources/CmdyKit/WorkspaceContributions.swift",
+      "sha256": "d3ed36c3cea72aa0a0672baa52cb8aaf17b8fe97e7e5499372e8676e8cf00e9d"
+    },
+    {
+      "path": "Kit/Sources/CmdyKit/WorkspaceFrame.swift",
+      "sha256": "6ae3b31eaf7081faf499695fa4601c37bff0aed9d9208cfef2334483d48d458e"
+    },
+    {
+      "path": "Kit/Sources/CmdyKit/WorkspaceStore.swift",
+      "sha256": "c2e3617095b9f3258748db0a5aaf2ad22123bf8af8aa740b9e10d52d6e3996b6"
+    },
+    {
+      "path": "Plugins/CmdySDK/Sources/CmdySDK/Channels.swift",
+      "sha256": "6a8213480dac1792f2e3ae8f19e510397f8eade5b82b9459c22be981d388dc97"
+    },
+    {
+      "path": "Plugins/CmdySDK/Sources/CmdySDK/CmdySDK.swift",
+      "sha256": "f372858e9f67ead6daa5bc40a4da8b46ce4c0922168a79d6236e3236e79a6cc3"
+    },
+    {
+      "path": "Plugins/CmdySDK/Sources/CmdySDK/Feedback.swift",
+      "sha256": "af1335b0a5f9bd42bee0acdc1d47b744798fc0f1144b99e22db32a5e34181c40"
+    },
+    {
+      "path": "Plugins/CmdySDK/Sources/CmdySDK/Surfaces.swift",
+      "sha256": "82b701b929b913e66d3c6197d0010c7f598abea6bb02d0cb40706c2f55d3cd9e"
+    },
+    {
+      "path": "Plugins/CmdySDK/Sources/CmdySDK/Workspace.swift",
+      "sha256": "c4fab6c1b0110c0d7a3ffc9370158b2d1bcec1c71ab0565c6f83d7032e5e8916"
+    },
+    {
+      "path": "Plugins/chromium/Support/Sources/ChromiumSupport/BrowserAPI.swift",
+      "sha256": "bd3d3a03908c0951ca1554ebd97cdf2a7d0c9e8b229d4a6231ec778e090b9b49"
+    },
+    {
+      "path": "Plugins/chromium/Support/Sources/ChromiumSupport/BrowserHTTP.swift",
+      "sha256": "a86f92c587355976d8814fb6dfd28e0ed91da2ff84c6fe496734c8dc02da0e8f"
+    },
+    {
+      "path": "Plugins/chromium/Support/Sources/ChromiumSupport/BrowserStartPage.swift",
+      "sha256": "a45fe74ecd7681dcaeff77690100f5451feddae9485f24e327e9a1473c27453c"
+    },
+    {
+      "path": "Plugins/chromium/Support/Sources/ChromiumSupport/DOMFeedback.swift",
+      "sha256": "f05b4a24994c547343c6d8ed1e25c5c7c2170b3bdc4bc196be288e673c0530df"
+    },
+    {
+      "path": "Plugins/chromium/Support/Sources/ChromiumSupport/SidecarCapturePolicy.swift",
+      "sha256": "9a800a676d1211054041bf4d8f537ebf38b59e41e5284ff78afd9776f973418d"
+    },
+    {
+      "path": "Renderer/Sources/CmdyGPU/BuiltInEffectShaders.swift",
+      "sha256": "e2f1223e7390b45399c7c440adb8df8a837ad9ac7faf546036cb707506e623e6"
+    },
+    {
+      "path": "Renderer/Sources/CmdyGPU/CompatibilityUtilities.swift",
+      "sha256": "ea810343057aa9c27eda541548875cfdd40915cbf21c3f2745e8c4f913986f85"
+    },
+    {
+      "path": "Renderer/Sources/CmdyGPU/GeometryAndScheduling.swift",
+      "sha256": "7a3642ba83d37b4e24fab721afbd4a195fc3d6399000ab8d3d27a85946b6a79c"
+    },
+    {
+      "path": "Renderer/Sources/CmdyGPU/MetalCore.swift",
+      "sha256": "746039dbe6033829cdbfa851042247d6f8543dea684ae6232cddce615437b3a7"
+    },
+    {
+      "path": "Renderer/Sources/CmdyGPU/MetalTerminalRenderer.swift",
+      "sha256": "005acbcdc7f90eacbd4301824003dd4fcca1803a166f8335f2665223db9fd903"
+    },
+    {
+      "path": "Renderer/Sources/CmdyGPU/ProceduralGlyphs.swift",
+      "sha256": "d9be6ebad13b0036dec6bc223fea7b6fbd6e490249690d4d7be60a3b99ee16df"
+    },
+    {
+      "path": "Renderer/Sources/CmdyGPU/RenderContract.swift",
+      "sha256": "e1e3a4d848c665e8f83da1725c7232f9ca75cb1b3700d1d8e50d77616bc3684b"
+    },
+    {
+      "path": "Renderer/Sources/CmdyGPU/RowRasterCache.swift",
+      "sha256": "17a18b7bf2e591e66bdb2fa046f53f21b33385b34c7985d53d80992b7bce4ff7"
+    }
+  ],
+  "issues": [],
+  "matches": [
+    {
+      "active": "App/MenuUtilities.swift",
+      "activeLines": [
+        111,
+        155
+      ],
+      "classificationId": "vendor-app-menu-table-structural-collision",
+      "disposition": "non-substantive-structural-collision",
+      "fingerprint": "baabf0fe107953faf55782dd3fe992f00d819dcd42b5837d42983cbdf4cde1e6",
+      "historical": "Vendor/SwiftTerm/Tests/SwiftTermTests/GhosttyImplicitLinkDetectionTests.swift",
+      "historicalLines": [
+        49,
+        93
+      ],
+      "mode": "structural",
+      "origin": "vendor",
+      "rationale": "Normalization makes the unrelated menu-title/SF-symbol tuple table resemble a Vendor test-input/expected-URL tuple table; no literals or behavior match.",
+      "tokenCount": 275
+    },
+    {
+      "active": "App/MenuUtilities.swift",
+      "activeLines": [
+        156,
+        199
+      ],
+      "classificationId": "vendor-app-menu-table-structural-collision",
+      "disposition": "non-substantive-structural-collision",
+      "fingerprint": "9befdf1c68ceeec5ec34205f6eceb5a8dfc712743e937bd21863560e520be474",
+      "historical": "Vendor/SwiftTerm/Tests/SwiftTermTests/GhosttyImplicitLinkDetectionTests.swift",
+      "historicalLines": [
+        50,
+        93
+      ],
+      "mode": "structural",
+      "origin": "vendor",
+      "rationale": "Normalization makes the unrelated menu-title/SF-symbol tuple table resemble a Vendor test-input/expected-URL tuple table; no literals or behavior match.",
+      "tokenCount": 263
+    },
+    {
+      "active": "App/StandardKeybindings.swift",
+      "activeLines": [
+        118,
+        130
+      ],
+      "classificationId": "vendor-app-keybinding-switch-projection",
+      "disposition": "data-plumbing",
+      "fingerprint": "a992913071897af0264515603aed2f4dedad026af7f31b9d034d32dd8f0e5210",
+      "historical": "Vendor/SwiftTerm/Sources/SwiftTerm/iOS/iOSTerminalView.swift",
+      "historicalLines": [
+        1661,
+        1686
+      ],
+      "mode": "structural",
+      "origin": "vendor",
+      "rationale": "Identifier-normalized exhaustive enum-to-enum switch; active keybinding actions and Vendor HID-key mappings have different cases and domains.",
+      "tokenCount": 91
+    },
+    {
+      "active": "App/StandardKeybindings.swift",
+      "activeLines": [
+        138,
+        163
+      ],
+      "classificationId": "vendor-app-keybinding-switch-projection",
+      "disposition": "data-plumbing",
+      "fingerprint": "a2c4b77a80f32658fc7ec05049cf9896fac68d49294c048d46e6bc542b232144",
+      "historical": "Vendor/SwiftTerm/Sources/SwiftTerm/iOS/iOSTerminalView.swift",
+      "historicalLines": [
+        1661,
+        1712
+      ],
+      "mode": "structural",
+      "origin": "vendor",
+      "rationale": "Identifier-normalized exhaustive enum-to-enum switch; active keybinding actions and Vendor HID-key mappings have different cases and domains.",
+      "tokenCount": 182
+    },
+    {
+      "active": "App/TerminalWindowController.swift",
+      "activeLines": [
+        1424,
+        1434
+      ],
+      "classificationId": "vendor-app-toolbar-list-structural-collision",
+      "disposition": "non-substantive-structural-collision",
+      "fingerprint": "3252a45dad9ca834d7c854ab09f12ca98c9c93f21aeb1ff84b6045ab11c72343",
+      "historical": "Vendor/SwiftTerm/Sources/SwiftTerm/Utilities.swift",
+      "historicalLines": [
+        39,
+        43
+      ],
+      "mode": "structural",
+      "origin": "vendor",
+      "rationale": "Normalization makes a toolbar-identifier array resemble part of an unrelated UTF-8 decoder table; the source values and behavior do not match.",
+      "tokenCount": 86
+    },
+    {
+      "active": "Core/Sources/CmdyCore/Cell.swift",
+      "activeLines": [
+        10,
+        21
+      ],
+      "classificationId": "vendor-cell-public-value-shape",
+      "disposition": "api-declaration",
+      "fingerprint": "c1f4f14decaa6ec75b797fb45d82441219ed12c1b999cadc308e2b40ca3c772b",
+      "historical": "Vendor/SwiftTerm/Sources/SwiftTerm/CharData.swift",
+      "historicalLines": [
+        35,
+        53
+      ],
+      "mode": "structural",
+      "origin": "vendor",
+      "rationale": "Public cell value and style-bit declarations required by the compatibility surface; identifiers differ and no cell algorithm is covered.",
+      "tokenCount": 94
+    },
+    {
+      "active": "Core/Sources/CmdyCore/KittyUnicodePlaceholder.swift",
+      "activeLines": [
+        185,
+        207
+      ],
+      "classificationId": "vendor-kitty-diacritic-table",
+      "disposition": "official-protocol-data",
+      "fingerprint": "f473632138d75ab2b248887a0cd8a17e0db13071fd9afd657658f6b272d67496",
+      "historical": "Vendor/SwiftTerm/Sources/SwiftTerm/KittyPlaceholder.swift",
+      "historicalLines": [
+        330,
+        492
+      ],
+      "mode": "exact",
+      "origin": "vendor",
+      "rationale": "The ordered combining-diacritic table is normative public Kitty protocol data and is independently cited to the official specification in the active source.",
+      "tokenCount": 324
+    },
+    {
+      "active": "Core/Sources/CmdyCore/TerminalGraphics.swift",
+      "activeLines": [
+        129,
+        137
+      ],
+      "classificationId": "vendor-kitty-payload-size-accessor",
+      "disposition": "data-plumbing",
+      "fingerprint": "90c827e327b5f771d1be9a95a5a16ca4ad7a1081b328b2425e1b7f77f17ecc79",
+      "historical": "Vendor/SwiftTerm/Sources/SwiftTerm/KittyGraphics.swift",
+      "historicalLines": [
+        1756,
+        1764
+      ],
+      "mode": "exact",
+      "origin": "vendor",
+      "rationale": "Exhaustive payload-enum size projection only; it contains no protocol parser, storage, or placement algorithm.",
+      "tokenCount": 33
+    },
+    {
+      "active": "Core/Sources/CmdyPTY/LocalProcess.swift",
+      "activeLines": [
+        6,
+        10
+      ],
+      "classificationId": "vendor-pty-delegate-declaration",
+      "disposition": "api-declaration",
+      "fingerprint": "4d5b9fd9470bfee1381a14d2e33389a335c6b0f500c29746dcb63f704111c5ae",
+      "historical": "Vendor/SwiftTerm/Sources/SwiftTerm/LocalProcess.swift",
+      "historicalLines": [
+        19,
+        30
+      ],
+      "mode": "exact",
+      "origin": "vendor",
+      "rationale": "Compatibility delegate method signatures only.",
+      "tokenCount": 36
+    },
+    {
+      "active": "Core/Sources/CmdyPTY/LocalProcess.swift",
+      "activeLines": [
+        297,
+        305
+      ],
+      "classificationId": "vendor-pty-start-signature",
+      "disposition": "api-declaration",
+      "fingerprint": "5451a8a8cf70487951aa9da0bfa3de57573a2f9ed0855ff61a7cd6ba43e941d4",
+      "historical": "Vendor/SwiftTerm/Sources/SwiftTerm/Mac/MacLocalTerminalView.swift",
+      "historicalLines": [
+        151,
+        162
+      ],
+      "mode": "exact",
+      "origin": "vendor",
+      "rationale": "Public process-launch signature and defaults only; the PTY implementation is outside the match.",
+      "tokenCount": 44
+    },
+    {
+      "active": "Core/Sources/CmdyPTY/Pty.swift",
+      "activeLines": [
+        9,
+        15
+      ],
+      "classificationId": "vendor-pty-fork-signature",
+      "disposition": "api-declaration",
+      "fingerprint": "53d10891616754264d96b10acb9c23fafee79551b7f0b48f6ca67150a5384bf1",
+      "historical": "Vendor/SwiftTerm/Sources/SwiftTerm/Pty.swift",
+      "historicalLines": [
+        60,
+        61
+      ],
+      "mode": "exact",
+      "origin": "vendor",
+      "rationale": "Public PTY fork signature and return tuple only; no fork or descriptor-management mechanics are covered.",
+      "tokenCount": 45
+    },
+    {
+      "active": "Kit/Sources/CmdyKit/KeybindingImport.swift",
+      "activeLines": [
+        261,
+        280
+      ],
+      "classificationId": "vendor-kit-keybinding-list-structural-collision",
+      "disposition": "non-substantive-structural-collision",
+      "fingerprint": "18e5303264907480bc41ce65fb085a02f6c5541f3ac9064ad64cbfdb21f2e819",
+      "historical": "Vendor/SwiftTerm/Tests/SwiftTermTests/SwiftTermTests.swift",
+      "historicalLines": [
+        97,
+        181
+      ],
+      "mode": "structural",
+      "origin": "vendor",
+      "rationale": "Identifier normalization makes cmdy's native shortcut-descriptor accumulator resemble an unrelated Vendor conformance-test name list; literals and behavior differ.",
+      "tokenCount": 165
+    },
+    {
+      "active": "Kit/Sources/CmdyKit/Preferences.swift",
+      "activeLines": [
+        348,
+        365
+      ],
+      "classificationId": "vendor-kit-shader-list-structural-collision",
+      "disposition": "non-substantive-structural-collision",
+      "fingerprint": "c01b4862cae77215e00a401284a77b45f0d921fa6dd971247ebf818b97833472",
+      "historical": "Vendor/SwiftTerm/Tests/SwiftTermTests/SwiftTermTests.swift",
+      "historicalLines": [
+        97,
+        157
+      ],
+      "mode": "structural",
+      "origin": "vendor",
+      "rationale": "Identifier normalization makes cmdy's shader-name array resemble an unrelated Vendor conformance-test name array; literals and domains differ.",
+      "tokenCount": 141
+    },
+    {
+      "active": "Kit/Sources/CmdyKit/Preferences.swift",
+      "activeLines": [
+        474,
+        479
+      ],
+      "classificationId": "vendor-kit-cursor-style-projection",
+      "disposition": "data-plumbing",
+      "fingerprint": "11c57e998f0f0892e1019450f1acaeaf0ee1e5ecd45d63b79db8786eef658b4c",
+      "historical": "Vendor/SwiftTerm/Sources/SwiftTerm/TerminalOptions.swift",
+      "historicalLines": [
+        25,
+        36
+      ],
+      "mode": "exact",
+      "origin": "vendor",
+      "rationale": "One-to-one projection of the six public DECSCUSR cursor-style names into cmdy's seam enum.",
+      "tokenCount": 33
+    },
+    {
+      "active": "Kit/Sources/CmdyKit/TerminalCoreProtocols.swift",
+      "activeLines": [
+        63,
+        67
+      ],
+      "classificationId": "vendor-kit-term-color-initializer",
+      "disposition": "data-plumbing",
+      "fingerprint": "d260605650e4e595a45e4452bf36052439f210c26de178801a089f09c8362b98",
+      "historical": "Vendor/SwiftTerm/Sources/SwiftTerm/Colors.swift",
+      "historicalLines": [
+        322,
+        327
+      ],
+      "mode": "exact",
+      "origin": "vendor",
+      "rationale": "Public 16-bit RGB memberwise initializer and direct field assignments only.",
+      "tokenCount": 32
+    },
+    {
+      "active": "Kit/Sources/CmdyKit/TerminalCoreProtocols.swift",
+      "activeLines": [
+        76,
+        81
+      ],
+      "classificationId": "vendor-kit-search-options-value",
+      "disposition": "api-declaration",
+      "fingerprint": "00a200acff8bbf6f8a500ba8660c77a26234c04b701de081475c794277e410a2",
+      "historical": "Vendor/SwiftTerm/Sources/SwiftTerm/SearchOptions.swift",
+      "historicalLines": [
+        20,
+        25
+      ],
+      "mode": "exact",
+      "origin": "vendor",
+      "rationale": "Public search-option fields, defaults, and memberwise initializer forming the preserved terminal search boundary.",
+      "tokenCount": 39
+    },
+    {
+      "active": "Renderer/Sources/CmdyGPU/BuiltInEffectShaders.swift",
+      "activeLines": [
+        191,
+        197
+      ],
+      "classificationId": "vendor-metal-premultiplied-blend",
+      "disposition": "standard-platform-mechanics",
+      "fingerprint": "8958a0f876aaf0777faaafb4f232d8c35e2d71434ebec977180d5c1a61d48574",
+      "historical": "Vendor/SwiftTerm/Sources/SwiftTerm/Apple/Metal/MetalTerminalRenderer.swift",
+      "historicalLines": [
+        2580,
+        2586
+      ],
+      "mode": "exact",
+      "origin": "vendor",
+      "rationale": "Canonical Metal premultiplied-alpha blend descriptor fields.",
+      "tokenCount": 41
+    },
+    {
+      "active": "Renderer/Sources/CmdyGPU/MetalCore.swift",
+      "activeLines": [
+        6,
+        21
+      ],
+      "classificationId": "vendor-metal-error-cases",
+      "disposition": "api-declaration",
+      "fingerprint": "8b554a850d4eceaaf2f1355ead1aca8f62c7716e8789fe279c6cd79d24492d19",
+      "historical": "Vendor/SwiftTerm/Sources/SwiftTerm/Apple/Metal/MetalError.swift",
+      "historicalLines": [
+        9,
+        24
+      ],
+      "mode": "exact",
+      "origin": "vendor",
+      "rationale": "Renderer error enum declaration and case names only.",
+      "tokenCount": 51
+    },
+    {
+      "active": "Renderer/Sources/CmdyGPU/MetalTerminalRenderer.swift",
+      "activeLines": [
+        1875,
+        1880
+      ],
+      "classificationId": "vendor-atlas-entry-copy",
+      "disposition": "data-plumbing",
+      "fingerprint": "9e156b4ba645302ac3712e406fe8db5b48ebdc1d20252fb52f323ba6c3482160",
+      "historical": "Vendor/SwiftTerm/Sources/SwiftTerm/Apple/Metal/MetalTerminalRenderer.swift",
+      "historicalLines": [
+        1417,
+        1422
+      ],
+      "mode": "exact",
+      "origin": "vendor",
+      "rationale": "Copies an already-created bitmap's dimensions, bearing, color flag, and atlas region into a cache entry.",
+      "tokenCount": 41
+    },
+    {
+      "active": "Renderer/Sources/CmdyGPU/ProceduralGlyphs.swift",
+      "activeLines": [
+        281,
+        287
+      ],
+      "classificationId": "vendor-box-draw-entrypoint",
+      "disposition": "api-declaration",
+      "fingerprint": "6f9d33003890a52004bbe36a1a516500da4b236b3df97774bf1b41d51f13a316",
+      "historical": "Vendor/SwiftTerm/Sources/SwiftTerm/Apple/BoxDrawingRenderer.swift",
+      "historicalLines": [
+        80,
+        86
+      ],
+      "mode": "exact",
+      "origin": "vendor",
+      "rationale": "Public box-drawing entrypoint signature only; the independently rewritten glyph construction is outside the match.",
+      "tokenCount": 34
+    },
+    {
+      "active": "App/CmdyCoreAdapter.swift",
+      "activeLines": [
+        7,
+        22
+      ],
+      "classificationId": "retired-app-cursor-style-adapter",
+      "disposition": "data-plumbing",
+      "fingerprint": "5996f85b36438dede7189b55ff7ac554217cee2c68ce55591e696d3b1955f520",
+      "historical": "App/TermiteCoreAdapter.swift",
+      "historicalLines": [
+        7,
+        22
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "One-to-one public cursor-style enum conversion at the App/Core seam.",
+      "tokenCount": 85
+    },
+    {
+      "active": "App/CmdySnapshotShaper.swift",
+      "activeLines": [
+        117,
+        124
+      ],
+      "classificationId": "retired-app-snapshot-field-plumbing",
+      "disposition": "data-plumbing",
+      "fingerprint": "9177ba42c5c8ce7cd0681a950a8d293518907263c201c88aebcd45e350781f21",
+      "historical": "App/TermiteCoreShaping.swift",
+      "historicalLines": [
+        88,
+        94
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Field projection for placeholder cells, cursor-cell lookup, and the App image wrapper; no shaping or decoding algorithm is covered.",
+      "tokenCount": 48
+    },
+    {
+      "active": "App/CmdySnapshotShaper.swift",
+      "activeLines": [
+        176,
+        180
+      ],
+      "classificationId": "retired-app-snapshot-field-plumbing",
+      "disposition": "data-plumbing",
+      "fingerprint": "cc5d7b8aee05ed8bca131e0b1e8723de2cca7810ae8c55bed10bb73d4b264403",
+      "historical": "App/TermiteCoreShaping.swift",
+      "historicalLines": [
+        215,
+        217
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Field projection for placeholder cells, cursor-cell lookup, and the App image wrapper; no shaping or decoding algorithm is covered.",
+      "tokenCount": 41
+    },
+    {
+      "active": "App/CmdySnapshotShaper.swift",
+      "activeLines": [
+        524,
+        538
+      ],
+      "classificationId": "retired-app-snapshot-field-plumbing",
+      "disposition": "data-plumbing",
+      "fingerprint": "31536c703b11f5670d7253f40b8def7bc345c77af45a0d35cfb90005f4cfca20",
+      "historical": "App/TermiteCoreShaping.swift",
+      "historicalLines": [
+        399,
+        413
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Field projection for placeholder cells, cursor-cell lookup, and the App image wrapper; no shaping or decoding algorithm is covered.",
+      "tokenCount": 50
+    },
+    {
+      "active": "App/CmdySnapshotShaper.swift",
+      "activeLines": [
+        539,
+        546
+      ],
+      "classificationId": "retired-app-snapshot-field-plumbing",
+      "disposition": "data-plumbing",
+      "fingerprint": "03a19dfe533081e3afb09f58d38a506e12b403ec50d993085eb81c8acc7d1251",
+      "historical": "App/TermiteCoreShaping.swift",
+      "historicalLines": [
+        432,
+        439
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Field projection for placeholder cells, cursor-cell lookup, and the App image wrapper; no shaping or decoding algorithm is covered.",
+      "tokenCount": 40
+    },
+    {
+      "active": "App/CmdyTerminalSurface.swift",
+      "activeLines": [
+        35,
+        50
+      ],
+      "classificationId": "retired-app-surface-callback-fields",
+      "disposition": "api-declaration",
+      "fingerprint": "822cc7da38149e62b26004403cd1ca9f532ffad829013bd3b93e0c2c7b3b7c51",
+      "historical": "App/TermiteCoreSurface.swift",
+      "historicalLines": [
+        24,
+        41
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Stored callback declarations forming the application seam.",
+      "tokenCount": 160
+    },
+    {
+      "active": "App/CmdyTerminalSurface.swift",
+      "activeLines": [
+        306,
+        315
+      ],
+      "classificationId": "retired-app-surface-feed-forwarding",
+      "disposition": "data-plumbing",
+      "fingerprint": "b41cf00143911d131fdb4cb389e373bfcaa88fea64b28431ffffdd3fea80553c",
+      "historical": "App/TermiteCoreSurface.swift",
+      "historicalLines": [
+        378,
+        387
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Thin send/feed forwarding methods and palette installation entrypoint.",
+      "tokenCount": 35
+    },
+    {
+      "active": "App/CmdyTerminalSurface.swift",
+      "activeLines": [
+        375,
+        381
+      ],
+      "classificationId": "retired-app-surface-renderer-options",
+      "disposition": "data-plumbing",
+      "fingerprint": "92c4fd27cf7f1fc15a702a832b35414fc7d3d08c5c29ef0d3c7b936b8c358ec0",
+      "historical": "App/TermiteCoreSurface.swift",
+      "historicalLines": [
+        419,
+        425
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Copies user-facing renderer options into renderer properties.",
+      "tokenCount": 45
+    },
+    {
+      "active": "App/CmdyTerminalSurface.swift",
+      "activeLines": [
+        687,
+        698
+      ],
+      "classificationId": "retired-app-standard-pasteboard-actions",
+      "disposition": "standard-platform-mechanics",
+      "fingerprint": "9328afd40e6d9a8dbf24c04664ac88048d4989070e2b6271f81969fa2f309d28",
+      "historical": "App/TermiteCoreSurface.swift",
+      "historicalLines": [
+        725,
+        736
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Standard AppKit pasteboard copy and select-all action mechanics.",
+      "tokenCount": 68
+    },
+    {
+      "active": "App/CmdyTerminalSurface.swift",
+      "activeLines": [
+        918,
+        927
+      ],
+      "classificationId": "retired-app-process-forwarding",
+      "disposition": "data-plumbing",
+      "fingerprint": "d8a75dcbb517603c6cccd14227eb39466bae830bc28d23ff802b7141d2c1c47b",
+      "historical": "App/TermiteCoreSurface.swift",
+      "historicalLines": [
+        542,
+        552
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Thin process-start forwarding signature and arguments.",
+      "tokenCount": 53
+    },
+    {
+      "active": "App/CmdyTerminalSurface.swift",
+      "activeLines": [
+        1467,
+        1492
+      ],
+      "classificationId": "retired-app-observer-platform-forwarding",
+      "disposition": "data-plumbing",
+      "fingerprint": "8dc9636931578ac46907de6800900ab81557830fdfba74bd696379ce738c83b1",
+      "historical": "App/TermiteCoreSurface.swift",
+      "historicalLines": [
+        1289,
+        1309
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Observer callbacks forward title, directory, bell, notification, and clipboard values to AppKit or stored callbacks.",
+      "tokenCount": 101
+    },
+    {
+      "active": "App/CmdyTerminalSurface.swift",
+      "activeLines": [
+        1496,
+        1509
+      ],
+      "classificationId": "retired-app-observer-process-forwarding",
+      "disposition": "data-plumbing",
+      "fingerprint": "f6275fdd3b5d9a0950ac817767131ca459a5116746863bbf8e1261f7dd0fc1f9",
+      "historical": "App/TermiteCoreSurface.swift",
+      "historicalLines": [
+        1314,
+        1325
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Observer callbacks forward output and process termination and consume a stored dirty-row range.",
+      "tokenCount": 59
+    },
+    {
+      "active": "App/CmdyTerminalSurface.swift",
+      "activeLines": [
+        1515,
+        1528
+      ],
+      "classificationId": "retired-app-render-grid-projection",
+      "disposition": "data-plumbing",
+      "fingerprint": "d9d4a84848251e1ccbcad4ec19396051a406a5fb802ed1bfb72be06de5ad1f53",
+      "historical": "App/TermiteCoreShaping.swift",
+      "historicalLines": [
+        10,
+        24
+      ],
+      "mode": "structural",
+      "origin": "retired",
+      "rationale": "Projects a captured Core grid's public fields into the renderer seam; the identifier-normalized match contains no rendering algorithm.",
+      "tokenCount": 80
+    },
+    {
+      "active": "App/CmdyTerminalSurface.swift",
+      "activeLines": [
+        1560,
+        1571
+      ],
+      "classificationId": "retired-app-kitty-render-projection",
+      "disposition": "data-plumbing",
+      "fingerprint": "366dfebac23da485f992216b0045c384846049673f0638e7d3f880280439c934",
+      "historical": "App/TermiteCoreShaping.swift",
+      "historicalLines": [
+        327,
+        341
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Projects Kitty snapshot fields and cursor-style enum cases into renderer-facing value types.",
+      "tokenCount": 53
+    },
+    {
+      "active": "App/CmdyTerminalSurface.swift",
+      "activeLines": [
+        1579,
+        1598
+      ],
+      "classificationId": "retired-app-kitty-render-projection",
+      "disposition": "data-plumbing",
+      "fingerprint": "f6e18077b30dcc7438accefd60c7a0ceee934597b335ca0ca6dd9a679569b60f",
+      "historical": "App/TermiteCoreShaping.swift",
+      "historicalLines": [
+        344,
+        363
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Projects Kitty snapshot fields and cursor-style enum cases into renderer-facing value types.",
+      "tokenCount": 117
+    },
+    {
+      "active": "App/CmdyTerminalSurface.swift",
+      "activeLines": [
+        1627,
+        1635
+      ],
+      "classificationId": "retired-app-kitty-render-projection",
+      "disposition": "data-plumbing",
+      "fingerprint": "08db2672134f3bc6bf679f877bf894dbc734c82a2b24a28a915d5d082e328540",
+      "historical": "App/TermiteCoreShaping.swift",
+      "historicalLines": [
+        29,
+        37
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Projects Kitty snapshot fields and cursor-style enum cases into renderer-facing value types.",
+      "tokenCount": 45
+    },
+    {
+      "active": "App/IconGenerator.swift",
+      "activeLines": [
+        8,
+        9
+      ],
+      "classificationId": "retired-app-standard-color-construction",
+      "disposition": "standard-platform-mechanics",
+      "fingerprint": "2a5df319469e9a36c9874c61148cad58079be93c90a44cbd6f7db49d6c2b1e98",
+      "historical": "App/TermiteCoreShaping.swift",
+      "historicalLines": [
+        241,
+        243
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Canonical AppKit conversion from integer RGB channels to an opaque sRGB NSColor.",
+      "tokenCount": 34
+    },
+    {
+      "active": "App/TerminalModel.swift",
+      "activeLines": [
+        349,
+        358
+      ],
+      "classificationId": "retired-app-model-cursor-style-projection",
+      "disposition": "data-plumbing",
+      "fingerprint": "22983616c87c7f325c50152ce129a261418fbbc774a9c3b41f2637715d04420d",
+      "historical": "App/TermiteCoreAdapter.swift",
+      "historicalLines": [
+        10,
+        19
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "One-to-one cursor-style enum conversion and forwarding through the model queue.",
+      "tokenCount": 57
+    },
+    {
+      "active": "App/TerminalWindowController.swift",
+      "activeLines": [
+        1424,
+        1434
+      ],
+      "classificationId": "retired-app-toolbar-list-structural-collision",
+      "disposition": "non-substantive-structural-collision",
+      "fingerprint": "3252a45dad9ca834d7c854ab09f12ca98c9c93f21aeb1ff84b6045ab11c72343",
+      "historical": "Core/Sources/TermiteCore/UnicodeWidth.swift",
+      "historicalLines": [
+        355,
+        359
+      ],
+      "mode": "structural",
+      "origin": "retired",
+      "rationale": "Normalization makes a toolbar-identifier array resemble part of an unrelated UTF-8 decoder table; the source values and behavior do not match.",
+      "tokenCount": 86
+    },
+    {
+      "active": "Core/Sources/CmdyCore/Blocks.swift",
+      "activeLines": [
+        1,
+        118
+      ],
+      "classificationId": "retained-cmdy-blocks",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "779ac4cb3dba8984751fcaf7604e4d16b4485105793751335bfbf199cfb3303d",
+      "historical": "Core/Sources/TermiteCore/Blocks.swift",
+      "historicalLines": [
+        1,
+        118
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy engine source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 668
+    },
+    {
+      "active": "Core/Sources/CmdyCore/Cell.swift",
+      "activeLines": [
+        1,
+        112
+      ],
+      "classificationId": "retained-cmdy-cell",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "cadd7a405db7ff5c89a725cd726279aafb10f2dbb630fefa0088c82b2f2cf0e6",
+      "historical": "Core/Sources/TermiteCore/Cell.swift",
+      "historicalLines": [
+        1,
+        112
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy engine source; its separate Vendor declaration match is classified explicitly.",
+      "tokenCount": 546
+    },
+    {
+      "active": "Core/Sources/CmdyCore/CmdyTerminal.swift",
+      "activeLines": [
+        1,
+        41
+      ],
+      "classificationId": "retained-cmdy-terminal",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "8bfa0980ff8ceaf1ddc5018737b72bba06d464d102b5899d34d6306c6918a4bf",
+      "historical": "Core/Sources/TermiteCore/TermiteTerminal.swift",
+      "historicalLines": [
+        1,
+        41
+      ],
+      "mode": "structural",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy engine source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 186
+    },
+    {
+      "active": "Core/Sources/CmdyCore/CmdyTerminal.swift",
+      "activeLines": [
+        53,
+        117
+      ],
+      "classificationId": "retained-cmdy-terminal",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "6d80fcae35d1cd47aa8d5c9f234bb59349b48730290c4a731c1396b69d407e3e",
+      "historical": "Core/Sources/TermiteCore/TermiteTerminal.swift",
+      "historicalLines": [
+        42,
+        106
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy engine source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 403
+    },
+    {
+      "active": "Core/Sources/CmdyCore/CmdyTerminal.swift",
+      "activeLines": [
+        133,
+        272
+      ],
+      "classificationId": "retained-cmdy-terminal",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "c4a31024db99e760ac09a73a1c5d65cc74af675e2c126a2d5b5a4f9d7be51d91",
+      "historical": "Core/Sources/TermiteCore/TermiteTerminal.swift",
+      "historicalLines": [
+        109,
+        252
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy engine source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 756
+    },
+    {
+      "active": "Core/Sources/CmdyCore/CmdyTerminal.swift",
+      "activeLines": [
+        274,
+        354
+      ],
+      "classificationId": "retained-cmdy-terminal",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "519008e634805469ce7c486165041df03e485ed32f724890ae1aeafd78b71459",
+      "historical": "Core/Sources/TermiteCore/TermiteTerminal.swift",
+      "historicalLines": [
+        246,
+        326
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy engine source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 423
+    },
+    {
+      "active": "Core/Sources/CmdyCore/CmdyTerminal.swift",
+      "activeLines": [
+        379,
+        392
+      ],
+      "classificationId": "retained-cmdy-terminal",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "33a6b9e093d5f818def70362d910bc0b2adec1a22d3d4e907717cc439ac54c2a",
+      "historical": "Core/Sources/TermiteCore/TermiteTerminal.swift",
+      "historicalLines": [
+        332,
+        345
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy engine source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 134
+    },
+    {
+      "active": "Core/Sources/CmdyCore/CmdyTerminal.swift",
+      "activeLines": [
+        431,
+        449
+      ],
+      "classificationId": "retained-cmdy-terminal",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "ef74e082e50b248138fba0a179ce301ab679bd3abf48794f9611c88f006008b2",
+      "historical": "Core/Sources/TermiteCore/TermiteTerminal.swift",
+      "historicalLines": [
+        354,
+        372
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy engine source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 131
+    },
+    {
+      "active": "Core/Sources/CmdyCore/CmdyTerminal.swift",
+      "activeLines": [
+        476,
+        525
+      ],
+      "classificationId": "retained-cmdy-terminal",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "9f6ffa762d5133c0142b18c80ac2592c0f41f0f598e24ea02b7dae59a1e7c5a7",
+      "historical": "Core/Sources/TermiteCore/TermiteTerminal.swift",
+      "historicalLines": [
+        379,
+        427
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy engine source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 322
+    },
+    {
+      "active": "Core/Sources/CmdyCore/CmdyTerminal.swift",
+      "activeLines": [
+        528,
+        535
+      ],
+      "classificationId": "retained-cmdy-terminal",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "053b921fa38e6e2f44018d56e8aed66d48d006b894ffa183a7ddfd5a20ded6ff",
+      "historical": "Core/Sources/TermiteCore/TermiteTerminal.swift",
+      "historicalLines": [
+        428,
+        435
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy engine source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 82
+    },
+    {
+      "active": "Core/Sources/CmdyCore/CmdyTerminal.swift",
+      "activeLines": [
+        544,
+        653
+      ],
+      "classificationId": "retained-cmdy-terminal",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "a0ff5c482ec80ac5b23f5e14a8726e069105f3839a4c57cba068539674536515",
+      "historical": "Core/Sources/TermiteCore/TermiteTerminal.swift",
+      "historicalLines": [
+        435,
+        544
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy engine source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 656
+    },
+    {
+      "active": "Core/Sources/CmdyCore/CmdyTerminal.swift",
+      "activeLines": [
+        1123,
+        1134
+      ],
+      "classificationId": "retained-cmdy-terminal",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "3ae1e89f4f08849d381373f25d66d266d1bd6c2a9461ca83797835f6a9dc53c9",
+      "historical": "Core/Sources/TermiteCore/TermiteTerminal.swift",
+      "historicalLines": [
+        546,
+        557
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy engine source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 38
+    },
+    {
+      "active": "Core/Sources/CmdyCore/CmdyTerminal.swift",
+      "activeLines": [
+        2694,
+        2704
+      ],
+      "classificationId": "retained-cmdy-terminal",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "08d3aa6edb691d0b531eed3cb14e0e27bca576636cca7209783187c81f68d63d",
+      "historical": "Core/Sources/TermiteCore/TermiteTerminal.swift",
+      "historicalLines": [
+        677,
+        680
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy engine source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 36
+    },
+    {
+      "active": "Core/Sources/CmdyCore/CmdyTerminal.swift",
+      "activeLines": [
+        4006,
+        4039
+      ],
+      "classificationId": "retained-cmdy-terminal",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "feaee05d07f801dca08cb33b543f2a141dd376fdce87b300f3f145b5d2d10165",
+      "historical": "Core/Sources/TermiteCore/TermiteTerminal.swift",
+      "historicalLines": [
+        873,
+        907
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy engine source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 103
+    },
+    {
+      "active": "Core/Sources/CmdyCore/CmdyTerminal.swift",
+      "activeLines": [
+        4039,
+        4169
+      ],
+      "classificationId": "retained-cmdy-terminal",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "7bc9b3316e3bcc3ed1cbddf33b3af78f911647aebd2821918bf6b12168e2aa5a",
+      "historical": "Core/Sources/TermiteCore/TermiteTerminal.swift",
+      "historicalLines": [
+        907,
+        1037
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy engine source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 568
+    },
+    {
+      "active": "Core/Sources/CmdyCore/CmdyTerminal.swift",
+      "activeLines": [
+        4169,
+        4261
+      ],
+      "classificationId": "retained-cmdy-terminal",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "fac83729cc50458a95f4613dad4b63a974aeefb3c261283b3cbe9fe3e1cc3755",
+      "historical": "Core/Sources/TermiteCore/TermiteTerminal.swift",
+      "historicalLines": [
+        1037,
+        1129
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy engine source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 525
+    },
+    {
+      "active": "Core/Sources/CmdyCore/KittyUnicodePlaceholder.swift",
+      "activeLines": [
+        2,
+        19
+      ],
+      "classificationId": "retained-cmdy-kitty-placeholder",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "68b4632d8617e0ee843c3749d0358d606f154cea5d87a3da40552a2a0b6c7895",
+      "historical": "Core/Sources/TermiteCore/KittyUnicodePlaceholder.swift",
+      "historicalLines": [
+        2,
+        16
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned Cmdy placeholder API scaffolding; the official Kitty diacritic table is classified explicitly against Vendor.",
+      "tokenCount": 57
+    },
+    {
+      "active": "Core/Sources/CmdyCore/KittyUnicodePlaceholder.swift",
+      "activeLines": [
+        158,
+        161
+      ],
+      "classificationId": "retained-cmdy-kitty-placeholder",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "914afb5e12c9ae28032dfab05dcab4cbee24006e1de17c6721b6599047727c42",
+      "historical": "Core/Sources/TermiteCore/KittyUnicodePlaceholder.swift",
+      "historicalLines": [
+        78,
+        81
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned Cmdy placeholder API scaffolding; the official Kitty diacritic table is classified explicitly against Vendor.",
+      "tokenCount": 42
+    },
+    {
+      "active": "Core/Sources/CmdyCore/Line.swift",
+      "activeLines": [
+        1,
+        286
+      ],
+      "classificationId": "retained-cmdy-line",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "f4a295b9677b237bcf6c86dfd818201f379a4b6e6a605ce76994aa38f580e361",
+      "historical": "Core/Sources/TermiteCore/Line.swift",
+      "historicalLines": [
+        1,
+        286
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy engine source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 1530
+    },
+    {
+      "active": "Core/Sources/CmdyCore/Line.swift",
+      "activeLines": [
+        304,
+        309
+      ],
+      "classificationId": "retained-cmdy-line",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "a8a0b87c02dd3ded93d5cf0a903653dcdc6a7f331e8e24acd077b1a54be0880c",
+      "historical": "Core/Sources/TermiteCore/Line.swift",
+      "historicalLines": [
+        300,
+        305
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy engine source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 41
+    },
+    {
+      "active": "Core/Sources/CmdyCore/Line.swift",
+      "activeLines": [
+        323,
+        409
+      ],
+      "classificationId": "retained-cmdy-line",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "4b04eb9995d8c0213a9afdc6a6b709b6764d68d7d01ca603b35065cb30f37470",
+      "historical": "Core/Sources/TermiteCore/Line.swift",
+      "historicalLines": [
+        318,
+        404
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy engine source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 477
+    },
+    {
+      "active": "Core/Sources/CmdyCore/Replay.swift",
+      "activeLines": [
+        1,
+        35
+      ],
+      "classificationId": "retained-cmdy-replay",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "53c07a011231da301c2e3acf184b1555652e94531029bb457987ba7e96c488bc",
+      "historical": "Core/Sources/TermiteCore/Replay.swift",
+      "historicalLines": [
+        1,
+        35
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy replay source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 138
+    },
+    {
+      "active": "Core/Sources/CmdyCore/Replay.swift",
+      "activeLines": [
+        35,
+        81
+      ],
+      "classificationId": "retained-cmdy-replay",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "45a71a4e79fe255cc0b9e0c5726e83b28ac8d1289b9f3037a8a973a0e998bc9e",
+      "historical": "Core/Sources/TermiteCore/Replay.swift",
+      "historicalLines": [
+        35,
+        78
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy replay source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 272
+    },
+    {
+      "active": "Core/Sources/CmdyCore/Replay.swift",
+      "activeLines": [
+        82,
+        118
+      ],
+      "classificationId": "retained-cmdy-replay",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "40a0234916b01f6e3014f34a6c34b6483dc491073b8e3e0bdadab809b5a3f412",
+      "historical": "Core/Sources/TermiteCore/Replay.swift",
+      "historicalLines": [
+        78,
+        113
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy replay source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 375
+    },
+    {
+      "active": "Core/Sources/CmdyCore/Replay.swift",
+      "activeLines": [
+        119,
+        135
+      ],
+      "classificationId": "retained-cmdy-replay",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "a46565d19ac41835b17f677ec6f01f1181a297e8ac9f95419e70fd9b8e13aef6",
+      "historical": "Core/Sources/TermiteCore/Replay.swift",
+      "historicalLines": [
+        114,
+        130
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy replay source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 126
+    },
+    {
+      "active": "Core/Sources/CmdyCore/ScreenBuffer.swift",
+      "activeLines": [
+        1,
+        179
+      ],
+      "classificationId": "retained-cmdy-screen-buffer",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "ea06916c27f8af4796dfceda577d962f90a5c5e624285993b7fe25378b7c5b1c",
+      "historical": "Core/Sources/TermiteCore/ScreenBuffer.swift",
+      "historicalLines": [
+        1,
+        179
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy screen-buffer source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 879
+    },
+    {
+      "active": "Core/Sources/CmdyCore/ScreenBuffer.swift",
+      "activeLines": [
+        190,
+        417
+      ],
+      "classificationId": "retained-cmdy-screen-buffer",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "3412a3ff13c2de95cca999c42e17bb4fbc9c81fd5139c0c8bec0850d9c5293ba",
+      "historical": "Core/Sources/TermiteCore/ScreenBuffer.swift",
+      "historicalLines": [
+        188,
+        416
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy screen-buffer source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 1209
+    },
+    {
+      "active": "Core/Sources/CmdyCore/SixelDecoder.swift",
+      "activeLines": [
+        1,
+        222
+      ],
+      "classificationId": "retained-cmdy-sixel",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "f64eb86eba5b79c3f3b19cd37afbf6282d1b2c3361267d58dc79d722c87d172d",
+      "historical": "Core/Sources/TermiteCore/SixelDecoder.swift",
+      "historicalLines": [
+        1,
+        222
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy sixel source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 1572
+    },
+    {
+      "active": "Core/Sources/CmdyCore/TerminalDispatch.swift",
+      "activeLines": [
+        6,
+        29
+      ],
+      "classificationId": "retained-cmdy-dispatch",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "c8f56738bb3313bb9176ea68cbfb31ad7a602ef2bed1bcd514ebb489717fe9ea",
+      "historical": "Core/Sources/TermiteCore/TerminalDispatch.swift",
+      "historicalLines": [
+        6,
+        29
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy dispatch source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 157
+    },
+    {
+      "active": "Core/Sources/CmdyCore/TerminalDispatch.swift",
+      "activeLines": [
+        38,
+        41
+      ],
+      "classificationId": "retained-cmdy-dispatch",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "c5e35ae325c93e209d808e9bcb880b395f63ff190a3734fe88aa7067d1c193ff",
+      "historical": "Core/Sources/TermiteCore/TerminalDispatch.swift",
+      "historicalLines": [
+        30,
+        32
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy dispatch source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 32
+    },
+    {
+      "active": "Core/Sources/CmdyCore/TerminalDispatch.swift",
+      "activeLines": [
+        49,
+        50
+      ],
+      "classificationId": "retained-cmdy-dispatch",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "176912787b0b89a24c0e753b98fb7ba613d000b98f01c4acb5370e8569c7f243",
+      "historical": "Core/Sources/TermiteCore/TerminalDispatch.swift",
+      "historicalLines": [
+        35,
+        36
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy dispatch source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 39
+    },
+    {
+      "active": "Core/Sources/CmdyCore/TerminalDispatch.swift",
+      "activeLines": [
+        60,
+        63
+      ],
+      "classificationId": "retained-cmdy-dispatch",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "6d48d62263ada9ba864be7f5edc7bbaca647f492c761603255c16a3c728d11a4",
+      "historical": "Core/Sources/TermiteCore/TerminalDispatch.swift",
+      "historicalLines": [
+        40,
+        41
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy dispatch source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 39
+    },
+    {
+      "active": "Core/Sources/CmdyCore/TerminalDispatch.swift",
+      "activeLines": [
+        68,
+        70
+      ],
+      "classificationId": "retained-cmdy-dispatch",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "0fda9b39b8fa8292a3f339ae1811bcc11094aa196adcd376496f2d2a09f64d35",
+      "historical": "Core/Sources/TermiteCore/TerminalDispatch.swift",
+      "historicalLines": [
+        43,
+        45
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy dispatch source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 52
+    },
+    {
+      "active": "Core/Sources/CmdyCore/TerminalDispatch.swift",
+      "activeLines": [
+        77,
+        79
+      ],
+      "classificationId": "retained-cmdy-dispatch",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "93c87a6f42dabf6347e0b081c0a846d4c2f8b229d368b1f39328af1e2d13d2f1",
+      "historical": "Core/Sources/TermiteCore/TerminalDispatch.swift",
+      "historicalLines": [
+        47,
+        49
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy dispatch source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 44
+    },
+    {
+      "active": "Core/Sources/CmdyCore/TerminalDispatch.swift",
+      "activeLines": [
+        82,
+        86
+      ],
+      "classificationId": "retained-cmdy-dispatch",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "b96f75e580bf061e2a72b7f7af459791aafc28af7e7be969325abfa60abf4ec6",
+      "historical": "Core/Sources/TermiteCore/TerminalDispatch.swift",
+      "historicalLines": [
+        148,
+        150
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy dispatch source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 48
+    },
+    {
+      "active": "Core/Sources/CmdyCore/TerminalDispatch.swift",
+      "activeLines": [
+        97,
+        107
+      ],
+      "classificationId": "retained-cmdy-dispatch",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "b410d574ca6c09ce3f9c209777b6a09edf4e182db20dbc04fcf337631a2304cb",
+      "historical": "Core/Sources/TermiteCore/TerminalDispatch.swift",
+      "historicalLines": [
+        62,
+        72
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy dispatch source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 159
+    },
+    {
+      "active": "Core/Sources/CmdyCore/TerminalDispatch.swift",
+      "activeLines": [
+        109,
+        110
+      ],
+      "classificationId": "retained-cmdy-dispatch",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "75df9b9c5b22a2ed1485cee663a8da8812c98e23926460d34d164bbcae00f57a",
+      "historical": "Core/Sources/TermiteCore/TerminalDispatch.swift",
+      "historicalLines": [
+        73,
+        74
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy dispatch source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 43
+    },
+    {
+      "active": "Core/Sources/CmdyCore/TerminalDispatch.swift",
+      "activeLines": [
+        117,
+        126
+      ],
+      "classificationId": "retained-cmdy-dispatch",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "b2047daffb4e8aebfc275608510d6f9ec0a7f00081a3b12e518e5ee51d2fc388",
+      "historical": "Core/Sources/TermiteCore/TerminalDispatch.swift",
+      "historicalLines": [
+        76,
+        85
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy dispatch source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 120
+    },
+    {
+      "active": "Core/Sources/CmdyCore/TerminalDispatch.swift",
+      "activeLines": [
+        215,
+        216
+      ],
+      "classificationId": "retained-cmdy-dispatch",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "775f8752e031d2d927569ae12e6f4acc57dc63e9295a76a0a4fb77b5edd11380",
+      "historical": "Core/Sources/TermiteCore/TerminalDispatch.swift",
+      "historicalLines": [
+        105,
+        106
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy dispatch source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 35
+    },
+    {
+      "active": "Core/Sources/CmdyCore/TerminalDispatch.swift",
+      "activeLines": [
+        224,
+        227
+      ],
+      "classificationId": "retained-cmdy-dispatch",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "1a10b9f4b3b87250718a32973cb6fc911c57b2d805e62a681672f875caaa3f6e",
+      "historical": "Core/Sources/TermiteCore/TerminalDispatch.swift",
+      "historicalLines": [
+        107,
+        108
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy dispatch source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 32
+    },
+    {
+      "active": "Core/Sources/CmdyCore/TerminalDispatch.swift",
+      "activeLines": [
+        230,
+        236
+      ],
+      "classificationId": "retained-cmdy-dispatch",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "7185f7fde080174e1b0541a3a1fe71c321e6bf34fbc3f8a762aba2d5267378b2",
+      "historical": "Core/Sources/TermiteCore/TerminalDispatch.swift",
+      "historicalLines": [
+        110,
+        116
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy dispatch source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 54
+    },
+    {
+      "active": "Core/Sources/CmdyCore/TerminalDispatch.swift",
+      "activeLines": [
+        245,
+        258
+      ],
+      "classificationId": "retained-cmdy-dispatch",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "1beb4aa00388c10854ebba647658de2cf2b896bb0b8080c97974e61246536469",
+      "historical": "Core/Sources/TermiteCore/TerminalDispatch.swift",
+      "historicalLines": [
+        121,
+        134
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy dispatch source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 145
+    },
+    {
+      "active": "Core/Sources/CmdyCore/TerminalDispatch.swift",
+      "activeLines": [
+        264,
+        274
+      ],
+      "classificationId": "retained-cmdy-dispatch",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "a881ae84165143ae6a3a4bffb0edce482e3ad5630b0e3c577a3e633edada8b14",
+      "historical": "Core/Sources/TermiteCore/TerminalDispatch.swift",
+      "historicalLines": [
+        136,
+        146
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy dispatch source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 120
+    },
+    {
+      "active": "Core/Sources/CmdyCore/TerminalDispatch.swift",
+      "activeLines": [
+        277,
+        340
+      ],
+      "classificationId": "retained-cmdy-dispatch",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "32f95f80c2ef50b86978e93c62523cc23b9ecba49aca78a6d4dcc8512b8475ad",
+      "historical": "Core/Sources/TermiteCore/TerminalDispatch.swift",
+      "historicalLines": [
+        147,
+        210
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy dispatch source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 475
+    },
+    {
+      "active": "Core/Sources/CmdyCore/TerminalDispatch.swift",
+      "activeLines": [
+        354,
+        373
+      ],
+      "classificationId": "retained-cmdy-dispatch",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "55fc0a28dbdeb4e97af3ddccf7aa4e0ce1690e243834410ec867a39fd7b34523",
+      "historical": "Core/Sources/TermiteCore/TerminalDispatch.swift",
+      "historicalLines": [
+        216,
+        235
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy dispatch source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 143
+    },
+    {
+      "active": "Core/Sources/CmdyCore/TerminalDispatch.swift",
+      "activeLines": [
+        1017,
+        1049
+      ],
+      "classificationId": "retained-cmdy-dispatch",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "71678180406133d02251a3cd18d12a481de8fa34d569a4d23f544aaf6cd2bfdf",
+      "historical": "Core/Sources/TermiteCore/TerminalDispatch.swift",
+      "historicalLines": [
+        361,
+        393
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy dispatch source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 234
+    },
+    {
+      "active": "Core/Sources/CmdyCore/TerminalDispatch.swift",
+      "activeLines": [
+        1052,
+        1094
+      ],
+      "classificationId": "retained-cmdy-dispatch",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "c64898d4f1d4103c71e84694c9514271598702264f6817b6f40c4f191bf8fbe4",
+      "historical": "Core/Sources/TermiteCore/TerminalDispatch.swift",
+      "historicalLines": [
+        394,
+        436
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy dispatch source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 331
+    },
+    {
+      "active": "Core/Sources/CmdyCore/TerminalDispatch.swift",
+      "activeLines": [
+        1102,
+        1165
+      ],
+      "classificationId": "retained-cmdy-dispatch",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "6ed24b078879cec37722168911a5ca44ed0272407db8cbd28c68d166f6e174c1",
+      "historical": "Core/Sources/TermiteCore/TerminalDispatch.swift",
+      "historicalLines": [
+        438,
+        501
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy dispatch source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 368
+    },
+    {
+      "active": "Core/Sources/CmdyCore/TerminalDispatch.swift",
+      "activeLines": [
+        1167,
+        1187
+      ],
+      "classificationId": "retained-cmdy-dispatch",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "9aa3c0ad5fd60bbedb31b2c9108f08510e753b2d190d0b77c90551515f8b2c2d",
+      "historical": "Core/Sources/TermiteCore/TerminalDispatch.swift",
+      "historicalLines": [
+        501,
+        521
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy dispatch source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 42
+    },
+    {
+      "active": "Core/Sources/CmdyCore/TerminalDispatch.swift",
+      "activeLines": [
+        1192,
+        1213
+      ],
+      "classificationId": "retained-cmdy-dispatch",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "173ec1b91ce5dabdd96b10f60c845ad85a4003484e9c9b1d136b010fac91cb7c",
+      "historical": "Core/Sources/TermiteCore/TerminalDispatch.swift",
+      "historicalLines": [
+        521,
+        542
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy dispatch source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 95
+    },
+    {
+      "active": "Core/Sources/CmdyCore/TerminalDispatch.swift",
+      "activeLines": [
+        1216,
+        1257
+      ],
+      "classificationId": "retained-cmdy-dispatch",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "67aa9d61af19d8ab272189ceffdd4ef88f8194573d077a8f8e85be5770845bde",
+      "historical": "Core/Sources/TermiteCore/TerminalDispatch.swift",
+      "historicalLines": [
+        543,
+        584
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy dispatch source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 147
+    },
+    {
+      "active": "Core/Sources/CmdyCore/TerminalGraphics.swift",
+      "activeLines": [
+        1,
+        47
+      ],
+      "classificationId": "retained-cmdy-graphics",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "36f79eb50762683afe98b7b9a4a55c0a8bdd08e4d737582f902c7cb68513e741",
+      "historical": "Core/Sources/TermiteCore/TerminalGraphics.swift",
+      "historicalLines": [
+        1,
+        47
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy graphics API and storage source; its separate Vendor declaration match is classified explicitly.",
+      "tokenCount": 253
+    },
+    {
+      "active": "Core/Sources/CmdyCore/TerminalGraphics.swift",
+      "activeLines": [
+        128,
+        137
+      ],
+      "classificationId": "retained-cmdy-graphics",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "d6c1434273dc1088bcca7eacacc1689e994b4a8dfea7116994970e3ff6850ced",
+      "historical": "Core/Sources/TermiteCore/TerminalGraphics.swift",
+      "historicalLines": [
+        97,
+        104
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy graphics API and storage source; its separate Vendor declaration match is classified explicitly.",
+      "tokenCount": 37
+    },
+    {
+      "active": "Core/Sources/CmdyCore/TerminalGraphics.swift",
+      "activeLines": [
+        139,
+        152
+      ],
+      "classificationId": "retained-cmdy-graphics",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "c0a351a4db14a033e10713872039565eadcd1f2fd8fe632b33ae9527b4f21303",
+      "historical": "Core/Sources/TermiteCore/TerminalGraphics.swift",
+      "historicalLines": [
+        102,
+        115
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy graphics API and storage source; its separate Vendor declaration match is classified explicitly.",
+      "tokenCount": 99
+    },
+    {
+      "active": "Core/Sources/CmdyCore/TerminalGraphics.swift",
+      "activeLines": [
+        166,
+        171
+      ],
+      "classificationId": "retained-cmdy-graphics",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "756edfa681eca7a64a8b5d0deeba6493b9559bf6f54989b650304624c2b8c141",
+      "historical": "Core/Sources/TermiteCore/TerminalGraphics.swift",
+      "historicalLines": [
+        129,
+        134
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy graphics API and storage source; its separate Vendor declaration match is classified explicitly.",
+      "tokenCount": 43
+    },
+    {
+      "active": "Core/Sources/CmdyCore/TerminalGraphics.swift",
+      "activeLines": [
+        205,
+        212
+      ],
+      "classificationId": "retained-cmdy-graphics",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "6ea37bfa2a0c5b948d6bba5965af1309dfcade458860c06d1069491acf562c48",
+      "historical": "Core/Sources/TermiteCore/TerminalGraphics.swift",
+      "historicalLines": [
+        141,
+        148
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy graphics API and storage source; its separate Vendor declaration match is classified explicitly.",
+      "tokenCount": 35
+    },
+    {
+      "active": "Core/Sources/CmdyCore/TerminalGraphics.swift",
+      "activeLines": [
+        651,
+        659
+      ],
+      "classificationId": "retained-cmdy-graphics",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "7ced3ea2f7cf409f7ff66a22746b3bc070f6af7cf01e2422d3fe024596529e88",
+      "historical": "Core/Sources/TermiteCore/TerminalGraphics.swift",
+      "historicalLines": [
+        311,
+        317
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy graphics API and storage source; its separate Vendor declaration match is classified explicitly.",
+      "tokenCount": 41
+    },
+    {
+      "active": "Core/Sources/CmdyCore/TerminalGraphics.swift",
+      "activeLines": [
+        695,
+        702
+      ],
+      "classificationId": "retained-cmdy-graphics",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "8d107c961281f9313a9ff6a075ae93f534d30ba1a36f1bb8c412d0c8ee2e4936",
+      "historical": "Core/Sources/TermiteCore/TerminalGraphics.swift",
+      "historicalLines": [
+        346,
+        352
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy graphics API and storage source; its separate Vendor declaration match is classified explicitly.",
+      "tokenCount": 45
+    },
+    {
+      "active": "Core/Sources/CmdyCore/TerminalGraphics.swift",
+      "activeLines": [
+        825,
+        917
+      ],
+      "classificationId": "retained-cmdy-graphics",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "c91b05e2d57d190b0f712d95d361cfe10539dcec686824c74da8c09f369c16f2",
+      "historical": "Core/Sources/TermiteCore/TerminalGraphics.swift",
+      "historicalLines": [
+        387,
+        479
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy graphics API and storage source; its separate Vendor declaration match is classified explicitly.",
+      "tokenCount": 582
+    },
+    {
+      "active": "Core/Sources/CmdyCore/TerminalGraphics.swift",
+      "activeLines": [
+        917,
+        992
+      ],
+      "classificationId": "retained-cmdy-graphics",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "83498cc6d7adc6c2aa4b8908199baa305d4ac4f64284e80e5566762dc6b8a28f",
+      "historical": "Core/Sources/TermiteCore/TerminalGraphics.swift",
+      "historicalLines": [
+        479,
+        554
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy graphics API and storage source; its separate Vendor declaration match is classified explicitly.",
+      "tokenCount": 531
+    },
+    {
+      "active": "Core/Sources/CmdyCore/TerminalModes.swift",
+      "activeLines": [
+        4,
+        222
+      ],
+      "classificationId": "retained-cmdy-modes",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "2cb837a5d5f13585fa2f75ec050b16039b86881dca1152d3a67aeda58e52a28a",
+      "historical": "Core/Sources/TermiteCore/TerminalModes.swift",
+      "historicalLines": [
+        4,
+        222
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy mode-state source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 1220
+    },
+    {
+      "active": "Core/Sources/CmdyCore/TerminalOSC.swift",
+      "activeLines": [
+        5,
+        146
+      ],
+      "classificationId": "retained-cmdy-osc",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "9fbedc84c38cd4ff545cbf45e77c3b9ba3e26078a5584520d42582b087f73f86",
+      "historical": "Core/Sources/TermiteCore/TerminalOSC.swift",
+      "historicalLines": [
+        5,
+        146
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy OSC source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 962
+    },
+    {
+      "active": "Core/Sources/CmdyCore/TerminalReflow.swift",
+      "activeLines": [
+        8,
+        12
+      ],
+      "classificationId": "retained-cmdy-reflow",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "0ee16e0c095b0df12daa45c6ffb8031739eb76007748290e1b5dad814b0324e9",
+      "historical": "Core/Sources/TermiteCore/TerminalReflow.swift",
+      "historicalLines": [
+        8,
+        12
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy reflow source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 34
+    },
+    {
+      "active": "Core/Sources/CmdyCore/TerminalReflow.swift",
+      "activeLines": [
+        26,
+        33
+      ],
+      "classificationId": "retained-cmdy-reflow",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "711a5cc603677201ee502b2c12298f4274d3e98811f6eaf0c8d6ac20494a20c8",
+      "historical": "Core/Sources/TermiteCore/TerminalReflow.swift",
+      "historicalLines": [
+        20,
+        27
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy reflow source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 34
+    },
+    {
+      "active": "Core/Sources/CmdyCore/TerminalReflow.swift",
+      "activeLines": [
+        57,
+        62
+      ],
+      "classificationId": "retained-cmdy-reflow",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "2ae1375a8d068c8c2ff15fc3045def540743bcc688f7b5c7bbd2d100da0f6229",
+      "historical": "Core/Sources/TermiteCore/TerminalReflow.swift",
+      "historicalLines": [
+        37,
+        42
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy reflow source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 44
+    },
+    {
+      "active": "Core/Sources/CmdyCore/TerminalReflow.swift",
+      "activeLines": [
+        125,
+        138
+      ],
+      "classificationId": "retained-cmdy-reflow",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "7d4988eda0e1f50ede8a25885a94ca22bd089e770f6ff2e128c0fd5fe0e0a921",
+      "historical": "Core/Sources/TermiteCore/TerminalReflow.swift",
+      "historicalLines": [
+        45,
+        58
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy reflow source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 95
+    },
+    {
+      "active": "Core/Sources/CmdyCore/TerminalReflow.swift",
+      "activeLines": [
+        140,
+        182
+      ],
+      "classificationId": "retained-cmdy-reflow",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "2d13c339a432d7d63ce7552056e4d4e3f6bf15b68af3bc9068a07aa63f20a6a6",
+      "historical": "Core/Sources/TermiteCore/TerminalReflow.swift",
+      "historicalLines": [
+        58,
+        99
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy reflow source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 297
+    },
+    {
+      "active": "Core/Sources/CmdyCore/TerminalReflow.swift",
+      "activeLines": [
+        192,
+        196
+      ],
+      "classificationId": "retained-cmdy-reflow",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "49885cfaad3ba0d87e7d089e004258f40a2dd141bdc421939af9e81ae1956c72",
+      "historical": "Core/Sources/TermiteCore/TerminalReflow.swift",
+      "historicalLines": [
+        172,
+        176
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy reflow source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 35
+    },
+    {
+      "active": "Core/Sources/CmdyCore/TerminalReflow.swift",
+      "activeLines": [
+        215,
+        221
+      ],
+      "classificationId": "retained-cmdy-reflow",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "676a416a7a0de9720b10ed08f0de10f24090431b31dd5300100c80d90af4eb49",
+      "historical": "Core/Sources/TermiteCore/TerminalReflow.swift",
+      "historicalLines": [
+        153,
+        159
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy reflow source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 57
+    },
+    {
+      "active": "Core/Sources/CmdyCore/TerminalReflow.swift",
+      "activeLines": [
+        245,
+        251
+      ],
+      "classificationId": "retained-cmdy-reflow",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "5f2759e4b2ecce41d53726312b191d3088ce09ab79ed83edb2bd3fd59c696d85",
+      "historical": "Core/Sources/TermiteCore/TerminalReflow.swift",
+      "historicalLines": [
+        101,
+        107
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy reflow source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 51
+    },
+    {
+      "active": "Core/Sources/CmdyCore/TerminalReflow.swift",
+      "activeLines": [
+        253,
+        288
+      ],
+      "classificationId": "retained-cmdy-reflow",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "da92ea81465d8188ffefb3eea35aca4a408600b214157489e4ab873f00c2d64c",
+      "historical": "Core/Sources/TermiteCore/TerminalReflow.swift",
+      "historicalLines": [
+        108,
+        143
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy reflow source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 244
+    },
+    {
+      "active": "Core/Sources/CmdyCore/TerminalReflow.swift",
+      "activeLines": [
+        307,
+        330
+      ],
+      "classificationId": "retained-cmdy-reflow",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "f054bd17d87936ae381bd8386a3d390051df297a4ea600a8fb190925b677ef9b",
+      "historical": "Core/Sources/TermiteCore/TerminalReflow.swift",
+      "historicalLines": [
+        148,
+        171
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy reflow source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 172
+    },
+    {
+      "active": "Core/Sources/CmdyCore/TerminalReflow.swift",
+      "activeLines": [
+        336,
+        351
+      ],
+      "classificationId": "retained-cmdy-reflow",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "38926e9af5e166918a375fd1ab2ed255119e52b241e0fe8b3dd10c25fc3de51a",
+      "historical": "Core/Sources/TermiteCore/TerminalReflow.swift",
+      "historicalLines": [
+        172,
+        181
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy reflow source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 62
+    },
+    {
+      "active": "Core/Sources/CmdyCore/TerminalReflow.swift",
+      "activeLines": [
+        386,
+        455
+      ],
+      "classificationId": "retained-cmdy-reflow",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "cb8a971a8ffe0d3732b24aa682639594315b2a7b8e087df7f2668cf29875a0b7",
+      "historical": "Core/Sources/TermiteCore/TerminalReflow.swift",
+      "historicalLines": [
+        196,
+        265
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy reflow source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 423
+    },
+    {
+      "active": "Core/Sources/CmdyCore/TerminalReflow.swift",
+      "activeLines": [
+        495,
+        499
+      ],
+      "classificationId": "retained-cmdy-reflow",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "b5801df3376b4d69b816fb294708cb02bbfc84a1c1d537cd9055c339089d386f",
+      "historical": "Core/Sources/TermiteCore/TerminalReflow.swift",
+      "historicalLines": [
+        269,
+        273
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy reflow source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 47
+    },
+    {
+      "active": "Core/Sources/CmdyCore/TerminalReflow.swift",
+      "activeLines": [
+        511,
+        532
+      ],
+      "classificationId": "retained-cmdy-reflow",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "32de2c38d0939bc31a9958298f69cf7b03233403cb0541057f39c40d119f3200",
+      "historical": "Core/Sources/TermiteCore/TerminalReflow.swift",
+      "historicalLines": [
+        274,
+        295
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy reflow source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 101
+    },
+    {
+      "active": "Core/Sources/CmdyCore/TerminalSGR.swift",
+      "activeLines": [
+        219,
+        224
+      ],
+      "classificationId": "retained-cmdy-sgr",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "a0d76330b6b865dad124fc8f8ffbd68dd76e1485d08ba94b1729526400020603",
+      "historical": "Core/Sources/TermiteCore/TerminalSGR.swift",
+      "historicalLines": [
+        39,
+        44
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned Cmdy SGR source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 33
+    },
+    {
+      "active": "Core/Sources/CmdyCore/TerminalSupport.swift",
+      "activeLines": [
+        1,
+        167
+      ],
+      "classificationId": "retained-cmdy-support",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "1361f4ea1f687bb080acce787c1174e8051abc99cae163bfafc52467da61c3e4",
+      "historical": "Core/Sources/TermiteCore/TerminalSupport.swift",
+      "historicalLines": [
+        1,
+        167
+      ],
+      "mode": "structural",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy support types; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 997
+    },
+    {
+      "active": "Core/Sources/CmdyCore/TerminalSupport.swift",
+      "activeLines": [
+        8,
+        39
+      ],
+      "classificationId": "retained-cmdy-support",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "3d7a0e6ba74f84d2182869b717be4fe3ee826cec1997daac92c442d59baedcc8",
+      "historical": "Core/Sources/TermiteCore/TerminalSupport.swift",
+      "historicalLines": [
+        8,
+        39
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy support types; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 125
+    },
+    {
+      "active": "Core/Sources/CmdyCore/TerminalSupport.swift",
+      "activeLines": [
+        39,
+        103
+      ],
+      "classificationId": "retained-cmdy-support",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "90caf55f604a7014a6ca8f2a18aa7880749e0ed9101d7058168502a28baf4562",
+      "historical": "Core/Sources/TermiteCore/TerminalSupport.swift",
+      "historicalLines": [
+        39,
+        103
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy support types; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 383
+    },
+    {
+      "active": "Core/Sources/CmdyCore/TerminalSupport.swift",
+      "activeLines": [
+        103,
+        167
+      ],
+      "classificationId": "retained-cmdy-support",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "7f2fc7b00c29f92c0a99c692cc50b6636fba48cd7a17c0a281a639a574a135db",
+      "historical": "Core/Sources/TermiteCore/TerminalSupport.swift",
+      "historicalLines": [
+        103,
+        167
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy support types; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 483
+    },
+    {
+      "active": "Core/Sources/CmdyCore/VTParser.swift",
+      "activeLines": [
+        1,
+        92
+      ],
+      "classificationId": "retained-cmdy-parser",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "d955130276748cc55841a36630d7a3ab851596bc76b987dd5ad680a384490541",
+      "historical": "Core/Sources/TermiteCore/VTParser.swift",
+      "historicalLines": [
+        1,
+        92
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy parser source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 416
+    },
+    {
+      "active": "Core/Sources/CmdyCore/VTParser.swift",
+      "activeLines": [
+        93,
+        226
+      ],
+      "classificationId": "retained-cmdy-parser",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "51db04bd531196313e2b9545351ff35dd509ae1d331eb8b94c837c166fa04cf7",
+      "historical": "Core/Sources/TermiteCore/VTParser.swift",
+      "historicalLines": [
+        92,
+        224
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy parser source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 677
+    },
+    {
+      "active": "Core/Sources/CmdyCore/VTParser.swift",
+      "activeLines": [
+        228,
+        271
+      ],
+      "classificationId": "retained-cmdy-parser",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "8cdc92e90604a586df5680353ab3f70ae82fa19353e117b64e944d983a54102a",
+      "historical": "Core/Sources/TermiteCore/VTParser.swift",
+      "historicalLines": [
+        224,
+        267
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy parser source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 140
+    },
+    {
+      "active": "Core/Sources/CmdyCore/VTParser.swift",
+      "activeLines": [
+        276,
+        289
+      ],
+      "classificationId": "retained-cmdy-parser",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "ddcef2bcfba60c9c0494a4b79a29fdabe90736343767ebcb3af8cc79293166fe",
+      "historical": "Core/Sources/TermiteCore/VTParser.swift",
+      "historicalLines": [
+        267,
+        280
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy parser source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 56
+    },
+    {
+      "active": "Core/Sources/CmdyCore/VTParser.swift",
+      "activeLines": [
+        355,
+        376
+      ],
+      "classificationId": "retained-cmdy-parser",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "12f8b3ab4212271a83e533babd58478c63368e802a9b5d3f109caae7e95120ca",
+      "historical": "Core/Sources/TermiteCore/VTParser.swift",
+      "historicalLines": [
+        291,
+        314
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy parser source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 123
+    },
+    {
+      "active": "Core/Sources/CmdyCore/VTParser.swift",
+      "activeLines": [
+        378,
+        388
+      ],
+      "classificationId": "retained-cmdy-parser",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "b0e99fb56c0e03fc4fbfb5e509fa398a98d150fa027d13793927f05a73d3b364",
+      "historical": "Core/Sources/TermiteCore/VTParser.swift",
+      "historicalLines": [
+        314,
+        324
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy parser source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 56
+    },
+    {
+      "active": "Core/Sources/CmdyCore/VTParser.swift",
+      "activeLines": [
+        390,
+        699
+      ],
+      "classificationId": "retained-cmdy-parser",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "41beb952fdfe0c566c610b8619b93462e1841b82292f144ce4e817f20f13386a",
+      "historical": "Core/Sources/TermiteCore/VTParser.swift",
+      "historicalLines": [
+        324,
+        633
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned retained Cmdy parser source; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 1504
+    },
+    {
+      "active": "Core/Sources/CmdyPTY/LocalProcess.swift",
+      "activeLines": [
+        6,
+        10
+      ],
+      "classificationId": "retired-pty-delegate-declaration",
+      "disposition": "api-declaration",
+      "fingerprint": "4d5b9fd9470bfee1381a14d2e33389a335c6b0f500c29746dcb63f704111c5ae",
+      "historical": "Core/Sources/TermitePTY/LocalProcess.swift",
+      "historicalLines": [
+        15,
+        26
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Compatibility delegate method signatures only.",
+      "tokenCount": 36
+    },
+    {
+      "active": "Core/Sources/CmdyPTY/LocalProcess.swift",
+      "activeLines": [
+        299,
+        305
+      ],
+      "classificationId": "retired-pty-start-signature",
+      "disposition": "api-declaration",
+      "fingerprint": "31226d9f3354e21bd9ac8b5172de7ea1bfe42fec14ab3b5b5c3b1bff918de98d",
+      "historical": "Core/Sources/TermitePTY/LocalProcess.swift",
+      "historicalLines": [
+        449,
+        450
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Public process-launch signature and defaults only; the PTY implementation is outside the match.",
+      "tokenCount": 43
+    },
+    {
+      "active": "Core/Sources/CmdyPTY/Pty.swift",
+      "activeLines": [
+        9,
+        15
+      ],
+      "classificationId": "retired-pty-fork-signature",
+      "disposition": "api-declaration",
+      "fingerprint": "53d10891616754264d96b10acb9c23fafee79551b7f0b48f6ca67150a5384bf1",
+      "historical": "Core/Sources/TermitePTY/Pty.swift",
+      "historicalLines": [
+        60,
+        61
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Public PTY fork signature and return tuple only; no fork or descriptor-management mechanics are covered.",
+      "tokenCount": 45
+    },
+    {
+      "active": "Identity/Sources/ProductIdentity/ProductIdentity.swift",
+      "activeLines": [
+        202,
+        211
+      ],
+      "classificationId": "retired-identity-resource-bundle-lookup",
+      "disposition": "standard-platform-mechanics",
+      "fingerprint": "68f3bcfed0d70f45ee72c5b3052c98b8ef8062aec8fa33f74a503c38a163d63e",
+      "historical": "Renderer/Sources/TermiteGPU/MetalTerminalRenderer.swift",
+      "historicalLines": [
+        3873,
+        3881
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Standard SwiftPM/macOS bundle discovery: normalize and deduplicate candidate roots, walk executable ancestors, then open the named resource bundle.",
+      "tokenCount": 68
+    },
+    {
+      "active": "Identity/Sources/ProductIdentity/ProductIdentity.swift",
+      "activeLines": [
+        219,
+        228
+      ],
+      "classificationId": "retired-identity-resource-bundle-lookup",
+      "disposition": "standard-platform-mechanics",
+      "fingerprint": "fd4381f9acb8f0332dbcf6680fc1146ad3eeaf068446c7cb15556b4cd4a8a21b",
+      "historical": "Renderer/Sources/TermiteGPU/MetalTerminalRenderer.swift",
+      "historicalLines": [
+        3885,
+        3894
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Standard SwiftPM/macOS bundle discovery: normalize and deduplicate candidate roots, walk executable ancestors, then open the named resource bundle.",
+      "tokenCount": 61
+    },
+    {
+      "active": "Identity/Sources/ProductIdentity/ProductIdentity.swift",
+      "activeLines": [
+        231,
+        243
+      ],
+      "classificationId": "retired-identity-resource-bundle-lookup",
+      "disposition": "standard-platform-mechanics",
+      "fingerprint": "98d9871270509cc3ca636c918e6a93c3c279fa999abe6f02a42a102ffbabfeab",
+      "historical": "Renderer/Sources/TermiteGPU/MetalTerminalRenderer.swift",
+      "historicalLines": [
+        3895,
+        3907
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Standard SwiftPM/macOS bundle discovery: normalize and deduplicate candidate roots, walk executable ancestors, then open the named resource bundle.",
+      "tokenCount": 63
+    },
+    {
+      "active": "Kit/Sources/CmdyKit/Theme.swift",
+      "activeLines": [
+        14,
+        17
+      ],
+      "classificationId": "retired-kit-standard-color-construction",
+      "disposition": "standard-platform-mechanics",
+      "fingerprint": "f02dde8bb66c2736a654edcb73cb751c983f15493aca97b8f6688a737ad08b9b",
+      "historical": "App/TermiteCoreSurface.swift",
+      "historicalLines": [
+        388,
+        390
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Canonical AppKit conversion from 16-bit RGB channels to an opaque sRGB NSColor.",
+      "tokenCount": 37
+    },
+    {
+      "active": "Renderer/Sources/CmdyGPU/BuiltInEffectShaders.swift",
+      "activeLines": [
+        6,
+        14
+      ],
+      "classificationId": "retired-render-effect-uniform-layout",
+      "disposition": "api-declaration",
+      "fingerprint": "9909ca29945eae9f9a0f50f6fd9c40c92d6f279e16e38647b058c1dbde01a237",
+      "historical": "Renderer/Sources/TermiteGPU/MetalTerminalRenderer.swift",
+      "historicalLines": [
+        500,
+        508
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Metal uniform field layout shared across the public CPU/GPU data seam.",
+      "tokenCount": 39
+    },
+    {
+      "active": "Renderer/Sources/CmdyGPU/BuiltInEffectShaders.swift",
+      "activeLines": [
+        191,
+        197
+      ],
+      "classificationId": "retired-render-premultiplied-blend",
+      "disposition": "standard-platform-mechanics",
+      "fingerprint": "8958a0f876aaf0777faaafb4f232d8c35e2d71434ebec977180d5c1a61d48574",
+      "historical": "Renderer/Sources/TermiteGPU/MetalTerminalRenderer.swift",
+      "historicalLines": [
+        3578,
+        3584
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Canonical Metal premultiplied-alpha blend descriptor fields.",
+      "tokenCount": 41
+    },
+    {
+      "active": "Renderer/Sources/CmdyGPU/CompatibilityUtilities.swift",
+      "activeLines": [
+        106,
+        123
+      ],
+      "classificationId": "retired-render-atlas-region-value",
+      "disposition": "api-declaration",
+      "fingerprint": "9220878ee43efc8b810c3b9d40a27060023324a48eb62591905cd14d632db412",
+      "historical": "Renderer/Sources/TermiteGPU/RenderTypes.swift",
+      "historicalLines": [
+        180,
+        197
+      ],
+      "mode": "structural",
+      "origin": "retired",
+      "rationale": "Identifier-normalized atlas-region value fields and memberwise initializer.",
+      "tokenCount": 92
+    },
+    {
+      "active": "Renderer/Sources/CmdyGPU/CompatibilityUtilities.swift",
+      "activeLines": [
+        185,
+        188
+      ],
+      "classificationId": "retired-render-atlas-generation-accessor",
+      "disposition": "data-plumbing",
+      "fingerprint": "1c4ceedbda2eaa15fc43282cfb213d507b701da745d5cf7f00c47f8528d23540",
+      "historical": "Renderer/Sources/TermiteGPU/GlyphAtlas.swift",
+      "historicalLines": [
+        75,
+        78
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Bounds-checking accessor for a page generation counter.",
+      "tokenCount": 33
+    },
+    {
+      "active": "Renderer/Sources/CmdyGPU/CompatibilityUtilities.swift",
+      "activeLines": [
+        338,
+        353
+      ],
+      "classificationId": "retired-render-glyph-bitmap-value",
+      "disposition": "api-declaration",
+      "fingerprint": "592e49f202e7deda1037114055ca5730f52499c863e101587142ac0321536679",
+      "historical": "Renderer/Sources/TermiteGPU/BlockElementRenderer.swift",
+      "historicalLines": [
+        98,
+        113
+      ],
+      "mode": "structural",
+      "origin": "retired",
+      "rationale": "Identifier-normalized glyph bitmap value fields and memberwise initializer.",
+      "tokenCount": 82
+    },
+    {
+      "active": "Renderer/Sources/CmdyGPU/GeometryAndScheduling.swift",
+      "activeLines": [
+        59,
+        68
+      ],
+      "classificationId": "retired-render-viewport-value-declaration",
+      "disposition": "api-declaration",
+      "fingerprint": "1c94e1073d67e610a14a4470e8985679bbe4a9ba433ef4d39baf3730c231e0aa",
+      "historical": "Renderer/Sources/TermiteGPU/MetalTerminalRenderer.swift",
+      "historicalLines": [
+        257,
+        262
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Viewport translation value fields and initializer signature only.",
+      "tokenCount": 36
+    },
+    {
+      "active": "Renderer/Sources/CmdyGPU/MetalCore.swift",
+      "activeLines": [
+        6,
+        21
+      ],
+      "classificationId": "retired-render-metal-error-cases",
+      "disposition": "api-declaration",
+      "fingerprint": "8b554a850d4eceaaf2f1355ead1aca8f62c7716e8789fe279c6cd79d24492d19",
+      "historical": "Renderer/Sources/TermiteGPU/MetalError.swift",
+      "historicalLines": [
+        9,
+        24
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Renderer error enum declaration and case names only.",
+      "tokenCount": 51
+    },
+    {
+      "active": "Renderer/Sources/CmdyGPU/MetalCore.swift",
+      "activeLines": [
+        48,
+        55
+      ],
+      "classificationId": "retired-render-metal-uniform-prefix",
+      "disposition": "api-declaration",
+      "fingerprint": "d27b1c0b9a3c7d12bb2028497147400334c091106142c01c29deec19650f9f29",
+      "historical": "Renderer/Sources/TermiteGPU/MetalTerminalRenderer.swift",
+      "historicalLines": [
+        500,
+        507
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Metal uniform field prefix shared across CPU and shader layouts.",
+      "tokenCount": 38
+    },
+    {
+      "active": "Renderer/Sources/CmdyGPU/MetalTerminalRenderer.swift",
+      "activeLines": [
+        242,
+        245
+      ],
+      "classificationId": "retired-render-metal-view-device-setup",
+      "disposition": "standard-platform-mechanics",
+      "fingerprint": "b2275b39fadd137aae214b4081422785f891f8273135f50ff0dc2c2791233484",
+      "historical": "Renderer/Sources/TermiteGPU/MetalTerminalRenderer.swift",
+      "historicalLines": [
+        557,
+        560
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Standard MTKView device acquisition and unavailable-device guard.",
+      "tokenCount": 32
+    },
+    {
+      "active": "Renderer/Sources/CmdyGPU/MetalTerminalRenderer.swift",
+      "activeLines": [
+        1875,
+        1880
+      ],
+      "classificationId": "retired-render-atlas-entry-copy",
+      "disposition": "data-plumbing",
+      "fingerprint": "9e156b4ba645302ac3712e406fe8db5b48ebdc1d20252fb52f323ba6c3482160",
+      "historical": "Renderer/Sources/TermiteGPU/MetalTerminalRenderer.swift",
+      "historicalLines": [
+        2040,
+        2045
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Copies an already-created bitmap's dimensions, bearing, color flag, and atlas region into a cache entry.",
+      "tokenCount": 41
+    },
+    {
+      "active": "Renderer/Sources/CmdyGPU/ProceduralGlyphs.swift",
+      "activeLines": [
+        5,
+        17
+      ],
+      "classificationId": "retired-render-block-alpha-and-rect-values",
+      "disposition": "compatibility-data",
+      "fingerprint": "7608a5bd564ceab3a6226a3ee8706dc9a67cfe8abff7f3aada31b1508fc4ead9",
+      "historical": "Renderer/Sources/TermiteGPU/BlockElementRenderer.swift",
+      "historicalLines": [
+        10,
+        22
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Fixed block-element alpha levels and public rectangle value fields.",
+      "tokenCount": 56
+    },
+    {
+      "active": "Renderer/Sources/CmdyGPU/ProceduralGlyphs.swift",
+      "activeLines": [
+        79,
+        94
+      ],
+      "classificationId": "retired-render-block-item-value",
+      "disposition": "api-declaration",
+      "fingerprint": "969d29d0cbcb4e1c39e0a131bc696cb30ae721ddaeaca937b27a77c9c8caad02",
+      "historical": "Renderer/Sources/TermiteGPU/BlockElementRenderer.swift",
+      "historicalLines": [
+        96,
+        108
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Block-element render-item fields and memberwise initializer.",
+      "tokenCount": 67
+    },
+    {
+      "active": "Renderer/Sources/CmdyGPU/ProceduralGlyphs.swift",
+      "activeLines": [
+        99,
+        112
+      ],
+      "classificationId": "retired-render-box-item-value",
+      "disposition": "api-declaration",
+      "fingerprint": "9ecadd779ee5210f6a460641a960f8ad4580e12a567aedc182ce286320a0f391",
+      "historical": "Renderer/Sources/TermiteGPU/BoxDrawingRenderer.swift",
+      "historicalLines": [
+        633,
+        643
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Box-drawing render-item fields and memberwise initializer.",
+      "tokenCount": 54
+    },
+    {
+      "active": "Renderer/Sources/CmdyGPU/ProceduralGlyphs.swift",
+      "activeLines": [
+        274,
+        288
+      ],
+      "classificationId": "retired-render-box-draw-entrypoint",
+      "disposition": "api-declaration",
+      "fingerprint": "b29a3d2db70b78e0b5cf9d1eedbd23adfde49b0647edf86af002109e13ef6945",
+      "historical": "Renderer/Sources/TermiteGPU/BoxDrawingRenderer.swift",
+      "historicalLines": [
+        73,
+        87
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Public box-drawing entrypoint signature and input validity guard; glyph construction is outside the match.",
+      "tokenCount": 58
+    },
+    {
+      "active": "Renderer/Sources/CmdyGPU/RenderContract.swift",
+      "activeLines": [
+        16,
+        53
+      ],
+      "classificationId": "retired-render-source-protocol",
+      "disposition": "api-declaration",
+      "fingerprint": "c778e410e25964f6717e86f76efe239515b749dac9ddf6be6afe380a2bc95e63",
+      "historical": "Renderer/Sources/TermiteGPU/MetalRenderSource.swift",
+      "historicalLines": [
+        8,
+        74
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Renderer input protocol requirements defining the preserved App/renderer boundary.",
+      "tokenCount": 244
+    },
+    {
+      "active": "Renderer/Sources/CmdyGPU/RenderContract.swift",
+      "activeLines": [
+        69,
+        76
+      ],
+      "classificationId": "retired-render-line-segment-fields",
+      "disposition": "api-declaration",
+      "fingerprint": "e00ef77e0c96648595c6c08bda5845b03a9d8bc9760e7fd77b15f1a5577d9a89",
+      "historical": "Renderer/Sources/TermiteGPU/RenderTypes.swift",
+      "historicalLines": [
+        10,
+        20
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Line-segment public fields plus overflow-safe column-span projection.",
+      "tokenCount": 38
+    },
+    {
+      "active": "Renderer/Sources/CmdyGPU/RenderContract.swift",
+      "activeLines": [
+        80,
+        88
+      ],
+      "classificationId": "retired-render-line-segment-initializer",
+      "disposition": "data-plumbing",
+      "fingerprint": "65dc587bca39a76c49807d0fbbb5b45450d1e0735193ad1407be0d055bd8d5fd",
+      "historical": "Renderer/Sources/TermiteGPU/RenderTypes.swift",
+      "historicalLines": [
+        22,
+        28
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Line-segment memberwise initializer signature and field assignment.",
+      "tokenCount": 39
+    },
+    {
+      "active": "Renderer/Sources/CmdyGPU/RenderContract.swift",
+      "activeLines": [
+        96,
+        124
+      ],
+      "classificationId": "retired-render-line-info-value",
+      "disposition": "data-plumbing",
+      "fingerprint": "e9bd3b8d41e7dbd9e14cff9a3a99174e914861c30bad99033ed4dd31d3ad4885",
+      "historical": "Renderer/Sources/TermiteGPU/RenderTypes.swift",
+      "historicalLines": [
+        35,
+        67
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Renderer line-info fields, defaults, and memberwise assignments.",
+      "tokenCount": 134
+    },
+    {
+      "active": "Renderer/Sources/CmdyGPU/RenderContract.swift",
+      "activeLines": [
+        153,
+        179
+      ],
+      "classificationId": "retired-render-grid-snapshot-fields",
+      "disposition": "api-declaration",
+      "fingerprint": "2279fec3755342e9c63252fb3d3c85203ecbf2d2c35efdc4492318933a2547c7",
+      "historical": "Renderer/Sources/TermiteGPU/RenderTypes.swift",
+      "historicalLines": [
+        117,
+        144
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Grid snapshot public fields and initializer signature.",
+      "tokenCount": 114
+    },
+    {
+      "active": "Renderer/Sources/CmdyGPU/RenderContract.swift",
+      "activeLines": [
+        182,
+        193
+      ],
+      "classificationId": "retired-render-grid-snapshot-assignments",
+      "disposition": "data-plumbing",
+      "fingerprint": "2abb13f5fa31c0f60fdb9a85490293661a208c8e5fbb1610bd01a0d9e86d7820",
+      "historical": "Renderer/Sources/TermiteGPU/RenderTypes.swift",
+      "historicalLines": [
+        147,
+        159
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Grid snapshot memberwise assignments and buffering enum declaration.",
+      "tokenCount": 43
+    },
+    {
+      "active": "Renderer/Sources/CmdyGPU/RenderContract.swift",
+      "activeLines": [
+        215,
+        233
+      ],
+      "classificationId": "retired-render-kitty-placement-values",
+      "disposition": "api-declaration",
+      "fingerprint": "613a2d44b3e827f79f960e0981e76b1f5508958914fb4a153e483c9672c8181d",
+      "historical": "Renderer/Sources/TermiteGPU/RenderTypes.swift",
+      "historicalLines": [
+        177,
+        192
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Kitty cache-stamp and placement value fields and initializer signature.",
+      "tokenCount": 77
+    },
+    {
+      "active": "Renderer/Sources/CmdyGPU/RenderContract.swift",
+      "activeLines": [
+        243,
+        274
+      ],
+      "classificationId": "retired-render-kitty-payload-values",
+      "disposition": "api-declaration",
+      "fingerprint": "b5f3b2e5736a6499be302363bd5095e4205231bcaccecc8a65cd4d9221f1ba55",
+      "historical": "Renderer/Sources/TermiteGPU/RenderTypes.swift",
+      "historicalLines": [
+        78,
+        107
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Kitty image-payload and placeholder-cell public value declarations.",
+      "tokenCount": 111
+    }
+  ],
+  "references": {
+    "retired": {
+      "commit": "584624985809f6000a82d3b3b97e43ef885af572",
+      "sourceCount": 36
+    },
+    "vendor": {
+      "commit": "512b859268662b8e01f5923fabd7958e12e280df",
+      "sourceCount": 111
+    }
+  },
+  "reportSHA256": "bab7c7556ce0255bd8946268b9ce2d2af1af24aa1370e9e6a31e731cc25b6805",
+  "schemaVersion": 1,
+  "summary": {
+    "activeSourceCount": 128,
+    "classifiedMatchCount": 156,
+    "issueCount": 0,
+    "matchCount": 156,
+    "ok": true,
+    "unresolvedMatchCount": 0
+  },
+  "thresholds": {
+    "exactTokens": 32,
+    "structuralTokens": 80
+  }
+}

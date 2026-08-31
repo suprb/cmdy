@@ -1,0 +1,117 @@
+{
+  "actionsPerCase": 180,
+  "candidateLibrarySha256": "00738f39f32ac7d9553928607c0d63469a6ba51dec659e9267ca81ae38216b18",
+  "checkerSha256": "3a45bd5fec2e385d2f193969f9da67590e9df1c09c465770de3813cda97cbaa9",
+  "exceptions": [],
+  "failedCases": 0,
+  "kind": "cmdy-core-parity-matrix",
+  "randomCasesPerSeed": 2000,
+  "referenceLibrarySha256": "ad15ff76687ddf0ea93558ccf9ff701af274536fe7af710bf7c8df7c63adf941",
+  "schemaVersion": 1,
+  "seedResults": [
+    {
+      "cases": 3176,
+      "passed": true,
+      "seed": 49361,
+      "snapshotSha256": "209ddec4a2adf25f9bf1ab233a5081d61235a8ec4bc78b41132135dffa486f11"
+    },
+    {
+      "cases": 3176,
+      "passed": true,
+      "seed": 104729,
+      "snapshotSha256": "13797791e187ce5387308edddf79915f3fcdea57c7e0887c0213826aa6e411c5"
+    },
+    {
+      "cases": 3176,
+      "passed": true,
+      "seed": 123457,
+      "snapshotSha256": "8ff625a1eb843bde807b6f13954e94b7694d7b2b6a3148fe1a1183a9a819be21"
+    },
+    {
+      "cases": 3176,
+      "passed": true,
+      "seed": 99991,
+      "snapshotSha256": "42f95acbc9c317df9b130e64085883728ffdf7195b72caebe29740764524febc"
+    },
+    {
+      "cases": 3176,
+      "passed": true,
+      "seed": 2654435761,
+      "snapshotSha256": "260e2963bc6a214775b83806afb2ab79092ef0f491b927868153883b62aab3fe"
+    },
+    {
+      "cases": 3176,
+      "passed": true,
+      "seed": 130363,
+      "snapshotSha256": "9d36cd1933b804bdbeb4eca9bc650bd5cc69e1a6ed089963cbe729c1b9f5f9a9"
+    },
+    {
+      "cases": 3176,
+      "passed": true,
+      "seed": 155921,
+      "snapshotSha256": "9bf33577b702780d10842a579b16c95bcf5341fa1cd3c1785a83aa8cd20c8c94"
+    },
+    {
+      "cases": 3176,
+      "passed": true,
+      "seed": 271828,
+      "snapshotSha256": "b744bd4366772f192ff4450c9707126cd2129f9992116a5e2fec5ffd0bea1d34"
+    },
+    {
+      "cases": 3176,
+      "passed": true,
+      "seed": 314159,
+      "snapshotSha256": "bc384ef8d2260239bfc7d0e5137a1e49133ad369a535a4bb32b09ff1dfe18be9"
+    },
+    {
+      "cases": 3176,
+      "passed": true,
+      "seed": 161803,
+      "snapshotSha256": "9585630c9c1a08165fc813d69366a2b24a1bebd16c34f273317e9bf0c27cbb48"
+    },
+    {
+      "cases": 3176,
+      "passed": true,
+      "seed": 65537,
+      "snapshotSha256": "f2d9d79c0b400d149a3a548b596ef6463526acf55c3c49730592bb8766953eef"
+    },
+    {
+      "cases": 3176,
+      "passed": true,
+      "seed": 16777619,
+      "snapshotSha256": "966d6f2e33b5e8d48969a275dd8cf7957324ed31591a8055cc8586ea4e076ad3"
+    },
+    {
+      "cases": 3176,
+      "passed": true,
+      "seed": 20260820,
+      "snapshotSha256": "f9bb689fe1cf6d04801f7998a1919deb252674a0475f6a7bfb60b54bf747f034"
+    },
+    {
+      "cases": 3176,
+      "passed": true,
+      "seed": 8675309,
+      "snapshotSha256": "7d97bca3db86ed43b63aa08094c45385d9dfe9693e01802ebc05508b6dcc8d0f"
+    },
+    {
+      "cases": 3176,
+      "passed": true,
+      "seed": 42424243,
+      "snapshotSha256": "cd3ac009d38f944736be4b78ba599321cf87e859ec0f5c530fe5eaf818a9b7d5"
+    },
+    {
+      "cases": 3176,
+      "passed": true,
+      "seed": 314159265,
+      "snapshotSha256": "6bc961e9a57dd02da4cddb1d7d70375fcecbf2abf2eb925fa07d6f082a28a55d"
+    },
+    {
+      "cases": 3176,
+      "passed": true,
+      "seed": 271828182,
+      "snapshotSha256": "e0992e95022233a55d897c0abb248007c6bd95fa88878b9e65c36fad451c1f96"
+    }
+  ],
+  "sourceManifestSha256": "4e84f34c289d6e5896d3bb370d8a17f1f40b66f3df529af2f2be07e7fd441c14",
+  "totalCases": 53992
+}

@@ -1,0 +1,30 @@
+{
+  "candidate": {
+    "kind": "build",
+    "moduleSha256": "ebf8589b8d951588b1c37e5e0a8bb9347f5b0d6e3cfbb4a9204aafaf624445ac",
+    "objectSetSha256": "d7e879caba2c5177f635c9d302c6c927c078c242ca52375809cae1c62653ad46",
+    "releaseBuild": "arm64-apple-macosx/release"
+  },
+  "fixtureSourceSha256": "a31ab980ff37b387db2730254b35c85e6a8ec98881910d0521b824b9c58459e0",
+  "macOS": "26.3.1",
+  "machine": "arm64",
+  "reference": {
+    "archive": "Tests/RendererPixelOracle/ReferenceCorpus/reference-corpus-v1.tar.gz",
+    "archiveBytes": 845304,
+    "archiveSha256": "5507d54ebe8e453edc9f38d3dbf84ac01ef132ae8370a3a7de39a1624d46188a",
+    "corpusID": "cmdygpu-historical-reference-v1",
+    "fixtureIndexSha256": "e52c987c52e495dc7bb7a14ccf8d9ef6b0abd4e8fed6d60facd469a2af6f9d5d",
+    "kind": "locked-captures",
+    "lock": "Tests/RendererPixelOracle/ReferenceCorpus/reference-corpus-v1.lock.json",
+    "lockSha256": "a448c37b7e114505f4e8569ed9389c608698cb9bf50b7c0219daff4fd10ccd2f",
+    "manifestSha256": "868ffcb241e050c570278e5d6aa7fef2adfb6b15b938bee13e8917b7bd42d7b6",
+    "payloadSetSha256": "27a487287108a004a78bb0cd524064ef60758a17de1ae9d3467e08bc99bfb6ff",
+    "uncompressedTarSha256": "784aef587ac7bdafb171388b4100cb07b5dce8e1957858f37c1b29ea3ad40a4e",
+    "validatorVector": "Tests/RendererPixelOracle/ReferenceCorpus/reference-corpus-v1.validator-vector.json",
+    "validatorVectorSha256": "9c987783edd7ede5cba9d2f4ea455667cd47ad55c620ebee26d27b70b6cc76fb"
+  },
+  "schemaVersion": 2,
+  "swiftCompiler": "swift-driver version: 1.127.15 Apple Swift version 6.2.4 (swiftlang-6.2.4.1.4 clang-1700.6.4.2)\nTarget: arm64-apple-macosx26.0",
+  "system": "Darwin",
+  "xcode": "Xcode 26.3\nBuild version 17C529"
+}
