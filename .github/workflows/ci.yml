@@ -1,0 +1,172 @@
+name: CI
+
+on:
+  workflow_call:
+    inputs:
+      concurrency_scope:
+        description: Unique scope supplied by a calling workflow
+        required: false
+        type: string
+  push:
+    branches:
+      - '**'
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ inputs.concurrency_scope || github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: macos-26
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          # Private qualification uses frozen historical commits when they
+          # exist. The clean public export instead verifies its checked-in,
+          # human-approved manifest and evidence record.
+          fetch-depth: 0
+      - name: Toolchain
+        run: |
+          sw_vers
+          xcodebuild -version
+          swift --version
+      - name: Repository hygiene and product identity
+        run: ./scripts/check-repository-hygiene.sh
+      - name: Pinned Unicode tables
+        run: python3 -B Core/Tools/UnicodeWidth/generate.py --check
+      - name: Independent source provenance
+        run: |
+          python3 -B Tests/test-working-tree-provenance.py
+          python3 -B Tests/test-active-source-manifest.py
+          python3 -B Tests/test-zoo-review.py
+          python3 -B Tests/test-release-qualification.py
+          if git cat-file -e 512b859268662b8e01f5923fabd7958e12e280df^{commit} 2>/dev/null \
+              && git cat-file -e 584624985809f6000a82d3b3b97e43ef885af572^{commit} 2>/dev/null; then
+            python3 -B scripts/check-working-tree-provenance.py --mode check
+          else
+            manifest=docs/independence/qualification/active-terminal-sources.json
+            test -f "$manifest"
+            python3 -B scripts/check-active-source-manifest.py \
+              verify --manifest-root . --manifest "$manifest"
+            python3 -B scripts/check-release-qualification.py \
+              publication --phase source
+          fi
+          python3 -B scripts/check-release-qualification.py engineering
+      - name: Independent public API
+        run: ./scripts/check-independent-api.sh
+      - name: Independent dependency and import boundaries
+        run: |
+          for package in Core Renderer; do
+            swift package --package-path "$package" \
+              show-dependencies --format json \
+              | jq -e --arg package "$package" \
+                '.name == $package and (.dependencies | length == 0)' \
+                >/dev/null
+          done
+          swift package show-dependencies --format json \
+            | jq -e \
+              '[recurse(.dependencies[]?)
+                | ((.name // "") + " " + (.url // "") + " " + (.path // ""))
+                | test("SwiftTerm"; "i")] | any | not' \
+              >/dev/null
+          if git grep -n -E \
+            '^[[:space:]]*import[[:space:]]+(SwiftTerm|TermiteCore|TermitePTY|TermiteGPU)([[:space:]]|$)' \
+            -- '*.swift' '*.metal'; then
+            echo 'Retired terminal module import found in active source.' >&2
+            exit 1
+          fi
+      - name: Validate schemas
+        run: |
+          python3 -m json.tool Schemas/action-manifest-v1.schema.json >/dev/null
+          python3 -m json.tool Schemas/extension-manifest-v1.schema.json >/dev/null
+          python3 -m json.tool Schemas/release-qualification-v1.schema.json >/dev/null
+          python3 -m json.tool Schemas/surface-v1.schema.json >/dev/null
+      - name: Shell syntax
+        run: git ls-files '*.sh' -z | xargs -0 -n 1 bash -n
+      - name: Repository tests
+        run: swift test -c release
+      - name: Identity tests
+        run: swift test --package-path Identity -c release
+      - name: Core tests
+        run: swift test --package-path Core -c release
+      - name: Renderer tests
+        run: swift test --package-path Renderer -c release
+      - name: Locked renderer pixel parity
+        run: |
+          python3 -B scripts/check-renderer-pixel-parity.py --self-test
+          python3 -B scripts/check-renderer-pixel-parity.py \
+            --output "$RUNNER_TEMP/cmdy-renderer-pixel-parity"
+      - name: Retain renderer pixel evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: renderer-pixel-parity
+          path: ${{ runner.temp }}/cmdy-renderer-pixel-parity
+          if-no-files-found: warn
+      - name: Platform tests
+        run: swift test --package-path Kit -c release
+      - name: SDK tests
+        run: swift test --package-path Plugins/CmdySDK -c release
+      - name: Chromium support tests (CEF-free)
+        run: swift test --package-path Plugins/chromium/Support -c release
+      - name: Chromium lifecycle tests (CEF-free)
+        run: ./scripts/test-chromium-lifecycle.sh
+      - name: Bridge tests
+        run: swift test --package-path Vendor/BraincellBridge -c release
+      - name: First-party Extension builds
+        run: |
+          swift build --package-path Plugins/detox -c release
+          swift build --package-path Plugins/bridge -c release
+          swift build --package-path Plugins/swarm -c release
+          swift build --package-path Plugins/appdock -c release
+          swift test --package-path Plugins/sim -c release
+      - name: Release build
+        run: swift build -c release
+      - name: Independent linked-image and symbol boundary
+        run: |
+          if otool -L .build/release/cmdy \
+            | grep -Eiq 'SwiftTerm|Termite(Core|PTY|GPU)'; then
+            echo 'Retired terminal module found in linked images.' >&2
+            exit 1
+          fi
+          if nm -m .build/release/cmdy \
+            | grep -Eiq 'SwiftTerm|Termite(Core|PTY|GPU)'; then
+            echo 'Retired terminal module found in linked symbols.' >&2
+            exit 1
+          fi
+      - name: Headless application suites
+        env:
+          CMDY_TEST_CONFIGURATION: release
+        run: ./test.sh
+      - name: Node toolchain
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: website/package-lock.json
+      - name: Website build and render smoke
+        working-directory: website
+        run: |
+          npm ci
+          npm audit --audit-level=high
+          npm test
+
+  chromium:
+    name: Sandboxed Chromium
+    runs-on: macos-26
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Bootstrap pinned CEF
+        run: ./scripts/bootstrap-chromium.sh
+      - name: Full Browser build and lifecycle smoke
+        run: ./scripts/check-chromium-build.sh
+      - name: Package Browser edition and load a real page
+        env:
+          PRODUCT_SIGN_ID: '-'
+        run: PRODUCT_BROWSER_EDITION=1 ./package.sh

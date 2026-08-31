@@ -1,0 +1,38 @@
+# Changelog
+
+All notable changes to cmdy will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project intends to follow
+[Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+Public APIs and protocols follow semantic versioning. Breaking changes should
+be called out here with a migration path before a versioned release.
+
+## [Unreleased]
+
+## [1.0.0] - 2026-08-31
+
+### Added
+
+- A native Metal terminal with independent VT parsing, scrollback, selection,
+  command blocks, search, sessions, tabs, recursive splits, and window grids.
+- The built-in editor, shader and theme system, extension SDK, Marketplace,
+  Channels, Simulator integration, and Browser edition.
+- Update discovery and Developer ID-signed downloads from immutable GitHub
+  Releases with edition-preserving archive selection and SHA-256 verification.
+- Public security, support, conduct, contribution, and issue-reporting guidance.
+- A contributor-oriented architecture map and explicit performance invariants.
+
+### Changed
+
+- Fast wheel and trackpad scrolling now coalesce presentation work, while
+  selection and attributed command-block overlays stay off the hot scroll path.
+- Editor and window-close ownership now follows one idempotent AppKit lifecycle,
+  including repeated Show Editor commands and attached-editor teardown.
+
+### Security
+
+- Release qualification binds active source, provenance, Core and renderer
+  parity, performance, resource, TUI-zoo, signing, notarization, and Gatekeeper
+  evidence before public artifacts can be published.

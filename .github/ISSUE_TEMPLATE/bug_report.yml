@@ -1,0 +1,109 @@
+name: Bug report
+description: Report a reproducible cmdy problem
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping make cmdy better. Search existing issues first and reduce the report to the smallest reproducible case.
+
+        **Do not report vulnerabilities, credentials, private terminal output, or conduct incidents here.** Use the private Security Advisory form described in `SECURITY.md`.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      description: Which part of cmdy is affected?
+      options:
+        - Terminal parsing or compatibility
+        - Rendering, shaders, fonts, or appearance
+        - Input, selection, clipboard, or links
+        - Windows, tabs, splits, or Window Grid
+        - Sessions, config, or editor
+        - Actions, Channels, Extensions, or Marketplace
+        - Browser, Sim, Swarm, Bridge, or Detox
+        - Packaging, updates, or website
+        - Performance or resource use
+        - Accessibility
+        - Question / support
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What went wrong, and what were you trying to do?
+      placeholder: A concise description of the problem and its impact.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Include commands, configuration, and Extension state only when relevant.
+      placeholder: |
+        1. Start cmdy with…
+        2. Open…
+        3. Run…
+        4. Observe…
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: cmdy version or commit
+      placeholder: v0.x.y or git commit
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: macOS and hardware
+      description: Include macOS version, Mac model, and Intel or Apple silicon.
+      placeholder: macOS 26.x, MacBook Pro, Apple M-series
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: Installation
+      options:
+        - GitHub Release
+        - Local source build
+        - Packaged development build
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Logs and evidence
+      description: Add focused logs, screenshots, recordings, or a minimal config. Remove usernames, personal paths, shell history, tokens, and private data.
+      render: shell
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched open and closed issues for this problem.
+          required: true
+        - label: I tested the newest available build or explained why I could not.
+          required: true
+        - label: I removed credentials, personal paths, and private terminal content from this report.
+          required: true
+        - label: This is not a security vulnerability or private conduct report.
+          required: true

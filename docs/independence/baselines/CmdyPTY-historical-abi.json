@@ -1,0 +1,890 @@
+{
+  "ABIRoot": {
+    "kind": "Root",
+    "name": "CmdyPTY",
+    "printedName": "CmdyPTY",
+    "children": [
+      {
+        "kind": "Import",
+        "name": "Dispatch",
+        "printedName": "Dispatch",
+        "declKind": "Import",
+        "moduleName": "CmdyPTY"
+      },
+      {
+        "kind": "Import",
+        "name": "Foundation",
+        "printedName": "Foundation",
+        "declKind": "Import",
+        "moduleName": "CmdyPTY"
+      },
+      {
+        "kind": "Import",
+        "name": "SwiftOnoneSupport",
+        "printedName": "SwiftOnoneSupport",
+        "declKind": "Import",
+        "moduleName": "CmdyPTY"
+      },
+      {
+        "kind": "Import",
+        "name": "_Concurrency",
+        "printedName": "_Concurrency",
+        "declKind": "Import",
+        "moduleName": "CmdyPTY"
+      },
+      {
+        "kind": "Import",
+        "name": "_StringProcessing",
+        "printedName": "_StringProcessing",
+        "declKind": "Import",
+        "moduleName": "CmdyPTY"
+      },
+      {
+        "kind": "Import",
+        "name": "_SwiftConcurrencyShims",
+        "printedName": "_SwiftConcurrencyShims",
+        "declKind": "Import",
+        "moduleName": "CmdyPTY"
+      },
+      {
+        "kind": "TypeDecl",
+        "name": "LocalProcessDelegate",
+        "printedName": "LocalProcessDelegate",
+        "children": [
+          {
+            "kind": "Function",
+            "name": "processTerminated",
+            "printedName": "processTerminated(_:exitCode:)",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "Void",
+                "printedName": "()"
+              },
+              {
+                "kind": "TypeNominal",
+                "name": "LocalProcess",
+                "printedName": "CmdyPTY.LocalProcess",
+                "usr": "s:7CmdyPTY12LocalProcessC"
+              },
+              {
+                "kind": "TypeNominal",
+                "name": "Optional",
+                "printedName": "Swift.Int32?",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "Int32",
+                    "printedName": "Swift.Int32",
+                    "usr": "s:s5Int32V"
+                  }
+                ],
+                "usr": "s:Sq"
+              }
+            ],
+            "declKind": "Func",
+            "usr": "s:7CmdyPTY20LocalProcessDelegateP17processTerminated_8exitCodeyAA0cD0C_s5Int32VSgtF",
+            "mangledName": "$s7CmdyPTY20LocalProcessDelegateP17processTerminated_8exitCodeyAA0cD0C_s5Int32VSgtF",
+            "moduleName": "CmdyPTY",
+            "genericSig": "<Self where Self : CmdyPTY.LocalProcessDelegate>",
+            "protocolReq": true,
+            "reqNewWitnessTableEntry": true,
+            "funcSelfKind": "NonMutating"
+          },
+          {
+            "kind": "Function",
+            "name": "dataReceived",
+            "printedName": "dataReceived(slice:)",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "Void",
+                "printedName": "()"
+              },
+              {
+                "kind": "TypeNominal",
+                "name": "ArraySlice",
+                "printedName": "Swift.ArraySlice<Swift.UInt8>",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "UInt8",
+                    "printedName": "Swift.UInt8",
+                    "usr": "s:s5UInt8V"
+                  }
+                ],
+                "usr": "s:s10ArraySliceV"
+              }
+            ],
+            "declKind": "Func",
+            "usr": "s:7CmdyPTY20LocalProcessDelegateP12dataReceived5sliceys10ArraySliceVys5UInt8VG_tF",
+            "mangledName": "$s7CmdyPTY20LocalProcessDelegateP12dataReceived5sliceys10ArraySliceVys5UInt8VG_tF",
+            "moduleName": "CmdyPTY",
+            "genericSig": "<Self where Self : CmdyPTY.LocalProcessDelegate>",
+            "protocolReq": true,
+            "reqNewWitnessTableEntry": true,
+            "funcSelfKind": "NonMutating"
+          },
+          {
+            "kind": "Function",
+            "name": "getWindowSize",
+            "printedName": "getWindowSize()",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "winsize",
+                "printedName": "Darwin.winsize",
+                "usr": "c:@S@winsize"
+              }
+            ],
+            "declKind": "Func",
+            "usr": "s:7CmdyPTY20LocalProcessDelegateP13getWindowSizeSo7winsizeVyF",
+            "mangledName": "$s7CmdyPTY20LocalProcessDelegateP13getWindowSizeSo7winsizeVyF",
+            "moduleName": "CmdyPTY",
+            "genericSig": "<Self where Self : CmdyPTY.LocalProcessDelegate>",
+            "protocolReq": true,
+            "reqNewWitnessTableEntry": true,
+            "funcSelfKind": "NonMutating"
+          }
+        ],
+        "declKind": "Protocol",
+        "usr": "s:7CmdyPTY20LocalProcessDelegateP",
+        "mangledName": "$s7CmdyPTY20LocalProcessDelegateP",
+        "moduleName": "CmdyPTY",
+        "genericSig": "<Self : AnyObject>",
+        "conformances": [
+          {
+            "kind": "Conformance",
+            "name": "Escapable",
+            "printedName": "Escapable",
+            "usr": "s:s9EscapableP",
+            "mangledName": "$ss9EscapableP"
+          },
+          {
+            "kind": "Conformance",
+            "name": "Copyable",
+            "printedName": "Copyable",
+            "usr": "s:s8CopyableP",
+            "mangledName": "$ss8CopyableP"
+          }
+        ]
+      },
+      {
+        "kind": "TypeDecl",
+        "name": "LocalProcess",
+        "printedName": "LocalProcess",
+        "children": [
+          {
+            "kind": "Var",
+            "name": "childfd",
+            "printedName": "childfd",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "Int32",
+                "printedName": "Swift.Int32",
+                "usr": "s:s5Int32V"
+              }
+            ],
+            "declKind": "Var",
+            "usr": "s:7CmdyPTY12LocalProcessC7childfds5Int32Vvp",
+            "mangledName": "$s7CmdyPTY12LocalProcessC7childfds5Int32Vvp",
+            "moduleName": "CmdyPTY",
+            "declAttributes": [
+              "HasInitialValue",
+              "Final",
+              "SetterAccess",
+              "HasStorage"
+            ],
+            "hasStorage": true,
+            "accessors": [
+              {
+                "kind": "Accessor",
+                "name": "Get",
+                "printedName": "Get()",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "Int32",
+                    "printedName": "Swift.Int32",
+                    "usr": "s:s5Int32V"
+                  }
+                ],
+                "declKind": "Accessor",
+                "usr": "s:7CmdyPTY12LocalProcessC7childfds5Int32Vvg",
+                "mangledName": "$s7CmdyPTY12LocalProcessC7childfds5Int32Vvg",
+                "moduleName": "CmdyPTY",
+                "implicit": true,
+                "declAttributes": [
+                  "Final",
+                  "Transparent"
+                ],
+                "accessorKind": "get"
+              }
+            ]
+          },
+          {
+            "kind": "Var",
+            "name": "shellPid",
+            "printedName": "shellPid",
+            "children": [
+              {
+                "kind": "TypeNameAlias",
+                "name": "pid_t",
+                "printedName": "_DarwinFoundation2.pid_t",
+                "children": [
+                  {
+                    "kind": "TypeNameAlias",
+                    "name": "__darwin_pid_t",
+                    "printedName": "_DarwinFoundation2.__darwin_pid_t",
+                    "children": [
+                      {
+                        "kind": "TypeNameAlias",
+                        "name": "__int32_t",
+                        "printedName": "_DarwinFoundation2.__int32_t",
+                        "children": [
+                          {
+                            "kind": "TypeNominal",
+                            "name": "Int32",
+                            "printedName": "Swift.Int32",
+                            "usr": "s:s5Int32V"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ],
+            "declKind": "Var",
+            "usr": "s:7CmdyPTY12LocalProcessC8shellPids5Int32Vvp",
+            "mangledName": "$s7CmdyPTY12LocalProcessC8shellPids5Int32Vvp",
+            "moduleName": "CmdyPTY",
+            "declAttributes": [
+              "HasInitialValue",
+              "Final",
+              "SetterAccess",
+              "HasStorage"
+            ],
+            "hasStorage": true,
+            "accessors": [
+              {
+                "kind": "Accessor",
+                "name": "Get",
+                "printedName": "Get()",
+                "children": [
+                  {
+                    "kind": "TypeNameAlias",
+                    "name": "pid_t",
+                    "printedName": "_DarwinFoundation2.pid_t",
+                    "children": [
+                      {
+                        "kind": "TypeNameAlias",
+                        "name": "__darwin_pid_t",
+                        "printedName": "_DarwinFoundation2.__darwin_pid_t",
+                        "children": [
+                          {
+                            "kind": "TypeNameAlias",
+                            "name": "__int32_t",
+                            "printedName": "_DarwinFoundation2.__int32_t",
+                            "children": [
+                              {
+                                "kind": "TypeNominal",
+                                "name": "Int32",
+                                "printedName": "Swift.Int32",
+                                "usr": "s:s5Int32V"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "declKind": "Accessor",
+                "usr": "s:7CmdyPTY12LocalProcessC8shellPids5Int32Vvg",
+                "mangledName": "$s7CmdyPTY12LocalProcessC8shellPids5Int32Vvg",
+                "moduleName": "CmdyPTY",
+                "implicit": true,
+                "declAttributes": [
+                  "Final",
+                  "Transparent"
+                ],
+                "accessorKind": "get"
+              }
+            ]
+          },
+          {
+            "kind": "Constructor",
+            "name": "init",
+            "printedName": "init(delegate:dispatchQueue:)",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "LocalProcess",
+                "printedName": "CmdyPTY.LocalProcess",
+                "usr": "s:7CmdyPTY12LocalProcessC"
+              },
+              {
+                "kind": "TypeNominal",
+                "name": "LocalProcessDelegate",
+                "printedName": "any CmdyPTY.LocalProcessDelegate",
+                "usr": "s:7CmdyPTY20LocalProcessDelegateP"
+              },
+              {
+                "kind": "TypeNominal",
+                "name": "Optional",
+                "printedName": "Dispatch.DispatchQueue?",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "DispatchQueue",
+                    "printedName": "Dispatch.DispatchQueue",
+                    "usr": "c:objc(cs)OS_dispatch_queue"
+                  }
+                ],
+                "hasDefaultArg": true,
+                "usr": "s:Sq"
+              }
+            ],
+            "declKind": "Constructor",
+            "usr": "s:7CmdyPTY12LocalProcessC8delegate13dispatchQueueAcA0cD8Delegate_p_So03OS_F6_queueCSgtcfc",
+            "mangledName": "$s7CmdyPTY12LocalProcessC8delegate13dispatchQueueAcA0cD8Delegate_p_So03OS_F6_queueCSgtcfc",
+            "moduleName": "CmdyPTY",
+            "init_kind": "Designated"
+          },
+          {
+            "kind": "Function",
+            "name": "send",
+            "printedName": "send(data:)",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "Void",
+                "printedName": "()"
+              },
+              {
+                "kind": "TypeNominal",
+                "name": "ArraySlice",
+                "printedName": "Swift.ArraySlice<Swift.UInt8>",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "UInt8",
+                    "printedName": "Swift.UInt8",
+                    "usr": "s:s5UInt8V"
+                  }
+                ],
+                "usr": "s:s10ArraySliceV"
+              }
+            ],
+            "declKind": "Func",
+            "usr": "s:7CmdyPTY12LocalProcessC4send4datays10ArraySliceVys5UInt8VG_tF",
+            "mangledName": "$s7CmdyPTY12LocalProcessC4send4datays10ArraySliceVys5UInt8VG_tF",
+            "moduleName": "CmdyPTY",
+            "declAttributes": [
+              "Final"
+            ],
+            "funcSelfKind": "NonMutating"
+          },
+          {
+            "kind": "Var",
+            "name": "running",
+            "printedName": "running",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "Bool",
+                "printedName": "Swift.Bool",
+                "usr": "s:Sb"
+              }
+            ],
+            "declKind": "Var",
+            "usr": "s:7CmdyPTY12LocalProcessC7runningSbvp",
+            "mangledName": "$s7CmdyPTY12LocalProcessC7runningSbvp",
+            "moduleName": "CmdyPTY",
+            "declAttributes": [
+              "HasInitialValue",
+              "Final",
+              "SetterAccess",
+              "HasStorage"
+            ],
+            "hasStorage": true,
+            "accessors": [
+              {
+                "kind": "Accessor",
+                "name": "Get",
+                "printedName": "Get()",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "Bool",
+                    "printedName": "Swift.Bool",
+                    "usr": "s:Sb"
+                  }
+                ],
+                "declKind": "Accessor",
+                "usr": "s:7CmdyPTY12LocalProcessC7runningSbvg",
+                "mangledName": "$s7CmdyPTY12LocalProcessC7runningSbvg",
+                "moduleName": "CmdyPTY",
+                "implicit": true,
+                "declAttributes": [
+                  "Final",
+                  "Transparent"
+                ],
+                "accessorKind": "get"
+              }
+            ]
+          },
+          {
+            "kind": "Function",
+            "name": "startProcess",
+            "printedName": "startProcess(executable:args:environment:execName:currentDirectory:)",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "Void",
+                "printedName": "()"
+              },
+              {
+                "kind": "TypeNominal",
+                "name": "String",
+                "printedName": "Swift.String",
+                "hasDefaultArg": true,
+                "usr": "s:SS"
+              },
+              {
+                "kind": "TypeNominal",
+                "name": "Array",
+                "printedName": "[Swift.String]",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "String",
+                    "printedName": "Swift.String",
+                    "usr": "s:SS"
+                  }
+                ],
+                "hasDefaultArg": true,
+                "usr": "s:Sa"
+              },
+              {
+                "kind": "TypeNominal",
+                "name": "Optional",
+                "printedName": "[Swift.String]?",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "Array",
+                    "printedName": "[Swift.String]",
+                    "children": [
+                      {
+                        "kind": "TypeNominal",
+                        "name": "String",
+                        "printedName": "Swift.String",
+                        "usr": "s:SS"
+                      }
+                    ],
+                    "usr": "s:Sa"
+                  }
+                ],
+                "hasDefaultArg": true,
+                "usr": "s:Sq"
+              },
+              {
+                "kind": "TypeNominal",
+                "name": "Optional",
+                "printedName": "Swift.String?",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "String",
+                    "printedName": "Swift.String",
+                    "usr": "s:SS"
+                  }
+                ],
+                "hasDefaultArg": true,
+                "usr": "s:Sq"
+              },
+              {
+                "kind": "TypeNominal",
+                "name": "Optional",
+                "printedName": "Swift.String?",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "String",
+                    "printedName": "Swift.String",
+                    "usr": "s:SS"
+                  }
+                ],
+                "hasDefaultArg": true,
+                "usr": "s:Sq"
+              }
+            ],
+            "declKind": "Func",
+            "usr": "s:7CmdyPTY12LocalProcessC05startD010executable4args11environment8execName16currentDirectoryySS_SaySSGAJSgSSSgALtF",
+            "mangledName": "$s7CmdyPTY12LocalProcessC05startD010executable4args11environment8execName16currentDirectoryySS_SaySSGAJSgSSSgALtF",
+            "moduleName": "CmdyPTY",
+            "declAttributes": [
+              "Final"
+            ],
+            "funcSelfKind": "NonMutating"
+          },
+          {
+            "kind": "Function",
+            "name": "defaultEnvironment",
+            "printedName": "defaultEnvironment(termName:)",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "Array",
+                "printedName": "[Swift.String]",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "String",
+                    "printedName": "Swift.String",
+                    "usr": "s:SS"
+                  }
+                ],
+                "usr": "s:Sa"
+              },
+              {
+                "kind": "TypeNominal",
+                "name": "String",
+                "printedName": "Swift.String",
+                "usr": "s:SS"
+              }
+            ],
+            "declKind": "Func",
+            "usr": "s:7CmdyPTY12LocalProcessC18defaultEnvironment8termNameSaySSGSS_tFZ",
+            "mangledName": "$s7CmdyPTY12LocalProcessC18defaultEnvironment8termNameSaySSGSS_tFZ",
+            "moduleName": "CmdyPTY",
+            "static": true,
+            "declAttributes": [
+              "Final"
+            ],
+            "funcSelfKind": "NonMutating"
+          },
+          {
+            "kind": "Function",
+            "name": "terminate",
+            "printedName": "terminate()",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "Void",
+                "printedName": "()"
+              }
+            ],
+            "declKind": "Func",
+            "usr": "s:7CmdyPTY12LocalProcessC9terminateyyF",
+            "mangledName": "$s7CmdyPTY12LocalProcessC9terminateyyF",
+            "moduleName": "CmdyPTY",
+            "declAttributes": [
+              "Final"
+            ],
+            "funcSelfKind": "NonMutating"
+          },
+          {
+            "kind": "Function",
+            "name": "setHostLogging",
+            "printedName": "setHostLogging(directory:)",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "Void",
+                "printedName": "()"
+              },
+              {
+                "kind": "TypeNominal",
+                "name": "Optional",
+                "printedName": "Swift.String?",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "String",
+                    "printedName": "Swift.String",
+                    "usr": "s:SS"
+                  }
+                ],
+                "usr": "s:Sq"
+              }
+            ],
+            "declKind": "Func",
+            "usr": "s:7CmdyPTY12LocalProcessC14setHostLogging9directoryySSSg_tF",
+            "mangledName": "$s7CmdyPTY12LocalProcessC14setHostLogging9directoryySSSg_tF",
+            "moduleName": "CmdyPTY",
+            "declAttributes": [
+              "Final"
+            ],
+            "funcSelfKind": "NonMutating"
+          }
+        ],
+        "declKind": "Class",
+        "usr": "s:7CmdyPTY12LocalProcessC",
+        "mangledName": "$s7CmdyPTY12LocalProcessC",
+        "moduleName": "CmdyPTY",
+        "declAttributes": [
+          "Final"
+        ],
+        "conformances": [
+          {
+            "kind": "Conformance",
+            "name": "Sendable",
+            "printedName": "Sendable",
+            "usr": "s:s8SendableP",
+            "mangledName": "$ss8SendableP"
+          },
+          {
+            "kind": "Conformance",
+            "name": "SendableMetatype",
+            "printedName": "SendableMetatype",
+            "usr": "s:s16SendableMetatypeP",
+            "mangledName": "$ss16SendableMetatypeP"
+          },
+          {
+            "kind": "Conformance",
+            "name": "Copyable",
+            "printedName": "Copyable",
+            "usr": "s:s8CopyableP",
+            "mangledName": "$ss8CopyableP"
+          },
+          {
+            "kind": "Conformance",
+            "name": "Escapable",
+            "printedName": "Escapable",
+            "usr": "s:s9EscapableP",
+            "mangledName": "$ss9EscapableP"
+          }
+        ]
+      },
+      {
+        "kind": "TypeDecl",
+        "name": "PseudoTerminalHelpers",
+        "printedName": "PseudoTerminalHelpers",
+        "children": [
+          {
+            "kind": "Function",
+            "name": "fork",
+            "printedName": "fork(andExec:args:env:currentDirectory:desiredWindowSize:)",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "Optional",
+                "printedName": "(pid: _DarwinFoundation2.pid_t, masterFd: Swift.Int32)?",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "Tuple",
+                    "printedName": "(pid: _DarwinFoundation2.pid_t, masterFd: Swift.Int32)",
+                    "children": [
+                      {
+                        "kind": "TypeNameAlias",
+                        "name": "pid_t",
+                        "printedName": "_DarwinFoundation2.pid_t",
+                        "children": [
+                          {
+                            "kind": "TypeNameAlias",
+                            "name": "__darwin_pid_t",
+                            "printedName": "_DarwinFoundation2.__darwin_pid_t",
+                            "children": [
+                              {
+                                "kind": "TypeNameAlias",
+                                "name": "__int32_t",
+                                "printedName": "_DarwinFoundation2.__int32_t",
+                                "children": [
+                                  {
+                                    "kind": "TypeNominal",
+                                    "name": "Int32",
+                                    "printedName": "Swift.Int32",
+                                    "usr": "s:s5Int32V"
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "TypeNominal",
+                        "name": "Int32",
+                        "printedName": "Swift.Int32",
+                        "usr": "s:s5Int32V"
+                      }
+                    ]
+                  }
+                ],
+                "usr": "s:Sq"
+              },
+              {
+                "kind": "TypeNominal",
+                "name": "String",
+                "printedName": "Swift.String",
+                "usr": "s:SS"
+              },
+              {
+                "kind": "TypeNominal",
+                "name": "Array",
+                "printedName": "[Swift.String]",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "String",
+                    "printedName": "Swift.String",
+                    "usr": "s:SS"
+                  }
+                ],
+                "usr": "s:Sa"
+              },
+              {
+                "kind": "TypeNominal",
+                "name": "Array",
+                "printedName": "[Swift.String]",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "String",
+                    "printedName": "Swift.String",
+                    "usr": "s:SS"
+                  }
+                ],
+                "usr": "s:Sa"
+              },
+              {
+                "kind": "TypeNominal",
+                "name": "Optional",
+                "printedName": "Swift.String?",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "String",
+                    "printedName": "Swift.String",
+                    "usr": "s:SS"
+                  }
+                ],
+                "hasDefaultArg": true,
+                "usr": "s:Sq"
+              },
+              {
+                "kind": "TypeNominal",
+                "name": "winsize",
+                "printedName": "Darwin.winsize",
+                "paramValueOwnership": "InOut",
+                "usr": "c:@S@winsize"
+              }
+            ],
+            "declKind": "Func",
+            "usr": "s:7CmdyPTY21PseudoTerminalHelpersC4fork7andExec4args3env16currentDirectory17desiredWindowSizes5Int32V3pid_AK8masterFdtSgSS_SaySSGAOSSSgSo7winsizeVztFZ",
+            "mangledName": "$s7CmdyPTY21PseudoTerminalHelpersC4fork7andExec4args3env16currentDirectory17desiredWindowSizes5Int32V3pid_AK8masterFdtSgSS_SaySSGAOSSSgSo7winsizeVztFZ",
+            "moduleName": "CmdyPTY",
+            "static": true,
+            "declAttributes": [
+              "Final"
+            ],
+            "funcSelfKind": "NonMutating"
+          },
+          {
+            "kind": "Function",
+            "name": "setWinSize",
+            "printedName": "setWinSize(masterPtyDescriptor:windowSize:)",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "Int32",
+                "printedName": "Swift.Int32",
+                "usr": "s:s5Int32V"
+              },
+              {
+                "kind": "TypeNominal",
+                "name": "Int32",
+                "printedName": "Swift.Int32",
+                "usr": "s:s5Int32V"
+              },
+              {
+                "kind": "TypeNominal",
+                "name": "winsize",
+                "printedName": "Darwin.winsize",
+                "paramValueOwnership": "InOut",
+                "usr": "c:@S@winsize"
+              }
+            ],
+            "declKind": "Func",
+            "usr": "s:7CmdyPTY21PseudoTerminalHelpersC10setWinSize19masterPtyDescriptor06windowH0s5Int32VAH_So7winsizeVztFZ",
+            "mangledName": "$s7CmdyPTY21PseudoTerminalHelpersC10setWinSize19masterPtyDescriptor06windowH0s5Int32VAH_So7winsizeVztFZ",
+            "moduleName": "CmdyPTY",
+            "static": true,
+            "declAttributes": [
+              "Final"
+            ],
+            "funcSelfKind": "NonMutating"
+          },
+          {
+            "kind": "Function",
+            "name": "availableBytes",
+            "printedName": "availableBytes(fd:)",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "Tuple",
+                "printedName": "(status: Swift.Int32, size: Swift.Int32)",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "Int32",
+                    "printedName": "Swift.Int32",
+                    "usr": "s:s5Int32V"
+                  },
+                  {
+                    "kind": "TypeNominal",
+                    "name": "Int32",
+                    "printedName": "Swift.Int32",
+                    "usr": "s:s5Int32V"
+                  }
+                ]
+              },
+              {
+                "kind": "TypeNominal",
+                "name": "Int32",
+                "printedName": "Swift.Int32",
+                "usr": "s:s5Int32V"
+              }
+            ],
+            "declKind": "Func",
+            "usr": "s:7CmdyPTY21PseudoTerminalHelpersC14availableBytes2fds5Int32V6status_AG4sizetAG_tFZ",
+            "mangledName": "$s7CmdyPTY21PseudoTerminalHelpersC14availableBytes2fds5Int32V6status_AG4sizetAG_tFZ",
+            "moduleName": "CmdyPTY",
+            "static": true,
+            "declAttributes": [
+              "Final"
+            ],
+            "funcSelfKind": "NonMutating"
+          }
+        ],
+        "declKind": "Class",
+        "usr": "s:7CmdyPTY21PseudoTerminalHelpersC",
+        "mangledName": "$s7CmdyPTY21PseudoTerminalHelpersC",
+        "moduleName": "CmdyPTY",
+        "hasMissingDesignatedInitializers": true,
+        "conformances": [
+          {
+            "kind": "Conformance",
+            "name": "Copyable",
+            "printedName": "Copyable",
+            "usr": "s:s8CopyableP",
+            "mangledName": "$ss8CopyableP"
+          },
+          {
+            "kind": "Conformance",
+            "name": "Escapable",
+            "printedName": "Escapable",
+            "usr": "s:s9EscapableP",
+            "mangledName": "$ss9EscapableP"
+          }
+        ]
+      }
+    ],
+    "json_format_version": 8
+  }
+}

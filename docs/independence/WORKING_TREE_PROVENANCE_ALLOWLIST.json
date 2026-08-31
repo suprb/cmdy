@@ -1,0 +1,744 @@
+{
+  "schemaVersion": 1,
+  "matches": [
+    {
+      "id": "vendor-cell-public-value-shape",
+      "origin": "vendor",
+      "mode": "structural",
+      "active": "Core/Sources/CmdyCore/Cell.swift",
+      "historical": "Vendor/SwiftTerm/Sources/SwiftTerm/CharData.swift",
+      "fingerprint": "c1f4f14decaa6ec75b797fb45d82441219ed12c1b999cadc308e2b40ca3c772b",
+      "classification": "api-declaration",
+      "rationale": "Public cell value and style-bit declarations required by the compatibility surface; identifiers differ and no cell algorithm is covered."
+    },
+    {
+      "id": "vendor-kitty-diacritic-table",
+      "origin": "vendor",
+      "mode": "exact",
+      "active": "Core/Sources/CmdyCore/KittyUnicodePlaceholder.swift",
+      "historical": "Vendor/SwiftTerm/Sources/SwiftTerm/KittyPlaceholder.swift",
+      "fingerprint": "f473632138d75ab2b248887a0cd8a17e0db13071fd9afd657658f6b272d67496",
+      "classification": "official-protocol-data",
+      "rationale": "The ordered combining-diacritic table is normative public Kitty protocol data and is independently cited to the official specification in the active source."
+    },
+    {
+      "id": "vendor-kitty-payload-size-accessor",
+      "origin": "vendor",
+      "mode": "exact",
+      "active": "Core/Sources/CmdyCore/TerminalGraphics.swift",
+      "historical": "Vendor/SwiftTerm/Sources/SwiftTerm/KittyGraphics.swift",
+      "fingerprint": "90c827e327b5f771d1be9a95a5a16ca4ad7a1081b328b2425e1b7f77f17ecc79",
+      "classification": "data-plumbing",
+      "rationale": "Exhaustive payload-enum size projection only; it contains no protocol parser, storage, or placement algorithm."
+    },
+    {
+      "id": "vendor-pty-delegate-declaration",
+      "origin": "vendor",
+      "mode": "exact",
+      "active": "Core/Sources/CmdyPTY/LocalProcess.swift",
+      "historical": "Vendor/SwiftTerm/Sources/SwiftTerm/LocalProcess.swift",
+      "fingerprint": "4d5b9fd9470bfee1381a14d2e33389a335c6b0f500c29746dcb63f704111c5ae",
+      "classification": "api-declaration",
+      "rationale": "Compatibility delegate method signatures only."
+    },
+    {
+      "id": "vendor-pty-start-signature",
+      "origin": "vendor",
+      "mode": "exact",
+      "active": "Core/Sources/CmdyPTY/LocalProcess.swift",
+      "historical": "Vendor/SwiftTerm/Sources/SwiftTerm/Mac/MacLocalTerminalView.swift",
+      "fingerprint": "5451a8a8cf70487951aa9da0bfa3de57573a2f9ed0855ff61a7cd6ba43e941d4",
+      "classification": "api-declaration",
+      "rationale": "Public process-launch signature and defaults only; the PTY implementation is outside the match."
+    },
+    {
+      "id": "vendor-pty-fork-signature",
+      "origin": "vendor",
+      "mode": "exact",
+      "active": "Core/Sources/CmdyPTY/Pty.swift",
+      "historical": "Vendor/SwiftTerm/Sources/SwiftTerm/Pty.swift",
+      "fingerprint": "53d10891616754264d96b10acb9c23fafee79551b7f0b48f6ca67150a5384bf1",
+      "classification": "api-declaration",
+      "rationale": "Public PTY fork signature and return tuple only; no fork or descriptor-management mechanics are covered."
+    },
+    {
+      "id": "vendor-metal-premultiplied-blend",
+      "origin": "vendor",
+      "mode": "exact",
+      "active": "Renderer/Sources/CmdyGPU/BuiltInEffectShaders.swift",
+      "historical": "Vendor/SwiftTerm/Sources/SwiftTerm/Apple/Metal/MetalTerminalRenderer.swift",
+      "fingerprint": "8958a0f876aaf0777faaafb4f232d8c35e2d71434ebec977180d5c1a61d48574",
+      "classification": "standard-platform-mechanics",
+      "rationale": "Canonical Metal premultiplied-alpha blend descriptor fields."
+    },
+    {
+      "id": "vendor-metal-error-cases",
+      "origin": "vendor",
+      "mode": "exact",
+      "active": "Renderer/Sources/CmdyGPU/MetalCore.swift",
+      "historical": "Vendor/SwiftTerm/Sources/SwiftTerm/Apple/Metal/MetalError.swift",
+      "fingerprint": "8b554a850d4eceaaf2f1355ead1aca8f62c7716e8789fe279c6cd79d24492d19",
+      "classification": "api-declaration",
+      "rationale": "Renderer error enum declaration and case names only."
+    },
+    {
+      "id": "vendor-atlas-entry-copy",
+      "origin": "vendor",
+      "mode": "exact",
+      "active": "Renderer/Sources/CmdyGPU/MetalTerminalRenderer.swift",
+      "historical": "Vendor/SwiftTerm/Sources/SwiftTerm/Apple/Metal/MetalTerminalRenderer.swift",
+      "fingerprint": "9e156b4ba645302ac3712e406fe8db5b48ebdc1d20252fb52f323ba6c3482160",
+      "classification": "data-plumbing",
+      "rationale": "Copies an already-created bitmap's dimensions, bearing, color flag, and atlas region into a cache entry."
+    },
+    {
+      "id": "vendor-box-draw-entrypoint",
+      "origin": "vendor",
+      "mode": "exact",
+      "active": "Renderer/Sources/CmdyGPU/ProceduralGlyphs.swift",
+      "historical": "Vendor/SwiftTerm/Sources/SwiftTerm/Apple/BoxDrawingRenderer.swift",
+      "fingerprint": "6f9d33003890a52004bbe36a1a516500da4b236b3df97774bf1b41d51f13a316",
+      "classification": "api-declaration",
+      "rationale": "Public box-drawing entrypoint signature only; the independently rewritten glyph construction is outside the match."
+    },
+    {
+      "id": "vendor-app-menu-table-structural-collision",
+      "origin": "vendor",
+      "mode": "structural",
+      "active": "App/MenuUtilities.swift",
+      "historical": "Vendor/SwiftTerm/Tests/SwiftTermTests/GhosttyImplicitLinkDetectionTests.swift",
+      "fingerprints": [
+        "baabf0fe107953faf55782dd3fe992f00d819dcd42b5837d42983cbdf4cde1e6",
+        "9befdf1c68ceeec5ec34205f6eceb5a8dfc712743e937bd21863560e520be474"
+      ],
+      "classification": "non-substantive-structural-collision",
+      "rationale": "Normalization makes the unrelated menu-title/SF-symbol tuple table resemble a Vendor test-input/expected-URL tuple table; no literals or behavior match."
+    },
+    {
+      "id": "vendor-app-keybinding-switch-projection",
+      "origin": "vendor",
+      "mode": "structural",
+      "active": "App/StandardKeybindings.swift",
+      "historical": "Vendor/SwiftTerm/Sources/SwiftTerm/iOS/iOSTerminalView.swift",
+      "fingerprints": [
+        "a992913071897af0264515603aed2f4dedad026af7f31b9d034d32dd8f0e5210",
+        "a2c4b77a80f32658fc7ec05049cf9896fac68d49294c048d46e6bc542b232144"
+      ],
+      "classification": "data-plumbing",
+      "rationale": "Identifier-normalized exhaustive enum-to-enum switch; active keybinding actions and Vendor HID-key mappings have different cases and domains."
+    },
+    {
+      "id": "vendor-app-toolbar-list-structural-collision",
+      "origin": "vendor",
+      "mode": "structural",
+      "active": "App/TerminalWindowController.swift",
+      "historical": "Vendor/SwiftTerm/Sources/SwiftTerm/Utilities.swift",
+      "fingerprint": "3252a45dad9ca834d7c854ab09f12ca98c9c93f21aeb1ff84b6045ab11c72343",
+      "classification": "non-substantive-structural-collision",
+      "rationale": "Normalization makes a toolbar-identifier array resemble part of an unrelated UTF-8 decoder table; the source values and behavior do not match."
+    },
+    {
+      "id": "retired-app-cursor-style-adapter",
+      "origin": "retired",
+      "mode": "exact",
+      "active": "App/CmdyCoreAdapter.swift",
+      "historical": "App/TermiteCoreAdapter.swift",
+      "fingerprint": "5996f85b36438dede7189b55ff7ac554217cee2c68ce55591e696d3b1955f520",
+      "classification": "data-plumbing",
+      "rationale": "One-to-one public cursor-style enum conversion at the App/Core seam."
+    },
+    {
+      "id": "retired-app-snapshot-field-plumbing",
+      "origin": "retired",
+      "mode": "exact",
+      "active": "App/CmdySnapshotShaper.swift",
+      "historical": "App/TermiteCoreShaping.swift",
+      "fingerprints": [
+        "9177ba42c5c8ce7cd0681a950a8d293518907263c201c88aebcd45e350781f21",
+        "cc5d7b8aee05ed8bca131e0b1e8723de2cca7810ae8c55bed10bb73d4b264403",
+        "31536c703b11f5670d7253f40b8def7bc345c77af45a0d35cfb90005f4cfca20",
+        "03a19dfe533081e3afb09f58d38a506e12b403ec50d993085eb81c8acc7d1251"
+      ],
+      "classification": "data-plumbing",
+      "rationale": "Field projection for placeholder cells, cursor-cell lookup, and the App image wrapper; no shaping or decoding algorithm is covered."
+    },
+    {
+      "id": "retired-app-surface-callback-fields",
+      "origin": "retired",
+      "mode": "exact",
+      "active": "App/CmdyTerminalSurface.swift",
+      "historical": "App/TermiteCoreSurface.swift",
+      "fingerprint": "822cc7da38149e62b26004403cd1ca9f532ffad829013bd3b93e0c2c7b3b7c51",
+      "classification": "api-declaration",
+      "rationale": "Stored callback declarations forming the application seam."
+    },
+    {
+      "id": "retired-app-surface-feed-forwarding",
+      "origin": "retired",
+      "mode": "exact",
+      "active": "App/CmdyTerminalSurface.swift",
+      "historical": "App/TermiteCoreSurface.swift",
+      "fingerprint": "b41cf00143911d131fdb4cb389e373bfcaa88fea64b28431ffffdd3fea80553c",
+      "classification": "data-plumbing",
+      "rationale": "Thin send/feed forwarding methods and palette installation entrypoint."
+    },
+    {
+      "id": "retired-app-surface-renderer-options",
+      "origin": "retired",
+      "mode": "exact",
+      "active": "App/CmdyTerminalSurface.swift",
+      "historical": "App/TermiteCoreSurface.swift",
+      "fingerprint": "92c4fd27cf7f1fc15a702a832b35414fc7d3d08c5c29ef0d3c7b936b8c358ec0",
+      "classification": "data-plumbing",
+      "rationale": "Copies user-facing renderer options into renderer properties."
+    },
+    {
+      "id": "retired-app-standard-pasteboard-actions",
+      "origin": "retired",
+      "mode": "exact",
+      "active": "App/CmdyTerminalSurface.swift",
+      "historical": "App/TermiteCoreSurface.swift",
+      "fingerprint": "9328afd40e6d9a8dbf24c04664ac88048d4989070e2b6271f81969fa2f309d28",
+      "classification": "standard-platform-mechanics",
+      "rationale": "Standard AppKit pasteboard copy and select-all action mechanics."
+    },
+    {
+      "id": "retired-app-process-forwarding",
+      "origin": "retired",
+      "mode": "exact",
+      "active": "App/CmdyTerminalSurface.swift",
+      "historical": "App/TermiteCoreSurface.swift",
+      "fingerprint": "d8a75dcbb517603c6cccd14227eb39466bae830bc28d23ff802b7141d2c1c47b",
+      "classification": "data-plumbing",
+      "rationale": "Thin process-start forwarding signature and arguments."
+    },
+    {
+      "id": "retired-app-observer-platform-forwarding",
+      "origin": "retired",
+      "mode": "exact",
+      "active": "App/CmdyTerminalSurface.swift",
+      "historical": "App/TermiteCoreSurface.swift",
+      "fingerprint": "8dc9636931578ac46907de6800900ab81557830fdfba74bd696379ce738c83b1",
+      "classification": "data-plumbing",
+      "rationale": "Observer callbacks forward title, directory, bell, notification, and clipboard values to AppKit or stored callbacks."
+    },
+    {
+      "id": "retired-app-observer-process-forwarding",
+      "origin": "retired",
+      "mode": "exact",
+      "active": "App/CmdyTerminalSurface.swift",
+      "historical": "App/TermiteCoreSurface.swift",
+      "fingerprint": "f6275fdd3b5d9a0950ac817767131ca459a5116746863bbf8e1261f7dd0fc1f9",
+      "classification": "data-plumbing",
+      "rationale": "Observer callbacks forward output and process termination and consume a stored dirty-row range."
+    },
+    {
+      "id": "retired-app-render-grid-projection",
+      "origin": "retired",
+      "mode": "structural",
+      "active": "App/CmdyTerminalSurface.swift",
+      "historical": "App/TermiteCoreShaping.swift",
+      "fingerprint": "d9d4a84848251e1ccbcad4ec19396051a406a5fb802ed1bfb72be06de5ad1f53",
+      "classification": "data-plumbing",
+      "rationale": "Projects a captured Core grid's public fields into the renderer seam; the identifier-normalized match contains no rendering algorithm."
+    },
+    {
+      "id": "retired-app-kitty-render-projection",
+      "origin": "retired",
+      "mode": "exact",
+      "active": "App/CmdyTerminalSurface.swift",
+      "historical": "App/TermiteCoreShaping.swift",
+      "fingerprints": [
+        "366dfebac23da485f992216b0045c384846049673f0638e7d3f880280439c934",
+        "f6e18077b30dcc7438accefd60c7a0ceee934597b335ca0ca6dd9a679569b60f",
+        "08db2672134f3bc6bf679f877bf894dbc734c82a2b24a28a915d5d082e328540"
+      ],
+      "classification": "data-plumbing",
+      "rationale": "Projects Kitty snapshot fields and cursor-style enum cases into renderer-facing value types."
+    },
+    {
+      "id": "retired-app-model-cursor-style-projection",
+      "origin": "retired",
+      "mode": "exact",
+      "active": "App/TerminalModel.swift",
+      "historical": "App/TermiteCoreAdapter.swift",
+      "fingerprint": "22983616c87c7f325c50152ce129a261418fbbc774a9c3b41f2637715d04420d",
+      "classification": "data-plumbing",
+      "rationale": "One-to-one cursor-style enum conversion and forwarding through the model queue."
+    },
+    {
+      "id": "retired-app-standard-color-construction",
+      "origin": "retired",
+      "mode": "exact",
+      "active": "App/IconGenerator.swift",
+      "historical": "App/TermiteCoreShaping.swift",
+      "fingerprint": "2a5df319469e9a36c9874c61148cad58079be93c90a44cbd6f7db49d6c2b1e98",
+      "classification": "standard-platform-mechanics",
+      "rationale": "Canonical AppKit conversion from integer RGB channels to an opaque sRGB NSColor."
+    },
+    {
+      "id": "retired-app-toolbar-list-structural-collision",
+      "origin": "retired",
+      "mode": "structural",
+      "active": "App/TerminalWindowController.swift",
+      "historical": "Core/Sources/TermiteCore/UnicodeWidth.swift",
+      "fingerprint": "3252a45dad9ca834d7c854ab09f12ca98c9c93f21aeb1ff84b6045ab11c72343",
+      "classification": "non-substantive-structural-collision",
+      "rationale": "Normalization makes a toolbar-identifier array resemble part of an unrelated UTF-8 decoder table; the source values and behavior do not match."
+    },
+    {
+      "id": "retired-pty-delegate-declaration",
+      "origin": "retired",
+      "mode": "exact",
+      "active": "Core/Sources/CmdyPTY/LocalProcess.swift",
+      "historical": "Core/Sources/TermitePTY/LocalProcess.swift",
+      "fingerprint": "4d5b9fd9470bfee1381a14d2e33389a335c6b0f500c29746dcb63f704111c5ae",
+      "classification": "api-declaration",
+      "rationale": "Compatibility delegate method signatures only."
+    },
+    {
+      "id": "retired-pty-start-signature",
+      "origin": "retired",
+      "mode": "exact",
+      "active": "Core/Sources/CmdyPTY/LocalProcess.swift",
+      "historical": "Core/Sources/TermitePTY/LocalProcess.swift",
+      "fingerprint": "31226d9f3354e21bd9ac8b5172de7ea1bfe42fec14ab3b5b5c3b1bff918de98d",
+      "classification": "api-declaration",
+      "rationale": "Public process-launch signature and defaults only; the PTY implementation is outside the match."
+    },
+    {
+      "id": "retired-pty-fork-signature",
+      "origin": "retired",
+      "mode": "exact",
+      "active": "Core/Sources/CmdyPTY/Pty.swift",
+      "historical": "Core/Sources/TermitePTY/Pty.swift",
+      "fingerprint": "53d10891616754264d96b10acb9c23fafee79551b7f0b48f6ca67150a5384bf1",
+      "classification": "api-declaration",
+      "rationale": "Public PTY fork signature and return tuple only; no fork or descriptor-management mechanics are covered."
+    },
+    {
+      "id": "retired-render-effect-uniform-layout",
+      "origin": "retired",
+      "mode": "exact",
+      "active": "Renderer/Sources/CmdyGPU/BuiltInEffectShaders.swift",
+      "historical": "Renderer/Sources/TermiteGPU/MetalTerminalRenderer.swift",
+      "fingerprint": "9909ca29945eae9f9a0f50f6fd9c40c92d6f279e16e38647b058c1dbde01a237",
+      "classification": "api-declaration",
+      "rationale": "Metal uniform field layout shared across the public CPU/GPU data seam."
+    },
+    {
+      "id": "retired-render-premultiplied-blend",
+      "origin": "retired",
+      "mode": "exact",
+      "active": "Renderer/Sources/CmdyGPU/BuiltInEffectShaders.swift",
+      "historical": "Renderer/Sources/TermiteGPU/MetalTerminalRenderer.swift",
+      "fingerprint": "8958a0f876aaf0777faaafb4f232d8c35e2d71434ebec977180d5c1a61d48574",
+      "classification": "standard-platform-mechanics",
+      "rationale": "Canonical Metal premultiplied-alpha blend descriptor fields."
+    },
+    {
+      "id": "retired-render-atlas-region-value",
+      "origin": "retired",
+      "mode": "structural",
+      "active": "Renderer/Sources/CmdyGPU/CompatibilityUtilities.swift",
+      "historical": "Renderer/Sources/TermiteGPU/RenderTypes.swift",
+      "fingerprint": "9220878ee43efc8b810c3b9d40a27060023324a48eb62591905cd14d632db412",
+      "classification": "api-declaration",
+      "rationale": "Identifier-normalized atlas-region value fields and memberwise initializer."
+    },
+    {
+      "id": "retired-render-atlas-generation-accessor",
+      "origin": "retired",
+      "mode": "exact",
+      "active": "Renderer/Sources/CmdyGPU/CompatibilityUtilities.swift",
+      "historical": "Renderer/Sources/TermiteGPU/GlyphAtlas.swift",
+      "fingerprint": "1c4ceedbda2eaa15fc43282cfb213d507b701da745d5cf7f00c47f8528d23540",
+      "classification": "data-plumbing",
+      "rationale": "Bounds-checking accessor for a page generation counter."
+    },
+    {
+      "id": "retired-render-glyph-bitmap-value",
+      "origin": "retired",
+      "mode": "structural",
+      "active": "Renderer/Sources/CmdyGPU/CompatibilityUtilities.swift",
+      "historical": "Renderer/Sources/TermiteGPU/BlockElementRenderer.swift",
+      "fingerprint": "592e49f202e7deda1037114055ca5730f52499c863e101587142ac0321536679",
+      "classification": "api-declaration",
+      "rationale": "Identifier-normalized glyph bitmap value fields and memberwise initializer."
+    },
+    {
+      "id": "retired-render-viewport-value-declaration",
+      "origin": "retired",
+      "mode": "exact",
+      "active": "Renderer/Sources/CmdyGPU/GeometryAndScheduling.swift",
+      "historical": "Renderer/Sources/TermiteGPU/MetalTerminalRenderer.swift",
+      "fingerprint": "1c94e1073d67e610a14a4470e8985679bbe4a9ba433ef4d39baf3730c231e0aa",
+      "classification": "api-declaration",
+      "rationale": "Viewport translation value fields and initializer signature only."
+    },
+    {
+      "id": "retired-render-metal-error-cases",
+      "origin": "retired",
+      "mode": "exact",
+      "active": "Renderer/Sources/CmdyGPU/MetalCore.swift",
+      "historical": "Renderer/Sources/TermiteGPU/MetalError.swift",
+      "fingerprint": "8b554a850d4eceaaf2f1355ead1aca8f62c7716e8789fe279c6cd79d24492d19",
+      "classification": "api-declaration",
+      "rationale": "Renderer error enum declaration and case names only."
+    },
+    {
+      "id": "retired-render-metal-uniform-prefix",
+      "origin": "retired",
+      "mode": "exact",
+      "active": "Renderer/Sources/CmdyGPU/MetalCore.swift",
+      "historical": "Renderer/Sources/TermiteGPU/MetalTerminalRenderer.swift",
+      "fingerprint": "d27b1c0b9a3c7d12bb2028497147400334c091106142c01c29deec19650f9f29",
+      "classification": "api-declaration",
+      "rationale": "Metal uniform field prefix shared across CPU and shader layouts."
+    },
+    {
+      "id": "retired-render-metal-view-device-setup",
+      "origin": "retired",
+      "mode": "exact",
+      "active": "Renderer/Sources/CmdyGPU/MetalTerminalRenderer.swift",
+      "historical": "Renderer/Sources/TermiteGPU/MetalTerminalRenderer.swift",
+      "fingerprint": "b2275b39fadd137aae214b4081422785f891f8273135f50ff0dc2c2791233484",
+      "classification": "standard-platform-mechanics",
+      "rationale": "Standard MTKView device acquisition and unavailable-device guard."
+    },
+    {
+      "id": "retired-render-atlas-entry-copy",
+      "origin": "retired",
+      "mode": "exact",
+      "active": "Renderer/Sources/CmdyGPU/MetalTerminalRenderer.swift",
+      "historical": "Renderer/Sources/TermiteGPU/MetalTerminalRenderer.swift",
+      "fingerprint": "9e156b4ba645302ac3712e406fe8db5b48ebdc1d20252fb52f323ba6c3482160",
+      "classification": "data-plumbing",
+      "rationale": "Copies an already-created bitmap's dimensions, bearing, color flag, and atlas region into a cache entry."
+    },
+    {
+      "id": "retired-render-block-alpha-and-rect-values",
+      "origin": "retired",
+      "mode": "exact",
+      "active": "Renderer/Sources/CmdyGPU/ProceduralGlyphs.swift",
+      "historical": "Renderer/Sources/TermiteGPU/BlockElementRenderer.swift",
+      "fingerprint": "7608a5bd564ceab3a6226a3ee8706dc9a67cfe8abff7f3aada31b1508fc4ead9",
+      "classification": "compatibility-data",
+      "rationale": "Fixed block-element alpha levels and public rectangle value fields."
+    },
+    {
+      "id": "retired-render-block-item-value",
+      "origin": "retired",
+      "mode": "exact",
+      "active": "Renderer/Sources/CmdyGPU/ProceduralGlyphs.swift",
+      "historical": "Renderer/Sources/TermiteGPU/BlockElementRenderer.swift",
+      "fingerprint": "969d29d0cbcb4e1c39e0a131bc696cb30ae721ddaeaca937b27a77c9c8caad02",
+      "classification": "api-declaration",
+      "rationale": "Block-element render-item fields and memberwise initializer."
+    },
+    {
+      "id": "retired-render-box-item-value",
+      "origin": "retired",
+      "mode": "exact",
+      "active": "Renderer/Sources/CmdyGPU/ProceduralGlyphs.swift",
+      "historical": "Renderer/Sources/TermiteGPU/BoxDrawingRenderer.swift",
+      "fingerprint": "9ecadd779ee5210f6a460641a960f8ad4580e12a567aedc182ce286320a0f391",
+      "classification": "api-declaration",
+      "rationale": "Box-drawing render-item fields and memberwise initializer."
+    },
+    {
+      "id": "retired-render-box-draw-entrypoint",
+      "origin": "retired",
+      "mode": "exact",
+      "active": "Renderer/Sources/CmdyGPU/ProceduralGlyphs.swift",
+      "historical": "Renderer/Sources/TermiteGPU/BoxDrawingRenderer.swift",
+      "fingerprint": "b29a3d2db70b78e0b5cf9d1eedbd23adfde49b0647edf86af002109e13ef6945",
+      "classification": "api-declaration",
+      "rationale": "Public box-drawing entrypoint signature and input validity guard; glyph construction is outside the match."
+    },
+    {
+      "id": "retired-render-source-protocol",
+      "origin": "retired",
+      "mode": "exact",
+      "active": "Renderer/Sources/CmdyGPU/RenderContract.swift",
+      "historical": "Renderer/Sources/TermiteGPU/MetalRenderSource.swift",
+      "fingerprint": "c778e410e25964f6717e86f76efe239515b749dac9ddf6be6afe380a2bc95e63",
+      "classification": "api-declaration",
+      "rationale": "Renderer input protocol requirements defining the preserved App/renderer boundary."
+    },
+    {
+      "id": "retired-render-line-segment-fields",
+      "origin": "retired",
+      "mode": "exact",
+      "active": "Renderer/Sources/CmdyGPU/RenderContract.swift",
+      "historical": "Renderer/Sources/TermiteGPU/RenderTypes.swift",
+      "fingerprint": "e00ef77e0c96648595c6c08bda5845b03a9d8bc9760e7fd77b15f1a5577d9a89",
+      "classification": "api-declaration",
+      "rationale": "Line-segment public fields plus overflow-safe column-span projection."
+    },
+    {
+      "id": "retired-render-line-segment-initializer",
+      "origin": "retired",
+      "mode": "exact",
+      "active": "Renderer/Sources/CmdyGPU/RenderContract.swift",
+      "historical": "Renderer/Sources/TermiteGPU/RenderTypes.swift",
+      "fingerprint": "65dc587bca39a76c49807d0fbbb5b45450d1e0735193ad1407be0d055bd8d5fd",
+      "classification": "data-plumbing",
+      "rationale": "Line-segment memberwise initializer signature and field assignment."
+    },
+    {
+      "id": "retired-render-line-info-value",
+      "origin": "retired",
+      "mode": "exact",
+      "active": "Renderer/Sources/CmdyGPU/RenderContract.swift",
+      "historical": "Renderer/Sources/TermiteGPU/RenderTypes.swift",
+      "fingerprint": "e9bd3b8d41e7dbd9e14cff9a3a99174e914861c30bad99033ed4dd31d3ad4885",
+      "classification": "data-plumbing",
+      "rationale": "Renderer line-info fields, defaults, and memberwise assignments."
+    },
+    {
+      "id": "retired-render-grid-snapshot-fields",
+      "origin": "retired",
+      "mode": "exact",
+      "active": "Renderer/Sources/CmdyGPU/RenderContract.swift",
+      "historical": "Renderer/Sources/TermiteGPU/RenderTypes.swift",
+      "fingerprint": "2279fec3755342e9c63252fb3d3c85203ecbf2d2c35efdc4492318933a2547c7",
+      "classification": "api-declaration",
+      "rationale": "Grid snapshot public fields and initializer signature."
+    },
+    {
+      "id": "retired-render-grid-snapshot-assignments",
+      "origin": "retired",
+      "mode": "exact",
+      "active": "Renderer/Sources/CmdyGPU/RenderContract.swift",
+      "historical": "Renderer/Sources/TermiteGPU/RenderTypes.swift",
+      "fingerprint": "2abb13f5fa31c0f60fdb9a85490293661a208c8e5fbb1610bd01a0d9e86d7820",
+      "classification": "data-plumbing",
+      "rationale": "Grid snapshot memberwise assignments and buffering enum declaration."
+    },
+    {
+      "id": "retired-render-kitty-placement-values",
+      "origin": "retired",
+      "mode": "exact",
+      "active": "Renderer/Sources/CmdyGPU/RenderContract.swift",
+      "historical": "Renderer/Sources/TermiteGPU/RenderTypes.swift",
+      "fingerprint": "613a2d44b3e827f79f960e0981e76b1f5508958914fb4a153e483c9672c8181d",
+      "classification": "api-declaration",
+      "rationale": "Kitty cache-stamp and placement value fields and initializer signature."
+    },
+    {
+      "id": "retired-render-kitty-payload-values",
+      "origin": "retired",
+      "mode": "exact",
+      "active": "Renderer/Sources/CmdyGPU/RenderContract.swift",
+      "historical": "Renderer/Sources/TermiteGPU/RenderTypes.swift",
+      "fingerprint": "b5f3b2e5736a6499be302363bd5095e4205231bcaccecc8a65cd4d9221f1ba55",
+      "classification": "api-declaration",
+      "rationale": "Kitty image-payload and placeholder-cell public value declarations."
+    },
+    {
+      "id": "vendor-kit-keybinding-list-structural-collision",
+      "origin": "vendor",
+      "mode": "structural",
+      "active": "Kit/Sources/CmdyKit/KeybindingImport.swift",
+      "historical": "Vendor/SwiftTerm/Tests/SwiftTermTests/SwiftTermTests.swift",
+      "fingerprint": "18e5303264907480bc41ce65fb085a02f6c5541f3ac9064ad64cbfdb21f2e819",
+      "classification": "non-substantive-structural-collision",
+      "rationale": "Identifier normalization makes cmdy's native shortcut-descriptor accumulator resemble an unrelated Vendor conformance-test name list; literals and behavior differ."
+    },
+    {
+      "id": "vendor-kit-shader-list-structural-collision",
+      "origin": "vendor",
+      "mode": "structural",
+      "active": "Kit/Sources/CmdyKit/Preferences.swift",
+      "historical": "Vendor/SwiftTerm/Tests/SwiftTermTests/SwiftTermTests.swift",
+      "fingerprint": "c01b4862cae77215e00a401284a77b45f0d921fa6dd971247ebf818b97833472",
+      "classification": "non-substantive-structural-collision",
+      "rationale": "Identifier normalization makes cmdy's shader-name array resemble an unrelated Vendor conformance-test name array; literals and domains differ."
+    },
+    {
+      "id": "vendor-kit-cursor-style-projection",
+      "origin": "vendor",
+      "mode": "exact",
+      "active": "Kit/Sources/CmdyKit/Preferences.swift",
+      "historical": "Vendor/SwiftTerm/Sources/SwiftTerm/TerminalOptions.swift",
+      "fingerprint": "11c57e998f0f0892e1019450f1acaeaf0ee1e5ecd45d63b79db8786eef658b4c",
+      "classification": "data-plumbing",
+      "rationale": "One-to-one projection of the six public DECSCUSR cursor-style names into cmdy's seam enum."
+    },
+    {
+      "id": "vendor-kit-term-color-initializer",
+      "origin": "vendor",
+      "mode": "exact",
+      "active": "Kit/Sources/CmdyKit/TerminalCoreProtocols.swift",
+      "historical": "Vendor/SwiftTerm/Sources/SwiftTerm/Colors.swift",
+      "fingerprint": "d260605650e4e595a45e4452bf36052439f210c26de178801a089f09c8362b98",
+      "classification": "data-plumbing",
+      "rationale": "Public 16-bit RGB memberwise initializer and direct field assignments only."
+    },
+    {
+      "id": "vendor-kit-search-options-value",
+      "origin": "vendor",
+      "mode": "exact",
+      "active": "Kit/Sources/CmdyKit/TerminalCoreProtocols.swift",
+      "historical": "Vendor/SwiftTerm/Sources/SwiftTerm/SearchOptions.swift",
+      "fingerprint": "00a200acff8bbf6f8a500ba8660c77a26234c04b701de081475c794277e410a2",
+      "classification": "api-declaration",
+      "rationale": "Public search-option fields, defaults, and memberwise initializer forming the preserved terminal search boundary."
+    },
+    {
+      "id": "retired-identity-resource-bundle-lookup",
+      "origin": "retired",
+      "mode": "exact",
+      "active": "Identity/Sources/ProductIdentity/ProductIdentity.swift",
+      "historical": "Renderer/Sources/TermiteGPU/MetalTerminalRenderer.swift",
+      "fingerprints": [
+        "68f3bcfed0d70f45ee72c5b3052c98b8ef8062aec8fa33f74a503c38a163d63e",
+        "fd4381f9acb8f0332dbcf6680fc1146ad3eeaf068446c7cb15556b4cd4a8a21b",
+        "98d9871270509cc3ca636c918e6a93c3c279fa999abe6f02a42a102ffbabfeab"
+      ],
+      "classification": "standard-platform-mechanics",
+      "rationale": "Standard SwiftPM/macOS bundle discovery: normalize and deduplicate candidate roots, walk executable ancestors, then open the named resource bundle."
+    },
+    {
+      "id": "retired-kit-standard-color-construction",
+      "origin": "retired",
+      "mode": "exact",
+      "active": "Kit/Sources/CmdyKit/Theme.swift",
+      "historical": "App/TermiteCoreSurface.swift",
+      "fingerprint": "f02dde8bb66c2736a654edcb73cb751c983f15493aca97b8f6688a737ad08b9b",
+      "classification": "standard-platform-mechanics",
+      "rationale": "Canonical AppKit conversion from 16-bit RGB channels to an opaque sRGB NSColor."
+    }
+  ],
+  "reviewedRetainedSources": [
+    {
+      "id": "retained-cmdy-blocks",
+      "active": "Core/Sources/CmdyCore/Blocks.swift",
+      "historical": "Core/Sources/TermiteCore/Blocks.swift",
+      "sha256": "ebfe9302dfa9cf159e3f9fb90600c64e1aae0644597bf7f608075186f364897d",
+      "classification": "cmdy-original-retained-source",
+      "rationale": "Hash-pinned retained Cmdy engine source; comparison with the initial Vendor import has no unresolved substantive Vendor match."
+    },
+    {
+      "id": "retained-cmdy-cell",
+      "active": "Core/Sources/CmdyCore/Cell.swift",
+      "historical": "Core/Sources/TermiteCore/Cell.swift",
+      "sha256": "b5c972474e01a1d8ac8e7bf740e9765da661a29bb622319900bce221346a2a1a",
+      "classification": "cmdy-original-retained-source",
+      "rationale": "Hash-pinned retained Cmdy engine source; its separate Vendor declaration match is classified explicitly."
+    },
+    {
+      "id": "retained-cmdy-terminal",
+      "active": "Core/Sources/CmdyCore/CmdyTerminal.swift",
+      "historical": "Core/Sources/TermiteCore/TermiteTerminal.swift",
+      "sha256": "6ea35b0cc10c4435e97374a0ceb25f37f70b684cd724c16bae5aee2d400b8af6",
+      "classification": "cmdy-original-retained-source",
+      "rationale": "Hash-pinned retained Cmdy engine source; comparison with the initial Vendor import has no unresolved substantive Vendor match."
+    },
+    {
+      "id": "retained-cmdy-kitty-placeholder",
+      "active": "Core/Sources/CmdyCore/KittyUnicodePlaceholder.swift",
+      "historical": "Core/Sources/TermiteCore/KittyUnicodePlaceholder.swift",
+      "sha256": "506616e5e6429355e58c324463ca464101a3e78d06d5e45912c21ab59e391deb",
+      "classification": "cmdy-original-retained-source",
+      "rationale": "Hash-pinned Cmdy placeholder API scaffolding; the official Kitty diacritic table is classified explicitly against Vendor."
+    },
+    {
+      "id": "retained-cmdy-line",
+      "active": "Core/Sources/CmdyCore/Line.swift",
+      "historical": "Core/Sources/TermiteCore/Line.swift",
+      "sha256": "67e5aaf846dc95e9aab66aaf040857ecbe5c3470339c6174b5a4e76545a32155",
+      "classification": "cmdy-original-retained-source",
+      "rationale": "Hash-pinned retained Cmdy engine source; comparison with the initial Vendor import has no unresolved substantive Vendor match."
+    },
+    {
+      "id": "retained-cmdy-replay",
+      "active": "Core/Sources/CmdyCore/Replay.swift",
+      "historical": "Core/Sources/TermiteCore/Replay.swift",
+      "sha256": "349d772382dc22ada13fb3bb146da6fdffaa932a673c999d384e99999b515718",
+      "classification": "cmdy-original-retained-source",
+      "rationale": "Hash-pinned retained Cmdy replay source; comparison with the initial Vendor import has no unresolved substantive Vendor match."
+    },
+    {
+      "id": "retained-cmdy-screen-buffer",
+      "active": "Core/Sources/CmdyCore/ScreenBuffer.swift",
+      "historical": "Core/Sources/TermiteCore/ScreenBuffer.swift",
+      "sha256": "00a8d0f426f88edaa657b14a5ebd52f5cc10e7b9a98f6ef838c81e6689ab494f",
+      "classification": "cmdy-original-retained-source",
+      "rationale": "Hash-pinned retained Cmdy screen-buffer source; comparison with the initial Vendor import has no unresolved substantive Vendor match."
+    },
+    {
+      "id": "retained-cmdy-sixel",
+      "active": "Core/Sources/CmdyCore/SixelDecoder.swift",
+      "historical": "Core/Sources/TermiteCore/SixelDecoder.swift",
+      "sha256": "743b0774c8aae42af931ea541e3a10c46d638a5e7223be7774d5185b63d94ba7",
+      "classification": "cmdy-original-retained-source",
+      "rationale": "Hash-pinned retained Cmdy sixel source; comparison with the initial Vendor import has no unresolved substantive Vendor match."
+    },
+    {
+      "id": "retained-cmdy-dispatch",
+      "active": "Core/Sources/CmdyCore/TerminalDispatch.swift",
+      "historical": "Core/Sources/TermiteCore/TerminalDispatch.swift",
+      "sha256": "adc4dccb5438689db6b7fff9a07c6d2613395fe29657f08d2fbc97cfbe2b31e5",
+      "classification": "cmdy-original-retained-source",
+      "rationale": "Hash-pinned retained Cmdy dispatch source; comparison with the initial Vendor import has no unresolved substantive Vendor match."
+    },
+    {
+      "id": "retained-cmdy-graphics",
+      "active": "Core/Sources/CmdyCore/TerminalGraphics.swift",
+      "historical": "Core/Sources/TermiteCore/TerminalGraphics.swift",
+      "sha256": "29a70f365bbd6f260890a11bfffab7bcbb23c13398c3726635b1d4740a46f3a6",
+      "classification": "cmdy-original-retained-source",
+      "rationale": "Hash-pinned retained Cmdy graphics API and storage source; its separate Vendor declaration match is classified explicitly."
+    },
+    {
+      "id": "retained-cmdy-modes",
+      "active": "Core/Sources/CmdyCore/TerminalModes.swift",
+      "historical": "Core/Sources/TermiteCore/TerminalModes.swift",
+      "sha256": "c821bcc1ffeadb76503d05151508d5dc10265cb2ab003651fbf6081ff9131690",
+      "classification": "cmdy-original-retained-source",
+      "rationale": "Hash-pinned retained Cmdy mode-state source; comparison with the initial Vendor import has no unresolved substantive Vendor match."
+    },
+    {
+      "id": "retained-cmdy-osc",
+      "active": "Core/Sources/CmdyCore/TerminalOSC.swift",
+      "historical": "Core/Sources/TermiteCore/TerminalOSC.swift",
+      "sha256": "aabdf1c24918cc02810d0940c316b95e37734669eab786300b59ab901e62464c",
+      "classification": "cmdy-original-retained-source",
+      "rationale": "Hash-pinned retained Cmdy OSC source; comparison with the initial Vendor import has no unresolved substantive Vendor match."
+    },
+    {
+      "id": "retained-cmdy-reflow",
+      "active": "Core/Sources/CmdyCore/TerminalReflow.swift",
+      "historical": "Core/Sources/TermiteCore/TerminalReflow.swift",
+      "sha256": "8a1ca3908fde5c576e9900ffe2b4741e8c6473183a39f54794ad42b53d0fa9db",
+      "classification": "cmdy-original-retained-source",
+      "rationale": "Hash-pinned retained Cmdy reflow source; comparison with the initial Vendor import has no unresolved substantive Vendor match."
+    },
+    {
+      "id": "retained-cmdy-sgr",
+      "active": "Core/Sources/CmdyCore/TerminalSGR.swift",
+      "historical": "Core/Sources/TermiteCore/TerminalSGR.swift",
+      "sha256": "bda23f805f8c3542d3d7a423f9334bb79874467deb565815d94d6299ac517999",
+      "classification": "cmdy-original-retained-source",
+      "rationale": "Hash-pinned Cmdy SGR source; comparison with the initial Vendor import has no unresolved substantive Vendor match."
+    },
+    {
+      "id": "retained-cmdy-support",
+      "active": "Core/Sources/CmdyCore/TerminalSupport.swift",
+      "historical": "Core/Sources/TermiteCore/TerminalSupport.swift",
+      "sha256": "d5745c6fa7870ce717d430791bf14291f0d36cc375a4afe7cdc5e4315d18a966",
+      "classification": "cmdy-original-retained-source",
+      "rationale": "Hash-pinned retained Cmdy support types; comparison with the initial Vendor import has no unresolved substantive Vendor match."
+    },
+    {
+      "id": "retained-cmdy-parser",
+      "active": "Core/Sources/CmdyCore/VTParser.swift",
+      "historical": "Core/Sources/TermiteCore/VTParser.swift",
+      "sha256": "ef6de5a1b7edd2318b5c62640cd00c9048612305cc4ca1ef4a0f57368248753a",
+      "classification": "cmdy-original-retained-source",
+      "rationale": "Hash-pinned retained Cmdy parser source; comparison with the initial Vendor import has no unresolved substantive Vendor match."
+    }
+  ]
+}

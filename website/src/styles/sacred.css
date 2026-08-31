@@ -1,0 +1,244 @@
+/* Small shared primitives adapted from SRCL / Sacred Computer under the MIT
+   license in website/THIRD_PARTY_NOTICES.md. */
+
+.cmdy-site .sacred-window {
+  display: block;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.cmdy-site .sacred-card {
+  min-width: 0;
+}
+
+.cmdy-site .sacred-card-header {
+  display: flex;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--theme-border);
+}
+
+.cmdy-site .sacred-card-rule {
+  display: none;
+}
+
+.cmdy-site .sacred-card-title {
+  margin: 0;
+}
+
+.cmdy-site .sacred-card-body {
+  min-width: 0;
+  padding: 0;
+  overflow-x: auto;
+}
+
+.cmdy-site .action-button {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: stretch;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  color: var(--theme-text);
+  background: transparent;
+  font-family: inherit;
+  line-height: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.cmdy-site .action-hotkey,
+.cmdy-site .action-content {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 0.7rem;
+  border: 1px solid var(--theme-border);
+}
+
+.cmdy-site .action-hotkey {
+  border-right: 0;
+  color: var(--theme-text-subdued);
+}
+
+.cmdy-site .action-button:hover .action-content,
+.cmdy-site .action-button:focus-visible .action-content,
+.cmdy-site .action-button.selected .action-content,
+.cmdy-site .action-button:hover .action-hotkey,
+.cmdy-site .action-button:focus-visible .action-hotkey,
+.cmdy-site .action-button.selected .action-hotkey {
+  border-color: var(--theme-text);
+}
+
+.cmdy-site .action-button.selected .action-content {
+  color: var(--theme-background);
+  background: var(--theme-text);
+}
+
+.cmdy-site .action-button:focus-visible {
+  outline: 1px solid var(--theme-text);
+  outline-offset: 2px;
+}
+
+.cmdy-site .sacred-badge {
+  display: inline-block;
+  padding: 0;
+  color: var(--theme-text-subdued);
+  background: transparent;
+  font-weight: 400;
+  line-height: inherit;
+}
+
+.cmdy-site .simple-table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.cmdy-site .simple-table {
+  width: 100%;
+  min-width: 44ch;
+  border-collapse: collapse;
+}
+
+.cmdy-site .simple-table th,
+.cmdy-site .simple-table td {
+  padding: 0.45rem 1.5rem 0.45rem 0;
+  border-bottom: 1px solid var(--theme-border);
+  color: inherit;
+  font-weight: 400;
+  text-align: left;
+  vertical-align: top;
+}
+
+.cmdy-site .simple-table th:last-child,
+.cmdy-site .simple-table td:last-child {
+  padding-right: 0;
+}
+
+.cmdy-site .simple-table thead th {
+  color: var(--theme-text-subdued);
+}
+
+.cmdy-site .simple-table tbody tr:focus {
+  outline: 1px solid var(--theme-text);
+}
+
+.cmdy-site .simple-table .align-right {
+  text-align: right;
+}
+
+.cmdy-site .simple-table .status-ok {
+  color: var(--cmdy-success);
+}
+
+.cmdy-site .simple-table .status-off {
+  color: var(--theme-text-subdued);
+}
+
+.cmdy-site .row-space-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+}
+
+.cmdy-site .sacred-accordion {
+  border-top: 1px solid var(--theme-border);
+}
+
+.cmdy-site .sacred-accordion:last-child {
+  border-bottom: 1px solid var(--theme-border);
+}
+
+.cmdy-site .accordion-trigger {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.65rem 0;
+  border: 0;
+  color: var(--theme-text);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cmdy-site .accordion-trigger:hover,
+.cmdy-site .accordion-trigger:focus-visible {
+  color: var(--theme-text-subdued);
+}
+
+.cmdy-site .accordion-body {
+  padding: 0 0 0.8rem 1.4rem;
+  color: var(--theme-text-subdued);
+}
+
+.cmdy-site .bar-progress {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  min-height: 1rem;
+  color: var(--theme-text);
+  background: var(--theme-border-subdued);
+  white-space: nowrap;
+}
+
+.cmdy-site .bar-measure {
+  position: absolute;
+  visibility: hidden;
+}
+
+.cmdy-site .terminal-input {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(12ch, 1fr);
+  align-items: center;
+}
+
+.cmdy-site .terminal-input-label {
+  grid-column: 1 / -1;
+  margin-bottom: 0.35rem;
+  color: var(--theme-text-subdued);
+}
+
+.cmdy-site .terminal-input-shell {
+  display: flex;
+  min-height: 32px;
+  padding-left: 0.65rem;
+  border-top: 1px solid var(--theme-border);
+  border-bottom: 1px solid var(--theme-border);
+  border-left: 1px solid var(--theme-border);
+  align-items: center;
+  color: var(--theme-text-subdued);
+  background: var(--theme-background-input);
+}
+
+.cmdy-site .terminal-input input {
+  width: 100%;
+  min-width: 0;
+  min-height: 32px;
+  padding: 0 0.65rem;
+  border: 1px solid var(--theme-border);
+  border-left: 0;
+  border-radius: 0;
+  outline: 0;
+  color: var(--theme-text);
+  background: var(--theme-background-input);
+}
+
+.cmdy-site .terminal-input:focus-within .terminal-input-shell,
+.cmdy-site .terminal-input input:focus {
+  border-color: var(--theme-text);
+}
+
+.cmdy-site .terminal-input input::placeholder {
+  color: var(--theme-text-subdued);
+}
+
+@media (max-width: 520px) {
+  .cmdy-site .row-space-between {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}

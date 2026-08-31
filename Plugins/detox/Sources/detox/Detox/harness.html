@@ -1,0 +1,50 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<!-- cmdy's headless host for the codio engine (the user's live-coding
+     modular synth). No UI here — cmdy's inline editor drives it through
+     window.codio; logs/errors flow back over the codio message handler. -->
+<script>
+window.onerror = (msg, src, line) => {
+    try { window.webkit.messageHandlers.detox.postMessage({kind:'error', text: msg + ' @' + (src||'').split('/').pop() + ':' + line}); } catch (e) {}
+};
+window.addEventListener('unhandledrejection', (e) => {
+    try { window.webkit.messageHandlers.detox.postMessage({kind:'error', text: 'rejection: ' + (e.reason?.message ?? e.reason)}); } catch (err) {}
+});
+</script>
+<script type="module">
+import { CodioCore } from './core/CodioCore.js';
+
+const post = (kind, text) => {
+    try { window.webkit.messageHandlers.detox.postMessage({ kind, text: text ?? "" }); } catch (e) {}
+};
+
+const core = new CodioCore({
+    bpm: 120,
+    onLog: (message) => post('log', String(message)),
+    onError: (error) => post('error', String(error?.message ?? error)),
+});
+
+window.detox = {
+    run: async (code) => {
+        try {
+            await core.run(code);
+            post('running');
+            return 'ok';
+        } catch (e) {
+            const msg = String(e?.message ?? e);
+            post('error', msg);
+            return 'error: ' + msg;
+        }
+    },
+    stop: () => { core.stop(); post('stopped'); return 'ok'; },
+    setBpm: (bpm) => { try { core.setBpm?.(bpm); } catch (e) {} return 'ok'; },
+    ping: () => 'pong',
+};
+
+post('ready');
+</script>
+</head>
+<body></body>
+</html>

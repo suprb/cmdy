@@ -1,0 +1,97 @@
+{
+  "metadata": {
+    "formatVersion": {
+      "major": 0,
+      "minor": 6,
+      "patch": 0
+    }
+  },
+  "module": {
+    "name": "CmdyGPU",
+    "platform": {
+      "architecture": "arm64",
+      "operatingSystem": {
+        "minimumVersion": {
+          "major": 26,
+          "minor": 0
+        },
+        "name": "macosx"
+      },
+      "vendor": "apple"
+    }
+  },
+  "relationships": [
+    {
+      "kind": "memberOf",
+      "source": "s:So21NSAttributedStringKeya7CmdyGPUE24selectionBackgroundColorABvpZ",
+      "target": "c:@T@NSAttributedStringKey",
+      "targetFallback": "Foundation.NSAttributedString.Key"
+    }
+  ],
+  "symbols": [
+    {
+      "accessLevel": "public",
+      "declaration": "static let selectionBackgroundColor: NSAttributedString.Key",
+      "identifier": {
+        "interfaceLanguage": "swift",
+        "precise": "s:So21NSAttributedStringKeya7CmdyGPUE24selectionBackgroundColorABvpZ"
+      },
+      "kind": {
+        "displayName": "Type Property",
+        "identifier": "swift.type.property"
+      },
+      "names": {
+        "subHeading": [
+          {
+            "kind": "keyword",
+            "spelling": "static"
+          },
+          {
+            "kind": "text",
+            "spelling": " "
+          },
+          {
+            "kind": "keyword",
+            "spelling": "let"
+          },
+          {
+            "kind": "text",
+            "spelling": " "
+          },
+          {
+            "kind": "identifier",
+            "spelling": "selectionBackgroundColor"
+          },
+          {
+            "kind": "text",
+            "spelling": ": "
+          },
+          {
+            "kind": "typeIdentifier",
+            "preciseIdentifier": "c:objc(cs)NSAttributedString",
+            "spelling": "NSAttributedString"
+          },
+          {
+            "kind": "text",
+            "spelling": "."
+          },
+          {
+            "kind": "typeIdentifier",
+            "preciseIdentifier": "c:@T@NSAttributedStringKey",
+            "spelling": "Key"
+          }
+        ],
+        "title": "selectionBackgroundColor"
+      },
+      "pathComponents": [
+        "NSAttributedString",
+        "Key",
+        "selectionBackgroundColor"
+      ],
+      "swiftExtension": {
+        "extendedModule": "Foundation",
+        "typeKind": "swift.struct"
+      }
+    }
+  ]
+}

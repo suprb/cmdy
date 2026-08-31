@@ -1,0 +1,27 @@
+Bundled font notice index
+=========================
+
+Several fonts were originally discovered through the SACRED design system
+(https://github.com/internet-development/www-sacred). This file is an import
+provenance index, not a substitute for the authoritative terms stored beside
+each font:
+
+- Cascadia Mono: CascadiaMono-LICENSE.txt
+- Fixedsys Excelsior: FixedsysExcelsior-NOTICE.md and CC0-1.0.txt
+- Fragment Mono: FragmentMono-LICENSE.txt
+- GlassTTY VT220: GlassTTYVT220-NOTICE.md and GlassTTYVT220-LICENSE.txt
+- Intel One Mono: IntelOneMono-LICENSE.txt
+- Iosevka Term: IosevkaTerm-LICENSE.md
+- JuliaMono: JuliaMono-LICENSE.txt
+- M+ 1 Code: MPlus1Code-LICENSE.txt
+- Server Mono: ServerMono-LICENSE.md
+- Ubuntu Sans Mono: UbuntuSansMono-NOTICE.txt and UbuntuSansMono-LICENCE.txt
+- Web437/WebPlus faces: Web437-NOTICE.md and CC-BY-SA-4.0.txt
+
+Code New Roman Nerd Font Mono is intentionally not bundled. Nerd Fonts' own
+license audit identifies an embedded Font Logos glyph set as unlicensed, so its
+redistribution terms cannot be established completely.
+
+Also intentionally excluded for non-redistributable or unclear licensing:
+TX-02 / Berkeley Mono, SF Mono Square, Chicago Mono, Panama, Kommuna,
+Mekzantine, and Ioskeley.

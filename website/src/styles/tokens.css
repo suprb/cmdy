@@ -1,0 +1,156 @@
+@font-face {
+  font-family: "Geist Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/GeistMono-Regular.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Geist Mono";
+  font-style: normal;
+  font-weight: 500 700;
+  font-display: swap;
+  src: url("/fonts/GeistMono-Medium.woff2") format("woff2");
+}
+
+:root {
+  color-scheme: dark;
+  font-family: "Geist Mono", "SFMono-Regular", Consolas, monospace;
+  font-synthesis: none;
+  text-rendering: geometricPrecision;
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: #101010;
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.cmdy-site {
+  --ansi-0-black: #000000;
+  --ansi-2-green: #008000;
+  --ansi-10-lime: #00ff00;
+  --ansi-13-fuchsia: #ff00ff;
+  --ansi-14-aqua: #00ffff;
+  --ansi-15-white: #ffffff;
+  --ansi-235-gray-15: #262626;
+  --ansi-237-gray-23: #3a3a3a;
+  --ansi-240-gray-35: #585858;
+  --ansi-245-gray-54: #8a8a8a;
+  --ansi-248-gray-66: #a8a8a8;
+  --ansi-251-gray-78: #c6c6c6;
+  --ansi-254-gray-89: #e4e4e4;
+  --ansi-255-gray-93: #eeeeee;
+  --ansi-true-brand: #e4f221;
+  --color-black: var(--ansi-0-black);
+  --color-white: var(--ansi-15-white);
+  --color-brand: var(--ansi-true-brand);
+  --font-family-mono: "Geist Mono", "SFMono-Regular", Consolas, monospace;
+  --font-size: 15px;
+  --theme-line-height-base: 1.55;
+  --site-max: 1040px;
+  --site-gutter: clamp(16px, 3vw, 28px);
+  --z-nav: 20;
+  min-height: 100vh;
+  background: var(--theme-background);
+  color: var(--theme-text);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size);
+  font-variant-numeric: tabular-nums lining-nums;
+  line-height: var(--theme-line-height-base);
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.cmdy-site.theme-dark {
+  color-scheme: dark;
+  --theme-overlay: rgba(0, 0, 0, 0.46);
+  --theme-background: #101010;
+  --theme-background-modal: var(--ansi-235-gray-15);
+  --theme-background-input: #171717;
+  --theme-border: #353535;
+  --theme-border-subdued: rgba(88, 88, 88, 0.35);
+  --theme-text: #e8e8e8;
+  --theme-text-subdued: #9a9a9a;
+  --theme-button-foreground: var(--ansi-240-gray-35);
+  --theme-button-background: var(--ansi-235-gray-15);
+  --theme-focused-foreground: #d3dc72;
+  --theme-focused-text: var(--ansi-0-black);
+  --theme-window-background: var(--theme-background);
+  --theme-window-shadow: #000000;
+  --cmdy-rust: #e77b45;
+  --cmdy-aqua: var(--ansi-14-aqua);
+  --cmdy-success: #55ff55;
+}
+
+.cmdy-site.theme-light {
+  color-scheme: light;
+  --theme-overlay: rgba(0, 0, 0, 0.35);
+  --theme-background: #f4f3f0;
+  --theme-background-modal: var(--ansi-254-gray-89);
+  --theme-background-input: #ebeae6;
+  --theme-border: #cfcec9;
+  --theme-border-subdued: rgba(88, 88, 88, 0.32);
+  --theme-text: #191919;
+  --theme-text-subdued: #66655f;
+  --theme-button-foreground: var(--ansi-248-gray-66);
+  --theme-button-background: var(--ansi-254-gray-89);
+  --theme-focused-foreground: #a9b900;
+  --theme-focused-text: var(--ansi-0-black);
+  --theme-window-background: var(--theme-background);
+  --theme-window-shadow: var(--ansi-248-gray-66);
+  --cmdy-rust: #a8491f;
+  --cmdy-aqua: #007d7d;
+  --cmdy-success: #007b00;
+}
+
+.cmdy-site ::selection {
+  background: var(--theme-focused-foreground);
+  color: var(--theme-focused-text);
+}
+
+.cmdy-site :focus-visible {
+  outline: 2px solid var(--theme-focused-foreground);
+  outline-offset: 2px;
+}
+
+.cmdy-site a {
+  color: inherit;
+}
+
+.cmdy-site::-webkit-scrollbar,
+.simple-table-scroll::-webkit-scrollbar {
+  width: 1ch;
+  height: calc(var(--theme-line-height-base) * 1rem);
+}
+
+.cmdy-site::-webkit-scrollbar-track,
+.simple-table-scroll::-webkit-scrollbar-track {
+  background: var(--theme-background);
+}
+
+.cmdy-site::-webkit-scrollbar-thumb,
+.simple-table-scroll::-webkit-scrollbar-thumb {
+  background: var(--theme-border);
+}

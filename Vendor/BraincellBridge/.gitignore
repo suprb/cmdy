@@ -1,0 +1,15 @@
+.DS_Store
+.build/
+.swiftpm/
+*.xcodeproj
+.idea/
+.vscode/
+
+# Local logs / scratch
+/tmp/
+*.log
+
+# Distribution build artifacts (build script produces these)
+/dist/Braincell Bridge.app/
+/dist/Braincell-Bridge.zip
+/dist/Braincell-Bridge.dmg

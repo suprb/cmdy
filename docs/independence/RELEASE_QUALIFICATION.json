@@ -1,0 +1,164 @@
+{
+  "$schema": "../../Schemas/release-qualification-v1.schema.json",
+  "engineering": {
+    "bindings": [
+      {
+        "path": "scripts/check-active-source-manifest.py",
+        "purpose": "active-source-checker",
+        "sha256": "1bb64a39b90d16c71b647c470a5045583483928149afe399a2cab424afaed612"
+      },
+      {
+        "path": "scripts/release-chromium-browser.sh",
+        "purpose": "browser-release-script",
+        "sha256": "32aa5cbf5bbd74eb7f84c6ae6c65108ae5cb89ac8de7c5313ce4f5c79ec94201"
+      },
+      {
+        "path": ".github/workflows/ci.yml",
+        "purpose": "ci-workflow",
+        "sha256": "eb42b83901aed5b0cc69342af6b0135cb316a7c9eb6927e6bc48be3c29657d4d"
+      },
+      {
+        "path": "scripts/check-core-blackbox-parity.py",
+        "purpose": "core-parity-checker",
+        "sha256": "3a45bd5fec2e385d2f193969f9da67590e9df1c09c465770de3813cda97cbaa9"
+      },
+      {
+        "path": "scripts/check-independent-api.sh",
+        "purpose": "independent-api-checker",
+        "sha256": "0ee0910e61f6db27cfe966ca9c9191096ee5cee23b1a6cd9dad601214f7d8694"
+      },
+      {
+        "path": "scripts/package-resource-policy.sh",
+        "purpose": "package-resource-policy",
+        "sha256": "8a49c2be6ee2613f59bf1d24621a7821cc57dbe24a1c484345072aaf806ad6d3"
+      },
+      {
+        "path": "package.sh",
+        "purpose": "package-script",
+        "sha256": "3fac90669bac55d2cce2521554c9b607cd3a3212e3c1ede8542f8382c4033965"
+      },
+      {
+        "path": "Tests/perf-gate.sh",
+        "purpose": "performance-gate",
+        "sha256": "0f8327312e7a9a42bfbe1ebf5c789d797372721074d2da2b906fab06a9649db5"
+      },
+      {
+        "path": "Identity/Sources/ProductIdentity/Resources/product-identity.json",
+        "purpose": "product-identity",
+        "sha256": "b98bf649bee7043f151d5f575a82d79d6959b8f90a5566460815ab5cf8e25e33"
+      },
+      {
+        "path": "docs/independence/WORKING_TREE_PROVENANCE_ALLOWLIST.json",
+        "purpose": "provenance-allowlist",
+        "sha256": "cd6f1c5e0762b88c1415129cfd152c18ea7eae68f87eccaf5d5e928880df3b84"
+      },
+      {
+        "path": "scripts/check-working-tree-provenance.py",
+        "purpose": "provenance-checker",
+        "sha256": "b3a4a0ee6298424791e47b8760702f7ad0d8a704af92086c4add91da2fda5941"
+      },
+      {
+        "path": "scripts/check-release-qualification.py",
+        "purpose": "qualification-checker",
+        "sha256": "5b89f5af98718ede3f6bea9982aee2b548eac000b959d6dddb686a66be1ea8f4"
+      },
+      {
+        "path": "Schemas/release-qualification-v1.schema.json",
+        "purpose": "qualification-schema",
+        "sha256": "d9e0e1dd27253fc8985d413773f4a73d66c9a0f0a5039171ee02a400d536e270"
+      },
+      {
+        "path": "Tests/RendererPixelOracle/ReferenceCorpus/reference-corpus-v1.tar.gz",
+        "purpose": "renderer-corpus-archive",
+        "sha256": "5507d54ebe8e453edc9f38d3dbf84ac01ef132ae8370a3a7de39a1624d46188a"
+      },
+      {
+        "path": "Tests/RendererPixelOracle/ReferenceCorpus/reference-corpus-v1.lock.json",
+        "purpose": "renderer-corpus-lock",
+        "sha256": "a448c37b7e114505f4e8569ed9389c608698cb9bf50b7c0219daff4fd10ccd2f"
+      },
+      {
+        "path": "Tests/RendererPixelOracle/ReferenceCorpus/reference-corpus-v1.validator-vector.json",
+        "purpose": "renderer-corpus-validator-vector",
+        "sha256": "9c987783edd7ede5cba9d2f4ea455667cd47ad55c620ebee26d27b70b6cc76fb"
+      },
+      {
+        "path": "Tests/RendererPixelOracle/RendererPixelFixture.swift",
+        "purpose": "renderer-fixture",
+        "sha256": "a31ab980ff37b387db2730254b35c85e6a8ec98881910d0521b824b9c58459e0"
+      },
+      {
+        "path": "scripts/check-renderer-pixel-parity.py",
+        "purpose": "renderer-parity-checker",
+        "sha256": "886a21d8601f7917bbab544ac285b5952d3f79a60203c56d25bb1632f7690ee7"
+      },
+      {
+        "path": "release.sh",
+        "purpose": "release-script",
+        "sha256": "e771be9313a3bbc5eca58904bfef5444177639ad6c0cd695b1f00d49ff273404"
+      },
+      {
+        "path": ".github/workflows/release.yml",
+        "purpose": "release-workflow",
+        "sha256": "a54434fd31e3b11d874e95dad64af5349008f62449bb14f799cda98fefb8c148"
+      },
+      {
+        "path": "test.sh",
+        "purpose": "resource-stress-gate",
+        "sha256": "f02d42f9e4f38d08b187e44591525c9cf8a6b31769418feb9f35fd16c5d49005"
+      },
+      {
+        "path": "Tests/zoo.sh",
+        "purpose": "tui-zoo-gate",
+        "sha256": "17484f307058b84bdccf40d62e48a8ff9ad843ae9ba8e16f9cf59b14962d397f"
+      },
+      {
+        "path": "scripts/check-zoo-review.py",
+        "purpose": "zoo-review-checker",
+        "sha256": "99953d153673c705c8a173d55ea2fd9bb8bea41ac979e4933d326ffdc1202cc6"
+      }
+    ],
+    "coreMatrix": {
+      "actionsPerCase": 180,
+      "casesPerSeed": 3176,
+      "randomCasesPerSeed": 2000,
+      "seeds": [
+        49361,
+        104729,
+        123457,
+        99991,
+        2654435761,
+        130363,
+        155921,
+        271828,
+        314159,
+        161803,
+        65537,
+        16777619,
+        20260820,
+        8675309,
+        42424243,
+        314159265,
+        271828182
+      ],
+      "totalCases": 53992
+    },
+    "rendererCorpus": {
+      "archiveSha256": "5507d54ebe8e453edc9f38d3dbf84ac01ef132ae8370a3a7de39a1624d46188a",
+      "candidateFixtureSha256": "a31ab980ff37b387db2730254b35c85e6a8ec98881910d0521b824b9c58459e0",
+      "fixtureCount": 40,
+      "fixtureIndexSha256": "e52c987c52e495dc7bb7a14ccf8d9ef6b0abd4e8fed6d60facd469a2af6f9d5d",
+      "lockSha256": "a448c37b7e114505f4e8569ed9389c608698cb9bf50b7c0219daff4fd10ccd2f",
+      "referenceManifestSha256": "868ffcb241e050c570278e5d6aa7fef2adfb6b15b938bee13e8917b7bd42d7b6",
+      "validatorVectorSha256": "9c987783edd7ede5cba9d2f4ea455667cd47ad55c620ebee26d27b70b6cc76fb"
+    }
+  },
+  "kind": "cmdy-release-qualification",
+  "publication": {
+    "approval": null,
+    "evidence": null,
+    "source": null,
+    "state": "pending"
+  },
+  "schemaVersion": 1
+}

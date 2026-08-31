@@ -1,0 +1,70 @@
+name: Feature request
+description: Propose a focused improvement to cmdy
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        cmdy is terminal-first: the VT engine, byte stream, input latency, and idle efficiency stay sovereign. A strong proposal explains the concrete workflow and chooses the smallest public layer that fits.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What specific job is hard today? Who encounters it, and how do they work around it?
+      placeholder: Describe the observed workflow rather than only the desired control or API.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed experience
+      description: Describe the interaction from the user's point of view.
+    validations:
+      required: true
+  - type: dropdown
+    id: layer
+    attributes:
+      label: Smallest fitting layer
+      description: Choose the likely home; maintainers may suggest a different boundary.
+      options:
+        - Core terminal behavior
+        - Renderer or appearance
+        - Native app UI
+        - Action (one-shot work)
+        - Extension (resident capability)
+        - Channel (reviewable work in or out)
+        - Surface or public protocol
+        - First-party Extension
+        - Website, docs, or contributor tooling
+        - Unsure
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Include current workarounds and why an Action, Extension, script, or existing protocol primitive is insufficient.
+  - type: textarea
+    id: boundaries
+    attributes:
+      label: Compatibility and boundaries
+      description: Note effects on terminal semantics, performance, accessibility, security, public protocols, or existing configurations.
+      placeholder: No hot-path work; additive schema field; keyboard behavior; required capability; migration…
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Examples or references
+      description: Add sketches, recordings, prior art, or representative commands when useful. Remove private data.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched open and closed issues for this request.
+          required: true
+        - label: I described the underlying workflow, not only an implementation.
+          required: true
+        - label: I considered whether this belongs outside the terminal hot path.
+          required: true

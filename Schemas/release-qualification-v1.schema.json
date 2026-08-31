@@ -1,0 +1,353 @@
+{
+  "$id": "https://cmdy.dev/schemas/release-qualification-v1.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "const": "../../Schemas/release-qualification-v1.schema.json"
+    },
+    "engineering": {
+      "additionalProperties": false,
+      "properties": {
+        "bindings": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "path": {
+                "$ref": "#/$defs/path"
+              },
+              "purpose": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "sha256": {
+                "$ref": "#/$defs/sha256"
+              }
+            },
+            "required": [
+              "path",
+              "purpose",
+              "sha256"
+            ],
+            "type": "object"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "coreMatrix": {
+          "additionalProperties": false,
+          "properties": {
+            "actionsPerCase": {
+              "const": 180
+            },
+            "casesPerSeed": {
+              "const": 3176
+            },
+            "randomCasesPerSeed": {
+              "const": 2000
+            },
+            "seeds": {
+              "const": [
+                49361,
+                104729,
+                123457,
+                99991,
+                2654435761,
+                130363,
+                155921,
+                271828,
+                314159,
+                161803,
+                65537,
+                16777619,
+                20260820,
+                8675309,
+                42424243,
+                314159265,
+                271828182
+              ]
+            },
+            "totalCases": {
+              "const": 53992
+            }
+          },
+          "required": [
+            "actionsPerCase",
+            "casesPerSeed",
+            "randomCasesPerSeed",
+            "seeds",
+            "totalCases"
+          ],
+          "type": "object"
+        },
+        "rendererCorpus": {
+          "additionalProperties": false,
+          "properties": {
+            "archiveSha256": {
+              "$ref": "#/$defs/sha256"
+            },
+            "candidateFixtureSha256": {
+              "$ref": "#/$defs/sha256"
+            },
+            "fixtureCount": {
+              "const": 40
+            },
+            "fixtureIndexSha256": {
+              "$ref": "#/$defs/sha256"
+            },
+            "lockSha256": {
+              "$ref": "#/$defs/sha256"
+            },
+            "referenceManifestSha256": {
+              "$ref": "#/$defs/sha256"
+            },
+            "validatorVectorSha256": {
+              "$ref": "#/$defs/sha256"
+            }
+          },
+          "required": [
+            "archiveSha256",
+            "candidateFixtureSha256",
+            "fixtureCount",
+            "fixtureIndexSha256",
+            "lockSha256",
+            "referenceManifestSha256",
+            "validatorVectorSha256"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "bindings",
+        "coreMatrix",
+        "rendererCorpus"
+      ],
+      "type": "object"
+    },
+    "kind": {
+      "const": "cmdy-release-qualification"
+    },
+    "publication": {
+      "additionalProperties": false,
+      "properties": {
+        "approval": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/approval"
+            }
+          ]
+        },
+        "evidence": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "core": {
+                  "$ref": "#/$defs/evidenceWrapper"
+                },
+                "operational": {
+                  "$ref": "#/$defs/evidenceWrapper"
+                },
+                "renderer": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "checkerSha256": {
+                      "$ref": "#/$defs/sha256"
+                    },
+                    "comparison": {
+                      "$ref": "#/$defs/fileRef"
+                    },
+                    "environment": {
+                      "$ref": "#/$defs/fileRef"
+                    },
+                    "sourceManifestSha256": {
+                      "$ref": "#/$defs/sha256"
+                    }
+                  },
+                  "required": [
+                    "checkerSha256",
+                    "comparison",
+                    "environment",
+                    "sourceManifestSha256"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": [
+                "core",
+                "operational",
+                "renderer"
+              ],
+              "type": "object"
+            }
+          ]
+        },
+        "source": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "activeSourceManifest": {
+                  "$ref": "#/$defs/fileRef"
+                },
+                "provenanceReport": {
+                  "$ref": "#/$defs/fileRef"
+                },
+                "sourceCommit": {
+                  "$ref": "#/$defs/gitOid"
+                },
+                "sourceTree": {
+                  "$ref": "#/$defs/gitOid"
+                }
+              },
+              "required": [
+                "activeSourceManifest",
+                "provenanceReport",
+                "sourceCommit",
+                "sourceTree"
+              ],
+              "type": "object"
+            }
+          ]
+        },
+        "state": {
+          "enum": [
+            "pending",
+            "approved",
+            "rejected"
+          ]
+        }
+      },
+      "required": [
+        "approval",
+        "evidence",
+        "source",
+        "state"
+      ],
+      "type": "object"
+    },
+    "schemaVersion": {
+      "const": 1
+    }
+  },
+  "required": [
+    "$schema",
+    "engineering",
+    "kind",
+    "publication",
+    "schemaVersion"
+  ],
+  "title": "cmdy release qualification v1",
+  "type": "object",
+  "$defs": {
+    "approval": {
+      "additionalProperties": false,
+      "properties": {
+        "approvalReference": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "approvedPublicWording": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "decision": {
+          "const": "approved"
+        },
+        "engineeringDigestSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "evidenceDigestSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "reviewedAtUTC": {
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$",
+          "type": "string"
+        },
+        "reviewerAffiliation": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "reviewerIndependentFromImplementation": {
+          "const": true
+        },
+        "reviewerKind": {
+          "const": "human"
+        },
+        "reviewerName": {
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "approvalReference",
+        "approvedPublicWording",
+        "decision",
+        "engineeringDigestSha256",
+        "evidenceDigestSha256",
+        "reviewedAtUTC",
+        "reviewerAffiliation",
+        "reviewerIndependentFromImplementation",
+        "reviewerKind",
+        "reviewerName"
+      ],
+      "type": "object"
+    },
+    "evidenceWrapper": {
+      "additionalProperties": false,
+      "properties": {
+        "record": {
+          "$ref": "#/$defs/fileRef"
+        },
+        "sourceManifestSha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      },
+      "required": [
+        "record",
+        "sourceManifestSha256"
+      ],
+      "type": "object"
+    },
+    "fileRef": {
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/path"
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      },
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "type": "object"
+    },
+    "gitOid": {
+      "pattern": "^[0-9a-f]{40}([0-9a-f]{24})?$",
+      "type": "string"
+    },
+    "path": {
+      "minLength": 1,
+      "not": {
+        "pattern": "(^/|^~|(^|/)\\.\\.(/|$)|(^|/)\\.(/|$)|//|\\\\)"
+      },
+      "type": "string"
+    },
+    "sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    }
+  }
+}

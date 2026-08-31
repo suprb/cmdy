@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "archiveSha256": "5507d54ebe8e453edc9f38d3dbf84ac01ef132ae8370a3a7de39a1624d46188a",
+  "archiveBytes": 845304,
+  "gzipHeaderHex": "1f8b08000000000002ff",
+  "uncompressedTarSha256": "784aef587ac7bdafb171388b4100cb07b5dce8e1957858f37c1b29ea3ad40a4e",
+  "payloadSetAlgorithm": "sha256(name-ascii || 00 || sha256(payload-bytes)) in member order",
+  "payloadSetSha256": "27a487287108a004a78bb0cd524064ef60758a17de1ae9d3467e08bc99bfb6ff",
+  "entryCount": 82,
+  "firstMember": "fixture-index.json",
+  "lastMember": "s2__unicode-clusters.rgba",
+  "referenceManifestSha256": "868ffcb241e050c570278e5d6aa7fef2adfb6b15b938bee13e8917b7bd42d7b6",
+  "fixtureIndexSha256": "e52c987c52e495dc7bb7a14ccf8d9ef6b0abd4e8fed6d60facd469a2af6f9d5d",
+  "expectedMetadata": {
+    "memberNames": "strict ascending ASCII, canonical basename only",
+    "memberType": "regular file",
+    "mode": "0644",
+    "uid": 0,
+    "gid": 0,
+    "uname": "",
+    "gname": "",
+    "mtime": 0,
+    "gzipMtime": 0,
+    "gzipOriginalFilename": ""
+  },
+  "negativeCases": [
+    "reject one flipped archive byte before opening",
+    "reject a duplicate member name",
+    "reject an absolute or parent-traversal member name",
+    "reject a directory, symlink, hard link, device, fifo, or pax member",
+    "reject any metadata field that differs from expectedMetadata",
+    "reject a missing or additional member",
+    "reject any payload hash that differs from manifest.json"
+  ]
+}

@@ -1,0 +1,108 @@
+# Releasing cmdy for macOS
+
+## Publish in one command
+
+Once the release commit is pushed, run:
+
+```sh
+./publish-release.sh 1.2.0
+```
+
+The command refuses dirty or unpushed source and refuses a private repository,
+then dispatches `.github/workflows/release.yml`, watches the notarized build,
+and prints the published GitHub Release URL. Use `--no-watch` to dispatch and
+return immediately, or `--dry-run` to inspect the resolved version, repository,
+branch, and commit without contacting GitHub.
+
+The public repository named by `product-identity.json` must exist before the
+first release, and these Actions secrets must be configured:
+
+- `CMDY_DEVELOPER_ID_P12_BASE64`
+- `CMDY_DEVELOPER_ID_P12_PASSWORD`
+- `CMDY_NOTARY_KEY_P8_BASE64`
+- `CMDY_NOTARY_KEY_ID`
+- `CMDY_NOTARY_ISSUER_ID`
+
+The workflow temporarily accepts the legacy `TERMITE_` secret names so an
+existing private repository can migrate without a broken release window.
+
+Manual workflow dispatches and `v*` tag pushes both build, notarize, staple,
+checksum, and publish the ZIP and DMG. A release is not made public until every
+verification step passes.
+
+The release workflow also requires the fail-closed publication record described
+in [`docs/independence/RELEASE_QUALIFICATION.md`](docs/independence/RELEASE_QUALIFICATION.md).
+Ordinary CI verifies engineering bindings without implying human approval.
+Publication remains blocked while that record is `pending`, and only the real
+notarized path consumes the approved record and emits final package evidence.
+
+## Build locally
+
+`package.sh` builds `cmdy.app`, applies the requested version metadata, and
+signs it. With a real identity it always enables hardened runtime and a trusted
+timestamp, then verifies the finished bundle.
+
+For a complete release, store notary credentials once in the login keychain:
+
+```sh
+xcrun notarytool store-credentials cmdy-notary
+PRODUCT_VERSION=1.0.0 \
+PRODUCT_NOTARY_PROFILE=cmdy-notary \
+./release.sh
+```
+
+`release.sh` requires a `Developer ID Application` certificate. It creates a
+ZIP, submits it to Apple, requires an `Accepted` result, staples the ticket to
+the app, and validates the app with Gatekeeper. It then creates a signed
+drag-to-Applications DMG using a sparse APFS image, notarizes and staples the
+DMG, validates that with Gatekeeper, and writes SHA-256 checksums for both
+artifacts in `dist/`.
+It also retains each raw Apple JSON receipt beside the release artifacts, each
+submission identifier and pre-staple submitted hash, then writes a
+`*.publication.json` record for the final stapled package. The submitted and
+final hashes are intentionally distinct fields. Source approval happens first;
+the completed receipt and publication records form a separate post-notary
+artifact attestation.
+
+App Store Connect API keys are also supported, which is the path used by CI:
+
+```sh
+PRODUCT_VERSION=1.0.0 \
+PRODUCT_NOTARY_KEY_FILE=/secure/AuthKey_ABC123.p8 \
+PRODUCT_NOTARY_KEY_ID=ABC123 \
+PRODUCT_NOTARY_ISSUER_ID=00000000-0000-0000-0000-000000000000 \
+./release.sh
+```
+
+Use `SKIP_NOTARIZE=1 ./release.sh` to rehearse the complete build, hardened
+signing, ZIP, DMG, and checksum path without submitting to Apple. Those
+artifacts have a `-rehearsal` filename suffix so they cannot overwrite or be
+mistaken for notarized release assets. They are intentionally not described as
+Gatekeeper-ready and do not pass or emit publication qualification.
+
+## GitHub Actions
+
+`.github/workflows/release.yml` runs on a `v*` tag or manual dispatch. It uses
+an ephemeral keychain, calls the same `release.sh`, and uploads the ZIP, DMG,
+and checksums as workflow artifacts and to the matching GitHub Release.
+Configure these repository secrets:
+
+- `CMDY_DEVELOPER_ID_P12_BASE64`
+- `CMDY_DEVELOPER_ID_P12_PASSWORD`
+- `CMDY_NOTARY_KEY_P8_BASE64`
+- `CMDY_NOTARY_KEY_ID`
+- `CMDY_NOTARY_ISSUER_ID`
+
+The `.p12` and `.p8` values are base64-encoded file contents. The workflow
+deletes the temporary certificate, API key, and keychain even when a release
+step fails.
+
+Every `v*` release contains two separately downloadable apps: the lean cmdy
+edition and the complete Browser edition. The Browser edition is signed and
+notarized with the same Apple credentials but contains CEF and its four helper
+apps inside `cmdy.app/Contents/Frameworks`, which is the layout required by
+CEF's macOS sandbox. The updater preserves the installed edition and never
+replaces Browser cmdy with the lean archive. Build the Browser artifact locally
+with `./scripts/release-chromium-browser.sh`; see [BUILDING.md](BUILDING.md) for
+the full signing graph, artifact names, clean-Mac verification, and rollback
+path.

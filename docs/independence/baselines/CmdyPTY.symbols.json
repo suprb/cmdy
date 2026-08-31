@@ -1,0 +1,1533 @@
+{
+  "metadata": {
+    "formatVersion": {
+      "major": 0,
+      "minor": 6,
+      "patch": 0
+    }
+  },
+  "module": {
+    "name": "CmdyPTY",
+    "platform": {
+      "architecture": "arm64",
+      "operatingSystem": {
+        "minimumVersion": {
+          "major": 26,
+          "minor": 0
+        },
+        "name": "macosx"
+      },
+      "vendor": "apple"
+    }
+  },
+  "relationships": [
+    {
+      "kind": "conformsTo",
+      "source": "s:7CmdyPTY12LocalProcessC",
+      "target": "s:s16SendableMetatypeP",
+      "targetFallback": "Swift.SendableMetatype"
+    },
+    {
+      "kind": "conformsTo",
+      "source": "s:7CmdyPTY12LocalProcessC",
+      "target": "s:s8SendableP",
+      "targetFallback": "Swift.Sendable"
+    },
+    {
+      "kind": "memberOf",
+      "source": "s:7CmdyPTY12LocalProcessC05startD010executable4args11environment8execName16currentDirectoryySS_SaySSGAJSgSSSgALtF",
+      "target": "s:7CmdyPTY12LocalProcessC"
+    },
+    {
+      "kind": "memberOf",
+      "source": "s:7CmdyPTY12LocalProcessC14setHostLogging9directoryySSSg_tF",
+      "target": "s:7CmdyPTY12LocalProcessC"
+    },
+    {
+      "kind": "memberOf",
+      "source": "s:7CmdyPTY12LocalProcessC18defaultEnvironment8termNameSaySSGSS_tFZ",
+      "target": "s:7CmdyPTY12LocalProcessC"
+    },
+    {
+      "kind": "memberOf",
+      "source": "s:7CmdyPTY12LocalProcessC4send4datays10ArraySliceVys5UInt8VG_tF",
+      "target": "s:7CmdyPTY12LocalProcessC"
+    },
+    {
+      "kind": "memberOf",
+      "source": "s:7CmdyPTY12LocalProcessC7childfds5Int32Vvp",
+      "target": "s:7CmdyPTY12LocalProcessC"
+    },
+    {
+      "kind": "memberOf",
+      "source": "s:7CmdyPTY12LocalProcessC7runningSbvp",
+      "target": "s:7CmdyPTY12LocalProcessC"
+    },
+    {
+      "kind": "memberOf",
+      "source": "s:7CmdyPTY12LocalProcessC8delegate13dispatchQueueAcA0cD8Delegate_p_So03OS_F6_queueCSgtcfc",
+      "target": "s:7CmdyPTY12LocalProcessC"
+    },
+    {
+      "kind": "memberOf",
+      "source": "s:7CmdyPTY12LocalProcessC8shellPids5Int32Vvp",
+      "target": "s:7CmdyPTY12LocalProcessC"
+    },
+    {
+      "kind": "memberOf",
+      "source": "s:7CmdyPTY12LocalProcessC9terminateyyF",
+      "target": "s:7CmdyPTY12LocalProcessC"
+    },
+    {
+      "kind": "memberOf",
+      "source": "s:7CmdyPTY21PseudoTerminalHelpersC10setWinSize19masterPtyDescriptor06windowH0s5Int32VAH_So7winsizeVztFZ",
+      "target": "s:7CmdyPTY21PseudoTerminalHelpersC"
+    },
+    {
+      "kind": "memberOf",
+      "source": "s:7CmdyPTY21PseudoTerminalHelpersC14availableBytes2fds5Int32V6status_AG4sizetAG_tFZ",
+      "target": "s:7CmdyPTY21PseudoTerminalHelpersC"
+    },
+    {
+      "kind": "memberOf",
+      "source": "s:7CmdyPTY21PseudoTerminalHelpersC4fork7andExec4args3env16currentDirectory17desiredWindowSizes5Int32V3pid_AK8masterFdtSgSS_SaySSGAOSSSgSo7winsizeVztFZ",
+      "target": "s:7CmdyPTY21PseudoTerminalHelpersC"
+    },
+    {
+      "kind": "requirementOf",
+      "source": "s:7CmdyPTY20LocalProcessDelegateP12dataReceived5sliceys10ArraySliceVys5UInt8VG_tF",
+      "target": "s:7CmdyPTY20LocalProcessDelegateP"
+    },
+    {
+      "kind": "requirementOf",
+      "source": "s:7CmdyPTY20LocalProcessDelegateP13getWindowSizeSo7winsizeVyF",
+      "target": "s:7CmdyPTY20LocalProcessDelegateP"
+    },
+    {
+      "kind": "requirementOf",
+      "source": "s:7CmdyPTY20LocalProcessDelegateP17processTerminated_8exitCodeyAA0cD0C_s5Int32VSgtF",
+      "target": "s:7CmdyPTY20LocalProcessDelegateP"
+    }
+  ],
+  "symbols": [
+    {
+      "accessLevel": "public",
+      "declaration": "final class LocalProcess",
+      "identifier": {
+        "interfaceLanguage": "swift",
+        "precise": "s:7CmdyPTY12LocalProcessC"
+      },
+      "kind": {
+        "displayName": "Class",
+        "identifier": "swift.class"
+      },
+      "names": {
+        "navigator": [
+          {
+            "kind": "identifier",
+            "spelling": "LocalProcess"
+          }
+        ],
+        "subHeading": [
+          {
+            "kind": "keyword",
+            "spelling": "class"
+          },
+          {
+            "kind": "text",
+            "spelling": " "
+          },
+          {
+            "kind": "identifier",
+            "spelling": "LocalProcess"
+          }
+        ],
+        "title": "LocalProcess"
+      },
+      "pathComponents": [
+        "LocalProcess"
+      ]
+    },
+    {
+      "accessLevel": "public",
+      "declaration": "func startProcess(executable: String = \"/bin/bash\", args: [String] = [], environment: [String]? = nil, execName: String? = nil, currentDirectory: String? = nil)",
+      "functionSignature": {
+        "parameters": [
+          {
+            "declaration": "executable: String",
+            "name": "executable"
+          },
+          {
+            "declaration": "args: [String]",
+            "name": "args"
+          },
+          {
+            "declaration": "environment: [String]?",
+            "name": "environment"
+          },
+          {
+            "declaration": "execName: String?",
+            "name": "execName"
+          },
+          {
+            "declaration": "currentDirectory: String?",
+            "name": "currentDirectory"
+          }
+        ],
+        "returns": [
+          {
+            "kind": "text",
+            "spelling": "()"
+          }
+        ]
+      },
+      "identifier": {
+        "interfaceLanguage": "swift",
+        "precise": "s:7CmdyPTY12LocalProcessC05startD010executable4args11environment8execName16currentDirectoryySS_SaySSGAJSgSSSgALtF"
+      },
+      "kind": {
+        "displayName": "Instance Method",
+        "identifier": "swift.method"
+      },
+      "names": {
+        "subHeading": [
+          {
+            "kind": "keyword",
+            "spelling": "func"
+          },
+          {
+            "kind": "text",
+            "spelling": " "
+          },
+          {
+            "kind": "identifier",
+            "spelling": "startProcess"
+          },
+          {
+            "kind": "text",
+            "spelling": "("
+          },
+          {
+            "kind": "externalParam",
+            "spelling": "executable"
+          },
+          {
+            "kind": "text",
+            "spelling": ": "
+          },
+          {
+            "kind": "typeIdentifier",
+            "preciseIdentifier": "s:SS",
+            "spelling": "String"
+          },
+          {
+            "kind": "text",
+            "spelling": ", "
+          },
+          {
+            "kind": "externalParam",
+            "spelling": "args"
+          },
+          {
+            "kind": "text",
+            "spelling": ": ["
+          },
+          {
+            "kind": "typeIdentifier",
+            "preciseIdentifier": "s:SS",
+            "spelling": "String"
+          },
+          {
+            "kind": "text",
+            "spelling": "], "
+          },
+          {
+            "kind": "externalParam",
+            "spelling": "environment"
+          },
+          {
+            "kind": "text",
+            "spelling": ": ["
+          },
+          {
+            "kind": "typeIdentifier",
+            "preciseIdentifier": "s:SS",
+            "spelling": "String"
+          },
+          {
+            "kind": "text",
+            "spelling": "]?, "
+          },
+          {
+            "kind": "externalParam",
+            "spelling": "execName"
+          },
+          {
+            "kind": "text",
+            "spelling": ": "
+          },
+          {
+            "kind": "typeIdentifier",
+            "preciseIdentifier": "s:SS",
+            "spelling": "String"
+          },
+          {
+            "kind": "text",
+            "spelling": "?, "
+          },
+          {
+            "kind": "externalParam",
+            "spelling": "currentDirectory"
+          },
+          {
+            "kind": "text",
+            "spelling": ": "
+          },
+          {
+            "kind": "typeIdentifier",
+            "preciseIdentifier": "s:SS",
+            "spelling": "String"
+          },
+          {
+            "kind": "text",
+            "spelling": "?)"
+          }
+        ],
+        "title": "startProcess(executable:args:environment:execName:currentDirectory:)"
+      },
+      "pathComponents": [
+        "LocalProcess",
+        "startProcess(executable:args:environment:execName:currentDirectory:)"
+      ]
+    },
+    {
+      "accessLevel": "public",
+      "declaration": "func setHostLogging(directory: String?)",
+      "functionSignature": {
+        "parameters": [
+          {
+            "declaration": "directory: String?",
+            "name": "directory"
+          }
+        ],
+        "returns": [
+          {
+            "kind": "text",
+            "spelling": "()"
+          }
+        ]
+      },
+      "identifier": {
+        "interfaceLanguage": "swift",
+        "precise": "s:7CmdyPTY12LocalProcessC14setHostLogging9directoryySSSg_tF"
+      },
+      "kind": {
+        "displayName": "Instance Method",
+        "identifier": "swift.method"
+      },
+      "names": {
+        "subHeading": [
+          {
+            "kind": "keyword",
+            "spelling": "func"
+          },
+          {
+            "kind": "text",
+            "spelling": " "
+          },
+          {
+            "kind": "identifier",
+            "spelling": "setHostLogging"
+          },
+          {
+            "kind": "text",
+            "spelling": "("
+          },
+          {
+            "kind": "externalParam",
+            "spelling": "directory"
+          },
+          {
+            "kind": "text",
+            "spelling": ": "
+          },
+          {
+            "kind": "typeIdentifier",
+            "preciseIdentifier": "s:SS",
+            "spelling": "String"
+          },
+          {
+            "kind": "text",
+            "spelling": "?)"
+          }
+        ],
+        "title": "setHostLogging(directory:)"
+      },
+      "pathComponents": [
+        "LocalProcess",
+        "setHostLogging(directory:)"
+      ]
+    },
+    {
+      "accessLevel": "public",
+      "declaration": "static func defaultEnvironment(termName: String) -> [String]",
+      "functionSignature": {
+        "parameters": [
+          {
+            "declaration": "termName: String",
+            "name": "termName"
+          }
+        ],
+        "returns": [
+          {
+            "kind": "text",
+            "spelling": "["
+          },
+          {
+            "kind": "typeIdentifier",
+            "preciseIdentifier": "s:SS",
+            "spelling": "String"
+          },
+          {
+            "kind": "text",
+            "spelling": "]"
+          }
+        ]
+      },
+      "identifier": {
+        "interfaceLanguage": "swift",
+        "precise": "s:7CmdyPTY12LocalProcessC18defaultEnvironment8termNameSaySSGSS_tFZ"
+      },
+      "kind": {
+        "displayName": "Type Method",
+        "identifier": "swift.type.method"
+      },
+      "names": {
+        "subHeading": [
+          {
+            "kind": "keyword",
+            "spelling": "static"
+          },
+          {
+            "kind": "text",
+            "spelling": " "
+          },
+          {
+            "kind": "keyword",
+            "spelling": "func"
+          },
+          {
+            "kind": "text",
+            "spelling": " "
+          },
+          {
+            "kind": "identifier",
+            "spelling": "defaultEnvironment"
+          },
+          {
+            "kind": "text",
+            "spelling": "("
+          },
+          {
+            "kind": "externalParam",
+            "spelling": "termName"
+          },
+          {
+            "kind": "text",
+            "spelling": ": "
+          },
+          {
+            "kind": "typeIdentifier",
+            "preciseIdentifier": "s:SS",
+            "spelling": "String"
+          },
+          {
+            "kind": "text",
+            "spelling": ") -> ["
+          },
+          {
+            "kind": "typeIdentifier",
+            "preciseIdentifier": "s:SS",
+            "spelling": "String"
+          },
+          {
+            "kind": "text",
+            "spelling": "]"
+          }
+        ],
+        "title": "defaultEnvironment(termName:)"
+      },
+      "pathComponents": [
+        "LocalProcess",
+        "defaultEnvironment(termName:)"
+      ]
+    },
+    {
+      "accessLevel": "public",
+      "declaration": "func send(data: ArraySlice<UInt8>)",
+      "functionSignature": {
+        "parameters": [
+          {
+            "declaration": "data: ArraySlice<UInt8>",
+            "name": "data"
+          }
+        ],
+        "returns": [
+          {
+            "kind": "text",
+            "spelling": "()"
+          }
+        ]
+      },
+      "identifier": {
+        "interfaceLanguage": "swift",
+        "precise": "s:7CmdyPTY12LocalProcessC4send4datays10ArraySliceVys5UInt8VG_tF"
+      },
+      "kind": {
+        "displayName": "Instance Method",
+        "identifier": "swift.method"
+      },
+      "names": {
+        "subHeading": [
+          {
+            "kind": "keyword",
+            "spelling": "func"
+          },
+          {
+            "kind": "text",
+            "spelling": " "
+          },
+          {
+            "kind": "identifier",
+            "spelling": "send"
+          },
+          {
+            "kind": "text",
+            "spelling": "("
+          },
+          {
+            "kind": "externalParam",
+            "spelling": "data"
+          },
+          {
+            "kind": "text",
+            "spelling": ": "
+          },
+          {
+            "kind": "typeIdentifier",
+            "preciseIdentifier": "s:s10ArraySliceV",
+            "spelling": "ArraySlice"
+          },
+          {
+            "kind": "text",
+            "spelling": "<"
+          },
+          {
+            "kind": "typeIdentifier",
+            "preciseIdentifier": "s:s5UInt8V",
+            "spelling": "UInt8"
+          },
+          {
+            "kind": "text",
+            "spelling": ">)"
+          }
+        ],
+        "title": "send(data:)"
+      },
+      "pathComponents": [
+        "LocalProcess",
+        "send(data:)"
+      ]
+    },
+    {
+      "accessLevel": "public",
+      "declaration": "var childfd: Int32 { get }",
+      "identifier": {
+        "interfaceLanguage": "swift",
+        "precise": "s:7CmdyPTY12LocalProcessC7childfds5Int32Vvp"
+      },
+      "kind": {
+        "displayName": "Instance Property",
+        "identifier": "swift.property"
+      },
+      "names": {
+        "subHeading": [
+          {
+            "kind": "keyword",
+            "spelling": "var"
+          },
+          {
+            "kind": "text",
+            "spelling": " "
+          },
+          {
+            "kind": "identifier",
+            "spelling": "childfd"
+          },
+          {
+            "kind": "text",
+            "spelling": ": "
+          },
+          {
+            "kind": "typeIdentifier",
+            "preciseIdentifier": "s:s5Int32V",
+            "spelling": "Int32"
+          }
+        ],
+        "title": "childfd"
+      },
+      "pathComponents": [
+        "LocalProcess",
+        "childfd"
+      ]
+    },
+    {
+      "accessLevel": "public",
+      "declaration": "var running: Bool { get }",
+      "identifier": {
+        "interfaceLanguage": "swift",
+        "precise": "s:7CmdyPTY12LocalProcessC7runningSbvp"
+      },
+      "kind": {
+        "displayName": "Instance Property",
+        "identifier": "swift.property"
+      },
+      "names": {
+        "subHeading": [
+          {
+            "kind": "keyword",
+            "spelling": "var"
+          },
+          {
+            "kind": "text",
+            "spelling": " "
+          },
+          {
+            "kind": "identifier",
+            "spelling": "running"
+          },
+          {
+            "kind": "text",
+            "spelling": ": "
+          },
+          {
+            "kind": "typeIdentifier",
+            "preciseIdentifier": "s:Sb",
+            "spelling": "Bool"
+          }
+        ],
+        "title": "running"
+      },
+      "pathComponents": [
+        "LocalProcess",
+        "running"
+      ]
+    },
+    {
+      "accessLevel": "public",
+      "declaration": "init(delegate: any LocalProcessDelegate, dispatchQueue: DispatchQueue? = nil)",
+      "functionSignature": {
+        "parameters": [
+          {
+            "declaration": "delegate: any LocalProcessDelegate",
+            "name": "delegate"
+          },
+          {
+            "declaration": "dispatchQueue: DispatchQueue?",
+            "name": "dispatchQueue"
+          }
+        ]
+      },
+      "identifier": {
+        "interfaceLanguage": "swift",
+        "precise": "s:7CmdyPTY12LocalProcessC8delegate13dispatchQueueAcA0cD8Delegate_p_So03OS_F6_queueCSgtcfc"
+      },
+      "kind": {
+        "displayName": "Initializer",
+        "identifier": "swift.init"
+      },
+      "names": {
+        "subHeading": [
+          {
+            "kind": "keyword",
+            "spelling": "init"
+          },
+          {
+            "kind": "text",
+            "spelling": "("
+          },
+          {
+            "kind": "externalParam",
+            "spelling": "delegate"
+          },
+          {
+            "kind": "text",
+            "spelling": ": any "
+          },
+          {
+            "kind": "typeIdentifier",
+            "preciseIdentifier": "s:7CmdyPTY20LocalProcessDelegateP",
+            "spelling": "LocalProcessDelegate"
+          },
+          {
+            "kind": "text",
+            "spelling": ", "
+          },
+          {
+            "kind": "externalParam",
+            "spelling": "dispatchQueue"
+          },
+          {
+            "kind": "text",
+            "spelling": ": "
+          },
+          {
+            "kind": "typeIdentifier",
+            "preciseIdentifier": "c:objc(cs)OS_dispatch_queue",
+            "spelling": "DispatchQueue"
+          },
+          {
+            "kind": "text",
+            "spelling": "?)"
+          }
+        ],
+        "title": "init(delegate:dispatchQueue:)"
+      },
+      "pathComponents": [
+        "LocalProcess",
+        "init(delegate:dispatchQueue:)"
+      ]
+    },
+    {
+      "accessLevel": "public",
+      "declaration": "var shellPid: pid_t { get }",
+      "identifier": {
+        "interfaceLanguage": "swift",
+        "precise": "s:7CmdyPTY12LocalProcessC8shellPids5Int32Vvp"
+      },
+      "kind": {
+        "displayName": "Instance Property",
+        "identifier": "swift.property"
+      },
+      "names": {
+        "subHeading": [
+          {
+            "kind": "keyword",
+            "spelling": "var"
+          },
+          {
+            "kind": "text",
+            "spelling": " "
+          },
+          {
+            "kind": "identifier",
+            "spelling": "shellPid"
+          },
+          {
+            "kind": "text",
+            "spelling": ": "
+          },
+          {
+            "kind": "typeIdentifier",
+            "preciseIdentifier": "c:@T@pid_t",
+            "spelling": "pid_t"
+          }
+        ],
+        "title": "shellPid"
+      },
+      "pathComponents": [
+        "LocalProcess",
+        "shellPid"
+      ]
+    },
+    {
+      "accessLevel": "public",
+      "declaration": "func terminate()",
+      "functionSignature": {
+        "returns": [
+          {
+            "kind": "text",
+            "spelling": "()"
+          }
+        ]
+      },
+      "identifier": {
+        "interfaceLanguage": "swift",
+        "precise": "s:7CmdyPTY12LocalProcessC9terminateyyF"
+      },
+      "kind": {
+        "displayName": "Instance Method",
+        "identifier": "swift.method"
+      },
+      "names": {
+        "subHeading": [
+          {
+            "kind": "keyword",
+            "spelling": "func"
+          },
+          {
+            "kind": "text",
+            "spelling": " "
+          },
+          {
+            "kind": "identifier",
+            "spelling": "terminate"
+          },
+          {
+            "kind": "text",
+            "spelling": "()"
+          }
+        ],
+        "title": "terminate()"
+      },
+      "pathComponents": [
+        "LocalProcess",
+        "terminate()"
+      ]
+    },
+    {
+      "accessLevel": "public",
+      "declaration": "protocol LocalProcessDelegate : AnyObject",
+      "identifier": {
+        "interfaceLanguage": "swift",
+        "precise": "s:7CmdyPTY20LocalProcessDelegateP"
+      },
+      "kind": {
+        "displayName": "Protocol",
+        "identifier": "swift.protocol"
+      },
+      "names": {
+        "navigator": [
+          {
+            "kind": "identifier",
+            "spelling": "LocalProcessDelegate"
+          }
+        ],
+        "subHeading": [
+          {
+            "kind": "keyword",
+            "spelling": "protocol"
+          },
+          {
+            "kind": "text",
+            "spelling": " "
+          },
+          {
+            "kind": "identifier",
+            "spelling": "LocalProcessDelegate"
+          }
+        ],
+        "title": "LocalProcessDelegate"
+      },
+      "pathComponents": [
+        "LocalProcessDelegate"
+      ]
+    },
+    {
+      "accessLevel": "public",
+      "declaration": "func dataReceived(slice: ArraySlice<UInt8>)",
+      "functionSignature": {
+        "parameters": [
+          {
+            "declaration": "slice: ArraySlice<UInt8>",
+            "name": "slice"
+          }
+        ],
+        "returns": [
+          {
+            "kind": "text",
+            "spelling": "()"
+          }
+        ]
+      },
+      "identifier": {
+        "interfaceLanguage": "swift",
+        "precise": "s:7CmdyPTY20LocalProcessDelegateP12dataReceived5sliceys10ArraySliceVys5UInt8VG_tF"
+      },
+      "kind": {
+        "displayName": "Instance Method",
+        "identifier": "swift.method"
+      },
+      "names": {
+        "subHeading": [
+          {
+            "kind": "keyword",
+            "spelling": "func"
+          },
+          {
+            "kind": "text",
+            "spelling": " "
+          },
+          {
+            "kind": "identifier",
+            "spelling": "dataReceived"
+          },
+          {
+            "kind": "text",
+            "spelling": "("
+          },
+          {
+            "kind": "externalParam",
+            "spelling": "slice"
+          },
+          {
+            "kind": "text",
+            "spelling": ": "
+          },
+          {
+            "kind": "typeIdentifier",
+            "preciseIdentifier": "s:s10ArraySliceV",
+            "spelling": "ArraySlice"
+          },
+          {
+            "kind": "text",
+            "spelling": "<"
+          },
+          {
+            "kind": "typeIdentifier",
+            "preciseIdentifier": "s:s5UInt8V",
+            "spelling": "UInt8"
+          },
+          {
+            "kind": "text",
+            "spelling": ">)"
+          }
+        ],
+        "title": "dataReceived(slice:)"
+      },
+      "pathComponents": [
+        "LocalProcessDelegate",
+        "dataReceived(slice:)"
+      ]
+    },
+    {
+      "accessLevel": "public",
+      "declaration": "func getWindowSize() -> winsize",
+      "functionSignature": {
+        "returns": [
+          {
+            "kind": "typeIdentifier",
+            "preciseIdentifier": "c:@S@winsize",
+            "spelling": "winsize"
+          }
+        ]
+      },
+      "identifier": {
+        "interfaceLanguage": "swift",
+        "precise": "s:7CmdyPTY20LocalProcessDelegateP13getWindowSizeSo7winsizeVyF"
+      },
+      "kind": {
+        "displayName": "Instance Method",
+        "identifier": "swift.method"
+      },
+      "names": {
+        "subHeading": [
+          {
+            "kind": "keyword",
+            "spelling": "func"
+          },
+          {
+            "kind": "text",
+            "spelling": " "
+          },
+          {
+            "kind": "identifier",
+            "spelling": "getWindowSize"
+          },
+          {
+            "kind": "text",
+            "spelling": "() -> "
+          },
+          {
+            "kind": "typeIdentifier",
+            "preciseIdentifier": "c:@S@winsize",
+            "spelling": "winsize"
+          }
+        ],
+        "title": "getWindowSize()"
+      },
+      "pathComponents": [
+        "LocalProcessDelegate",
+        "getWindowSize()"
+      ]
+    },
+    {
+      "accessLevel": "public",
+      "declaration": "func processTerminated(_ source: LocalProcess, exitCode: Int32?)",
+      "functionSignature": {
+        "parameters": [
+          {
+            "declaration": "source: LocalProcess",
+            "name": "source"
+          },
+          {
+            "declaration": "exitCode: Int32?",
+            "name": "exitCode"
+          }
+        ],
+        "returns": [
+          {
+            "kind": "text",
+            "spelling": "()"
+          }
+        ]
+      },
+      "identifier": {
+        "interfaceLanguage": "swift",
+        "precise": "s:7CmdyPTY20LocalProcessDelegateP17processTerminated_8exitCodeyAA0cD0C_s5Int32VSgtF"
+      },
+      "kind": {
+        "displayName": "Instance Method",
+        "identifier": "swift.method"
+      },
+      "names": {
+        "subHeading": [
+          {
+            "kind": "keyword",
+            "spelling": "func"
+          },
+          {
+            "kind": "text",
+            "spelling": " "
+          },
+          {
+            "kind": "identifier",
+            "spelling": "processTerminated"
+          },
+          {
+            "kind": "text",
+            "spelling": "("
+          },
+          {
+            "kind": "typeIdentifier",
+            "preciseIdentifier": "s:7CmdyPTY12LocalProcessC",
+            "spelling": "LocalProcess"
+          },
+          {
+            "kind": "text",
+            "spelling": ", "
+          },
+          {
+            "kind": "externalParam",
+            "spelling": "exitCode"
+          },
+          {
+            "kind": "text",
+            "spelling": ": "
+          },
+          {
+            "kind": "typeIdentifier",
+            "preciseIdentifier": "s:s5Int32V",
+            "spelling": "Int32"
+          },
+          {
+            "kind": "text",
+            "spelling": "?)"
+          }
+        ],
+        "title": "processTerminated(_:exitCode:)"
+      },
+      "pathComponents": [
+        "LocalProcessDelegate",
+        "processTerminated(_:exitCode:)"
+      ]
+    },
+    {
+      "accessLevel": "public",
+      "declaration": "class PseudoTerminalHelpers",
+      "identifier": {
+        "interfaceLanguage": "swift",
+        "precise": "s:7CmdyPTY21PseudoTerminalHelpersC"
+      },
+      "kind": {
+        "displayName": "Class",
+        "identifier": "swift.class"
+      },
+      "names": {
+        "navigator": [
+          {
+            "kind": "identifier",
+            "spelling": "PseudoTerminalHelpers"
+          }
+        ],
+        "subHeading": [
+          {
+            "kind": "keyword",
+            "spelling": "class"
+          },
+          {
+            "kind": "text",
+            "spelling": " "
+          },
+          {
+            "kind": "identifier",
+            "spelling": "PseudoTerminalHelpers"
+          }
+        ],
+        "title": "PseudoTerminalHelpers"
+      },
+      "pathComponents": [
+        "PseudoTerminalHelpers"
+      ]
+    },
+    {
+      "accessLevel": "public",
+      "declaration": "static func setWinSize(masterPtyDescriptor: Int32, windowSize: inout winsize) -> Int32",
+      "functionSignature": {
+        "parameters": [
+          {
+            "declaration": "masterPtyDescriptor: Int32",
+            "name": "masterPtyDescriptor"
+          },
+          {
+            "declaration": "windowSize: winsize",
+            "name": "windowSize"
+          }
+        ],
+        "returns": [
+          {
+            "kind": "typeIdentifier",
+            "preciseIdentifier": "s:s5Int32V",
+            "spelling": "Int32"
+          }
+        ]
+      },
+      "identifier": {
+        "interfaceLanguage": "swift",
+        "precise": "s:7CmdyPTY21PseudoTerminalHelpersC10setWinSize19masterPtyDescriptor06windowH0s5Int32VAH_So7winsizeVztFZ"
+      },
+      "kind": {
+        "displayName": "Type Method",
+        "identifier": "swift.type.method"
+      },
+      "names": {
+        "subHeading": [
+          {
+            "kind": "keyword",
+            "spelling": "static"
+          },
+          {
+            "kind": "text",
+            "spelling": " "
+          },
+          {
+            "kind": "keyword",
+            "spelling": "func"
+          },
+          {
+            "kind": "text",
+            "spelling": " "
+          },
+          {
+            "kind": "identifier",
+            "spelling": "setWinSize"
+          },
+          {
+            "kind": "text",
+            "spelling": "("
+          },
+          {
+            "kind": "externalParam",
+            "spelling": "masterPtyDescriptor"
+          },
+          {
+            "kind": "text",
+            "spelling": ": "
+          },
+          {
+            "kind": "typeIdentifier",
+            "preciseIdentifier": "s:s5Int32V",
+            "spelling": "Int32"
+          },
+          {
+            "kind": "text",
+            "spelling": ", "
+          },
+          {
+            "kind": "externalParam",
+            "spelling": "windowSize"
+          },
+          {
+            "kind": "text",
+            "spelling": ": "
+          },
+          {
+            "kind": "keyword",
+            "spelling": "inout"
+          },
+          {
+            "kind": "text",
+            "spelling": " "
+          },
+          {
+            "kind": "typeIdentifier",
+            "preciseIdentifier": "c:@S@winsize",
+            "spelling": "winsize"
+          },
+          {
+            "kind": "text",
+            "spelling": ") -> "
+          },
+          {
+            "kind": "typeIdentifier",
+            "preciseIdentifier": "s:s5Int32V",
+            "spelling": "Int32"
+          }
+        ],
+        "title": "setWinSize(masterPtyDescriptor:windowSize:)"
+      },
+      "pathComponents": [
+        "PseudoTerminalHelpers",
+        "setWinSize(masterPtyDescriptor:windowSize:)"
+      ]
+    },
+    {
+      "accessLevel": "public",
+      "declaration": "static func availableBytes(fd: Int32) -> (status: Int32, size: Int32)",
+      "functionSignature": {
+        "parameters": [
+          {
+            "declaration": "fd: Int32",
+            "name": "fd"
+          }
+        ],
+        "returns": [
+          {
+            "kind": "text",
+            "spelling": "(status"
+          },
+          {
+            "kind": "text",
+            "spelling": ": "
+          },
+          {
+            "kind": "typeIdentifier",
+            "preciseIdentifier": "s:s5Int32V",
+            "spelling": "Int32"
+          },
+          {
+            "kind": "text",
+            "spelling": ", size"
+          },
+          {
+            "kind": "text",
+            "spelling": ": "
+          },
+          {
+            "kind": "typeIdentifier",
+            "preciseIdentifier": "s:s5Int32V",
+            "spelling": "Int32"
+          },
+          {
+            "kind": "text",
+            "spelling": ")"
+          }
+        ]
+      },
+      "identifier": {
+        "interfaceLanguage": "swift",
+        "precise": "s:7CmdyPTY21PseudoTerminalHelpersC14availableBytes2fds5Int32V6status_AG4sizetAG_tFZ"
+      },
+      "kind": {
+        "displayName": "Type Method",
+        "identifier": "swift.type.method"
+      },
+      "names": {
+        "subHeading": [
+          {
+            "kind": "keyword",
+            "spelling": "static"
+          },
+          {
+            "kind": "text",
+            "spelling": " "
+          },
+          {
+            "kind": "keyword",
+            "spelling": "func"
+          },
+          {
+            "kind": "text",
+            "spelling": " "
+          },
+          {
+            "kind": "identifier",
+            "spelling": "availableBytes"
+          },
+          {
+            "kind": "text",
+            "spelling": "("
+          },
+          {
+            "kind": "externalParam",
+            "spelling": "fd"
+          },
+          {
+            "kind": "text",
+            "spelling": ": "
+          },
+          {
+            "kind": "typeIdentifier",
+            "preciseIdentifier": "s:s5Int32V",
+            "spelling": "Int32"
+          },
+          {
+            "kind": "text",
+            "spelling": ") -> (status"
+          },
+          {
+            "kind": "text",
+            "spelling": ": "
+          },
+          {
+            "kind": "typeIdentifier",
+            "preciseIdentifier": "s:s5Int32V",
+            "spelling": "Int32"
+          },
+          {
+            "kind": "text",
+            "spelling": ", size"
+          },
+          {
+            "kind": "text",
+            "spelling": ": "
+          },
+          {
+            "kind": "typeIdentifier",
+            "preciseIdentifier": "s:s5Int32V",
+            "spelling": "Int32"
+          },
+          {
+            "kind": "text",
+            "spelling": ")"
+          }
+        ],
+        "title": "availableBytes(fd:)"
+      },
+      "pathComponents": [
+        "PseudoTerminalHelpers",
+        "availableBytes(fd:)"
+      ]
+    },
+    {
+      "accessLevel": "public",
+      "declaration": "static func fork(andExec: String, args: [String], env: [String], currentDirectory: String? = nil, desiredWindowSize: inout winsize) -> (pid: pid_t, masterFd: Int32)?",
+      "functionSignature": {
+        "parameters": [
+          {
+            "declaration": "andExec: String",
+            "name": "andExec"
+          },
+          {
+            "declaration": "args: [String]",
+            "name": "args"
+          },
+          {
+            "declaration": "env: [String]",
+            "name": "env"
+          },
+          {
+            "declaration": "currentDirectory: String?",
+            "name": "currentDirectory"
+          },
+          {
+            "declaration": "desiredWindowSize: winsize",
+            "name": "desiredWindowSize"
+          }
+        ],
+        "returns": [
+          {
+            "kind": "text",
+            "spelling": "(pid"
+          },
+          {
+            "kind": "text",
+            "spelling": ": "
+          },
+          {
+            "kind": "typeIdentifier",
+            "preciseIdentifier": "c:@T@pid_t",
+            "spelling": "pid_t"
+          },
+          {
+            "kind": "text",
+            "spelling": ", masterFd"
+          },
+          {
+            "kind": "text",
+            "spelling": ": "
+          },
+          {
+            "kind": "typeIdentifier",
+            "preciseIdentifier": "s:s5Int32V",
+            "spelling": "Int32"
+          },
+          {
+            "kind": "text",
+            "spelling": ")?"
+          }
+        ]
+      },
+      "identifier": {
+        "interfaceLanguage": "swift",
+        "precise": "s:7CmdyPTY21PseudoTerminalHelpersC4fork7andExec4args3env16currentDirectory17desiredWindowSizes5Int32V3pid_AK8masterFdtSgSS_SaySSGAOSSSgSo7winsizeVztFZ"
+      },
+      "kind": {
+        "displayName": "Type Method",
+        "identifier": "swift.type.method"
+      },
+      "names": {
+        "subHeading": [
+          {
+            "kind": "keyword",
+            "spelling": "static"
+          },
+          {
+            "kind": "text",
+            "spelling": " "
+          },
+          {
+            "kind": "keyword",
+            "spelling": "func"
+          },
+          {
+            "kind": "text",
+            "spelling": " "
+          },
+          {
+            "kind": "identifier",
+            "spelling": "fork"
+          },
+          {
+            "kind": "text",
+            "spelling": "("
+          },
+          {
+            "kind": "externalParam",
+            "spelling": "andExec"
+          },
+          {
+            "kind": "text",
+            "spelling": ": "
+          },
+          {
+            "kind": "typeIdentifier",
+            "preciseIdentifier": "s:SS",
+            "spelling": "String"
+          },
+          {
+            "kind": "text",
+            "spelling": ", "
+          },
+          {
+            "kind": "externalParam",
+            "spelling": "args"
+          },
+          {
+            "kind": "text",
+            "spelling": ": ["
+          },
+          {
+            "kind": "typeIdentifier",
+            "preciseIdentifier": "s:SS",
+            "spelling": "String"
+          },
+          {
+            "kind": "text",
+            "spelling": "], "
+          },
+          {
+            "kind": "externalParam",
+            "spelling": "env"
+          },
+          {
+            "kind": "text",
+            "spelling": ": ["
+          },
+          {
+            "kind": "typeIdentifier",
+            "preciseIdentifier": "s:SS",
+            "spelling": "String"
+          },
+          {
+            "kind": "text",
+            "spelling": "], "
+          },
+          {
+            "kind": "externalParam",
+            "spelling": "currentDirectory"
+          },
+          {
+            "kind": "text",
+            "spelling": ": "
+          },
+          {
+            "kind": "typeIdentifier",
+            "preciseIdentifier": "s:SS",
+            "spelling": "String"
+          },
+          {
+            "kind": "text",
+            "spelling": "?, "
+          },
+          {
+            "kind": "externalParam",
+            "spelling": "desiredWindowSize"
+          },
+          {
+            "kind": "text",
+            "spelling": ": "
+          },
+          {
+            "kind": "keyword",
+            "spelling": "inout"
+          },
+          {
+            "kind": "text",
+            "spelling": " "
+          },
+          {
+            "kind": "typeIdentifier",
+            "preciseIdentifier": "c:@S@winsize",
+            "spelling": "winsize"
+          },
+          {
+            "kind": "text",
+            "spelling": ") -> (pid"
+          },
+          {
+            "kind": "text",
+            "spelling": ": "
+          },
+          {
+            "kind": "typeIdentifier",
+            "preciseIdentifier": "c:@T@pid_t",
+            "spelling": "pid_t"
+          },
+          {
+            "kind": "text",
+            "spelling": ", masterFd"
+          },
+          {
+            "kind": "text",
+            "spelling": ": "
+          },
+          {
+            "kind": "typeIdentifier",
+            "preciseIdentifier": "s:s5Int32V",
+            "spelling": "Int32"
+          },
+          {
+            "kind": "text",
+            "spelling": ")?"
+          }
+        ],
+        "title": "fork(andExec:args:env:currentDirectory:desiredWindowSize:)"
+      },
+      "pathComponents": [
+        "PseudoTerminalHelpers",
+        "fork(andExec:args:env:currentDirectory:desiredWindowSize:)"
+      ]
+    }
+  ]
+}

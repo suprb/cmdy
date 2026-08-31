@@ -1,0 +1,4 @@
+module CEFBridge {
+    header "include/cef_bridge.h"
+    export *
+}

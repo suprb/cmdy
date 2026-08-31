@@ -1,0 +1,29 @@
+{
+  "name": "cmdy-site",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/sync-brand.mjs && vite --host 127.0.0.1 --port 4173",
+    "build": "node scripts/sync-brand.mjs && tsc --noEmit && vite build",
+    "test": "npm run build && npm run verify && npm run render-smoke",
+    "render-smoke": "node scripts/render-smoke.mjs",
+    "snapshot": "node scripts/update-marketplace-snapshot.mjs",
+    "typecheck": "tsc --noEmit",
+    "verify": "node scripts/verify-build.mjs",
+    "preview": "vite preview --host 127.0.0.1 --port 4173"
+  },
+  "dependencies": {
+    "ogl": "^0.0.29",
+    "react": "19.2.7",
+    "react-dom": "19.2.7"
+  },
+  "devDependencies": {
+    "@types/node": "25.9.1",
+    "@types/react": "19.2.7",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "4.7.0",
+    "typescript": "5.9.3",
+    "vite": "6.4.3"
+  }
+}

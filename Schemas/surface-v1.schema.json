@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cmdy.dev/schemas/surface-v1.schema.json",
+  "title": "Cmdy Surface Protocol v1 Document",
+  "type": "object",
+  "required": ["id", "kind", "title", "fallback"],
+  "properties": {
+    "v": {"const": 1, "default": 1},
+    "id": {"$ref": "#/$defs/id"},
+    "kind": {"enum": ["list", "table", "diff", "task", "form", "text"]},
+    "title": {"type": "string", "minLength": 1, "maxLength": 512},
+    "pane": {"type": "string"},
+    "block": {"type": "string", "default": "current"},
+    "sequence": {"type": "integer", "minimum": 0, "default": 0},
+    "state": {"enum": ["live", "waiting", "complete", "failed", "disconnected"]},
+    "summary": {"type": "string"},
+    "fallback": {"type": "string"},
+    "columns": {"type": "array", "maxItems": 64, "items": {"$ref": "#/$defs/column"}},
+    "rows": {"type": "array", "maxItems": 10000, "items": {"$ref": "#/$defs/row"}},
+    "tasks": {"type": "array", "maxItems": 5000, "items": {"$ref": "#/$defs/task"}},
+    "diff": {"type": "string"},
+    "fields": {"type": "array", "maxItems": 256, "items": {"$ref": "#/$defs/field"}},
+    "actions": {"type": "array", "maxItems": 64, "items": {"$ref": "#/$defs/action"}}
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._-]+$"
+    },
+    "value": {"type": ["string", "number", "boolean", "null"]},
+    "action": {
+      "type": "object",
+      "required": ["id", "title"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "title": {"type": "string", "minLength": 1},
+        "effect": {"enum": ["local-view", "read", "mutate", "approve"], "default": "read"},
+        "style": {"enum": ["normal", "primary", "destructive"], "default": "normal"},
+        "disabled": {"type": "boolean", "default": false},
+        "confirmation": {"type": "string"}
+      }
+    },
+    "column": {
+      "type": "object",
+      "required": ["id", "title"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "title": {"type": "string"},
+        "alignment": {"enum": ["leading", "center", "trailing"]},
+        "width": {"type": "number", "minimum": 0}
+      }
+    },
+    "row": {
+      "type": "object",
+      "required": ["id", "cells"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "cells": {"type": "object", "additionalProperties": {"$ref": "#/$defs/value"}},
+        "state": {"type": "string"},
+        "detail": {"type": "string"},
+        "actions": {"type": "array", "maxItems": 16, "items": {"$ref": "#/$defs/action"}}
+      }
+    },
+    "task": {
+      "type": "object",
+      "required": ["id", "label", "status"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "label": {"type": "string"},
+        "status": {"enum": ["pending", "running", "passed", "failed", "skipped", "cancelled"]},
+        "detail": {"type": "string"},
+        "progress": {"type": "number", "minimum": 0, "maximum": 1},
+        "durationMs": {"type": "integer", "minimum": 0},
+        "actions": {"type": "array", "maxItems": 16, "items": {"$ref": "#/$defs/action"}}
+      }
+    },
+    "field": {
+      "type": "object",
+      "required": ["id", "label"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "label": {"type": "string"},
+        "kind": {"enum": ["text", "secure", "toggle", "choice"], "default": "text"},
+        "value": {"$ref": "#/$defs/value"},
+        "placeholder": {"type": "string"},
+        "options": {"type": "array", "maxItems": 256, "items": {"type": "string"}},
+        "required": {"type": "boolean", "default": false},
+        "disabled": {"type": "boolean", "default": false}
+      }
+    }
+  },
+  "allOf": [
+    {"if": {"properties": {"kind": {"const": "table"}}}, "then": {"required": ["columns"]}},
+    {"if": {"properties": {"kind": {"const": "diff"}}}, "then": {"required": ["diff"]}},
+    {"if": {"properties": {"kind": {"const": "form"}}}, "then": {"required": ["fields"]}}
+  ],
+  "additionalProperties": true
+}

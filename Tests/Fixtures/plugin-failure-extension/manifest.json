@@ -1,0 +1,9 @@
+{
+  "manifestVersion": 1,
+  "id": "dev.cmdy.fixture.plugin-failure",
+  "name": "Failure Fixture",
+  "version": "1.0.0",
+  "entrypoint": "run.sh",
+  "enabled": true,
+  "capabilities": ["commands"]
+}

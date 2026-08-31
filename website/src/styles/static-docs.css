@@ -1,0 +1,179 @@
+/* ─────────────────────────────────────────────────────────────────────
+   cmdy docs — the same paper-and-ink language as the landing page.
+   Clean technical reading: off-white field, near-black ink, dark code
+   blocks that echo the terminal, hairline tables, paper kbd chips.
+   Geist Mono (bundled) is the terminal + code font.
+   ───────────────────────────────────────────────────────────────────── */
+@font-face { font-family: "Geist Mono"; font-weight: 400; font-style: normal;
+             font-display: swap; src: url("/fonts/GeistMono-Regular.woff2") format("woff2"); }
+@font-face { font-family: "Geist Mono"; font-weight: 500; font-style: normal;
+             font-display: swap; src: url("/fonts/GeistMono-Medium.woff2") format("woff2"); }
+:root {
+    --paper:   #FFFFFF;
+    --paper-2: #F5F5F5;
+    --ink:     #141414;
+    --ink-2:   #525252;
+    --ink-3:   #8F8F8F;
+    --line:    #E7E7E7;
+    --line-2:  #D6D6D6;
+    --accent:  #B4531F;
+    --term-bg: #141414;
+    --term-in: #EDEDED;
+    --term-dim:#8A8A8A;
+    --green:   #8FC98A;
+    --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", system-ui, sans-serif;
+    --mono: "SF Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; text-transform: lowercase; }
+/* The editorial voice stays lowercase. Literal code plus canonical names and
+   acronyms opt out explicitly so macOS, HTTP, GPU, SDK, and GitHub stay correct. */
+pre, pre *, code, kbd, .mono, .mono *, .case, .case * { text-transform: none; }
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+body.docsite {
+    background: var(--paper); color: var(--ink);
+    font-family: var(--sans); font-size: 16.5px; line-height: 1.66;
+    -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+}
+::selection { background: #141414; color: #FFFFFF; }
+a { color: inherit; text-decoration: none; }
+
+/* ── top nav (shared language with the landing) ── */
+.topnav {
+    position: sticky; top: 0; z-index: 20;
+    background: color-mix(in srgb, var(--paper) 86%, transparent);
+    backdrop-filter: saturate(1.4) blur(14px);
+    -webkit-backdrop-filter: saturate(1.4) blur(14px);
+    border-bottom: 1px solid var(--line);
+}
+.topnav .inner {
+    max-width: 1200px; margin: 0 auto; padding: 0 32px;
+    height: 68px; display: flex; align-items: center; gap: 30px;
+}
+.topnav .brand { display: flex; align-items: center; gap: 11px;
+                 font-weight: 600; font-size: 17px; letter-spacing: -0.01em; }
+.topnav .brand img { width: 24px; height: 24px; display: block; border-radius: 5px; }
+.topnav .item { font-size: 15px; color: var(--ink-2); transition: color .15s; }
+.topnav .brand + .item { margin-left: auto; }
+.topnav .item:hover { color: var(--ink); }
+.topnav .item sup { font-size: 9px; }
+.topnav .btn-sm {
+    font-family: var(--sans); font-weight: 500; font-size: 15px;
+    padding: 11px 24px; border-radius: 999px; transition: all .18s ease;
+    border: 1px solid transparent; white-space: nowrap;
+}
+.topnav .btn-sm.dark { background: var(--ink); color: var(--paper); }
+.topnav .btn-sm.dark:hover { background: #000; transform: translateY(-1px); }
+
+/* ── layout ── */
+.docbody { max-width: 1200px; margin: 0 auto; display: flex; }
+.sidebar {
+    position: sticky; top: 68px; align-self: flex-start;
+    width: 244px; flex: none; height: calc(100vh - 68px);
+    overflow-y: auto; padding: 40px 20px 40px 32px;
+    border-right: 1px solid var(--line);
+}
+.sidebar a { display: block; font-size: 14px; color: var(--ink-2);
+             padding: 5px 0; transition: color .15s; }
+.sidebar a:hover { color: var(--ink); }
+.sidebar a.active { color: var(--ink); font-weight: 600; }
+.sidebar .group { font-family: var(--sans); font-size: 11px; letter-spacing: 0.05em;
+                  color: var(--ink-3);
+                  margin: 24px 0 8px; }
+
+.docmain { flex: 1; min-width: 0; }
+.docinner { max-width: 760px; padding: 52px 40px 120px; }
+
+/* ── prose ── */
+.crumb { font-family: var(--sans); font-size: 12px; letter-spacing: 0.05em;
+         color: var(--ink-3); }
+.docinner hr { border: 0; border-top: 1px solid var(--line); margin: 22px 0; }
+.docinner h1 { font-size: clamp(34px, 5vw, 50px); font-weight: 600;
+               letter-spacing: -0.05em; line-height: 1.04; margin: 6px 0; }
+.docinner h2 { font-size: 27px; font-weight: 600; letter-spacing: -0.05em;
+               margin: 68px 0 16px; padding-top: 20px; }
+.docinner h3 { font-size: 18px; font-weight: 600; letter-spacing: -0.015em;
+               margin: 34px 0 12px; }
+.docinner p { color: var(--ink-2); margin: 14px 0; }
+.docinner p.sub { font-size: 19px; color: var(--ink-2); letter-spacing: -0.01em;
+                  line-height: 1.55; }
+.docinner b { color: var(--ink); font-weight: 600; }
+.docinner em { font-style: italic; color: var(--ink); }
+.docinner p a { color: var(--accent); }
+.docinner p a:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+ul.plain { list-style: none; margin: 16px 0; }
+ul.plain li { position: relative; padding-left: 22px; margin: 11px 0; color: var(--ink-2); }
+ul.plain li::before { content: ""; position: absolute; left: 4px; top: 12px;
+                      width: 5px; height: 5px; border-radius: 50%; background: var(--line-2); }
+ul.plain li b { color: var(--ink); }
+
+/* mono / kbd */
+.mono { font-family: var(--mono); font-size: 0.9em; }
+.mono.wrap { white-space: normal; line-height: 2; color: var(--ink-2); }
+kbd {
+    font-family: var(--mono); font-size: 12px; color: var(--ink);
+    background: var(--paper); border: 1px solid var(--line-2);
+    border-bottom-width: 2px; border-radius: 6px; padding: 1px 6px;
+    white-space: nowrap;
+}
+
+/* code blocks — dark, echoing the terminal product */
+pre.code {
+    font-family: "Geist Mono", var(--mono); font-size: 13px; line-height: 21px;
+    background: var(--term-bg); color: var(--term-in);
+    border-radius: 12px; padding: 20px 22px; margin: 20px 0;
+    overflow-x: auto;
+    box-shadow: 0 20px 46px -30px rgba(0,0,0,.5);
+}
+pre.code .cm { color: var(--term-dim); }
+
+/* buttons — same system as the landing */
+.btnrow { display: flex; gap: 12px; margin: 24px 0; }
+.pill { display: inline-block; font-family: var(--sans); font-weight: 500; font-size: 15px;
+        padding: 11px 24px; border-radius: 999px; transition: all .18s ease;
+        background: var(--ink); color: var(--paper); border: 1px solid transparent; cursor: pointer; }
+.pill:hover { background: #000; transform: translateY(-1px); }
+.pill.ghost { background: transparent; color: var(--ink); border-color: var(--line-2); }
+.pill.ghost:hover { border-color: var(--ink); transform: translateY(-1px); }
+
+/* tables */
+table.ref { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 14.5px; }
+table.ref th { text-align: left; font-family: var(--sans); font-size: 11px;
+               letter-spacing: normal; color: var(--ink-3);
+               font-weight: 500; padding: 0 14px 10px 0; border-bottom: 1px solid var(--line-2); }
+table.ref td { padding: 11px 14px 11px 0; border-bottom: 1px solid var(--line);
+               color: var(--ink-2); vertical-align: top; }
+table.ref td.mono { color: var(--ink); }
+table.ref td:last-child { padding-right: 0; }
+table.ref.api td:first-child { white-space: nowrap; }
+
+.note { font-size: 14px; color: var(--ink-3); border-left: 2px solid var(--line-2);
+        padding-left: 16px; margin: 20px 0; }
+
+@media (max-width: 860px) {
+    .sidebar { display: none; }
+    .docinner { padding: 40px 28px 90px; }
+}
+@media (max-width: 620px) {
+    .topnav .inner { height: 60px; padding: 0 20px; gap: 18px; }
+    .topnav .btn-sm { display: none; }
+    .docinner { padding: 36px 20px 80px; }
+    .btnrow { flex-wrap: wrap; }
+    table.ref { display: block; max-width: 100%; overflow-x: auto; }
+}
+
+/* ── dark mode — the same invert trick as the landing page: one
+   invert+hue-rotate on the root flips paper and ink, hues intact; the
+   terminal-dark code blocks get the filter again, which restores them —
+   they stay truly dark, in the terminal's own colors. ── */
+/* Light default; dark is the ☾ toggle (class on <html>, localStorage). */
+html.dark {
+    color-scheme: dark;
+    background: var(--paper);
+    filter: invert(1) hue-rotate(180deg);
+}
+html.dark pre.code {
+    filter: invert(1) hue-rotate(180deg);
+}
+.theme-toggle { font-size: 15px; color: var(--ink-3); cursor: pointer; }
+.theme-toggle:hover { color: var(--ink); }

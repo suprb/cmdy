@@ -1,0 +1,2 @@
+# VT regression inputs are arbitrary byte streams, not reviewable text.
+Tests/corpus/regressions/*.bin binary

@@ -1,0 +1,42 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns:
+          - "*"
+
+  - package-ecosystem: npm
+    directory: "/website"
+    schedule:
+      interval: monthly
+    groups:
+      website:
+        patterns:
+          - "*"
+
+  - package-ecosystem: swift
+    directories:
+      - "/"
+      - "/Core"
+      - "/Renderer"
+      - "/Kit"
+      - "/Identity"
+      - "/Plugins/CmdySDK"
+      - "/Plugins/chromium"
+      - "/Plugins/chromium/Support"
+      - "/Plugins/sim"
+      - "/Plugins/swarm"
+      - "/Plugins/bridge"
+      - "/Plugins/detox"
+      - "/Plugins/appdock"
+      - "/Vendor/BraincellBridge"
+    schedule:
+      interval: monthly
+    groups:
+      swift-packages:
+        patterns:
+          - "*"

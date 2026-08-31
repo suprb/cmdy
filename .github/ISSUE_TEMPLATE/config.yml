@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability or private conduct report
+    url: https://github.com/suprb/cmdy/security/advisories/new
+    about: Report sensitive security or conduct concerns privately to the maintainers.
+  - name: Support guide
+    url: https://github.com/suprb/cmdy/blob/main/SUPPORT.md
+    about: See what diagnostic information to gather before opening an issue.

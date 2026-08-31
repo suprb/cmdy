@@ -1,0 +1,41 @@
+.DS_Store
+*.sw?
+*~
+.idea/
+.vscode/
+.build/
+.swiftpm/
+*.xcodeproj
+DerivedData/
+Package.resolved
+!Plugins/bridge/Package.resolved
+!Vendor/BraincellBridge/Package.resolved
+__pycache__/
+*.py[cod]
+node_modules/
+.vite/
+*.tsbuildinfo
+
+# app packaging artifacts
+/*.app/
+/*.icns
+/*.iconset/
+term64.app/
+term64.icns
+term64.iconset/
+termite.app/
+termite.icns
+dist/
+
+# plugin package build artifacts
+Plugins/*/.build/
+
+# Optional Chromium Embedded Framework payload (bootstrapped locally)
+/Plugins/chromium/Frameworks/
+
+# Generated visual regression captures can contain local paths and sessions
+/Tests/zoo-results/**/*.png
+/Tests/zoo-results/*.png
+
+# Local full-length demo masters; optimized public clips stay tracked.
+/website/media/*.mp4

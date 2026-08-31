@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "name": "cmdy",
+  "repositoryOwner": "suprb",
+  "bundleIdentifier": "com.cmdy.app",
+  "extensionIdentifierNamespace": "dev.cmdy",
+  "codeSigningIdentifierNamespace": "com.cmdy",
+  "legacyNames": [
+    "termite",
+    "term64"
+  ]
+}
