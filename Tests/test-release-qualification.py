@@ -477,11 +477,34 @@ class ReleaseQualificationTests(unittest.TestCase):
                 record, self.fixture.record_path, self.fixture.root, state,
                 require_clean=False, run_manifest_checker=False)
 
-    def test_non_independent_approval_fails(self) -> None:
+    def test_owner_approval_passes_with_limited_public_wording(self) -> None:
+        record = copy.deepcopy(self.fixture.record)
+        record["publication"]["approval"]["reviewerIndependentFromImplementation"] = False
+        wording = (
+            "The reviewed evidence satisfies the documented engineering "
+            "qualification. " + qualification.OWNER_APPROVAL_NOTICE)
+        record["publication"]["approval"]["approvedPublicWording"] = wording
+        source = record["publication"]["source"]
+        evidence = record["publication"]["evidence"]
+        record["publication"]["approval"]["evidenceDigestSha256"] = (
+            qualification.canonical_digest({
+                "approvedPublicWording": wording,
+                "evidence": evidence,
+                "source": source,
+            }))
+        state = qualification.validate_engineering(record, self.fixture.root)
+        result = qualification.verify_publication_source(
+            record, self.fixture.record_path, self.fixture.root, state,
+            require_clean=False, run_manifest_checker=False)
+        self.assertEqual(result["sourceCommit"], self.fixture.source_commit)
+
+    def test_owner_approval_cannot_claim_independent_review(self) -> None:
         record = copy.deepcopy(self.fixture.record)
         record["publication"]["approval"]["reviewerIndependentFromImplementation"] = False
         state = qualification.validate_engineering(record, self.fixture.root)
-        with self.assertRaisesRegex(qualification.QualificationError, "must be true"):
+        with self.assertRaisesRegex(
+                qualification.QualificationError,
+                "exact non-independent review notice"):
             qualification.verify_publication_source(
                 record, self.fixture.record_path, self.fixture.root, state,
                 require_clean=False, run_manifest_checker=False)

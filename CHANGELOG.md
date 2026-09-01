@@ -11,7 +11,7 @@ be called out here with a migration path before a versioned release.
 
 ## [Unreleased]
 
-## [1.0.0] - 2026-08-31
+## [1.0.0] - 2026-09-01
 
 ### Added
 
@@ -26,10 +26,15 @@ be called out here with a migration path before a versioned release.
 
 ### Changed
 
-- Fast wheel and trackpad scrolling now coalesce presentation work, while
-  selection and attributed command-block overlays stay off the hot scroll path.
+- Fast wheel and trackpad scrolling now coalesces presentation work and shares
+  repeated immutable row textures within a fixed 20 MiB cache, while selection
+  and attributed command-block overlays stay off the hot scroll path.
 - Editor and window-close ownership now follows one idempotent AppKit lifecycle,
   including repeated Show Editor commands and attached-editor teardown.
+- Window Grid now keeps the dragged native window pinned while recursive
+  neighbor animations settle, including on headless virtual displays.
+- The frozen CmdyGPU 1.0 API now exposes selection composition and
+  display-aligned scroll scheduling as explicit renderer seams.
 
 ### Security
 

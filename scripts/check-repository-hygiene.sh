@@ -40,6 +40,12 @@ generated_captures="$(git ls-files 'Tests/zoo-results/*.png' 'Tests/zoo-results/
     fail "tracked zoo captures may expose machine-local state"
 }
 
+generated_site="$(git ls-files 'site' 'site/**')"
+[ -z "$generated_site" ] || {
+    printf '%s\n' "$generated_site" >&2
+    fail "tracked website build output; publish a fresh build from website/"
+}
+
 while read -r mode _ _ tracked_path; do
     [ "$mode" = "120000" ] || continue
     target="$(git show ":$tracked_path")"

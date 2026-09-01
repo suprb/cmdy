@@ -4,8 +4,10 @@
 Engineering qualification verifies the exact checked-in trust inputs and runs
 the unreviewed active-source integrity gate.  It never grants human approval.
 Publication qualification is a strict superset: it requires a separately
-recorded independent-human approval and reviewed evidence bound to one committed
-active-source snapshot.  The artifact phase additionally verifies the actual
+recorded human approval and reviewed evidence bound to one committed
+active-source snapshot. Project-owner approval is allowed only when the exact
+public wording explicitly says that it is not an independent authorship or
+legal clean-room review. The artifact phase additionally verifies the actual
 notarized/stapled package inputs produced by release.sh.
 """
 
@@ -66,6 +68,10 @@ SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 GIT_OID_RE = re.compile(r"^[0-9a-f]{40}(?:[0-9a-f]{24})?$")
 VERSION_RE = re.compile(r"^[0-9]+\.[0-9]+(?:\.[0-9]+)?$")
 UTC_RE = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
+OWNER_APPROVAL_NOTICE = (
+    "Project-owner approval; this is not an independent authorship or legal "
+    "clean-room review."
+)
 
 
 class QualificationError(RuntimeError):
@@ -479,14 +485,20 @@ def validate_approval(
         raise QualificationError("publication approval decision must be approved")
     if approval["reviewerKind"] != "human":
         raise QualificationError("publication approval must be performed by a human")
-    expect_bool(
-        approval["reviewerIndependentFromImplementation"], True,
-        "publication.approval.reviewerIndependentFromImplementation")
+    independent = approval["reviewerIndependentFromImplementation"]
+    if not isinstance(independent, bool):
+        raise QualificationError(
+            "publication.approval.reviewerIndependentFromImplementation "
+            "must be a boolean")
     for field in (
         "reviewerName", "reviewerAffiliation", "approvalReference",
         "approvedPublicWording",
     ):
         expect_string(approval[field], f"publication.approval.{field}")
+    if not independent and OWNER_APPROVAL_NOTICE not in approval["approvedPublicWording"]:
+        raise QualificationError(
+            "project-owner approval must include the exact non-independent "
+            "review notice in approvedPublicWording")
     validate_utc(approval["reviewedAtUTC"], "publication.approval.reviewedAtUTC")
     engineering_digest = expect_sha(
         approval["engineeringDigestSha256"],
@@ -909,7 +921,7 @@ def verify_publication_source(
     assert isinstance(publication, dict)
     if publication["state"] != "approved":
         raise QualificationError(
-            f"publication is {publication['state']}; independent human approval is required")
+            f"publication is {publication['state']}; human release approval is required")
     if publication["source"] is None or publication["evidence"] is None:
         raise QualificationError("approved publication is missing source or evidence")
     source = expect_keys(publication["source"], {

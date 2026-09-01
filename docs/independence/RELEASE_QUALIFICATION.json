@@ -15,7 +15,7 @@
       {
         "path": ".github/workflows/ci.yml",
         "purpose": "ci-workflow",
-        "sha256": "eb42b83901aed5b0cc69342af6b0135cb316a7c9eb6927e6bc48be3c29657d4d"
+        "sha256": "bc7a906e544a6eadc52c70067e90cec9a0ab944ad02b6ff917e928ecf109a39a"
       },
       {
         "path": "scripts/check-core-blackbox-parity.py",
@@ -60,12 +60,12 @@
       {
         "path": "scripts/check-release-qualification.py",
         "purpose": "qualification-checker",
-        "sha256": "5b89f5af98718ede3f6bea9982aee2b548eac000b959d6dddb686a66be1ea8f4"
+        "sha256": "02d7c9c1e20985e8ff939219946526b28d24795f1ac31ebf9ecbb1816b7a1a33"
       },
       {
         "path": "Schemas/release-qualification-v1.schema.json",
         "purpose": "qualification-schema",
-        "sha256": "d9e0e1dd27253fc8985d413773f4a73d66c9a0f0a5039171ee02a400d536e270"
+        "sha256": "ec5d10ef02298bdad207341fa1c26e50a9e70ec01628a77421fa4fc3b9caba1f"
       },
       {
         "path": "Tests/RendererPixelOracle/ReferenceCorpus/reference-corpus-v1.tar.gz",
@@ -85,7 +85,7 @@
       {
         "path": "Tests/RendererPixelOracle/RendererPixelFixture.swift",
         "purpose": "renderer-fixture",
-        "sha256": "a31ab980ff37b387db2730254b35c85e6a8ec98881910d0521b824b9c58459e0"
+        "sha256": "c4e34ecc1b04953d0d5773d46de5aaf20025a55cc63113df60eed7d5b161e057"
       },
       {
         "path": "scripts/check-renderer-pixel-parity.py",
@@ -100,7 +100,7 @@
       {
         "path": ".github/workflows/release.yml",
         "purpose": "release-workflow",
-        "sha256": "a54434fd31e3b11d874e95dad64af5349008f62449bb14f799cda98fefb8c148"
+        "sha256": "387dc08f72cdf3a959e456bbb1cc0b8042b22d8ea44d68508e5538656cee4c1f"
       },
       {
         "path": "test.sh",
@@ -145,7 +145,7 @@
     },
     "rendererCorpus": {
       "archiveSha256": "5507d54ebe8e453edc9f38d3dbf84ac01ef132ae8370a3a7de39a1624d46188a",
-      "candidateFixtureSha256": "a31ab980ff37b387db2730254b35c85e6a8ec98881910d0521b824b9c58459e0",
+      "candidateFixtureSha256": "c4e34ecc1b04953d0d5773d46de5aaf20025a55cc63113df60eed7d5b161e057",
       "fixtureCount": 40,
       "fixtureIndexSha256": "e52c987c52e495dc7bb7a14ccf8d9ef6b0abd4e8fed6d60facd469a2af6f9d5d",
       "lockSha256": "a448c37b7e114505f4e8569ed9389c608698cb9bf50b7c0219daff4fd10ccd2f",

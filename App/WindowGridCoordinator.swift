@@ -14,6 +14,7 @@ struct WindowGridParticipant {
 /// only the surrounding windows until the gesture settles.
 final class WindowGridCoordinator {
     private struct DragSession {
+        let sourceWindow: NSWindow
         let sourceWindowNumber: Int
         let screenID: String
         let originalTree: WindowGridNode
@@ -313,6 +314,7 @@ final class WindowGridCoordinator {
                 sourceID, from: storedState.trees[existing.screenID])
             storedState.trees[screenID] = transferred
             dragSession = DragSession(
+                sourceWindow: window,
                 sourceWindowNumber: window.windowNumber,
                 screenID: screenID,
                 originalTree: transferred,
@@ -339,6 +341,7 @@ final class WindowGridCoordinator {
             let handFrame = window.frame
             let wasAnimating = frameAnimationInFlight
             dragSession = DragSession(
+                sourceWindow: window,
                 sourceWindowNumber: window.windowNumber,
                 screenID: screenID,
                 originalTree: original,
@@ -409,8 +412,7 @@ final class WindowGridCoordinator {
     }
 
     var activelyDraggedWindow: NSWindow? {
-        guard let number = dragSession?.sourceWindowNumber else { return nil }
-        return NSApp.window(withWindowNumber: number)
+        dragSession?.sourceWindow
     }
 
     var dragTargetsForTesting: (candidate: String?, preview: String?) {
@@ -920,9 +922,8 @@ final class WindowGridCoordinator {
     }
 
     private func applyDragFrameProtection() {
-        guard let session = dragSession,
-              let window = NSApp.window(
-                withWindowNumber: session.sourceWindowNumber) else { return }
+        guard let session = dragSession else { return }
+        let window = session.sourceWindow
         let expected = CGRect(
             x: session.lastMouse.x - session.pointerOffset.x,
             y: session.lastMouse.y - session.pointerOffset.y,

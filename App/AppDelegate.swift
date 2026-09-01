@@ -1582,8 +1582,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             let targetPoint = CGPoint(x: targetFrame.midX, y: targetFrame.midY)
             // Start the exact pre-fix failure deterministically: a grid frame
             // animation owns all five windows when the native drag begins.
-            // updateDrag must cancel it synchronously and preserve the source.
+            // updateDrag must cancel it synchronously and preserve the frame
+            // that AppKit actually presents at mouse-down. Reduced-motion
+            // environments may legally finish this reconcile immediately.
             windowGridCoordinator.reconcile(animated: true)
+            let dragStartFrame = source.frame
             let began = windowGridCoordinator.updateDrag(
                 window: source, mouse: targetPoint)
             let dockSource = MainActor.assumeIsolated {
@@ -1596,7 +1599,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                     let holdActive = self.windowGridCoordinator
                         .isDragging(window: source)
                     let holdActual = NSStringFromRect(source.frame)
-                    let holdExpected = NSStringFromRect(heldFrame)
+                    let holdExpected = NSStringFromRect(dragStartFrame)
                     let dragTargets = self.windowGridCoordinator
                         .dragTargetsForTesting
                     let sessionOriginalTree = self.windowGridCoordinator
@@ -1609,13 +1612,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                     let previewTreeMoved = self.windowGridCoordinator
                         .treeForConversion(on: screen) == expectedMovedTree
                     let held = abs(source.frame.minX
-                            - heldFrame.minX) <= tolerance
+                            - dragStartFrame.minX) <= tolerance
                         && abs(source.frame.minY
-                            - heldFrame.minY) <= tolerance
+                            - dragStartFrame.minY) <= tolerance
                         && abs(source.frame.width
-                            - heldFrame.width) <= tolerance
+                            - dragStartFrame.width) <= tolerance
                         && abs(source.frame.height
-                            - heldFrame.height) <= tolerance
+                            - dragStartFrame.height) <= tolerance
                     self.windowGridCoordinator.endDrag(window: source)
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
                         let diagnostic = self.windowGridCoordinator
@@ -1778,7 +1781,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         Preferences.shared.showBanner = false
         Preferences.shared.workspaceNavigatorVisible = false
         Preferences.shared.workspaceInspectorVisible = false
-        Preferences.shared.contentMargin = 10
+        // Keep all 32 leaves feasible on GitHub's 1024x768 virtual display.
+        // The regular and nested real-window gates cover the 10-point gap;
+        // this profile isolates rapid topology growth without asking AppKit
+        // to violate each window's native minimum size.
+        Preferences.shared.contentMargin = 0
         Preferences.shared.windowGridStateData = nil
         Preferences.shared.windowGridEnabled = true
         newWindow(nil)
@@ -1935,7 +1942,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         Preferences.shared.showBanner = false
         Preferences.shared.workspaceNavigatorVisible = false
         Preferences.shared.workspaceInspectorVisible = false
-        Preferences.shared.contentMargin = 10
+        // Match the add-only stress fixture: a zero-gap 32-leaf topology fits
+        // the smallest qualified virtual display while preserving the deep
+        // conversion and repeated native-resize workload this gate exercises.
+        Preferences.shared.contentMargin = 0
         Preferences.shared.windowGridStateData = nil
         Preferences.shared.windowGridEnabled = true
         newWindow(nil)
