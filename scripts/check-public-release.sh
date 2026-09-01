@@ -13,6 +13,7 @@ REGISTRY_REPOSITORY="${CMDY_REGISTRY_REPOSITORY:-$OWNER/cmdy-registry}"
 DEFAULT_BRANCH="${CMDY_PUBLIC_BRANCH:-main}"
 EXPECTED_SITE_URL="${CMDY_SITE_URL:-}"
 MAX_INITIAL_COMMITS="${CMDY_MAX_INITIAL_COMMITS:-5}"
+EXPECTED_PUBLIC_ROOT="${CMDY_PUBLIC_ROOT_COMMIT:-d9205a4a0673548a1552219337cf89f09d37a730}"
 REGISTRY_URL="https://raw.githubusercontent.com/$REGISTRY_REPOSITORY/$DEFAULT_BRANCH/registry.json"
 
 FAILURES=0
@@ -44,6 +45,10 @@ fi
 
 if ! [[ "$MAX_INITIAL_COMMITS" =~ ^[0-9]+$ ]] || [ "$MAX_INITIAL_COMMITS" -lt 1 ]; then
     echo "CMDY_MAX_INITIAL_COMMITS must be a positive integer." >&2
+    exit 2
+fi
+if ! [[ "$EXPECTED_PUBLIC_ROOT" =~ ^[0-9a-f]{40}$ ]]; then
+    echo "CMDY_PUBLIC_ROOT_COMMIT must be a lowercase 40-character Git object ID." >&2
     exit 2
 fi
 case "${APP_REPOSITORY##*/}" in
@@ -135,13 +140,19 @@ fetch_url() {
 }
 
 check_local_source() {
-    local count branch origin
+    local count branch origin roots root_count root
     count="$(git rev-list --count HEAD 2>/dev/null || echo 0)"
-    if [ "$count" -le "$MAX_INITIAL_COMMITS" ]; then
+    roots="$(git rev-list --max-parents=0 HEAD 2>/dev/null || true)"
+    root_count="$(printf '%s\n' "$roots" | grep -Ec '^[0-9a-f]{40}$' || true)"
+    root="$(printf '%s\n' "$roots" | head -n 1)"
+    if [ "$root_count" -eq 1 ] && [ "$root" = "$EXPECTED_PUBLIC_ROOT" ]; then
+        pass "local history descends from the reviewed clean public root ($count commit(s))"
+    elif [ "$count" -le "$MAX_INITIAL_COMMITS" ]; then
         pass "local public history is intentionally small ($count commit(s))"
     else
-        fail "local history has $count commits; first publication allows at most $MAX_INITIAL_COMMITS"
-        note "Export a clean tree and initialize a new repository. Never publish the private 315-commit history."
+        fail "local history has an unrecognized root and $count commits"
+        note "Before first publication, allow at most $MAX_INITIAL_COMMITS commits; afterward, history must descend from $EXPECTED_PUBLIC_ROOT."
+        note "Never publish the private 315-commit history."
     fi
 
     branch="$(git symbolic-ref --quiet --short HEAD 2>/dev/null || true)"

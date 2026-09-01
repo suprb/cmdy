@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { Case, EditorialText } from "../components/EditorialCase";
 
 const releaseURL = "https://github.com/suprb/cmdy/releases/latest";
 
@@ -27,14 +27,14 @@ const featureGroups: FeatureGroup[] = [
       { name: "Command blocks", description: "command, output, status, duration, navigation, rerun and copy stay together" },
       { name: "Search + palette", description: "scrollback search and fuzzy access to commands, settings and history" },
       { name: "Smart input", description: "ghost-text history autocomplete" },
-      { name: "Sessions + Workspaces", description: "restore automatically or save, update and reopen named window, tab, split and directory snapshots" },
+      { name: "Sessions + workspaces", description: "restore automatically or save, update and reopen named window, tab, split and directory snapshots" },
       { name: "Appearance", description: "pane-owned fonts, themes and shaders with first-pane window chrome, plus live config, opacity, blur, inset, cursor and optional SID sounds" },
       { name: "Keybinding import", description: "preview and safely import Ghostty, tmux, iTerm2 and Terminal maps without replacing native shortcuts" },
       { name: "Native editor", description: "config, Markdown, source and plain text in a window or terminal split" }
     ]
   },
   {
-    label: "Windows + Workflow",
+    label: "Windows + workflow",
     features: [
       { name: "Native tabs + splits", description: "AppKit tabs, arbitrarily nested panes and spatial focus" },
       { name: "Automatic window grid", description: "arrange, reorder and resize native windows using Window Inset as the gap" },
@@ -80,7 +80,7 @@ const featureGroups: FeatureGroup[] = [
           { name: "Apple Reminders", description: "incomplete items from allowlisted lists" }
         ]
       },
-      { name: "Marketplace", description: "install and update themes, shaders, rigs, Extensions and connectors" },
+      { name: "Marketplace", description: "install and update themes, shaders, rigs, extensions and connectors" },
       { name: "Updates", description: "stable GitHub releases auto-download, verify SHA-256, and wait for user install" },
       { name: "Open source", description: "native Swift + AppKit macOS app with public SDK and protocols" }
     ]
@@ -89,27 +89,23 @@ const featureGroups: FeatureGroup[] = [
 
 const features = featureGroups.flatMap((group) => group.features);
 
-function Case({ children }: { children: ReactNode }) {
-  return <span className="case">{children}</span>;
-}
-
 function FeatureList() {
   return (
     <ul className="feature-list">
       {features.map((feature) => (
         <li className="feature-item" key={feature.name}>
-          <b>{feature.name}</b>
+          <b><EditorialText>{feature.name}</EditorialText></b>
           <span aria-hidden="true">: </span>
-          {feature.description}
+          <EditorialText>{feature.description}</EditorialText>
           {feature.examples && (
             <div className="feature-examples">
               <span className="feature-examples-label">Including</span>
               <ul>
                 {feature.examples.map((example) => (
                   <li className="feature-example" key={example.name}>
-                    <b>{example.name}</b>
+                    <b className="case">{example.name}</b>
                     <span aria-hidden="true">: </span>
-                    {example.description}
+                    <EditorialText>{example.description}</EditorialText>
                   </li>
                 ))}
               </ul>
@@ -158,6 +154,36 @@ export function HomePage() {
       <section className="feature-inventory" id="features">
         <div className="wrap feature-inventory-inner">
           <FeatureList />
+        </div>
+      </section>
+
+      <section id="maker" className="maker-note" aria-label="about cmdy">
+        <div className="wrap maker-note-inner">
+          <div className="maker-note-left">
+            <p className="maker-note-story">
+              <EditorialText>
+                cmdy is an experiment in designing a terminal from scratch—one that is
+                more of a framework than a traditional terminal by allowing anyone to
+                build and share custom extensions, actions, and connectors.
+              </EditorialText>
+            </p>
+            <a
+              className="maker-shopify"
+              href="https://www.shopify.com/"
+              rel="noreferrer"
+              target="_blank"
+            >
+              <span className="maker-shopify-label">
+                <Case>By</Case>{" "}
+                <EditorialText>
+                  Andreas Pihlström
+                  <br />
+                  builder at Shopify
+                </EditorialText>
+              </span>
+              <img src="./shopify-bag-black.svg" alt="" />
+            </a>
+          </div>
         </div>
       </section>
     </div>

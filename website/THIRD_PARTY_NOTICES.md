@@ -27,6 +27,14 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
+## Shopify brand asset
+
+The monochrome Shopify Shopping Bag shown in the homepage maker note is an
+official Shopify brand asset from <https://www.shopify.com/brand-assets>.
+Shopify and The Shopping Bag are trademarks of Shopify Inc. Their appearance
+identifies the maker's employer and does not imply that Shopify sponsors,
+endorses, or produced cmdy.
+
 ## SRCL / Sacred Computer
 
 Small website interface primitives are adapted from

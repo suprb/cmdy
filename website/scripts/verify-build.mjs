@@ -59,7 +59,8 @@ for (const asset of [
   "hero-4x-08-12.av1.mp4",
   "hero-4x-08-12.h264.mp4",
   "hero-4x-20-23.av1.mp4",
-  "hero-4x-20-23.h264.mp4"
+  "hero-4x-20-23.h264.mp4",
+  "shopify-bag-black.svg"
 ]) {
   assert(await exists(resolve(site, asset)), `missing application asset: ${asset}`);
 }
@@ -67,7 +68,8 @@ for (const asset of [
 const websiteNotices = await readFile(resolve(site, "THIRD_PARTY_NOTICES.md"), "utf8");
 for (const marker of [
   "Copyright (c) 2009-2024 Codrops",
-  "Copyright (c) 2024 INTERNET DEVELOPMENT STUDIO COMPANY"
+  "Copyright (c) 2024 INTERNET DEVELOPMENT STUDIO COMPANY",
+  "The Shopping Bag are trademarks of Shopify Inc."
 ]) {
   assert(websiteNotices.includes(marker), `website notices are missing: ${marker}`);
 }
@@ -102,13 +104,15 @@ assert(scripts.length === 1, `expected one application script, found ${scripts.l
 assert(styles.length === 1, `expected one application stylesheet, found ${styles.length}`);
 
 const bundle = await readFile(resolve(site, scripts[0]), "utf8");
-for (const marker of ["Extensions add capabilities", "Choose one of three paths", "CHANNELS", "Bundled snapshot"]) {
+for (const marker of ["Extensions add capabilities", "Choose one of three paths", "The terminal", "Bundled snapshot"]) {
   assert(bundle.includes(marker), `application bundle is missing marker: ${marker}`);
 }
 
 const css = await readFile(resolve(site, styles[0]), "utf8");
 assert(css.includes("prefers-reduced-motion"), "stylesheet has no reduced-motion mode");
 assert(css.includes("focus-visible"), "stylesheet has no visible keyboard focus rules");
+assert(/text-transform:\s*lowercase/.test(css), "stylesheet is missing the lowercase editorial voice");
+assert(/\.case[^}]*text-transform:\s*none/.test(css), "stylesheet is missing canonical-case opt-outs");
 assert(/@media\s*\(max-width:\s*620px\)/.test(css), "stylesheet has no compact mobile layout");
 
 console.log(`verified ${pages.length} pages, ${referencedAssets.size} local assets, ${snapshot.entries.length} Marketplace entries, and ${channels.length} Channels`);

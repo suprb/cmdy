@@ -13,15 +13,7 @@
 
 .cmdy-site .case,
 .cmdy-site .case * {
-  text-transform: none;
-}
-
-.site-header,
-.site-header *,
-.home-page,
-.home-page *,
-.site-footer,
-.site-footer * {
+  font-family: inherit;
   text-transform: none;
 }
 
@@ -541,6 +533,7 @@
   color: var(--ink);
   background: transparent;
   font: 14px/1.35 var(--sans);
+  text-transform: none;
 }
 
 .market-search:focus {
@@ -735,6 +728,7 @@ html.dark .code-block {
     padding: 8px 18px 8px 0;
     color: var(--ink-2);
     font: 13px/1.4 var(--sans);
+    text-transform: none;
     background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%);
     background-position: calc(100% - 7px) 50%, calc(100% - 2px) 50%;
     background-size: 5px 5px, 5px 5px;

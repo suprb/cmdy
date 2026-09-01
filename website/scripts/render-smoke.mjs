@@ -26,19 +26,27 @@ const vite = await createServer({
 
 try {
   const { App } = await vite.ssrLoadModule("/src/App.tsx");
+  const { editorialCaseString } = await vite.ssrLoadModule("/src/components/EditorialCase.tsx");
   const { normalizeRegistry, safeURL } = await vite.ssrLoadModule("/src/pages/MarketplacePage.tsx");
   const expectations = {
-    home: ["A terminal turned platform.", "Metal terminal", "Automatic window grid", "Grid ↔ splits", "Command intelligence", "Extensions", "Browser", "Detox", "Actions", "Channels", "Slack", "GitHub Issues", "RSS and Atom Feed", "Apple Reminders", "Updates", "Open source"],
-    docs: ["cmdy Docs", "What cmdy is", "Choose one of three paths", "Extensions add capabilities", "option-as-meta", "cmdy action install-starters"],
+    home: ["A terminal turned platform.", "Metal terminal", "Automatic window grid", "Grid ↔ splits", "Command intelligence", "Extensions", "Browser", "Detox", "Actions", "Channels", "Slack", "GitHub Issues", "RSS and Atom Feed", "Apple Reminders", "Updates", "Open source", "Andreas Pihlström", "builder at Shopify"],
+    docs: ["cmdy docs", "What cmdy is", "Choose one of three paths", "Extensions add capabilities", "Path", "Use it when", "macOS", "AI, optional", "option-as-meta", "cmdy action install-starters"],
     marketplace: ["Marketplace", "Package", "Type", "Description", "Install", "Demo Inbox", "Slack", "iMessage", "Apple Reminders"]
   };
 
   for (const [page, markers] of Object.entries(expectations)) {
     document.body.dataset.page = page;
     const markup = renderToStaticMarkup(React.createElement(App));
+    const renderedText = markup
+      .replace(/<[^>]+>/g, "")
+      .replaceAll("&amp;", "&")
+      .replaceAll("&#x27;", "'")
+      .replaceAll("&quot;", '"')
+      .replaceAll("&gt;", ">")
+      .replaceAll("&lt;", "<");
     assert.ok(markup.includes('class="cmdy-site theme-light"'), `${page}: shell did not render`);
     for (const marker of markers) {
-      assert.ok(markup.includes(marker), `${page}: rendered markup is missing ${marker}`);
+      assert.ok(renderedText.includes(marker), `${page}: rendered markup is missing ${marker}`);
     }
     assert.ok(markup.includes('id="main-content"'), `${page}: missing main content landmark`);
     assert.ok(markup.includes('class="site-footer"'), `${page}: missing shared footer`);
@@ -48,6 +56,15 @@ try {
       assert.ok(markup.includes('class="hero-video-secondary-grid"'), "home: missing the two-column secondary recording grid");
       assert.ok(markup.includes('class="feature-inventory"'), "home: missing complete feature inventory");
       assert.ok(markup.includes('class="feature-list"'), "home: missing flat feature list");
+      assert.ok(markup.includes('class="maker-note"'), "home: missing maker note");
+      assert.ok(markup.includes('href="https://www.shopify.com/"'), "home: Shopify attribution must link to Shopify");
+      assert.ok(markup.includes('src="./shopify-bag-black.svg"'), "home: missing official monochrome Shopify mark");
+      assert.ok(markup.includes('<span class="case">By</span> <span class="case">Andreas Pihlström</span>'), "home: maker byline must preserve capital By and Andreas Pihlström");
+      assert.ok(markup.includes("Andreas Pihlström</span><br/>builder at"), "home: maker byline must break before builder at Shopify");
+      assert.ok(!renderedText.includes("Why I made cmdy."), "home: removed maker heading returned");
+      for (const canonical of ["Andreas Pihlström", "Shopify", "GitHub Issues", "RSS and Atom Feed"]) {
+        assert.ok(markup.includes(`class="case">${canonical}</`), `home: ${canonical} must opt out of editorial lowercasing`);
+      }
       for (const clip of ["13-20", "08-12", "20-23"]) {
         assert.ok(markup.includes(`src="./hero-4x-${clip}.av1.mp4"`), `home: missing ${clip} AV1 demo source`);
         assert.ok(markup.includes(`src="./hero-4x-${clip}.h264.mp4"`), `home: missing ${clip} H.264 demo source`);
@@ -62,9 +79,9 @@ try {
       for (const removed of ["Everything in cmdy.", "Terminal</h3>", "Windows + Workflow", "Intelligence</h3>", "Platform</h3>", "Your terminal. More capable.", 'class="closing-cta"']) {
         assert.ok(!markup.includes(removed), `home: removed feature chrome returned: ${removed}`);
       }
-      const narrative = ["Metal terminal", "Sessions + Workspaces", "Keybinding import", "Automatic window grid", "Command intelligence", "Extensions", "Browser", "Detox", "Actions", "Channels", "Slack", "Apple Reminders", "Marketplace", "Updates", "Open source"];
+      const narrative = ["Metal terminal", "Sessions + workspaces", "Keybinding import", "Automatic window grid", "Command intelligence", "Extensions", "Browser", "Detox", "Actions", "Channels", "Slack", "Apple Reminders", "Marketplace", "Updates", "Open source"];
       for (let index = 1; index < narrative.length; index += 1) {
-        assert.ok(markup.indexOf(narrative[index - 1]) < markup.indexOf(narrative[index]), `home: narrative order is wrong near ${narrative[index]}`);
+        assert.ok(renderedText.indexOf(narrative[index - 1]) < renderedText.indexOf(narrative[index]), `home: narrative order is wrong near ${narrative[index]}`);
       }
     }
     assert.ok(!markup.includes('href="#"'), `${page}: contains an empty hash link`);
@@ -114,6 +131,26 @@ try {
   assert.deepEqual(normalized.featured, ["dev.example.channel"], "featured entries must exist in the normalized catalog");
   assert.equal(safeURL("javascript:alert(1)"), "", "unsafe link protocols must be rejected");
   assert.equal(safeURL("https://example.com/project"), "https://example.com/project", "HTTPS project links must be retained");
+  assert.equal(
+    editorialCaseString("WHY I USE MACOS AND GITHUB"),
+    "why I use macOS and GitHub",
+    "editorial casing must lowercase prose while preserving I and canonical names"
+  );
+  assert.equal(
+    editorialCaseString("MARKETPLACE ACTIONS"),
+    "marketplace actions",
+    "editorial casing must not preserve ordinary title casing"
+  );
+  assert.equal(
+    editorialCaseString("BROWSER MESSAGES BRIDGE"),
+    "browser messages bridge",
+    "ordinary uses of product-like words must remain lowercase"
+  );
+  assert.equal(
+    editorialCaseString("MESSAGES CONVERSATIONS"),
+    "Messages conversations",
+    "the Apple Messages product phrase must retain its canonical name"
+  );
 
   console.log("server-rendered all routes and passed Marketplace normalization/security smoke tests");
 } finally {

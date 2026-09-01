@@ -25,8 +25,8 @@
     --mono: "SF Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
 }
 * { margin: 0; padding: 0; box-sizing: border-box; text-transform: lowercase; }
-/* The editorial voice stays lowercase. Literal code plus canonical names and
-   acronyms opt out explicitly so macOS, HTTP, GPU, SDK, and GitHub stay correct. */
+/* The editorial voice stays lowercase. Literal code plus canonical names,
+   acronyms, and the pronoun I opt out explicitly through .case. */
 pre, pre *, code, kbd, .mono, .mono *, .case, .case * { text-transform: none; }
 html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
 body.docsite {
