@@ -60,12 +60,12 @@
       {
         "path": "scripts/check-release-qualification.py",
         "purpose": "qualification-checker",
-        "sha256": "5b89f5af98718ede3f6bea9982aee2b548eac000b959d6dddb686a66be1ea8f4"
+        "sha256": "02d7c9c1e20985e8ff939219946526b28d24795f1ac31ebf9ecbb1816b7a1a33"
       },
       {
         "path": "Schemas/release-qualification-v1.schema.json",
         "purpose": "qualification-schema",
-        "sha256": "d9e0e1dd27253fc8985d413773f4a73d66c9a0f0a5039171ee02a400d536e270"
+        "sha256": "ec5d10ef02298bdad207341fa1c26e50a9e70ec01628a77421fa4fc3b9caba1f"
       },
       {
         "path": "Tests/RendererPixelOracle/ReferenceCorpus/reference-corpus-v1.tar.gz",

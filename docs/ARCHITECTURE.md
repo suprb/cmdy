@@ -23,7 +23,7 @@ The governing rule is:
 | `Schemas/` | Machine-readable v1 manifests and Surface documents. | Public contracts; schemas and typed models change together. |
 | `Vendor/` | Source retained from separately bounded upstream components, including the Bridge engine. | Keep upstream attribution and avoid leaking vendor internals into public protocols. |
 | `website/` | React/Vite source, build verification, and render smoke tests for the public website. | Produces `site/`. |
-| `site/` | Committed static website output and durable public assets. | Generated distributable; regenerate it from `website/` rather than treating generated HTML or JavaScript as source. |
+| `site/` | Ignored local static website output and the transient GitHub Pages artifact. | Generated distributable; CI regenerates it from `website/` and never treats generated HTML or JavaScript as source. |
 | `Tests/` | Replay corpora, TUI zoo, oracle notes, performance gates, and UI-driving scripts. | Exercises public seams and application behavior. Package-local unit tests live beside their packages. |
 
 The package names retain some internal `Cmdy*` identifiers for source and

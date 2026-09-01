@@ -20,7 +20,7 @@ SIL Open Font License in `Assets/AlphaLyrae-LICENSE.md`.
 
 The app iconset generator reads `Assets/app-icon.png` from this directory.
 The website build reads the same masters and copies them to the generated
-`site/` output.
+`site/` output, which stays local until GitHub Pages publishes a fresh build.
 
 For a future name or logo change, keep `Assets/app-icon.png` as the stable build
 input, archive the untouched new source artwork under a name-specific filename,

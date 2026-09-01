@@ -1,6 +1,7 @@
 # Release qualification boundary
 
-Status: engineering integrity is automated; publication approval is pending.
+Status: engineering integrity is automated; publication requires a recorded
+human approval bound to the exact source and evidence set.
 
 [`RELEASE_QUALIFICATION.json`](RELEASE_QUALIFICATION.json) is the machine-readable
 trust root for the independent terminal stack. It deliberately separates two
@@ -11,10 +12,13 @@ claims:
   and package/release tools are the exact bytes named in the record. It also
   generates and verifies a fresh active-source manifest. That manifest remains
   explicitly `unreviewed`; passing this mode is not human provenance approval.
-- `publication` is a strict superset. It fails unless an independent human has
-  approved a committed active-source snapshot and bound every required result
-  hash plus the exact permitted public wording. Pending, rejected, incomplete,
-  or internally inconsistent evidence cannot pass.
+- `publication` is a strict superset. It fails unless a human has approved a
+  committed active-source snapshot and bound every required result hash plus
+  the exact permitted public wording. An independent reviewer may approve an
+  authorship claim. A project owner may approve a release only when the bound
+  wording explicitly says that the approval is not an independent authorship
+  or legal clean-room review. Pending, rejected, incomplete, or internally
+  inconsistent evidence cannot pass.
 
 Normal CI runs:
 
@@ -51,9 +55,10 @@ approval record must contain all of the following:
 - normal and maximized performance logs, a multi-run resource-plateau record,
   and a TUI-zoo capture manifest whose separate visual review passes the exact
   `check-zoo-review.py verify-review --require-decision approved` gate;
-- a human reviewer identity, affiliation, UTC time, verifiable approval
-  reference, exact approved wording, and an explicit statement that the
-  reviewer is independent of the replacement implementation.
+- a human reviewer identity, affiliation, UTC time, approval reference, exact
+  approved wording, and a truthful declaration of whether the reviewer is
+  independent of the replacement implementation. Owner approval must include
+  the checker's exact non-independent-review notice.
 
 The approval hashes the complete engineering policy and source/evidence set.
 The source commit may precede the commit that adds the review record, avoiding a
@@ -68,12 +73,13 @@ project approver visually reviewed the two contact sheets covering all 40
 fixtures at 1× and 2×. The resulting lock/checker bindings and strict candidate
 evidence must still be regenerated against the final source freeze. The
 active-source manifest itself remains
-`reviewState: "unreviewed"` by design; the separate independent approval is the
-only component allowed to turn those exact bytes into a publication claim.
+`reviewState: "unreviewed"` by design; the separate human approval is the only
+component allowed to turn those exact bytes into a publication claim. Owner
+approval authorizes the release but does not create an independence claim.
 
 ## Package evidence
 
-Apple notarization occurs only after the independent source approval and before
+Apple notarization occurs only after the source approval and before
 stapling, so the submitted bytes are not the same as the downloadable bytes.
 `release.sh` retains each raw Apple JSON result beside the release artifacts
 plus the submitted SHA-256 for the initial ZIP and DMG, then the artifact phase

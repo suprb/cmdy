@@ -1,9 +1,9 @@
 # Independent provenance review record
 
-This is the required record for the final human review of cmdy's replacement
-terminal stack. Copy this file to a dated review record only after the exact
-source has been committed and every referenced engineering artifact is durable.
-Leaving any required field blank means the independence claim is not approved.
+This is the record for the final human review of cmdy's replacement terminal
+stack. Copy it to a dated review record only after the exact source has been
+committed and every referenced engineering artifact is durable. Leaving a
+required field blank means publication is not approved.
 
 This review is an authorship/provenance assessment, not legal certification.
 Counsel must review any stricter legal clean-room wording separately.
@@ -11,7 +11,9 @@ Counsel must review any stricter legal clean-room wording separately.
 The completed review must also be encoded in
 [`RELEASE_QUALIFICATION.json`](RELEASE_QUALIFICATION.json). The Markdown record
 alone cannot unlock publication; the verifier requires exact machine-readable
-source/evidence hashes and the independent-human approval fields.
+source/evidence hashes and human approval fields. A project owner may authorize
+the release, but the bound wording must explicitly say that owner approval is
+not an independent authorship or legal clean-room review.
 
 ## Reviewed identity
 
@@ -22,7 +24,7 @@ source/evidence hashes and the independent-human approval fields.
 - Commit SHA:
 - Git tree SHA:
 - Active terminal-source path/hash manifest SHA-256:
-- Reviewer confirms independence from replacement implementation: `no`
+- Reviewer is independent from replacement implementation: `yes` or `no`
 
 ## Required engineering evidence
 
