@@ -498,7 +498,7 @@
     },
     {
       "path": "Renderer/Sources/CmdyGPU/MetalTerminalRenderer.swift",
-      "sha256": "005acbcdc7f90eacbd4301824003dd4fcca1803a166f8335f2665223db9fd903"
+      "sha256": "d862b9ca810cd80f72ceabb19d767f8f16134c38d9f51be614fd47059bf3e3f1"
     },
     {
       "path": "Renderer/Sources/CmdyGPU/ProceduralGlyphs.swift",
@@ -510,7 +510,7 @@
     },
     {
       "path": "Renderer/Sources/CmdyGPU/RowRasterCache.swift",
-      "sha256": "17a18b7bf2e591e66bdb2fa046f53f21b33385b34c7985d53d80992b7bce4ff7"
+      "sha256": "0fd070bd287684ada8b0c47f0b8800ccd52c4217a2f2443afe4025f031f3a114"
     }
   ],
   "issues": [],
@@ -860,8 +860,8 @@
     {
       "active": "Renderer/Sources/CmdyGPU/MetalTerminalRenderer.swift",
       "activeLines": [
-        1875,
-        1880
+        1937,
+        1942
       ],
       "classificationId": "vendor-atlas-entry-copy",
       "disposition": "data-plumbing",
@@ -3216,8 +3216,8 @@
     {
       "active": "Renderer/Sources/CmdyGPU/MetalTerminalRenderer.swift",
       "activeLines": [
-        242,
-        245
+        243,
+        246
       ],
       "classificationId": "retired-render-metal-view-device-setup",
       "disposition": "standard-platform-mechanics",
@@ -3235,8 +3235,8 @@
     {
       "active": "Renderer/Sources/CmdyGPU/MetalTerminalRenderer.swift",
       "activeLines": [
-        1875,
-        1880
+        1937,
+        1942
       ],
       "classificationId": "retired-render-atlas-entry-copy",
       "disposition": "data-plumbing",
@@ -3490,7 +3490,7 @@
       "sourceCount": 111
     }
   },
-  "reportSHA256": "d59ad8a3020015776350adaeb8f96d577093d1553217142130150e2f540ae617",
+  "reportSHA256": "5bf73e2b770523f291f814aadf73da1ef6f8029fe4019210d0d4fc7634970b2c",
   "schemaVersion": 1,
   "summary": {
     "activeSourceCount": 128,

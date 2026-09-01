@@ -1,8 +1,8 @@
 {
   "candidate": {
     "kind": "build",
-    "moduleSha256": "ebf8589b8d951588b1c37e5e0a8bb9347f5b0d6e3cfbb4a9204aafaf624445ac",
-    "objectSetSha256": "3895c68d06f1b1bec479749cc1728186beb63deb3177f946ff700822a2aef57f",
+    "moduleSha256": "52341204aaeec91d8cdab2aff0dcfbdc7e5539f32700d50df27a8a953743bcdc",
+    "objectSetSha256": "4a0e18bf30c5d93ef94bcbf61b76f927ca023b3cc9bca179ab4030e72e7f93de",
     "releaseBuild": "arm64-apple-macosx/release"
   },
   "fixtureSourceSha256": "c4e34ecc1b04953d0d5773d46de5aaf20025a55cc63113df60eed7d5b161e057",

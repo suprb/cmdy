@@ -5,7 +5,7 @@
       "exceptions": [],
       "log": {
         "path": "docs/independence/qualification/performance-normal.log",
-        "sha256": "3a33dd4def4cc36e3fecd0c18edade1abdb331f83904519248c31f4220689831"
+        "sha256": "719f8fa064d7663e73f5528f5d6002e0c09b71b859e6ab8d5797a183f5a17eaf"
       },
       "mode": "normal",
       "passed": true,
@@ -15,7 +15,7 @@
       "exceptions": [],
       "log": {
         "path": "docs/independence/qualification/performance-maximized.log",
-        "sha256": "5d394887b837292b05a749c0c34434157cfb66c2fc5acb80a7aceb956cf885bd"
+        "sha256": "41341fce9a94ff244bde4f4134e91fd44b54d54a73ccb0fa533f99f1a7d262e3"
       },
       "mode": "maximized",
       "passed": true,
@@ -26,7 +26,7 @@
     "exceptions": [],
     "log": {
       "path": "docs/independence/qualification/resource-plateau.log",
-      "sha256": "babf8d17436a5bc6c6357267a0e4dd25a34e50f8b5f76633b49f486603bd90f7"
+      "sha256": "ec1be21912af1277daacc2389cb7920c01105724cc1c89a34135169b844bda4c"
     },
     "monotonicGrowth": false,
     "passed": true,
@@ -41,7 +41,7 @@
     "reviewerName": "Andreas Pihlström"
   },
   "schemaVersion": 1,
-  "sourceManifestSha256": "6b7a79fa65e1a9692a125a69bcd5b7ccd786279ddbe6626f7ccf737b700bce35",
+  "sourceManifestSha256": "9170b9b44bcca17c6dd68e9ef3d93b6a0880c771525e0432b66775e5e728fa10",
   "zoo": {
     "captureCount": 14,
     "captureManifest": {

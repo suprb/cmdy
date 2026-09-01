@@ -62,6 +62,70 @@ final class RowCacheMemoryTests: XCTestCase {
         XCTAssertLessThan(emoji.allocatedSize, coverage.allocatedSize)
     }
 
+    func testSharedTextTextureCountsOnceAgainstTheResidencyBudget() throws {
+        let device = try XCTUnwrap(MTLCreateSystemDefaultDevice())
+        let renderer = try MetalTerminalRenderer(
+            view: MTKView(frame: .zero, device: device),
+            source: MemoryRenderSource())
+        let coverage = try makeTexture(device: device, format: .r8Unorm,
+                                       width: 512, height: 20)
+        let entries = [
+            0: entry(row: 0, coverage: coverage,
+                     colorLayers: [], lastUse: 0),
+            1: entry(row: 1, coverage: coverage,
+                     colorLayers: [], lastUse: 1),
+        ]
+
+        renderer.replaceAndTrimRowCacheForTesting(
+            entries, visibleRows: [0, 1], visibleCount: 2)
+
+        XCTAssertEqual(renderer.rowCacheCountForTesting, 2)
+        XCTAssertEqual(renderer.rowCacheAllocatedBytesForTesting,
+                       coverage.allocatedSize)
+    }
+
+    func testSharedTextKeyIgnoresTerminalIdentityAndBindsRasterContent() throws {
+        let font = NSFont.monospacedSystemFont(ofSize: 14, weight: .regular)
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: font,
+            .foregroundColor: NSColor.white,
+            .kern: 0,
+        ]
+        let info = ViewLineInfo(segments: [
+            ViewLineSegment(
+                column: 0, columnWidth: 1, characterCount: 6,
+                attributedString: NSAttributedString(
+                    string: "repeat", attributes: attributes)),
+        ], images: nil)
+        let first = try XCTUnwrap(IndependentSharedTextRowKey(
+            info: info, rowKey: rowKey(row: 1, version: 4)))
+        let moved = try XCTUnwrap(IndependentSharedTextRowKey(
+            info: info, rowKey: rowKey(row: 800, version: 99)))
+        XCTAssertEqual(first, moved)
+
+        let changedInfo = ViewLineInfo(segments: [
+            ViewLineSegment(
+                column: 0, columnWidth: 1, characterCount: 6,
+                attributedString: NSAttributedString(
+                    string: "repeat", attributes: attributes.merging([
+                        .foregroundColor: NSColor.systemRed,
+                    ], uniquingKeysWith: { _, replacement in replacement }))),
+        ], images: nil)
+        XCTAssertNotEqual(first, IndependentSharedTextRowKey(
+            info: changedInfo, rowKey: rowKey(row: 800, version: 99)))
+
+        let unsupportedInfo = ViewLineInfo(segments: [
+            ViewLineSegment(
+                column: 0, columnWidth: 1, characterCount: 6,
+                attributedString: NSAttributedString(
+                    string: "repeat", attributes: [
+                        NSAttributedString.Key("cmdy.unmodeled"): "value",
+                    ])),
+        ], images: nil)
+        XCTAssertNil(IndependentSharedTextRowKey(
+            info: unsupportedInfo, rowKey: rowKey(row: 1, version: 4)))
+    }
+
     private func makeTexture(device: MTLDevice,
                              format: MTLPixelFormat,
                              width: Int,
@@ -77,13 +141,33 @@ final class RowCacheMemoryTests: XCTestCase {
                        coverage: MTLTexture,
                        colorLayers: [IndependentColorLayer],
                        lastUse: UInt64) -> IndependentRowCacheEntry {
-        let key = IndependentRowKey(
+        let key = rowKey(row: row, version: 1,
+                         width: coverage.width, height: coverage.height)
+        return IndependentRowCacheEntry(
+            key: key, sharedTextKey: nil,
+            coverageTexture: coverage,
+            colorLayers: colorLayers,
+            backgrounds: [],
+            tintSpans: [],
+            decorations: [],
+            images: [],
+            kittyPlaceholders: [],
+            width: coverage.width,
+            height: coverage.height,
+            lastUse: lastUse)
+    }
+
+    private func rowKey(row: Int,
+                        version: UInt64,
+                        width: Int = 3_000,
+                        height: Int = 32) -> IndependentRowKey {
+        IndependentRowKey(
             absoluteRow: row,
-            version: 1,
+            version: version,
             lineMode: .single,
             cols: 240,
-            widthPx: coverage.width,
-            heightPx: coverage.height,
+            widthPx: width,
+            heightPx: height,
             scaleBits: Double(2).bitPattern,
             fontName: "Menlo-Regular",
             fontSizeBits: Double(14).bitPattern,
@@ -95,18 +179,6 @@ final class RowCacheMemoryTests: XCTestCase {
             preset: .current,
             antialiasBlocks: true,
             bufferingMode: .perRowPersistent)
-        return IndependentRowCacheEntry(
-            key: key,
-            coverageTexture: coverage,
-            colorLayers: colorLayers,
-            backgrounds: [],
-            tintSpans: [],
-            decorations: [],
-            images: [],
-            kittyPlaceholders: [],
-            width: coverage.width,
-            height: coverage.height,
-            lastUse: lastUse)
     }
 }
 

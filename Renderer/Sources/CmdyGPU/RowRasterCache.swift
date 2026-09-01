@@ -91,13 +91,179 @@ struct IndependentRowKey: Hashable {
     let bufferingMode: MetalBufferingMode
 }
 
+/// Pixel-identical text rows may occur at many absolute scrollback positions
+/// (prompts, diagnostics, progress output). Their terminal identities remain
+/// distinct, but their immutable raster payload does not need to be rebuilt or
+/// stored more than once. Images and procedural glyph rows retain identity-
+/// keyed entries because their external payloads have stronger semantics.
+struct IndependentSharedTextAttributeRunKey: Hashable {
+    let location: Int
+    let length: Int
+    let font: NSFont?
+    let foreground: NSColor?
+    let background: NSColor?
+    let selectionBackground: NSColor?
+    let cmdySelectionBackground: NSColor?
+    let underlineColor: NSColor?
+    let cmdyUnderlineColor: NSColor?
+    let strikethroughColor: NSColor?
+    let ligature: Int?
+    let kernBits: UInt64?
+    let underlineStyle: Int?
+    let cmdyUnderlineStyle: Int?
+    let strikethroughStyle: Int?
+
+    init?(range: NSRange, attributes: [NSAttributedString.Key: Any]) {
+        let supported: Set<NSAttributedString.Key> = [
+            .font, .foregroundColor, .backgroundColor,
+            .selectionBackgroundColor, .cmdySelectionBackground,
+            .underlineColor, .cmdyUnderlineColor,
+            .strikethroughColor, .ligature, .kern,
+            .underlineStyle, .cmdyUnderlineStyle, .strikethroughStyle,
+        ]
+        guard attributes.keys.allSatisfy(supported.contains) else { return nil }
+
+        func color(_ key: NSAttributedString.Key) -> NSColor? {
+            attributes[key] as? NSColor
+        }
+        func integer(_ key: NSAttributedString.Key) -> Int? {
+            if let value = attributes[key] as? NSNumber { return value.intValue }
+            if let value = attributes[key] as? Int { return value }
+            if let value = attributes[key] as? UInt8 { return Int(value) }
+            return nil
+        }
+        func scalarBits(_ key: NSAttributedString.Key) -> UInt64? {
+            if let value = attributes[key] as? NSNumber {
+                return value.doubleValue.bitPattern
+            }
+            if let value = attributes[key] as? CGFloat {
+                return Double(value).bitPattern
+            }
+            if let value = attributes[key] as? Double {
+                return value.bitPattern
+            }
+            return nil
+        }
+        for key in [
+            NSAttributedString.Key.foregroundColor, .backgroundColor,
+            .selectionBackgroundColor, .cmdySelectionBackground,
+            .underlineColor, .cmdyUnderlineColor, .strikethroughColor,
+        ] where attributes[key] != nil && color(key) == nil { return nil }
+        for key in [
+            NSAttributedString.Key.ligature, .underlineStyle,
+            .cmdyUnderlineStyle, .strikethroughStyle,
+        ] where attributes[key] != nil && integer(key) == nil { return nil }
+        if attributes[.kern] != nil && scalarBits(.kern) == nil { return nil }
+        if attributes[.font] != nil && !(attributes[.font] is NSFont) { return nil }
+
+        let attributedFont = attributes[.font] as? NSFont
+        location = range.location
+        length = range.length
+        font = attributedFont
+        foreground = color(.foregroundColor)
+        background = color(.backgroundColor)
+        selectionBackground = color(.selectionBackgroundColor)
+        cmdySelectionBackground = color(.cmdySelectionBackground)
+        underlineColor = color(.underlineColor)
+        cmdyUnderlineColor = color(.cmdyUnderlineColor)
+        strikethroughColor = color(.strikethroughColor)
+        ligature = integer(.ligature)
+        kernBits = scalarBits(.kern)
+        underlineStyle = integer(.underlineStyle)
+        cmdyUnderlineStyle = integer(.cmdyUnderlineStyle)
+        strikethroughStyle = integer(.strikethroughStyle)
+    }
+}
+
+struct IndependentSharedTextSegmentKey: Hashable {
+    let column: Int
+    let columnWidth: Int
+    let characterCount: Int
+    let string: String
+    let attributeRuns: [IndependentSharedTextAttributeRunKey]
+    let cellUTF16Boundaries: [Int]?
+
+    init?(_ segment: ViewLineSegment) {
+        column = segment.column
+        columnWidth = segment.columnWidth
+        characterCount = segment.characterCount
+        string = segment.attributedString.string
+        cellUTF16Boundaries = segment.cellUTF16Boundaries
+        var runs: [IndependentSharedTextAttributeRunKey] = []
+        var valid = true
+        let full = NSRange(location: 0, length: segment.attributedString.length)
+        segment.attributedString.enumerateAttributes(
+            in: full, options: []
+        ) { attributes, range, stop in
+            guard let key = IndependentSharedTextAttributeRunKey(
+                range: range, attributes: attributes) else {
+                valid = false
+                stop.pointee = true
+                return
+            }
+            runs.append(key)
+        }
+        guard valid else { return nil }
+        attributeRuns = runs
+    }
+}
+
+struct IndependentSharedTextRowKey: Hashable {
+    let segments: [IndependentSharedTextSegmentKey]
+    let lineMode: RenderLineMode
+    let cols: Int
+    let widthPx: Int
+    let heightPx: Int
+    let scaleBits: UInt64
+    let fontName: String
+    let fontSizeBits: UInt64
+    let alternateBuffer: Bool
+    let kittyStamp: KittyCacheStamp
+    let foreground: UInt64
+    let background: UInt64
+    let preset: TextRenderingMode
+    let antialiasBlocks: Bool
+    let bufferingMode: MetalBufferingMode
+
+    init?(info: ViewLineInfo, rowKey: IndependentRowKey) {
+        guard info.images?.isEmpty != false,
+              info.kittyPlaceholders.isEmpty,
+              info.blockElements.isEmpty,
+              info.boxDrawings.isEmpty else { return nil }
+        var segmentKeys: [IndependentSharedTextSegmentKey] = []
+        segmentKeys.reserveCapacity(info.segments.count)
+        for segment in info.segments {
+            guard let key = IndependentSharedTextSegmentKey(segment) else {
+                return nil
+            }
+            segmentKeys.append(key)
+        }
+        segments = segmentKeys
+        lineMode = rowKey.lineMode
+        cols = rowKey.cols
+        widthPx = rowKey.widthPx
+        heightPx = rowKey.heightPx
+        scaleBits = rowKey.scaleBits
+        fontName = rowKey.fontName
+        fontSizeBits = rowKey.fontSizeBits
+        alternateBuffer = rowKey.alternateBuffer
+        kittyStamp = rowKey.kittyStamp
+        foreground = rowKey.foreground
+        background = rowKey.background
+        preset = rowKey.preset
+        antialiasBlocks = rowKey.antialiasBlocks
+        bufferingMode = rowKey.bufferingMode
+    }
+}
+
 struct IndependentColorLayer {
     let texture: MTLTexture
     let rect: CGRect
 }
 
 struct IndependentRowCacheEntry {
-    let key: IndependentRowKey
+    var key: IndependentRowKey
+    let sharedTextKey: IndependentSharedTextRowKey?
     let coverageTexture: MTLTexture?
     let colorLayers: [IndependentColorLayer]
     let backgrounds: [IndependentSolidRect]

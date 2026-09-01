@@ -1,23 +1,23 @@
-2026-08-31 14:18:00.590 cmdy[8932:143024181] cmdy: plugin API listening on 127.0.0.1:4665
-cmdy perf gate — pid 8932, port 4665
+2026-09-01 16:25:47.124 cmdy[77487:147018854] cmdy: plugin API listening on 127.0.0.1:4665
+cmdy perf gate — pid 77487, port 4665
   ✓ idle frames / 6s (settled)              0  (budget <= 2)
-  ✓ frames for 200-line burst              35  (budget <= 120)
+  ✓ frames for 200-line burst              34  (budget <= 120)
   ✓ rows rebuilt for 200-line scroll       56  (budget <= 500)
   ✓ rows rebuilt for prompt edit            1  (budget <= 8)
-  ✓ rows reused ≥ rebuilt (cache wins)   2015  (budget >= 1)
+  ✓ rows reused ≥ rebuilt (cache wins)   1903  (budget >= 1)
   ✓ rows rebuilt for 20 prompt redraws      1  (budget <= 80)
   ✓ rows advanced for 20 Returns (min)     20  (budget >= 20)
   ✓ rows advanced for 20 Returns (max)     20  (budget <= 20)
   ✓ rows rebuilt for 20 Returns            40  (budget <= 200)
   ✓ rows rebuilt for 20 one-line scroll-ups      1  (budget <= 60)
-  ✓ rows rebuilt for 20 one-line scroll-downs      1  (budget <= 60)
+  ✓ rows rebuilt for 20 one-line scroll-downs      0  (budget <= 60)
   ✓ idle frames / 5s (re-settled)           0  (budget <= 2)
-  ✓ 3MB dump wall-time (ms)               550  (budget <= 6000)
+  ✓ 3MB dump wall-time (ms)               530  (budget <= 6000)
   ✓ static-shader idle / 6s                 0  (budget <= 2)
-  ✓ plasma bg frames / 5s (≥ ticking)     25  (budget >= 25)
-  ✓ plasma bg frames / 5s (≤ 20fps+)     25  (budget <= 120)
+  ✓ plasma focused frames / 5s (≥ 40fps)    268  (budget >= 200)
+  ✓ plasma focused frames / 5s (≤ 70fps)    268  (budget <= 350)
   ✓ two-pane concurrent drain markers       2  (budget >= 2)
-  ✓ two-pane concurrent 2MB (ms)         1390  (budget <= 6000)
+  ✓ two-pane concurrent 2MB (ms)         1243  (budget <= 6000)
 
 passed 18 · failed 0
-Tests/perf-gate.sh: line 21:  8932 Terminated: 15          CMDY_DEFAULTS_DOMAIN="$DEFAULTS_DOMAIN" CMDY_CONFIG_DIR="$GATE" "$BIN" "${APP_ARGS[@]}"
+Tests/perf-gate.sh: line 21: 77487 Terminated: 15          CMDY_DEFAULTS_DOMAIN="$DEFAULTS_DOMAIN" CMDY_CONFIG_DIR="$GATE" "$BIN" "${APP_ARGS[@]}"
