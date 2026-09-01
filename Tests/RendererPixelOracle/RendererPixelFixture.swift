@@ -1091,6 +1091,65 @@ private final class PresentationFlag: @unchecked Sendable {
     }
 }
 
+private func readDrawablePixels(_ drawable: any CAMetalDrawable,
+                                device: MTLDevice) throws -> [UInt8] {
+    try autoreleasepool {
+        let texture = drawable.texture
+        guard texture.pixelFormat == .bgra8Unorm
+                || texture.pixelFormat == .bgra8Unorm_srgb else {
+            throw FixtureError.render(
+                "unexpected drawable pixel format \(texture.pixelFormat.rawValue)")
+        }
+        let rowBytes = texture.width * 4
+        let alignedRowBytes = aligned(rowBytes, to: 256)
+        let byteCount = alignedRowBytes * texture.height
+        guard let buffer = device.makeBuffer(
+                    length: byteCount, options: .storageModeShared),
+              let queue = device.makeCommandQueue(),
+              let commandBuffer = queue.makeCommandBuffer(),
+              let blit = commandBuffer.makeBlitCommandEncoder() else {
+            throw FixtureError.render(
+                "could not allocate drawable readback resources")
+        }
+        blit.copy(
+            from: texture,
+            sourceSlice: 0,
+            sourceLevel: 0,
+            sourceOrigin: MTLOrigin(x: 0, y: 0, z: 0),
+            sourceSize: MTLSize(
+                width: texture.width, height: texture.height, depth: 1),
+            to: buffer,
+            destinationOffset: 0,
+            destinationBytesPerRow: alignedRowBytes,
+            destinationBytesPerImage: byteCount)
+        blit.endEncoding()
+        commandBuffer.commit()
+        commandBuffer.waitUntilCompleted()
+        guard commandBuffer.status == .completed else {
+            throw FixtureError.render(
+                "drawable readback failed: "
+                + (commandBuffer.error?.localizedDescription
+                   ?? "unknown Metal error"))
+        }
+
+        let source = buffer.contents().assumingMemoryBound(to: UInt8.self)
+        var rgba = [UInt8](repeating: 0, count: rowBytes * texture.height)
+        for y in 0..<texture.height {
+            let sourceRow = source.advanced(by: y * alignedRowBytes)
+            let destinationRow = y * rowBytes
+            for x in 0..<texture.width {
+                let sourceOffset = x * 4
+                let destinationOffset = destinationRow + sourceOffset
+                rgba[destinationOffset] = sourceRow[sourceOffset + 2]
+                rgba[destinationOffset + 1] = sourceRow[sourceOffset + 1]
+                rgba[destinationOffset + 2] = sourceRow[sourceOffset]
+                rgba[destinationOffset + 3] = sourceRow[sourceOffset + 3]
+            }
+        }
+        return rgba
+    }
+}
+
 @MainActor
 private func captureFrame(view: MTKView,
                           renderer: MetalTerminalRenderer,
@@ -1100,7 +1159,6 @@ private func captureFrame(view: MTKView,
     var capturedDrawable: (any CAMetalDrawable)?
     while Date() < presentationDeadline, capturedDrawable == nil {
         let attempt: ((any CAMetalDrawable), PresentationFlag)? = autoreleasepool {
-            view.releaseDrawables()
             guard let drawable = view.currentDrawable else { return nil }
             let presented = PresentationFlag()
             drawable.addPresentedHandler { _ in presented.markPresented() }
@@ -1110,6 +1168,7 @@ private func captureFrame(view: MTKView,
             return (drawable, presented)
         }
         guard let (drawable, presented) = attempt else {
+            view.releaseDrawables()
             try await Task.sleep(for: .milliseconds(10))
             continue
         }
@@ -1120,10 +1179,11 @@ private func captureFrame(view: MTKView,
         if presented.value {
             capturedDrawable = drawable
         } else {
+            view.releaseDrawables()
             try await Task.sleep(for: .milliseconds(10))
         }
     }
-    guard let drawable = capturedDrawable else {
+    guard capturedDrawable != nil else {
         throw FixtureError.render("renderer did not present a drawable")
     }
 
@@ -1136,53 +1196,9 @@ private func captureFrame(view: MTKView,
         throw FixtureError.render("renderer did not complete a frame")
     }
 
-    let texture = drawable.texture
-    guard texture.pixelFormat == .bgra8Unorm || texture.pixelFormat == .bgra8Unorm_srgb else {
-        throw FixtureError.render("unexpected drawable pixel format \(texture.pixelFormat.rawValue)")
-    }
-    let rowBytes = texture.width * 4
-    let alignedRowBytes = aligned(rowBytes, to: 256)
-    let byteCount = alignedRowBytes * texture.height
-    guard let buffer = device.makeBuffer(length: byteCount, options: .storageModeShared),
-          let queue = device.makeCommandQueue(),
-          let commandBuffer = queue.makeCommandBuffer(),
-          let blit = commandBuffer.makeBlitCommandEncoder() else {
-        throw FixtureError.render("could not allocate drawable readback resources")
-    }
-    blit.copy(
-        from: texture,
-        sourceSlice: 0,
-        sourceLevel: 0,
-        sourceOrigin: MTLOrigin(x: 0, y: 0, z: 0),
-        sourceSize: MTLSize(width: texture.width, height: texture.height, depth: 1),
-        to: buffer,
-        destinationOffset: 0,
-        destinationBytesPerRow: alignedRowBytes,
-        destinationBytesPerImage: byteCount)
-    blit.endEncoding()
-    await withCheckedContinuation { continuation in
-        commandBuffer.addCompletedHandler { _ in continuation.resume() }
-        commandBuffer.commit()
-    }
-    guard commandBuffer.status == .completed else {
-        throw FixtureError.render(
-            "drawable readback failed: \(commandBuffer.error?.localizedDescription ?? "unknown Metal error")")
-    }
-
-    let source = buffer.contents().assumingMemoryBound(to: UInt8.self)
-    var rgba = [UInt8](repeating: 0, count: rowBytes * texture.height)
-    for y in 0..<texture.height {
-        let sourceRow = source.advanced(by: y * alignedRowBytes)
-        let destinationRow = y * rowBytes
-        for x in 0..<texture.width {
-            let sourceOffset = x * 4
-            let destinationOffset = destinationRow + sourceOffset
-            rgba[destinationOffset] = sourceRow[sourceOffset + 2]
-            rgba[destinationOffset + 1] = sourceRow[sourceOffset + 1]
-            rgba[destinationOffset + 2] = sourceRow[sourceOffset]
-            rgba[destinationOffset + 3] = sourceRow[sourceOffset + 3]
-        }
-    }
+    let rgba = try readDrawablePixels(capturedDrawable!, device: device)
+    capturedDrawable = nil
+    view.releaseDrawables()
     return rgba
 }
 

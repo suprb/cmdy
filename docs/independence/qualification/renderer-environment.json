@@ -5,7 +5,7 @@
     "objectSetSha256": "3895c68d06f1b1bec479749cc1728186beb63deb3177f946ff700822a2aef57f",
     "releaseBuild": "arm64-apple-macosx/release"
   },
-  "fixtureSourceSha256": "12b68125698d5ed45a5e6633de64d69e4767759e7514fe603060c3dec33fc66c",
+  "fixtureSourceSha256": "26d0c5f0aedc6e21568597c86e29348fe70ad5de0b4f00a7a0969e2f5c78decb",
   "macOS": "26.3.1",
   "machine": "arm64",
   "reference": {
