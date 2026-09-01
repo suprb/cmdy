@@ -1091,6 +1091,16 @@ private final class PresentationFlag: @unchecked Sendable {
     }
 }
 
+// GitHub's hosted arm64 runner exposes a 1x virtual display even when the
+// selected Xcode matches the 2x machine used for the locked corpus.  The
+// renderer receives its scale from FixtureSource, not NSWindow, but AppKit's
+// incidental window value is part of the public-input descriptor.  Keep that
+// fixture input deterministic instead of allowing the host display to change
+// an otherwise identical render contract.
+private final class FixtureWindow: NSWindow {
+    override var backingScaleFactor: CGFloat { 2 }
+}
+
 private func readDrawablePixels(_ drawable: any CAMetalDrawable,
                                 device: MTLDevice) throws -> [UInt8] {
     try autoreleasepool {
@@ -1326,7 +1336,7 @@ private func run(outputDirectory: URL) async throws {
     view.sampleCount = 1
     view.clearColor = MTLClearColorMake(0, 0, 0, 1)
 
-    let window = NSWindow(
+    let window = FixtureWindow(
         contentRect: view.frame,
         styleMask: [.titled],
         backing: .buffered,

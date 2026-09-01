@@ -23,6 +23,8 @@ jobs:
   test:
     runs-on: macos-26
     timeout-minutes: 60
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -106,7 +108,7 @@ jobs:
               exit 0
             fi
             if [ "$attempt" -eq 1 ]; then
-              echo "::warning::The macOS drawable was unavailable; retrying the locked corpus once."
+              echo "::warning::The locked renderer corpus attempt failed; retrying once."
             fi
           done
           exit 1
@@ -169,6 +171,8 @@ jobs:
     name: Sandboxed Chromium
     runs-on: macos-26
     timeout-minutes: 45
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Bootstrap pinned CEF
