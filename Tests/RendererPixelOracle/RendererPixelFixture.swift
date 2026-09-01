@@ -1168,7 +1168,6 @@ private func captureFrame(view: MTKView,
             return (drawable, presented)
         }
         guard let (drawable, presented) = attempt else {
-            view.releaseDrawables()
             try await Task.sleep(for: .milliseconds(10))
             continue
         }
@@ -1179,7 +1178,6 @@ private func captureFrame(view: MTKView,
         if presented.value {
             capturedDrawable = drawable
         } else {
-            view.releaseDrawables()
             try await Task.sleep(for: .milliseconds(10))
         }
     }
@@ -1198,7 +1196,6 @@ private func captureFrame(view: MTKView,
 
     let rgba = try readDrawablePixels(capturedDrawable!, device: device)
     capturedDrawable = nil
-    view.releaseDrawables()
     return rgba
 }
 
