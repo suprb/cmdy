@@ -1161,56 +1161,67 @@ private func readDrawablePixels(_ drawable: any CAMetalDrawable,
 }
 
 @MainActor
+private func waitForRendererIdle(timeout: TimeInterval = 2,
+                                 quietPeriod: TimeInterval = 0.1) async throws {
+    let deadline = Date(timeIntervalSinceNow: timeout)
+    var observed = MetalTerminalRenderer.framesPresented
+    var quietSince = Date()
+    while Date() < deadline {
+        try await Task.sleep(for: .milliseconds(5))
+        let current = MetalTerminalRenderer.framesPresented
+        if current != observed {
+            observed = current
+            quietSince = Date()
+        } else if Date().timeIntervalSince(quietSince) >= quietPeriod {
+            return
+        }
+    }
+    throw FixtureError.render("renderer did not become idle before capture")
+}
+
+@MainActor
 private func captureFrame(view: MTKView,
                           renderer: MetalTerminalRenderer,
-                          device: MTLDevice) async throws -> [UInt8] {
-    let before = MetalTerminalRenderer.framesPresented
-    let presentationDeadline = Date(timeIntervalSinceNow: 4)
+                          device: MTLDevice,
+                          prepare: (() -> Void)? = nil) async throws -> [UInt8] {
+    // A retained drawable must be paired with the exact command buffer that
+    // rendered it.  Hosted virtual displays can omit CAMetalDrawable's
+    // presentation callback, so first drain any older completion callbacks,
+    // submit exactly one draw, and accept either that drawable callback or the
+    // renderer's command-buffer completion counter.  This prevents a late
+    // completion from an earlier frame from authorizing stale texture bytes.
+    try await waitForRendererIdle()
+    prepare?()
+    let drawableDeadline = Date(timeIntervalSinceNow: 4)
     var capturedDrawable: (any CAMetalDrawable)?
-    while Date() < presentationDeadline, capturedDrawable == nil {
-        let attemptBefore = MetalTerminalRenderer.framesPresented
-        let attempt: ((any CAMetalDrawable), PresentationFlag)? = autoreleasepool {
-            guard let drawable = view.currentDrawable else { return nil }
-            let presented = PresentationFlag()
-            drawable.addPresentedHandler { _ in presented.markPresented() }
-            view.delegate = renderer
-            view.draw()
-            view.delegate = nil
-            return (drawable, presented)
-        }
-        guard let (drawable, presented) = attempt else {
-            try await Task.sleep(for: .milliseconds(10))
-            continue
-        }
-        let attemptDeadline = Date(timeIntervalSinceNow: 0.5)
-        while !presented.value,
-              MetalTerminalRenderer.framesPresented <= attemptBefore,
-              Date() < attemptDeadline {
-            try await Task.sleep(for: .milliseconds(2))
-        }
-        if presented.value
-                || MetalTerminalRenderer.framesPresented > attemptBefore {
-            capturedDrawable = drawable
-        } else {
+    while capturedDrawable == nil, Date() < drawableDeadline {
+        capturedDrawable = view.currentDrawable
+        if capturedDrawable == nil {
             try await Task.sleep(for: .milliseconds(10))
         }
     }
-    guard capturedDrawable != nil else {
-        throw FixtureError.render("renderer did not complete a drawable")
+    guard let capturedDrawable else {
+        throw FixtureError.render("fixture view did not provide a drawable")
     }
 
-    let completionDeadline = Date(timeIntervalSinceNow: 2)
-    while MetalTerminalRenderer.framesPresented <= before,
+    let before = MetalTerminalRenderer.framesPresented
+    let presented = PresentationFlag()
+    capturedDrawable.addPresentedHandler { _ in presented.markPresented() }
+    view.delegate = renderer
+    view.draw()
+    view.delegate = nil
+
+    let completionDeadline = Date(timeIntervalSinceNow: 4)
+    while !presented.value,
+          MetalTerminalRenderer.framesPresented <= before,
           Date() < completionDeadline {
         try await Task.sleep(for: .milliseconds(2))
     }
-    guard MetalTerminalRenderer.framesPresented > before else {
-        throw FixtureError.render("renderer did not complete a frame")
+    guard presented.value || MetalTerminalRenderer.framesPresented > before else {
+        throw FixtureError.render("renderer did not complete the captured frame")
     }
 
-    let rgba = try readDrawablePixels(capturedDrawable!, device: device)
-    capturedDrawable = nil
-    return rgba
+    return try readDrawablePixels(capturedDrawable, device: device)
 }
 
 private func caretColorScore(_ rgba: [UInt8]) -> Int {
@@ -1246,10 +1257,14 @@ private func captureBlinkOnFrame(view: MTKView,
     var selectedScore = -1
     var selectedDistance = Int.max
     for attempt in 0..<25 {
-        renderer.shaderMode = 0
-        renderer.noteActivity()
         let frame = try await captureFrame(view: view, renderer: renderer,
-                                           device: device)
+                                           device: device) {
+            // Reset the blink epoch after the old command buffers have been
+            // drained so the deterministic visible phase is not consumed by
+            // the fixture's synchronization delay.
+            renderer.shaderMode = 0
+            renderer.noteActivity()
+        }
         if let steadyTarget, steadyTarget.count == frame.count {
             let distance = zip(frame, steadyTarget).reduce(into: 0) {
                 $0 += abs(Int($1.0) - Int($1.1))
