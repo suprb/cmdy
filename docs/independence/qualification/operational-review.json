@@ -1,0 +1,59 @@
+{
+  "kind": "cmdy-operational-qualification-review",
+  "performance": [
+    {
+      "exceptions": [],
+      "log": {
+        "path": "docs/independence/qualification/performance-normal.log",
+        "sha256": "3a33dd4def4cc36e3fecd0c18edade1abdb331f83904519248c31f4220689831"
+      },
+      "mode": "normal",
+      "passed": true,
+      "scriptSha256": "0f8327312e7a9a42bfbe1ebf5c789d797372721074d2da2b906fab06a9649db5"
+    },
+    {
+      "exceptions": [],
+      "log": {
+        "path": "docs/independence/qualification/performance-maximized.log",
+        "sha256": "5d394887b837292b05a749c0c34434157cfb66c2fc5acb80a7aceb956cf885bd"
+      },
+      "mode": "maximized",
+      "passed": true,
+      "scriptSha256": "0f8327312e7a9a42bfbe1ebf5c789d797372721074d2da2b906fab06a9649db5"
+    }
+  ],
+  "resourcePlateau": {
+    "exceptions": [],
+    "log": {
+      "path": "docs/independence/qualification/resource-plateau.log",
+      "sha256": "babf8d17436a5bc6c6357267a0e4dd25a34e50f8b5f76633b49f486603bd90f7"
+    },
+    "monotonicGrowth": false,
+    "passed": true,
+    "runs": 3,
+    "scriptSha256": "f02d42f9e4f38d08b187e44591525c9cf8a6b31769418feb9f35fd16c5d49005",
+    "zombieCount": 0
+  },
+  "review": {
+    "decision": "approved",
+    "reference": "cmdy 1.0 visual approval; contact-sheet-sha256:7fd8a3252b69b7e2ebc1ec53f5509b0624cd49e5bfdf0810d87bc1dbcbe13d7d",
+    "reviewedAtUTC": "2026-08-31T19:12:41Z",
+    "reviewerName": "Andreas Pihlström"
+  },
+  "schemaVersion": 1,
+  "sourceManifestSha256": "4e84f34c289d6e5896d3bb370d8a17f1f40b66f3df529af2f2be07e7fd441c14",
+  "zoo": {
+    "captureCount": 14,
+    "captureManifest": {
+      "path": "docs/independence/qualification/zoo-capture-manifest.json",
+      "sha256": "63d2d4232c2522cdd2ce5d0c8ce5302da9dcaa7d36b047a1cf744d42fd6ee750"
+    },
+    "exceptions": [],
+    "passed": true,
+    "scriptSha256": "17484f307058b84bdccf40d62e48a8ff9ad843ae9ba8e16f9cf59b14962d397f",
+    "visualReview": {
+      "path": "docs/independence/qualification/zoo-visual-review.json",
+      "sha256": "4eac1abde8a08cfbba1affebc185600199ef286ac5418c0326206592deac487f"
+    }
+  }
+}
