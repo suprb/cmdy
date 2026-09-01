@@ -804,17 +804,17 @@
     },
     {
       "kind": "memberOf",
+      "source": "s:7CmdyGPU21MetalTerminalRendererC16updateScrollHeld_14activityPixelsy14CoreFoundation7CGFloatV_AHtF",
+      "target": "c:@M@CmdyGPU@objc(cs)MetalTerminalRenderer"
+    },
+    {
+      "kind": "memberOf",
       "source": "s:7CmdyGPU21MetalTerminalRendererC17textRenderingModeAA04TextgH0Ovp",
       "target": "c:@M@CmdyGPU@objc(cs)MetalTerminalRenderer"
     },
     {
       "kind": "memberOf",
       "source": "s:7CmdyGPU21MetalTerminalRendererC18invalidateRowCacheyyF",
-      "target": "c:@M@CmdyGPU@objc(cs)MetalTerminalRenderer"
-    },
-    {
-      "kind": "memberOf",
-      "source": "s:7CmdyGPU21MetalTerminalRendererC18noteScrollActivity6pixelsy14CoreFoundation7CGFloatV_tF",
       "target": "c:@M@CmdyGPU@objc(cs)MetalTerminalRenderer"
     },
     {
@@ -845,6 +845,16 @@
     {
       "kind": "memberOf",
       "source": "s:7CmdyGPU21MetalTerminalRendererC22cursorGlideMaxDistanceSfvp",
+      "target": "c:@M@CmdyGPU@objc(cs)MetalTerminalRenderer"
+    },
+    {
+      "kind": "memberOf",
+      "source": "s:7CmdyGPU21MetalTerminalRendererC24noteSelectionInteractionyyF",
+      "target": "c:@M@CmdyGPU@objc(cs)MetalTerminalRenderer"
+    },
+    {
+      "kind": "memberOf",
+      "source": "s:7CmdyGPU21MetalTerminalRendererC27interactiveContentTargetFPS11isKeyWindow12thermalState12lowPowerMode22maximumFramesPerSecondSdSb_So020NSProcessInfoThermalN0VSbSitFZ",
       "target": "c:@M@CmdyGPU@objc(cs)MetalTerminalRenderer"
     },
     {
@@ -1081,6 +1091,16 @@
       "kind": "requirementOf",
       "source": "s:7CmdyGPU19RenderableCellImageP5imageSo7NSImageCvp",
       "target": "s:7CmdyGPU19RenderableCellImageP"
+    },
+    {
+      "kind": "requirementOf",
+      "source": "s:7CmdyGPU26MetalSelectionRenderSourceP16selectionColumns6forRowSNySiGSgSi_tF",
+      "target": "s:7CmdyGPU26MetalSelectionRenderSourceP"
+    },
+    {
+      "kind": "requirementOf",
+      "source": "s:7CmdyGPU26MetalSelectionRenderSourceP24selectionBackgroundColorSo7NSColorCvp",
+      "target": "s:7CmdyGPU26MetalSelectionRenderSourceP"
     }
   ],
   "symbols": [
@@ -9671,6 +9691,87 @@
     },
     {
       "accessLevel": "public",
+      "declaration": "@MainActor func updateScrollHeld(_ pixels: CGFloat, activityPixels: CGFloat)",
+      "functionSignature": {
+        "parameters": [
+          {
+            "declaration": "pixels: CGFloat",
+            "name": "pixels"
+          },
+          {
+            "declaration": "activityPixels: CGFloat",
+            "name": "activityPixels"
+          }
+        ],
+        "returns": [
+          {
+            "kind": "text",
+            "spelling": "()"
+          }
+        ]
+      },
+      "identifier": {
+        "interfaceLanguage": "swift",
+        "precise": "s:7CmdyGPU21MetalTerminalRendererC16updateScrollHeld_14activityPixelsy14CoreFoundation7CGFloatV_AHtF"
+      },
+      "kind": {
+        "displayName": "Instance Method",
+        "identifier": "swift.method"
+      },
+      "names": {
+        "subHeading": [
+          {
+            "kind": "keyword",
+            "spelling": "func"
+          },
+          {
+            "kind": "text",
+            "spelling": " "
+          },
+          {
+            "kind": "identifier",
+            "spelling": "updateScrollHeld"
+          },
+          {
+            "kind": "text",
+            "spelling": "("
+          },
+          {
+            "kind": "typeIdentifier",
+            "preciseIdentifier": "s:14CoreFoundation7CGFloatV",
+            "spelling": "CGFloat"
+          },
+          {
+            "kind": "text",
+            "spelling": ", "
+          },
+          {
+            "kind": "externalParam",
+            "spelling": "activityPixels"
+          },
+          {
+            "kind": "text",
+            "spelling": ": "
+          },
+          {
+            "kind": "typeIdentifier",
+            "preciseIdentifier": "s:14CoreFoundation7CGFloatV",
+            "spelling": "CGFloat"
+          },
+          {
+            "kind": "text",
+            "spelling": ")"
+          }
+        ],
+        "title": "updateScrollHeld(_:activityPixels:)"
+      },
+      "pathComponents": [
+        "MetalTerminalRenderer",
+        "updateScrollHeld(_:activityPixels:)"
+      ]
+    },
+    {
+      "accessLevel": "public",
       "declaration": "@MainActor var textRenderingMode: TextRenderingMode { get set }",
       "identifier": {
         "interfaceLanguage": "swift",
@@ -9754,74 +9855,6 @@
       "pathComponents": [
         "MetalTerminalRenderer",
         "invalidateRowCache()"
-      ]
-    },
-    {
-      "accessLevel": "public",
-      "declaration": "@MainActor func noteScrollActivity(pixels: CGFloat)",
-      "functionSignature": {
-        "parameters": [
-          {
-            "declaration": "pixels: CGFloat",
-            "name": "pixels"
-          }
-        ],
-        "returns": [
-          {
-            "kind": "text",
-            "spelling": "()"
-          }
-        ]
-      },
-      "identifier": {
-        "interfaceLanguage": "swift",
-        "precise": "s:7CmdyGPU21MetalTerminalRendererC18noteScrollActivity6pixelsy14CoreFoundation7CGFloatV_tF"
-      },
-      "kind": {
-        "displayName": "Instance Method",
-        "identifier": "swift.method"
-      },
-      "names": {
-        "subHeading": [
-          {
-            "kind": "keyword",
-            "spelling": "func"
-          },
-          {
-            "kind": "text",
-            "spelling": " "
-          },
-          {
-            "kind": "identifier",
-            "spelling": "noteScrollActivity"
-          },
-          {
-            "kind": "text",
-            "spelling": "("
-          },
-          {
-            "kind": "externalParam",
-            "spelling": "pixels"
-          },
-          {
-            "kind": "text",
-            "spelling": ": "
-          },
-          {
-            "kind": "typeIdentifier",
-            "preciseIdentifier": "s:14CoreFoundation7CGFloatV",
-            "spelling": "CGFloat"
-          },
-          {
-            "kind": "text",
-            "spelling": ")"
-          }
-        ],
-        "title": "noteScrollActivity(pixels:)"
-      },
-      "pathComponents": [
-        "MetalTerminalRenderer",
-        "noteScrollActivity(pixels:)"
       ]
     },
     {
@@ -10099,6 +10132,209 @@
         "MetalTerminalRenderer",
         "cursorGlideMaxDistance"
       ]
+    },
+    {
+      "accessLevel": "public",
+      "declaration": "@MainActor func noteSelectionInteraction()",
+      "functionSignature": {
+        "returns": [
+          {
+            "kind": "text",
+            "spelling": "()"
+          }
+        ]
+      },
+      "identifier": {
+        "interfaceLanguage": "swift",
+        "precise": "s:7CmdyGPU21MetalTerminalRendererC24noteSelectionInteractionyyF"
+      },
+      "kind": {
+        "displayName": "Instance Method",
+        "identifier": "swift.method"
+      },
+      "names": {
+        "subHeading": [
+          {
+            "kind": "keyword",
+            "spelling": "func"
+          },
+          {
+            "kind": "text",
+            "spelling": " "
+          },
+          {
+            "kind": "identifier",
+            "spelling": "noteSelectionInteraction"
+          },
+          {
+            "kind": "text",
+            "spelling": "()"
+          }
+        ],
+        "title": "noteSelectionInteraction()"
+      },
+      "pathComponents": [
+        "MetalTerminalRenderer",
+        "noteSelectionInteraction()"
+      ]
+    },
+    {
+      "accessLevel": "public",
+      "declaration": "@MainActor static func interactiveContentTargetFPS(isKeyWindow: Bool, thermalState: ProcessInfo.ThermalState, lowPowerMode: Bool, maximumFramesPerSecond: Int) -> Double",
+      "functionSignature": {
+        "parameters": [
+          {
+            "declaration": "isKeyWindow: Bool",
+            "name": "isKeyWindow"
+          },
+          {
+            "declaration": "thermalState: ProcessInfo.ThermalState",
+            "name": "thermalState"
+          },
+          {
+            "declaration": "lowPowerMode: Bool",
+            "name": "lowPowerMode"
+          },
+          {
+            "declaration": "maximumFramesPerSecond: Int",
+            "name": "maximumFramesPerSecond"
+          }
+        ],
+        "returns": [
+          {
+            "kind": "typeIdentifier",
+            "preciseIdentifier": "s:Sd",
+            "spelling": "Double"
+          }
+        ]
+      },
+      "identifier": {
+        "interfaceLanguage": "swift",
+        "precise": "s:7CmdyGPU21MetalTerminalRendererC27interactiveContentTargetFPS11isKeyWindow12thermalState12lowPowerMode22maximumFramesPerSecondSdSb_So020NSProcessInfoThermalN0VSbSitFZ"
+      },
+      "kind": {
+        "displayName": "Type Method",
+        "identifier": "swift.type.method"
+      },
+      "names": {
+        "subHeading": [
+          {
+            "kind": "keyword",
+            "spelling": "static"
+          },
+          {
+            "kind": "text",
+            "spelling": " "
+          },
+          {
+            "kind": "keyword",
+            "spelling": "func"
+          },
+          {
+            "kind": "text",
+            "spelling": " "
+          },
+          {
+            "kind": "identifier",
+            "spelling": "interactiveContentTargetFPS"
+          },
+          {
+            "kind": "text",
+            "spelling": "("
+          },
+          {
+            "kind": "externalParam",
+            "spelling": "isKeyWindow"
+          },
+          {
+            "kind": "text",
+            "spelling": ": "
+          },
+          {
+            "kind": "typeIdentifier",
+            "preciseIdentifier": "s:Sb",
+            "spelling": "Bool"
+          },
+          {
+            "kind": "text",
+            "spelling": ", "
+          },
+          {
+            "kind": "externalParam",
+            "spelling": "thermalState"
+          },
+          {
+            "kind": "text",
+            "spelling": ": "
+          },
+          {
+            "kind": "typeIdentifier",
+            "preciseIdentifier": "c:objc(cs)NSProcessInfo",
+            "spelling": "ProcessInfo"
+          },
+          {
+            "kind": "text",
+            "spelling": "."
+          },
+          {
+            "kind": "typeIdentifier",
+            "preciseIdentifier": "c:@E@NSProcessInfoThermalState",
+            "spelling": "ThermalState"
+          },
+          {
+            "kind": "text",
+            "spelling": ", "
+          },
+          {
+            "kind": "externalParam",
+            "spelling": "lowPowerMode"
+          },
+          {
+            "kind": "text",
+            "spelling": ": "
+          },
+          {
+            "kind": "typeIdentifier",
+            "preciseIdentifier": "s:Sb",
+            "spelling": "Bool"
+          },
+          {
+            "kind": "text",
+            "spelling": ", "
+          },
+          {
+            "kind": "externalParam",
+            "spelling": "maximumFramesPerSecond"
+          },
+          {
+            "kind": "text",
+            "spelling": ": "
+          },
+          {
+            "kind": "typeIdentifier",
+            "preciseIdentifier": "s:Si",
+            "spelling": "Int"
+          },
+          {
+            "kind": "text",
+            "spelling": ") -> "
+          },
+          {
+            "kind": "typeIdentifier",
+            "preciseIdentifier": "s:Sd",
+            "spelling": "Double"
+          }
+        ],
+        "title": "interactiveContentTargetFPS(isKeyWindow:thermalState:lowPowerMode:maximumFramesPerSecond:)"
+      },
+      "pathComponents": [
+        "MetalTerminalRenderer",
+        "interactiveContentTargetFPS(isKeyWindow:thermalState:lowPowerMode:maximumFramesPerSecond:)"
+      ],
+      "swiftExtension": {
+        "extendedModule": "CmdyGPU",
+        "typeKind": "swift.class"
+      }
     },
     {
       "accessLevel": "public",
@@ -10567,6 +10803,187 @@
       "pathComponents": [
         "BlockElementRenderItem",
         "codePoint"
+      ]
+    },
+    {
+      "accessLevel": "public",
+      "declaration": "@MainActor protocol MetalSelectionRenderSource : AnyObject",
+      "identifier": {
+        "interfaceLanguage": "swift",
+        "precise": "s:7CmdyGPU26MetalSelectionRenderSourceP"
+      },
+      "kind": {
+        "displayName": "Protocol",
+        "identifier": "swift.protocol"
+      },
+      "names": {
+        "navigator": [
+          {
+            "kind": "identifier",
+            "spelling": "MetalSelectionRenderSource"
+          }
+        ],
+        "subHeading": [
+          {
+            "kind": "keyword",
+            "spelling": "protocol"
+          },
+          {
+            "kind": "text",
+            "spelling": " "
+          },
+          {
+            "kind": "identifier",
+            "spelling": "MetalSelectionRenderSource"
+          }
+        ],
+        "title": "MetalSelectionRenderSource"
+      },
+      "pathComponents": [
+        "MetalSelectionRenderSource"
+      ]
+    },
+    {
+      "accessLevel": "public",
+      "declaration": "@MainActor func selectionColumns(forRow row: Int) -> ClosedRange<Int>?",
+      "functionSignature": {
+        "parameters": [
+          {
+            "declaration": "row: Int",
+            "internalName": "row",
+            "name": "forRow"
+          }
+        ],
+        "returns": [
+          {
+            "kind": "typeIdentifier",
+            "preciseIdentifier": "s:SN",
+            "spelling": "ClosedRange"
+          },
+          {
+            "kind": "text",
+            "spelling": "<"
+          },
+          {
+            "kind": "typeIdentifier",
+            "preciseIdentifier": "s:Si",
+            "spelling": "Int"
+          },
+          {
+            "kind": "text",
+            "spelling": ">?"
+          }
+        ]
+      },
+      "identifier": {
+        "interfaceLanguage": "swift",
+        "precise": "s:7CmdyGPU26MetalSelectionRenderSourceP16selectionColumns6forRowSNySiGSgSi_tF"
+      },
+      "kind": {
+        "displayName": "Instance Method",
+        "identifier": "swift.method"
+      },
+      "names": {
+        "subHeading": [
+          {
+            "kind": "keyword",
+            "spelling": "func"
+          },
+          {
+            "kind": "text",
+            "spelling": " "
+          },
+          {
+            "kind": "identifier",
+            "spelling": "selectionColumns"
+          },
+          {
+            "kind": "text",
+            "spelling": "("
+          },
+          {
+            "kind": "externalParam",
+            "spelling": "forRow"
+          },
+          {
+            "kind": "text",
+            "spelling": ": "
+          },
+          {
+            "kind": "typeIdentifier",
+            "preciseIdentifier": "s:Si",
+            "spelling": "Int"
+          },
+          {
+            "kind": "text",
+            "spelling": ") -> "
+          },
+          {
+            "kind": "typeIdentifier",
+            "preciseIdentifier": "s:SN",
+            "spelling": "ClosedRange"
+          },
+          {
+            "kind": "text",
+            "spelling": "<"
+          },
+          {
+            "kind": "typeIdentifier",
+            "preciseIdentifier": "s:Si",
+            "spelling": "Int"
+          },
+          {
+            "kind": "text",
+            "spelling": ">?"
+          }
+        ],
+        "title": "selectionColumns(forRow:)"
+      },
+      "pathComponents": [
+        "MetalSelectionRenderSource",
+        "selectionColumns(forRow:)"
+      ]
+    },
+    {
+      "accessLevel": "public",
+      "declaration": "@MainActor var selectionBackgroundColor: NSColor { get }",
+      "identifier": {
+        "interfaceLanguage": "swift",
+        "precise": "s:7CmdyGPU26MetalSelectionRenderSourceP24selectionBackgroundColorSo7NSColorCvp"
+      },
+      "kind": {
+        "displayName": "Instance Property",
+        "identifier": "swift.property"
+      },
+      "names": {
+        "subHeading": [
+          {
+            "kind": "keyword",
+            "spelling": "var"
+          },
+          {
+            "kind": "text",
+            "spelling": " "
+          },
+          {
+            "kind": "identifier",
+            "spelling": "selectionBackgroundColor"
+          },
+          {
+            "kind": "text",
+            "spelling": ": "
+          },
+          {
+            "kind": "typeIdentifier",
+            "preciseIdentifier": "c:objc(cs)NSColor",
+            "spelling": "NSColor"
+          }
+        ],
+        "title": "selectionBackgroundColor"
+      },
+      "pathComponents": [
+        "MetalSelectionRenderSource",
+        "selectionBackgroundColor"
       ]
     },
     {
