@@ -1778,7 +1778,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         Preferences.shared.showBanner = false
         Preferences.shared.workspaceNavigatorVisible = false
         Preferences.shared.workspaceInspectorVisible = false
-        Preferences.shared.contentMargin = 10
+        // Keep all 32 leaves feasible on GitHub's 1024x768 virtual display.
+        // The regular and nested real-window gates cover the 10-point gap;
+        // this profile isolates rapid topology growth without asking AppKit
+        // to violate each window's native minimum size.
+        Preferences.shared.contentMargin = 0
         Preferences.shared.windowGridStateData = nil
         Preferences.shared.windowGridEnabled = true
         newWindow(nil)
@@ -1935,7 +1939,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         Preferences.shared.showBanner = false
         Preferences.shared.workspaceNavigatorVisible = false
         Preferences.shared.workspaceInspectorVisible = false
-        Preferences.shared.contentMargin = 10
+        // Match the add-only stress fixture: a zero-gap 32-leaf topology fits
+        // the smallest qualified virtual display while preserving the deep
+        // conversion and repeated native-resize workload this gate exercises.
+        Preferences.shared.contentMargin = 0
         Preferences.shared.windowGridStateData = nil
         Preferences.shared.windowGridEnabled = true
         newWindow(nil)

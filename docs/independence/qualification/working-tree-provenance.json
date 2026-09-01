@@ -14,7 +14,7 @@
     },
     {
       "path": "App/AppDelegate.swift",
-      "sha256": "f2fc128b913ea511dd817f430c5c8fe8dfa376cfb8bda2b5284e15b2cbe3ed78"
+      "sha256": "f24c7597336b95335d764912f7fa2d0c5f07896449779f62e21c0f63f274b1a6"
     },
     {
       "path": "App/AppUpdateWindow.swift",
@@ -170,7 +170,7 @@
     },
     {
       "path": "App/WindowGridCoordinator.swift",
-      "sha256": "f93d25b7f46a85f912ac09ed6c495335d1aa25e52e896359af0fb5b1abb66c8f"
+      "sha256": "c5ab33d97d7e73182f8331da4603721c389c1e521f0eb51b234dddb4d413fbac"
     },
     {
       "path": "App/WorkspaceContext.swift",
@@ -3490,7 +3490,7 @@
       "sourceCount": 111
     }
   },
-  "reportSHA256": "bab7c7556ce0255bd8946268b9ce2d2af1af24aa1370e9e6a31e731cc25b6805",
+  "reportSHA256": "5875b5cf092e67ce1eee692361d794ed07b02642e5999c6e99a9456999ad052a",
   "schemaVersion": 1,
   "summary": {
     "activeSourceCount": 128,

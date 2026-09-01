@@ -30,6 +30,8 @@ be called out here with a migration path before a versioned release.
   selection and attributed command-block overlays stay off the hot scroll path.
 - Editor and window-close ownership now follows one idempotent AppKit lifecycle,
   including repeated Show Editor commands and attached-editor teardown.
+- Window Grid now keeps the dragged native window pinned while recursive
+  neighbor animations settle, including on headless virtual displays.
 - The frozen CmdyGPU 1.0 API now exposes selection composition and
   display-aligned scroll scheduling as explicit renderer seams.
 

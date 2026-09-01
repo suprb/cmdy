@@ -190,8 +190,8 @@
     {
       "mode": "100644",
       "path": "App/AppDelegate.swift",
-      "sha256": "f2fc128b913ea511dd817f430c5c8fe8dfa376cfb8bda2b5284e15b2cbe3ed78",
-      "size": 273436
+      "sha256": "f24c7597336b95335d764912f7fa2d0c5f07896449779f62e21c0f63f274b1a6",
+      "size": 273955
     },
     {
       "mode": "100644",
@@ -424,8 +424,8 @@
     {
       "mode": "100644",
       "path": "App/WindowGridCoordinator.swift",
-      "sha256": "f93d25b7f46a85f912ac09ed6c495335d1aa25e52e896359af0fb5b1abb66c8f",
-      "size": 46162
+      "sha256": "c5ab33d97d7e73182f8331da4603721c389c1e521f0eb51b234dddb4d413fbac",
+      "size": 46112
     },
     {
       "mode": "100644",
