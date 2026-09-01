@@ -14,7 +14,7 @@
     },
     {
       "path": "App/AppDelegate.swift",
-      "sha256": "f24c7597336b95335d764912f7fa2d0c5f07896449779f62e21c0f63f274b1a6"
+      "sha256": "fd6189caf61041b2adaeb3087190cbb3e35a768e1f935f8a4fc45ce5f5dba380"
     },
     {
       "path": "App/AppUpdateWindow.swift",
@@ -3490,7 +3490,7 @@
       "sourceCount": 111
     }
   },
-  "reportSHA256": "5875b5cf092e67ce1eee692361d794ed07b02642e5999c6e99a9456999ad052a",
+  "reportSHA256": "d59ad8a3020015776350adaeb8f96d577093d1553217142130150e2f540ae617",
   "schemaVersion": 1,
   "summary": {
     "activeSourceCount": 128,
