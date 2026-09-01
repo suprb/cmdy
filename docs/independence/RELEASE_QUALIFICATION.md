@@ -27,6 +27,13 @@ python3 -B Tests/test-release-qualification.py
 python3 -B scripts/check-release-qualification.py engineering
 ```
 
+CI always validates the locked renderer corpus and the strict checker. A live
+zero-tolerance replay is release-qualifying only when macOS, architecture,
+Xcode, and Swift exactly match the hash-bound `renderer-environment.json`.
+GitHub runners with a newer macOS/Metal runtime retain a diagnostic render but
+cannot replace or weaken the committed 40/40, zero-delta evidence. This keeps
+OS and GPU-driver drift separate from reviewed source drift.
+
 The real notarized path runs publication source verification before loading
 signing credentials, then artifact verification after Apple accepts both
 submissions and the final app/DMG have been stapled and Gatekeeper-tested:

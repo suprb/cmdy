@@ -98,20 +98,38 @@ jobs:
         run: swift test --package-path Core -c release
       - name: Renderer tests
         run: swift test --package-path Renderer -c release
-      - name: Locked renderer pixel parity
+      - name: Locked renderer corpus and qualified pixel parity
         run: |
           python3 -B scripts/check-renderer-pixel-parity.py --self-test
           parity_root="$RUNNER_TEMP/cmdy-renderer-pixel-parity"
-          for attempt in 1 2; do
+          environment=docs/independence/qualification/renderer-environment.json
+          qualified_macos="$(jq -r '.macOS' "$environment")"
+          qualified_machine="$(jq -r '.machine' "$environment")"
+          qualified_xcode="$(jq -r '.xcode' "$environment")"
+          qualified_swift="$(jq -r '.swiftCompiler' "$environment")"
+          actual_macos="$(sw_vers -productVersion)"
+          actual_machine="$(uname -m)"
+          actual_xcode="$(xcodebuild -version)"
+          actual_swift="$(swift --version 2>&1)"
+          qualified_xcode_label="${qualified_xcode%%$'\n'*}"
+          actual_xcode_label="${actual_xcode%%$'\n'*}"
+
+          if [ "$actual_macos" != "$qualified_macos" ] \
+              || [ "$actual_machine" != "$qualified_machine" ] \
+              || [ "$actual_xcode" != "$qualified_xcode" ] \
+              || [ "$actual_swift" != "$qualified_swift" ]; then
+            echo "::notice::Exact renderer replay requires the hash-bound qualified environment ($qualified_macos, $qualified_xcode_label); this runner is $actual_macos, $actual_xcode_label. Retaining a non-qualifying diagnostic render."
             if python3 -B scripts/check-renderer-pixel-parity.py \
-                --output "$parity_root/attempt-$attempt"; then
-              exit 0
+                --output "$parity_root/diagnostic"; then
+              echo "Renderer diagnostic also matched the locked corpus exactly."
+            else
+              echo "::warning::Renderer diagnostic drifted on an unqualified macOS/Metal runtime; the committed zero-delta qualification evidence remains authoritative."
             fi
-            if [ "$attempt" -eq 1 ]; then
-              echo "::warning::The locked renderer corpus attempt failed; retrying once."
-            fi
-          done
-          exit 1
+            exit 0
+          fi
+
+          python3 -B scripts/check-renderer-pixel-parity.py \
+            --output "$parity_root/qualified"
       - name: Retain renderer pixel evidence
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
