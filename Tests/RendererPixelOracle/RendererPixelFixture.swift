@@ -1099,16 +1099,20 @@ private func captureFrame(view: MTKView,
     let presentationDeadline = Date(timeIntervalSinceNow: 4)
     var capturedDrawable: (any CAMetalDrawable)?
     while Date() < presentationDeadline, capturedDrawable == nil {
-        view.releaseDrawables()
-        guard let drawable = view.currentDrawable else {
+        let attempt: ((any CAMetalDrawable), PresentationFlag)? = autoreleasepool {
+            view.releaseDrawables()
+            guard let drawable = view.currentDrawable else { return nil }
+            let presented = PresentationFlag()
+            drawable.addPresentedHandler { _ in presented.markPresented() }
+            view.delegate = renderer
+            view.draw()
+            view.delegate = nil
+            return (drawable, presented)
+        }
+        guard let (drawable, presented) = attempt else {
             try await Task.sleep(for: .milliseconds(10))
             continue
         }
-        let presented = PresentationFlag()
-        drawable.addPresentedHandler { _ in presented.markPresented() }
-        view.delegate = renderer
-        view.draw()
-        view.delegate = nil
         let attemptDeadline = Date(timeIntervalSinceNow: 0.25)
         while !presented.value, Date() < attemptDeadline {
             try await Task.sleep(for: .milliseconds(2))
