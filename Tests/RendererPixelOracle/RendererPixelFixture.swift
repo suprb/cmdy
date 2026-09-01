@@ -1158,6 +1158,7 @@ private func captureFrame(view: MTKView,
     let presentationDeadline = Date(timeIntervalSinceNow: 4)
     var capturedDrawable: (any CAMetalDrawable)?
     while Date() < presentationDeadline, capturedDrawable == nil {
+        let attemptBefore = MetalTerminalRenderer.framesPresented
         let attempt: ((any CAMetalDrawable), PresentationFlag)? = autoreleasepool {
             guard let drawable = view.currentDrawable else { return nil }
             let presented = PresentationFlag()
@@ -1171,18 +1172,21 @@ private func captureFrame(view: MTKView,
             try await Task.sleep(for: .milliseconds(10))
             continue
         }
-        let attemptDeadline = Date(timeIntervalSinceNow: 0.25)
-        while !presented.value, Date() < attemptDeadline {
+        let attemptDeadline = Date(timeIntervalSinceNow: 0.5)
+        while !presented.value,
+              MetalTerminalRenderer.framesPresented <= attemptBefore,
+              Date() < attemptDeadline {
             try await Task.sleep(for: .milliseconds(2))
         }
-        if presented.value {
+        if presented.value
+                || MetalTerminalRenderer.framesPresented > attemptBefore {
             capturedDrawable = drawable
         } else {
             try await Task.sleep(for: .milliseconds(10))
         }
     }
     guard capturedDrawable != nil else {
-        throw FixtureError.render("renderer did not present a drawable")
+        throw FixtureError.render("renderer did not complete a drawable")
     }
 
     let completionDeadline = Date(timeIntervalSinceNow: 2)
