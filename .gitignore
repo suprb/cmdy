@@ -16,6 +16,9 @@ node_modules/
 .vite/
 *.tsbuildinfo
 
+# Generated website deployment output; CI rebuilds it from website/.
+/site/
+
 # app packaging artifacts
 /*.app/
 /*.icns

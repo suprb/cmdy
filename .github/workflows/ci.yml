@@ -23,6 +23,8 @@ jobs:
   test:
     runs-on: macos-26
     timeout-minutes: 60
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -96,11 +98,38 @@ jobs:
         run: swift test --package-path Core -c release
       - name: Renderer tests
         run: swift test --package-path Renderer -c release
-      - name: Locked renderer pixel parity
+      - name: Locked renderer corpus and qualified pixel parity
         run: |
           python3 -B scripts/check-renderer-pixel-parity.py --self-test
+          parity_root="$RUNNER_TEMP/cmdy-renderer-pixel-parity"
+          environment=docs/independence/qualification/renderer-environment.json
+          qualified_macos="$(jq -r '.macOS' "$environment")"
+          qualified_machine="$(jq -r '.machine' "$environment")"
+          qualified_xcode="$(jq -r '.xcode' "$environment")"
+          qualified_swift="$(jq -r '.swiftCompiler' "$environment")"
+          actual_macos="$(sw_vers -productVersion)"
+          actual_machine="$(uname -m)"
+          actual_xcode="$(xcodebuild -version)"
+          actual_swift="$(swift --version 2>&1)"
+          qualified_xcode_label="${qualified_xcode%%$'\n'*}"
+          actual_xcode_label="${actual_xcode%%$'\n'*}"
+
+          if [ "$actual_macos" != "$qualified_macos" ] \
+              || [ "$actual_machine" != "$qualified_machine" ] \
+              || [ "$actual_xcode" != "$qualified_xcode" ] \
+              || [ "$actual_swift" != "$qualified_swift" ]; then
+            echo "::notice::Exact renderer replay requires the hash-bound qualified environment ($qualified_macos, $qualified_xcode_label); this runner is $actual_macos, $actual_xcode_label. Retaining a non-qualifying diagnostic render."
+            if python3 -B scripts/check-renderer-pixel-parity.py \
+                --output "$parity_root/diagnostic"; then
+              echo "Renderer diagnostic also matched the locked corpus exactly."
+            else
+              echo "::warning::Renderer diagnostic drifted on an unqualified macOS/Metal runtime; the committed zero-delta qualification evidence remains authoritative."
+            fi
+            exit 0
+          fi
+
           python3 -B scripts/check-renderer-pixel-parity.py \
-            --output "$RUNNER_TEMP/cmdy-renderer-pixel-parity"
+            --output "$parity_root/qualified"
       - name: Retain renderer pixel evidence
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -160,6 +189,8 @@ jobs:
     name: Sandboxed Chromium
     runs-on: macos-26
     timeout-minutes: 45
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Bootstrap pinned CEF

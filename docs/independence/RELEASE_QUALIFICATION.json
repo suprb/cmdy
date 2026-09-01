@@ -15,7 +15,7 @@
       {
         "path": ".github/workflows/ci.yml",
         "purpose": "ci-workflow",
-        "sha256": "eb42b83901aed5b0cc69342af6b0135cb316a7c9eb6927e6bc48be3c29657d4d"
+        "sha256": "bc7a906e544a6eadc52c70067e90cec9a0ab944ad02b6ff917e928ecf109a39a"
       },
       {
         "path": "scripts/check-core-blackbox-parity.py",
@@ -60,12 +60,12 @@
       {
         "path": "scripts/check-release-qualification.py",
         "purpose": "qualification-checker",
-        "sha256": "5b89f5af98718ede3f6bea9982aee2b548eac000b959d6dddb686a66be1ea8f4"
+        "sha256": "02d7c9c1e20985e8ff939219946526b28d24795f1ac31ebf9ecbb1816b7a1a33"
       },
       {
         "path": "Schemas/release-qualification-v1.schema.json",
         "purpose": "qualification-schema",
-        "sha256": "d9e0e1dd27253fc8985d413773f4a73d66c9a0f0a5039171ee02a400d536e270"
+        "sha256": "ec5d10ef02298bdad207341fa1c26e50a9e70ec01628a77421fa4fc3b9caba1f"
       },
       {
         "path": "Tests/RendererPixelOracle/ReferenceCorpus/reference-corpus-v1.tar.gz",
@@ -85,7 +85,7 @@
       {
         "path": "Tests/RendererPixelOracle/RendererPixelFixture.swift",
         "purpose": "renderer-fixture",
-        "sha256": "a31ab980ff37b387db2730254b35c85e6a8ec98881910d0521b824b9c58459e0"
+        "sha256": "c4e34ecc1b04953d0d5773d46de5aaf20025a55cc63113df60eed7d5b161e057"
       },
       {
         "path": "scripts/check-renderer-pixel-parity.py",
@@ -100,7 +100,7 @@
       {
         "path": ".github/workflows/release.yml",
         "purpose": "release-workflow",
-        "sha256": "a54434fd31e3b11d874e95dad64af5349008f62449bb14f799cda98fefb8c148"
+        "sha256": "387dc08f72cdf3a959e456bbb1cc0b8042b22d8ea44d68508e5538656cee4c1f"
       },
       {
         "path": "test.sh",
@@ -145,7 +145,7 @@
     },
     "rendererCorpus": {
       "archiveSha256": "5507d54ebe8e453edc9f38d3dbf84ac01ef132ae8370a3a7de39a1624d46188a",
-      "candidateFixtureSha256": "a31ab980ff37b387db2730254b35c85e6a8ec98881910d0521b824b9c58459e0",
+      "candidateFixtureSha256": "c4e34ecc1b04953d0d5773d46de5aaf20025a55cc63113df60eed7d5b161e057",
       "fixtureCount": 40,
       "fixtureIndexSha256": "e52c987c52e495dc7bb7a14ccf8d9ef6b0abd4e8fed6d60facd469a2af6f9d5d",
       "lockSha256": "a448c37b7e114505f4e8569ed9389c608698cb9bf50b7c0219daff4fd10ccd2f",
@@ -155,10 +155,59 @@
   },
   "kind": "cmdy-release-qualification",
   "publication": {
-    "approval": null,
-    "evidence": null,
-    "source": null,
-    "state": "pending"
+    "approval": {
+      "approvalReference": "Project owner approval reconfirmed after repeated-row fast-scroll optimization and exact final evidence refresh on 2026-09-01.",
+      "approvedPublicWording": "Behavioral parity and the documented engineering qualification passed for the exact cmdy 1.0 source and evidence set. Project-owner approval; this is not an independent authorship or legal clean-room review.",
+      "decision": "approved",
+      "engineeringDigestSha256": "78c9a34c2766d8c7b754a7733617c8e066ed88f64d8a8e5b4e8d69ca6c7738c4",
+      "evidenceDigestSha256": "bd2eb29b8059aa8dad4038de9e6e2639f179ad4f348688d0d7a4a13082793e85",
+      "reviewedAtUTC": "2026-09-01T20:33:40Z",
+      "reviewerAffiliation": "cmdy project owner",
+      "reviewerIndependentFromImplementation": false,
+      "reviewerKind": "human",
+      "reviewerName": "Andreas Pihlström"
+    },
+    "evidence": {
+      "core": {
+        "record": {
+          "path": "docs/independence/qualification/core-17-seed.json",
+          "sha256": "3443ec362396815568a9b98746201f1cfd7d2e6c04b793b579ecd3c721dd419d"
+        },
+        "sourceManifestSha256": "9170b9b44bcca17c6dd68e9ef3d93b6a0880c771525e0432b66775e5e728fa10"
+      },
+      "operational": {
+        "record": {
+          "path": "docs/independence/qualification/operational-review.json",
+          "sha256": "61b6d6dbf3d74341ccee5d937d0f64c8765038c80b4effd7e56082eeb5e09a4d"
+        },
+        "sourceManifestSha256": "9170b9b44bcca17c6dd68e9ef3d93b6a0880c771525e0432b66775e5e728fa10"
+      },
+      "renderer": {
+        "checkerSha256": "886a21d8601f7917bbab544ac285b5952d3f79a60203c56d25bb1632f7690ee7",
+        "comparison": {
+          "path": "docs/independence/qualification/renderer-comparison.json",
+          "sha256": "c6de090c7605fea74481beed8b68c4fdd9d27c736713798b5099f578c95ed239"
+        },
+        "environment": {
+          "path": "docs/independence/qualification/renderer-environment.json",
+          "sha256": "17d430cd7191f8872de0acb497ef7010c2913757e10574cb2e69b152218bfc39"
+        },
+        "sourceManifestSha256": "9170b9b44bcca17c6dd68e9ef3d93b6a0880c771525e0432b66775e5e728fa10"
+      }
+    },
+    "source": {
+      "activeSourceManifest": {
+        "path": "docs/independence/qualification/active-terminal-sources.json",
+        "sha256": "9170b9b44bcca17c6dd68e9ef3d93b6a0880c771525e0432b66775e5e728fa10"
+      },
+      "provenanceReport": {
+        "path": "docs/independence/qualification/working-tree-provenance.json",
+        "sha256": "272b0387b09fe4a462d4c70a8e9f74fd2d030e6d6582c1b38959503745428a04"
+      },
+      "sourceCommit": "a8196ecd75e943e082c723b16ed144b8b8dc4d53",
+      "sourceTree": "7eb562b2fc4ab5ab8c77faf8a01561b1fe92c190"
+    },
+    "state": "approved"
   },
   "schemaVersion": 1
 }

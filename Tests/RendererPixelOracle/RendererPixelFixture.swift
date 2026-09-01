@@ -1091,95 +1091,137 @@ private final class PresentationFlag: @unchecked Sendable {
     }
 }
 
+// GitHub's hosted arm64 runner exposes a 1x virtual display even when the
+// selected Xcode matches the 2x machine used for the locked corpus.  The
+// renderer receives its scale from FixtureSource, not NSWindow, but AppKit's
+// incidental window value is part of the public-input descriptor.  Keep that
+// fixture input deterministic instead of allowing the host display to change
+// an otherwise identical render contract.
+private final class FixtureWindow: NSWindow {
+    override var backingScaleFactor: CGFloat { 2 }
+}
+
+private func readDrawablePixels(_ drawable: any CAMetalDrawable,
+                                device: MTLDevice) throws -> [UInt8] {
+    try autoreleasepool {
+        let texture = drawable.texture
+        guard texture.pixelFormat == .bgra8Unorm
+                || texture.pixelFormat == .bgra8Unorm_srgb else {
+            throw FixtureError.render(
+                "unexpected drawable pixel format \(texture.pixelFormat.rawValue)")
+        }
+        let rowBytes = texture.width * 4
+        let alignedRowBytes = aligned(rowBytes, to: 256)
+        let byteCount = alignedRowBytes * texture.height
+        guard let buffer = device.makeBuffer(
+                    length: byteCount, options: .storageModeShared),
+              let queue = device.makeCommandQueue(),
+              let commandBuffer = queue.makeCommandBuffer(),
+              let blit = commandBuffer.makeBlitCommandEncoder() else {
+            throw FixtureError.render(
+                "could not allocate drawable readback resources")
+        }
+        blit.copy(
+            from: texture,
+            sourceSlice: 0,
+            sourceLevel: 0,
+            sourceOrigin: MTLOrigin(x: 0, y: 0, z: 0),
+            sourceSize: MTLSize(
+                width: texture.width, height: texture.height, depth: 1),
+            to: buffer,
+            destinationOffset: 0,
+            destinationBytesPerRow: alignedRowBytes,
+            destinationBytesPerImage: byteCount)
+        blit.endEncoding()
+        commandBuffer.commit()
+        commandBuffer.waitUntilCompleted()
+        guard commandBuffer.status == .completed else {
+            throw FixtureError.render(
+                "drawable readback failed: "
+                + (commandBuffer.error?.localizedDescription
+                   ?? "unknown Metal error"))
+        }
+
+        let source = buffer.contents().assumingMemoryBound(to: UInt8.self)
+        var rgba = [UInt8](repeating: 0, count: rowBytes * texture.height)
+        for y in 0..<texture.height {
+            let sourceRow = source.advanced(by: y * alignedRowBytes)
+            let destinationRow = y * rowBytes
+            for x in 0..<texture.width {
+                let sourceOffset = x * 4
+                let destinationOffset = destinationRow + sourceOffset
+                rgba[destinationOffset] = sourceRow[sourceOffset + 2]
+                rgba[destinationOffset + 1] = sourceRow[sourceOffset + 1]
+                rgba[destinationOffset + 2] = sourceRow[sourceOffset]
+                rgba[destinationOffset + 3] = sourceRow[sourceOffset + 3]
+            }
+        }
+        return rgba
+    }
+}
+
+@MainActor
+private func waitForRendererIdle(timeout: TimeInterval = 2,
+                                 quietPeriod: TimeInterval = 0.1) async throws {
+    let deadline = Date(timeIntervalSinceNow: timeout)
+    var observed = MetalTerminalRenderer.framesPresented
+    var quietSince = Date()
+    while Date() < deadline {
+        try await Task.sleep(for: .milliseconds(5))
+        let current = MetalTerminalRenderer.framesPresented
+        if current != observed {
+            observed = current
+            quietSince = Date()
+        } else if Date().timeIntervalSince(quietSince) >= quietPeriod {
+            return
+        }
+    }
+    throw FixtureError.render("renderer did not become idle before capture")
+}
+
 @MainActor
 private func captureFrame(view: MTKView,
                           renderer: MetalTerminalRenderer,
-                          device: MTLDevice) async throws -> [UInt8] {
-    let before = MetalTerminalRenderer.framesPresented
-    let presentationDeadline = Date(timeIntervalSinceNow: 4)
+                          device: MTLDevice,
+                          prepare: (() -> Void)? = nil) async throws -> [UInt8] {
+    // A retained drawable must be paired with the exact command buffer that
+    // rendered it.  Hosted virtual displays can omit CAMetalDrawable's
+    // presentation callback, so first drain any older completion callbacks,
+    // submit exactly one draw, and accept either that drawable callback or the
+    // renderer's command-buffer completion counter.  This prevents a late
+    // completion from an earlier frame from authorizing stale texture bytes.
+    try await waitForRendererIdle()
+    prepare?()
+    let drawableDeadline = Date(timeIntervalSinceNow: 4)
     var capturedDrawable: (any CAMetalDrawable)?
-    while Date() < presentationDeadline, capturedDrawable == nil {
-        view.releaseDrawables()
-        guard let drawable = view.currentDrawable else {
-            try await Task.sleep(for: .milliseconds(10))
-            continue
-        }
-        let presented = PresentationFlag()
-        drawable.addPresentedHandler { _ in presented.markPresented() }
-        view.delegate = renderer
-        view.draw()
-        view.delegate = nil
-        let attemptDeadline = Date(timeIntervalSinceNow: 0.25)
-        while !presented.value, Date() < attemptDeadline {
-            try await Task.sleep(for: .milliseconds(2))
-        }
-        if presented.value {
-            capturedDrawable = drawable
-        } else {
+    while capturedDrawable == nil, Date() < drawableDeadline {
+        capturedDrawable = view.currentDrawable
+        if capturedDrawable == nil {
             try await Task.sleep(for: .milliseconds(10))
         }
     }
-    guard let drawable = capturedDrawable else {
-        throw FixtureError.render("renderer did not present a drawable")
+    guard let capturedDrawable else {
+        throw FixtureError.render("fixture view did not provide a drawable")
     }
 
-    let completionDeadline = Date(timeIntervalSinceNow: 2)
-    while MetalTerminalRenderer.framesPresented <= before,
+    let before = MetalTerminalRenderer.framesPresented
+    let presented = PresentationFlag()
+    capturedDrawable.addPresentedHandler { _ in presented.markPresented() }
+    view.delegate = renderer
+    view.draw()
+    view.delegate = nil
+
+    let completionDeadline = Date(timeIntervalSinceNow: 4)
+    while !presented.value,
+          MetalTerminalRenderer.framesPresented <= before,
           Date() < completionDeadline {
         try await Task.sleep(for: .milliseconds(2))
     }
-    guard MetalTerminalRenderer.framesPresented > before else {
-        throw FixtureError.render("renderer did not complete a frame")
+    guard presented.value || MetalTerminalRenderer.framesPresented > before else {
+        throw FixtureError.render("renderer did not complete the captured frame")
     }
 
-    let texture = drawable.texture
-    guard texture.pixelFormat == .bgra8Unorm || texture.pixelFormat == .bgra8Unorm_srgb else {
-        throw FixtureError.render("unexpected drawable pixel format \(texture.pixelFormat.rawValue)")
-    }
-    let rowBytes = texture.width * 4
-    let alignedRowBytes = aligned(rowBytes, to: 256)
-    let byteCount = alignedRowBytes * texture.height
-    guard let buffer = device.makeBuffer(length: byteCount, options: .storageModeShared),
-          let queue = device.makeCommandQueue(),
-          let commandBuffer = queue.makeCommandBuffer(),
-          let blit = commandBuffer.makeBlitCommandEncoder() else {
-        throw FixtureError.render("could not allocate drawable readback resources")
-    }
-    blit.copy(
-        from: texture,
-        sourceSlice: 0,
-        sourceLevel: 0,
-        sourceOrigin: MTLOrigin(x: 0, y: 0, z: 0),
-        sourceSize: MTLSize(width: texture.width, height: texture.height, depth: 1),
-        to: buffer,
-        destinationOffset: 0,
-        destinationBytesPerRow: alignedRowBytes,
-        destinationBytesPerImage: byteCount)
-    blit.endEncoding()
-    await withCheckedContinuation { continuation in
-        commandBuffer.addCompletedHandler { _ in continuation.resume() }
-        commandBuffer.commit()
-    }
-    guard commandBuffer.status == .completed else {
-        throw FixtureError.render(
-            "drawable readback failed: \(commandBuffer.error?.localizedDescription ?? "unknown Metal error")")
-    }
-
-    let source = buffer.contents().assumingMemoryBound(to: UInt8.self)
-    var rgba = [UInt8](repeating: 0, count: rowBytes * texture.height)
-    for y in 0..<texture.height {
-        let sourceRow = source.advanced(by: y * alignedRowBytes)
-        let destinationRow = y * rowBytes
-        for x in 0..<texture.width {
-            let sourceOffset = x * 4
-            let destinationOffset = destinationRow + sourceOffset
-            rgba[destinationOffset] = sourceRow[sourceOffset + 2]
-            rgba[destinationOffset + 1] = sourceRow[sourceOffset + 1]
-            rgba[destinationOffset + 2] = sourceRow[sourceOffset]
-            rgba[destinationOffset + 3] = sourceRow[sourceOffset + 3]
-        }
-    }
-    return rgba
+    return try readDrawablePixels(capturedDrawable, device: device)
 }
 
 private func caretColorScore(_ rgba: [UInt8]) -> Int {
@@ -1215,10 +1257,14 @@ private func captureBlinkOnFrame(view: MTKView,
     var selectedScore = -1
     var selectedDistance = Int.max
     for attempt in 0..<25 {
-        renderer.shaderMode = 0
-        renderer.noteActivity()
         let frame = try await captureFrame(view: view, renderer: renderer,
-                                           device: device)
+                                           device: device) {
+            // Reset the blink epoch after the old command buffers have been
+            // drained so the deterministic visible phase is not consumed by
+            // the fixture's synchronization delay.
+            renderer.shaderMode = 0
+            renderer.noteActivity()
+        }
         if let steadyTarget, steadyTarget.count == frame.count {
             let distance = zip(frame, steadyTarget).reduce(into: 0) {
                 $0 += abs(Int($1.0) - Int($1.1))
@@ -1305,7 +1351,7 @@ private func run(outputDirectory: URL) async throws {
     view.sampleCount = 1
     view.clearColor = MTLClearColorMake(0, 0, 0, 1)
 
-    let window = NSWindow(
+    let window = FixtureWindow(
         contentRect: view.frame,
         styleMask: [.titled],
         backing: .buffered,

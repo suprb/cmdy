@@ -1,8 +1,10 @@
 # CmdyGPU frozen public API manifest
 
-Status: implementation-free compatibility manifest
+Status: implementation-free cmdy 1.0 compatibility manifest
 
-Baseline module: `CmdyGPU` compiled before replacement at repository ref `584624985809f6000a82d3b3b97e43ef885af572`
+Baseline module: the pre-replacement `CmdyGPU` public surface at repository ref
+`584624985809f6000a82d3b3b97e43ef885af572`, plus the reviewed pre-1.0 API
+delta listed below.
 
 Machine-readable authorities: `docs/independence/baselines/CmdyGPU.symbols.json`
 and `docs/independence/baselines/CmdyGPU@Foundation.symbols.json`
@@ -144,6 +146,12 @@ public protocol MetalRenderSource: AnyObject {
     var activityTypingRate: Float { get }
 }
 
+@MainActor
+public protocol MetalSelectionRenderSource: AnyObject {
+    func selectionColumns(forRow row: Int) -> ClosedRange<Int>?
+    var selectionBackgroundColor: NSColor { get }
+}
+
 public enum TextRenderingMode: String, CaseIterable {
     case current
     case ySnap = "y-snap"
@@ -175,7 +183,14 @@ public final class MetalTerminalRenderer: NSObject, MTKViewDelegate {
     public static let userShaderPreamble: String
     public func noteScroll(pixels: CGFloat)
     public func setScrollHeld(_ pixels: CGFloat)
-    public func noteScrollActivity(pixels: CGFloat)
+    public func updateScrollHeld(_ pixels: CGFloat, activityPixels: CGFloat)
+    public func noteSelectionInteraction()
+    public static func interactiveContentTargetFPS(
+        isKeyWindow: Bool,
+        thermalState: ProcessInfo.ThermalState,
+        lowPowerMode: Bool,
+        maximumFramesPerSecond: Int
+    ) -> Double
     public func cancelScrollAnimation()
     public func noteActivity()
     public func invalidateRowCache()
@@ -340,6 +355,18 @@ public struct KittyPlacementSpec {
     )
 }
 ```
+
+## Reviewed cmdy 1.0 API delta
+
+Before the first public release, the app moved live selection composition out
+of immutable row textures and consolidated each precise-scroll sample into one
+display-aligned renderer update. That requires the optional
+`MetalSelectionRenderSource` seam, `noteSelectionInteraction()`,
+`updateScrollHeld(_:activityPixels:)`, and the testable
+`interactiveContentTargetFPS(...)` policy. The superseded
+`noteScrollActivity(pixels:)` entry was removed before 1.0; no published cmdy
+release exposed it. The machine-readable baseline freezes this reviewed 1.0
+surface and continues to compare it exactly.
 
 ## Compatibility-name policy
 

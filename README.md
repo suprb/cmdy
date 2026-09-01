@@ -421,8 +421,9 @@ preferences, Accessibility permissions, install receipts, and update identity.
 
 The public home, documentation, and Marketplace pages are a React/Vite project
 in `website/`. Durable static inputs live in `website/public/`; each production
-build replaces `site/` with a clean generated artifact. The three public routes
-remain `index.html`, `docs.html`, and `marketplace.html`.
+build replaces the ignored local `site/` directory with a clean generated
+artifact. GitHub Pages performs the same verified build during deployment. The
+three public routes remain `index.html`, `docs.html`, and `marketplace.html`.
 
 ```sh
 cd website
@@ -576,7 +577,7 @@ cmdy/
 ├─ Plugins/    CmdySDK + detox + bridge + swarm + sim (+ chromium/Browser,
 │              appdock parked) — external Extensions on the HTTP ABI
 ├─ website/    React/Vite source for the public home, docs, and Marketplace
-├─ site/       clean generated static website output
+├─ site/       ignored local static output; rebuilt by GitHub Pages
 └─ Tests/      parked differential oracle (Tests/ORACLE.md, DIVERGENCES.md) ·
                replay corpus · TUI-zoo driver · perf-gate.sh (frame budgets)
 ```

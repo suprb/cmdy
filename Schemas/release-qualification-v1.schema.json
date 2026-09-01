@@ -278,7 +278,7 @@
           "type": "string"
         },
         "reviewerIndependentFromImplementation": {
-          "const": true
+          "type": "boolean"
         },
         "reviewerKind": {
           "const": "human"

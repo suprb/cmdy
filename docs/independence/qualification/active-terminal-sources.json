@@ -190,8 +190,8 @@
     {
       "mode": "100644",
       "path": "App/AppDelegate.swift",
-      "sha256": "f2fc128b913ea511dd817f430c5c8fe8dfa376cfb8bda2b5284e15b2cbe3ed78",
-      "size": 273436
+      "sha256": "fd6189caf61041b2adaeb3087190cbb3e35a768e1f935f8a4fc45ce5f5dba380",
+      "size": 274174
     },
     {
       "mode": "100644",
@@ -424,8 +424,8 @@
     {
       "mode": "100644",
       "path": "App/WindowGridCoordinator.swift",
-      "sha256": "f93d25b7f46a85f912ac09ed6c495335d1aa25e52e896359af0fb5b1abb66c8f",
-      "size": 46162
+      "sha256": "c5ab33d97d7e73182f8331da4603721c389c1e521f0eb51b234dddb4d413fbac",
+      "size": 46112
     },
     {
       "mode": "100644",
@@ -916,8 +916,8 @@
     {
       "mode": "100644",
       "path": "Renderer/Sources/CmdyGPU/MetalTerminalRenderer.swift",
-      "sha256": "005acbcdc7f90eacbd4301824003dd4fcca1803a166f8335f2665223db9fd903",
-      "size": 86827
+      "sha256": "d862b9ca810cd80f72ceabb19d767f8f16134c38d9f51be614fd47059bf3e3f1",
+      "size": 89632
     },
     {
       "mode": "100644",
@@ -934,8 +934,8 @@
     {
       "mode": "100644",
       "path": "Renderer/Sources/CmdyGPU/RowRasterCache.swift",
-      "sha256": "17a18b7bf2e591e66bdb2fa046f53f21b33385b34c7985d53d80992b7bce4ff7",
-      "size": 39495
+      "sha256": "0fd070bd287684ada8b0c47f0b8800ccd52c4217a2f2443afe4025f031f3a114",
+      "size": 46112
     }
   ],
   "trustFileCount": 8,

@@ -139,6 +139,7 @@ public final class MetalTerminalRenderer: NSObject, MTKViewDelegate {
     private let dynamicBuffers: DynamicBufferRing
 
     private var rowCache: [Int: IndependentRowCacheEntry] = [:]
+    private var sharedTextRows: [IndependentSharedTextRowKey: Int] = [:]
     private var cacheUseClock: UInt64 = 0
     private let rowCacheBudget = 20 * 1_024 * 1_024
     private var frameInFlight = false
@@ -396,6 +397,7 @@ public final class MetalTerminalRenderer: NSObject, MTKViewDelegate {
 
     public func invalidateRowCache() {
         rowCache.removeAll(keepingCapacity: true)
+        sharedTextRows.removeAll(keepingCapacity: true)
         requestDraw()
     }
 
@@ -519,7 +521,33 @@ public final class MetalTerminalRenderer: NSObject, MTKViewDelegate {
             }
 
             let info = source.lineInfo(forRow: request.sourceRow)
+            let sharedTextKey = IndependentSharedTextRowKey(
+                info: info, rowKey: key)
+            var sharedEntry: IndependentRowCacheEntry?
+            if !explicitlyDirty, let sharedTextKey {
+                if let sharedRow = sharedTextRows[sharedTextKey],
+                   let cached = rowCache[sharedRow],
+                   cached.sharedTextKey == sharedTextKey {
+                    sharedEntry = cached
+                } else if let fallback = rowCache.first(where: {
+                    $0.value.sharedTextKey == sharedTextKey
+                }) {
+                    sharedTextRows[sharedTextKey] = fallback.key
+                    sharedEntry = fallback.value
+                }
+            }
+            if var shared = sharedEntry {
+                cacheUseClock &+= 1
+                shared.key = key
+                shared.lastUse = cacheUseClock
+                storeRowCacheEntry(shared, at: request.cacheRow)
+                visibleRows.append((request.displayIndex, request.sourceRow,
+                                    request.cacheRow, mode, shared))
+                Self.rowsReused += 1
+                continue
+            }
             if let entry = makeRowEntry(info: info, key: key,
+                                        sharedTextKey: sharedTextKey,
                                         scaledFont: scaledFont,
                                         foreground: foreground,
                                         underlinePosition: source.underlinePosition(),
@@ -527,7 +555,7 @@ public final class MetalTerminalRenderer: NSObject, MTKViewDelegate {
                                         cellWidth: cellWidthPx,
                                         cellHeight: cellHeightPx,
                                         scale: scale) {
-                rowCache[request.cacheRow] = entry
+                storeRowCacheEntry(entry, at: request.cacheRow)
                 visibleRows.append((request.displayIndex, request.sourceRow,
                                     request.cacheRow, mode, entry))
                 Self.rowsRebuilt += 1
@@ -632,6 +660,7 @@ public final class MetalTerminalRenderer: NSObject, MTKViewDelegate {
 
     private func makeRowEntry(info: ViewLineInfo,
                               key: IndependentRowKey,
+                              sharedTextKey: IndependentSharedTextRowKey?,
                               scaledFont: NSFont,
                               foreground: NSColor,
                               underlinePosition: CGFloat,
@@ -672,7 +701,8 @@ public final class MetalTerminalRenderer: NSObject, MTKViewDelegate {
         }
         cacheUseClock &+= 1
         return IndependentRowCacheEntry(
-            key: key, coverageTexture: coverage, colorLayers: colorLayers,
+            key: key, sharedTextKey: sharedTextKey,
+            coverageTexture: coverage, colorLayers: colorLayers,
             backgrounds: cpu.backgrounds, tintSpans: cpu.tintSpans,
             atlasGlyphs: atlasGlyphs,
             decorations: cpu.decorations, images: cpu.images,
@@ -763,12 +793,43 @@ public final class MetalTerminalRenderer: NSObject, MTKViewDelegate {
             guard let victim = candidates.min(by: { $0.value.lastUse < $1.value.lastUse }) else {
                 break
             }
-            rowCache.removeValue(forKey: victim.key)
+            removeRowCacheEntry(at: victim.key)
         }
     }
 
+    private func storeRowCacheEntry(_ entry: IndependentRowCacheEntry,
+                                    at cacheRow: Int) {
+        if let previousKey = rowCache[cacheRow]?.sharedTextKey,
+           sharedTextRows[previousKey] == cacheRow {
+            sharedTextRows.removeValue(forKey: previousKey)
+        }
+        rowCache[cacheRow] = entry
+        if let sharedTextKey = entry.sharedTextKey {
+            sharedTextRows[sharedTextKey] = cacheRow
+        }
+    }
+
+    private func removeRowCacheEntry(at cacheRow: Int) {
+        guard let removed = rowCache.removeValue(forKey: cacheRow),
+              let sharedTextKey = removed.sharedTextKey,
+              sharedTextRows[sharedTextKey] == cacheRow else { return }
+        sharedTextRows.removeValue(forKey: sharedTextKey)
+    }
+
     var rowCacheAllocatedBytes: Int {
-        rowCache.values.reduce(0) { $0 + $1.allocatedBytes }
+        var seen: Set<ObjectIdentifier> = []
+        var total = 0
+        for entry in rowCache.values {
+            if let texture = entry.coverageTexture,
+               seen.insert(ObjectIdentifier(texture as AnyObject)).inserted {
+                total += texture.allocatedSize
+            }
+            for layer in entry.colorLayers
+                where seen.insert(ObjectIdentifier(layer.texture as AnyObject)).inserted {
+                total += layer.texture.allocatedSize
+            }
+        }
+        return total
     }
 
     var rowCacheAllocatedBytesForTesting: Int { rowCacheAllocatedBytes }
@@ -779,6 +840,7 @@ public final class MetalTerminalRenderer: NSObject, MTKViewDelegate {
         visibleCount: Int
     ) {
         rowCache = entries
+        sharedTextRows.removeAll(keepingCapacity: true)
         trimRowCache(visibleRows: visibleRows, visibleCount: visibleCount)
     }
 
