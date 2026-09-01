@@ -155,10 +155,59 @@
   },
   "kind": "cmdy-release-qualification",
   "publication": {
-    "approval": null,
-    "evidence": null,
-    "source": null,
-    "state": "pending"
+    "approval": {
+      "approvalReference": "Project owner approval reconfirmed after reduced-motion Window Grid gate correction on 2026-09-01.",
+      "approvedPublicWording": "Behavioral parity and the documented engineering qualification passed for the exact cmdy 1.0 source and evidence set. Project-owner approval; this is not an independent authorship or legal clean-room review.",
+      "decision": "approved",
+      "engineeringDigestSha256": "78c9a34c2766d8c7b754a7733617c8e066ed88f64d8a8e5b4e8d69ca6c7738c4",
+      "evidenceDigestSha256": "e20b83b1a0d958d2815d6254a5fa2d4d2b2e3c11ee7d89e7aa10dd7ff09ce4c0",
+      "reviewedAtUTC": "2026-09-01T19:29:59Z",
+      "reviewerAffiliation": "cmdy project owner",
+      "reviewerIndependentFromImplementation": false,
+      "reviewerKind": "human",
+      "reviewerName": "Andreas Pihlström"
+    },
+    "evidence": {
+      "core": {
+        "record": {
+          "path": "docs/independence/qualification/core-17-seed.json",
+          "sha256": "6927b699748be783c9ad5c93dbd11055e65a798285edc289cf9024f33d34591a"
+        },
+        "sourceManifestSha256": "6b7a79fa65e1a9692a125a69bcd5b7ccd786279ddbe6626f7ccf737b700bce35"
+      },
+      "operational": {
+        "record": {
+          "path": "docs/independence/qualification/operational-review.json",
+          "sha256": "afb4bde6a17079346789ee822cc007b532bbc1644369cfeca0deaed5a44c69de"
+        },
+        "sourceManifestSha256": "6b7a79fa65e1a9692a125a69bcd5b7ccd786279ddbe6626f7ccf737b700bce35"
+      },
+      "renderer": {
+        "checkerSha256": "886a21d8601f7917bbab544ac285b5952d3f79a60203c56d25bb1632f7690ee7",
+        "comparison": {
+          "path": "docs/independence/qualification/renderer-comparison.json",
+          "sha256": "c6de090c7605fea74481beed8b68c4fdd9d27c736713798b5099f578c95ed239"
+        },
+        "environment": {
+          "path": "docs/independence/qualification/renderer-environment.json",
+          "sha256": "1b876db987a361a94bae04f22ade99731c92528fa1473bb49d0b25457e584bdc"
+        },
+        "sourceManifestSha256": "6b7a79fa65e1a9692a125a69bcd5b7ccd786279ddbe6626f7ccf737b700bce35"
+      }
+    },
+    "source": {
+      "activeSourceManifest": {
+        "path": "docs/independence/qualification/active-terminal-sources.json",
+        "sha256": "6b7a79fa65e1a9692a125a69bcd5b7ccd786279ddbe6626f7ccf737b700bce35"
+      },
+      "provenanceReport": {
+        "path": "docs/independence/qualification/working-tree-provenance.json",
+        "sha256": "042fe1e9d43f95150e0ed479296ae537f64e7db7af5d1c5a9c9d88dbac33de7b"
+      },
+      "sourceCommit": "44fbb87f9bc02425e87c503f952b2908f23b6325",
+      "sourceTree": "3f8b216da85067e908651f95b91de688de8e7cde"
+    },
+    "state": "approved"
   },
   "schemaVersion": 1
 }
