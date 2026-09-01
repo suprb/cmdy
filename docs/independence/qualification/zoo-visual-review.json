@@ -1,0 +1,9 @@
+{
+  "decision": "approved",
+  "kind": "cmdy-tui-zoo-visual-review",
+  "manifestSHA256": "63d2d4232c2522cdd2ce5d0c8ce5302da9dcaa7d36b047a1cf744d42fd6ee750",
+  "notes": "Approved after visual inspection of the exact 14-station contact sheet with SHA-256 7fd8a3252b69b7e2ebc1ec53f5509b0624cd49e5bfdf0810d87bc1dbcbe13d7d.",
+  "reviewedAt": "2026-08-31T19:12:41Z",
+  "reviewer": "Andreas Pihlström",
+  "schemaVersion": 1
+}

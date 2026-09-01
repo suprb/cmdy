@@ -1,8 +1,10 @@
 # Frozen public-API and historical ABI baselines
 
-These files were emitted from the compiled, pre-replacement `CmdyGPU` and
-`CmdyPTY` modules at repository ref
-`584624985809f6000a82d3b3b97e43ef885af572`.
+These files began with the compiled, pre-replacement `CmdyGPU` and `CmdyPTY`
+modules at repository ref
+`584624985809f6000a82d3b3b97e43ef885af572`. The CmdyGPU symbol baseline also
+contains the reviewed pre-1.0 selection-composition and interactive-scroll API
+delta documented in `../CMDYGPU_PUBLIC_API.md`.
 
 The canonical `*.symbols.json` files are normalized public symbol graphs. They
 contain declarations and relationships, but no source locations, comments,
@@ -12,7 +14,7 @@ provenance; private layout is not an equality target for a new implementation.
 
 | File | SHA-256 |
 | --- | --- |
-| `CmdyGPU.symbols.json` | `244545f6712daae2f3a283defe78bf02bc245c813dbe4606e640431c78a285b1` |
+| `CmdyGPU.symbols.json` | `febb9d6d5f2ec06d01237be8820f5910d6166624e56a21714d4238ef649533ae` |
 | `CmdyGPU@Foundation.symbols.json` | `2210be4ace00656a12d9f28bdf799c136fddd7ac45255422f3e8b594e6481b33` |
 | `CmdyPTY.symbols.json` | `7c2da13c9f26c5aa0e14a1564b4ad999109ea3fcd091c88b1962d7419fc9bc72` |
 | `CmdyGPU-api.json` | `6fd0c411622a24fed5eeda8c9816c824f81f148a05a42e939356f322618bb565` |

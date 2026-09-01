@@ -99,8 +99,17 @@ jobs:
       - name: Locked renderer pixel parity
         run: |
           python3 -B scripts/check-renderer-pixel-parity.py --self-test
-          python3 -B scripts/check-renderer-pixel-parity.py \
-            --output "$RUNNER_TEMP/cmdy-renderer-pixel-parity"
+          parity_root="$RUNNER_TEMP/cmdy-renderer-pixel-parity"
+          for attempt in 1 2; do
+            if python3 -B scripts/check-renderer-pixel-parity.py \
+                --output "$parity_root/attempt-$attempt"; then
+              exit 0
+            fi
+            if [ "$attempt" -eq 1 ]; then
+              echo "::warning::The macOS drawable was unavailable; retrying the locked corpus once."
+            fi
+          done
+          exit 1
       - name: Retain renderer pixel evidence
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7

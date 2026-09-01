@@ -122,11 +122,12 @@ One git repo, `cmdy-registry`:
 
 ## The web mirror
 
-`site/marketplace.html` renders a checked-in last-known registry snapshot
-immediately, then refreshes from the public registry in the background. Live
-data remains the source of truth; `site/marketplace-data.js` keeps discovery
-working when GitHub is blocked, the visitor is offline, or the static page is
-opened locally. Refresh that snapshot whenever the public registry changes.
+The generated `site/marketplace.html` renders the last-known registry snapshot
+from `website/public/marketplace-data.js` immediately, then refreshes from the
+public registry in the background. Live data remains the source of truth; the
+generated copy keeps discovery working when GitHub is blocked, the visitor is
+offline, or the static page is opened locally. Refresh the source snapshot
+whenever the public registry changes.
 Theme cards read their real palettes when available; rigs read their actual
 config; shader cards clearly defer the live effect to cmdy instead of
 pretending a static thumbnail is the shader. The site is discovery for people
