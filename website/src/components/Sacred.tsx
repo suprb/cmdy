@@ -8,6 +8,7 @@ import {
   useRef,
   useState
 } from "react";
+import { EditorialText } from "./EditorialCase";
 
 function classes(...values: Array<string | false | null | undefined>) {
   return values.filter(Boolean).join(" ");
@@ -25,7 +26,7 @@ export function SacredWindow({
   );
 }
 
-type CardProps = HTMLAttributes<HTMLElement> & {
+type CardProps = Omit<HTMLAttributes<HTMLElement>, "title"> & {
   title?: ReactNode;
   mode?: "default" | "left" | "right";
 };
@@ -134,7 +135,7 @@ export function SimpleTable({ data, align, label }: SimpleTableProps) {
           <tr>
             {header.map((cell, index) => (
               <th key={index} className={cellClass(cell, index)} scope="col">
-                {cell}
+                <EditorialText>{cell}</EditorialText>
               </th>
             ))}
           </tr>
@@ -144,7 +145,7 @@ export function SimpleTable({ data, align, label }: SimpleTableProps) {
             <tr key={rowIndex} tabIndex={0}>
               {row.map((cell, columnIndex) => (
                 <td key={columnIndex} className={cellClass(cell, columnIndex)}>
-                  {cell}
+                  <EditorialText>{cell}</EditorialText>
                 </td>
               ))}
             </tr>

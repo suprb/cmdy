@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { EditorialText } from "../components/EditorialCase";
 
 const REGISTRY_URL = "https://raw.githubusercontent.com/suprb/cmdy-registry/main/registry.json";
 const REGISTRY_REPO = "https://github.com/suprb/cmdy-registry";
@@ -71,10 +72,10 @@ function entryGuide(item: Record<string, unknown>, kind: Kind, description: stri
     return {
       whatItDoes: [description],
       safety: [
-        "Provider content enters cmdy as untrusted Work Items; it is never executed as a command.",
+        "Provider content enters cmdy as untrusted work items; it is never executed as a command.",
         twoWay
           ? "No reply is automatic. Only a reply you review and explicitly send can leave cmdy."
-          : "This Channel is read-only and cannot deliver replies.",
+          : "This channel is read-only and cannot deliver replies.",
         "The connector is native code running as your macOS user with only its declared cmdy capabilities."
       ],
       setup: [setup ? `Required: ${setup}.` : "Review its configuration before enabling it.",
@@ -85,16 +86,16 @@ function entryGuide(item: Record<string, unknown>, kind: Kind, description: stri
     return {
       whatItDoes: [description],
       safety: [
-        "This is native Extension code that runs as your macOS user.",
+        "This is native extension code that runs as your macOS user.",
         "cmdy grants only declared capabilities and checks them on every API route.",
-        "Stopping the Extension revokes its token and removes the UI and commands it owns."
+        "Stopping the extension revokes its token and removes the UI and commands it owns."
       ],
-      setup: ["Install it, review its capabilities and source, then enable it from Extensions."]
+      setup: ["Install it, review its capabilities and source, then enable it from extensions."]
     };
   }
   return {
     whatItDoes: [description],
-    safety: ["This is a data package; it does not run as a native Extension process."],
+    safety: ["This is a data package; it does not run as a native extension process."],
     setup: ["Install it with the visible command, then select it from cmdy."]
   };
 }
@@ -188,6 +189,7 @@ function MarketplaceRow({ entry, featured }: { entry: Entry; featured: boolean }
   const packageId = publicPackageId(entry.id);
   const command = `cmdy marketplace install ${packageId}`;
   const [copyState, setCopyState] = useState<"copy" | "copied" | "select">("copy");
+  const copyLabel = { copy: "Copy", copied: "Copied", select: "Select" }[copyState];
   const onCopy = async () => {
     try {
       await copyCommand(command);
@@ -201,16 +203,16 @@ function MarketplaceRow({ entry, featured }: { entry: Entry; featured: boolean }
     <tr>
       <td className="market-package">
         <span className="market-package-line">
-          <a href={entryLink(entry)} rel="noreferrer" target="_blank">{entry.name}</a>
+          <a className="case" href={entryLink(entry)} rel="noreferrer" target="_blank">{entry.name}</a>
           <small>v{entry.version}{featured ? " · featured" : ""}</small>
         </span>
       </td>
       <td className="market-type">{labels[entry.kind]}</td>
-      <td className="market-description">{entry.description}</td>
+      <td className="market-description"><EditorialText>{entry.description}</EditorialText></td>
       <td className="market-install">
         <span className="market-install-inner">
           <code title={command}>{packageId}</code>
-          <button aria-label={`Copy install command for ${entry.name}`} onClick={onCopy} type="button">{copyState}</button>
+          <button aria-label={`Copy install command for ${entry.name}`} onClick={onCopy} type="button">{copyLabel}</button>
         </span>
       </td>
     </tr>
@@ -309,7 +311,7 @@ export function MarketplacePage() {
             <button aria-pressed={filter === id} className={filter === id ? "selected" : ""} key={id} onClick={() => setFilter(id)} type="button">{label}</button>
           ))}
         </div>
-        <input aria-label="Search Marketplace" className="market-search" onChange={(event) => setQuery(event.currentTarget.value)} placeholder="Search packages" type="search" value={query} />
+        <input aria-label="Search marketplace" className="market-search" onChange={(event) => setQuery(event.currentTarget.value)} placeholder="Search packages" type="search" value={query} />
       </section>
 
       <section className="market-results page-shell">

@@ -156,12 +156,12 @@
   "kind": "cmdy-release-qualification",
   "publication": {
     "approval": {
-      "approvalReference": "Project owner approval reconfirmed after repeated-row fast-scroll optimization and exact final evidence refresh on 2026-09-01.",
+      "approvalReference": "Project owner approval reconfirmed after final website maker note, site-wide editorial casing, and rendered desktop/mobile review on 2026-09-01.",
       "approvedPublicWording": "Behavioral parity and the documented engineering qualification passed for the exact cmdy 1.0 source and evidence set. Project-owner approval; this is not an independent authorship or legal clean-room review.",
       "decision": "approved",
       "engineeringDigestSha256": "78c9a34c2766d8c7b754a7733617c8e066ed88f64d8a8e5b4e8d69ca6c7738c4",
-      "evidenceDigestSha256": "bd2eb29b8059aa8dad4038de9e6e2639f179ad4f348688d0d7a4a13082793e85",
-      "reviewedAtUTC": "2026-09-01T20:33:40Z",
+      "evidenceDigestSha256": "e475a3a107b3df6f229c4eb80e6162be7101bd693d1575ac4a8e150478af5479",
+      "reviewedAtUTC": "2026-09-01T21:15:57Z",
       "reviewerAffiliation": "cmdy project owner",
       "reviewerIndependentFromImplementation": false,
       "reviewerKind": "human",
@@ -204,8 +204,8 @@
         "path": "docs/independence/qualification/working-tree-provenance.json",
         "sha256": "272b0387b09fe4a462d4c70a8e9f74fd2d030e6d6582c1b38959503745428a04"
       },
-      "sourceCommit": "a8196ecd75e943e082c723b16ed144b8b8dc4d53",
-      "sourceTree": "7eb562b2fc4ab5ab8c77faf8a01561b1fe92c190"
+      "sourceCommit": "ac6080313ac4734757e479c57dc5b306302f78d4",
+      "sourceTree": "965968f73cdaefcc4fd314e52e4378306c8b4a42"
     },
     "state": "approved"
   },
