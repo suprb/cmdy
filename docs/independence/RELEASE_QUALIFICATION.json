@@ -160,7 +160,7 @@
       "approvedPublicWording": "Behavioral parity and the documented engineering qualification passed for the exact cmdy 1.0 source and evidence set. Project-owner approval; this is not an independent authorship or legal clean-room review.",
       "decision": "approved",
       "engineeringDigestSha256": "a3359adbde62188cae40b51dfce1ac95d0c289ac57b9aea9dc51bc7b38273503",
-      "evidenceDigestSha256": "eed097ac91078af37014c2560899e3e90d0214a551c8df386a7f7e5249063524",
+      "evidenceDigestSha256": "c6a35e6f58347e50b9cf27842fea659897e4584d656feb417b04b86d59b27f14",
       "reviewedAtUTC": "2026-09-01T14:56:50Z",
       "reviewerAffiliation": "cmdy project owner",
       "reviewerIndependentFromImplementation": false,
@@ -204,8 +204,8 @@
         "path": "docs/independence/qualification/working-tree-provenance.json",
         "sha256": "716e871463cbdc2297bf99813d24cfcc6da2e6322413ef5410de1db384487aba"
       },
-      "sourceCommit": "4c13a8aa45eef725be1673fbe322b7fc7acab226",
-      "sourceTree": "8d225729de6f6387cd26a4ebbe34e50fdac866a0"
+      "sourceCommit": "c5fac5f6d93f1eab86889e49c60a762e311dadb4",
+      "sourceTree": "bba57918c38e03d2d61ad137304210bea6292d9c"
     },
     "state": "approved"
   },
