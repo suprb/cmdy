@@ -9,6 +9,8 @@ import { createServer } from "vite";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const site = resolve(here, "..");
+const leanDownloadURL = "https://github.com/suprb/cmdy/releases/latest/download/cmdy-macOS-arm64.dmg";
+const browserDownloadURL = "https://github.com/suprb/cmdy/releases/latest/download/cmdy-browser-macOS-arm64.dmg";
 const snapshotSource = await readFile(resolve(site, "public/marketplace-data.js"), "utf8");
 const snapshotSandbox = { window: {} };
 vm.runInNewContext(snapshotSource, snapshotSandbox, { filename: "marketplace-data.js", timeout: 1000 });
@@ -31,7 +33,7 @@ try {
   const expectations = {
     home: ["A terminal turned platform.", "Metal terminal", "Automatic window grid", "Grid ↔ splits", "Command intelligence", "Extensions", "Browser", "Detox", "Actions", "Channels", "Slack", "GitHub Issues", "RSS and Atom Feed", "Apple Reminders", "Updates", "Open source", "Andreas Pihlström", "builder at Shopify"],
     docs: ["cmdy docs", "What cmdy is", "Choose one of three paths", "Extensions add capabilities", "Path", "Use it when", "macOS", "AI, optional", "option-as-meta", "cmdy action install-starters"],
-    marketplace: ["Marketplace", "Browser installs with the Browser edition", "Open Browser edition download", "Package", "Type", "Description", "Install", "Demo Inbox", "Slack", "iMessage", "Apple Reminders"]
+    marketplace: ["Marketplace", "Browser installs with the Browser edition", "Download Browser edition", "Package", "Type", "Description", "Install", "Demo Inbox", "Slack", "iMessage", "Apple Reminders"]
   };
 
   for (const [page, markers] of Object.entries(expectations)) {
@@ -50,6 +52,9 @@ try {
     }
     assert.ok(markup.includes('id="main-content"'), `${page}: missing main content landmark`);
     assert.ok(markup.includes('class="site-footer"'), `${page}: missing shared footer`);
+    const leanDownloadCount = markup.split(`href="${leanDownloadURL}"`).length - 1;
+    const browserDownloadCount = markup.split(`href="${browserDownloadURL}"`).length - 1;
+    assert.ok(leanDownloadCount >= 1, `${page}: shared Download must point directly to the lean DMG`);
     if (page === "home") {
       assert.ok(markup.includes('class="hero"'), "home: missing static editorial hero");
       assert.equal((markup.match(/class="hero-vid"/g) ?? []).length, 3, "home: expected one lead recording and two secondary recordings");
@@ -71,6 +76,8 @@ try {
       }
       assert.ok(!markup.includes('class="hacker-backdrop"'), "home: cinematic backdrop should be unmounted");
       assert.ok(!markup.includes('class="signal-video"'), "home: video shader should be unmounted");
+      assert.equal(leanDownloadCount, 2, "home: both Download buttons must point directly to the lean DMG");
+      assert.equal(browserDownloadCount, 0, "home: must not substitute the Browser edition for the lean download");
       assert.equal((markup.match(/class="feature-item"/g) ?? []).length, 26, "home: feature inventory must contain all 26 primary rows");
       assert.equal((markup.match(/class="feature-examples"/g) ?? []).length, 2, "home: Extensions and Channels must each list examples");
       assert.equal((markup.match(/class="feature-example"/g) ?? []).length, 10, "home: feature inventory must contain all 10 Extension and Channel examples");
@@ -94,6 +101,8 @@ try {
       assert.match(link[0], /\brel="[^"]*noreferrer[^"]*"/, `${page}: new-window link is missing noreferrer`);
     }
     if (page === "docs") {
+      assert.equal(leanDownloadCount, 2, "docs: shell and lean install actions must point directly to the lean DMG");
+      assert.equal(browserDownloadCount, 1, "docs: Browser install action must point directly to the Browser DMG");
       for (const id of ["platform", "actions", "extensions", "surfaces", "channels", "config", "proof"]) {
         assert.ok(ids.includes(id), `docs: missing ${id} section`);
       }
@@ -113,7 +122,8 @@ try {
       );
       assert.ok(markup.includes('class="market-table"'), "marketplace: missing the package table");
       assert.ok(markup.includes("Download ZIP"), "marketplace: Extension archives must be directly downloadable");
-      assert.ok(markup.includes("https://github.com/suprb/cmdy/releases/latest"), "marketplace: Browser edition release is missing");
+      assert.equal(leanDownloadCount, 1, "marketplace: shared Download must point directly to the lean DMG");
+      assert.equal(browserDownloadCount, 1, "marketplace: Browser edition must point directly to the Browser DMG");
       for (const removed of ["market-visual", "market-card", "market-grid", "registry-summary", "marketplace-hero", "market-trust", "What it actually does"]) {
         assert.ok(!markup.includes(removed), `marketplace: removed visual chrome returned: ${removed}`);
       }

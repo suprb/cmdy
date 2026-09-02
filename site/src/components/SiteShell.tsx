@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { leanDownloadURL } from "../downloads";
 
 interface SiteShellProps {
   children: ReactNode;
@@ -17,7 +18,7 @@ export function SiteShell({ children, page }: SiteShellProps) {
             </a>
             <span className="nav-links">
               <a className={page === "docs" ? "active" : ""} href="./docs.html" aria-current={page === "docs" ? "page" : undefined}>Docs</a>
-              <a className="btn solid" href="https://github.com/suprb/cmdy/releases/latest">Download</a>
+              <a className="btn solid" href={leanDownloadURL}>Download</a>
             </span>
           </div>
         </nav>
