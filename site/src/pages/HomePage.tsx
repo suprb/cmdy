@@ -1,6 +1,5 @@
 import { Case, EditorialText } from "../components/EditorialCase";
-
-const releaseURL = "https://github.com/suprb/cmdy/releases/latest";
+import { leanDownloadURL } from "../downloads";
 
 type FeatureExample = {
   description: string;
@@ -124,7 +123,7 @@ export function HomePage() {
         <div className="wrap">
           <h1>A terminal turned platform.</h1>
           <div className="ctas">
-            <a className="btn solid" href={releaseURL}>Download for{" "}<Case>macOS</Case></a>
+            <a className="btn solid" href={leanDownloadURL}>Download for{" "}<Case>macOS</Case></a>
             <a className="btn ghost" href="https://github.com/suprb/cmdy">View source</a>
           </div>
         </div>

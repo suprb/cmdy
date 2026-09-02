@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EditorialText } from "../components/EditorialCase";
+import { browserDownloadURL } from "../downloads";
 
 const REGISTRY_URL = "https://raw.githubusercontent.com/suprb/cmdy-registry/main/registry.json";
 const REGISTRY_REPO = "https://github.com/suprb/cmdy-registry";
 const REGISTRY_FILES = `${REGISTRY_REPO}/blob/main/`;
 const REGISTRY_RAW_FILES = "https://raw.githubusercontent.com/suprb/cmdy-registry/main/";
-const RELEASE_PAGE = "https://github.com/suprb/cmdy/releases/latest";
 const kinds = ["shader", "theme", "rig", "patch", "channel", "plugin"] as const;
 type Kind = typeof kinds[number];
 type Filter = "all" | "featured" | Kind;
@@ -346,7 +346,7 @@ export function MarketplacePage() {
           <h2 id="browser-edition-title">Browser installs with the Browser edition</h2>
           <p>Chromium must live inside the signed app bundle on macOS. This DMG replaces the lean app and keeps the same settings and extensions.</p>
         </div>
-        <a className="case" href={RELEASE_PAGE}>Open Browser edition download</a>
+        <a className="case" href={browserDownloadURL}>Download Browser edition</a>
       </section>
 
       <section className="market-toolbar page-shell" aria-label="Marketplace filters">

@@ -7,6 +7,7 @@ import {
   TerminalInput
 } from "../components/Sacred";
 import { Case, EditorialText, editorialCaseString } from "../components/EditorialCase";
+import { browserDownloadURL, leanDownloadURL } from "../downloads";
 
 const repo = "https://github.com/suprb/cmdy/blob/main";
 
@@ -56,8 +57,8 @@ open cmdy.app`}</Code>
       <p>On first launch, cmdy writes a commented template to <code>~/.config/cmdy/config</code>. Optional extensions can be installed later; none are required to use the terminal.</p>
       <p><b>Upgrading from 1.0.0:</b> download 1.0.1 or newer manually once. Version 1.0.0 embedded the wrong GitHub owner and cannot discover this update; automatic updates resume afterward.</p>
       <div className="doc-actions">
-        <ActionButton hotkey="↵" href="https://github.com/suprb/cmdy/releases/latest">Download cmdy</ActionButton>
-        <ActionButton hotkey="B" href="https://github.com/suprb/cmdy/releases/latest">Browser edition</ActionButton>
+        <ActionButton hotkey="↵" href={leanDownloadURL}>Download cmdy</ActionButton>
+        <ActionButton hotkey="B" href={browserDownloadURL}>Browser edition</ActionButton>
       </div>
     </>
   },
