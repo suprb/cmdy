@@ -122,8 +122,8 @@ One git repo, `cmdy-registry`:
 
 ## The web mirror
 
-The generated `site/marketplace.html` renders the last-known registry snapshot
-from `website/public/marketplace-data.js` immediately, then refreshes from the
+The generated `site/dist/marketplace.html` renders the last-known registry snapshot
+from `site/public/marketplace-data.js` immediately, then refreshes from the
 public registry in the background. Live data remains the source of truth; the
 generated copy keeps discovery working when GitHub is blocked, the visitor is
 offline, or the static page is opened locally. Refresh the source snapshot
@@ -189,7 +189,7 @@ Marketplace is announced or used for public installs.
   Settings or with `marketplace-update-checks = false`. Source-only installs do
   not trigger automatic registry access.
 
-The deployable web gallery is generated into `site/`; it will prefer the public
+The deployable web gallery is generated into `site/dist/`; it will prefer the public
 registry and falls back to its checked-in last-known snapshot for browsing.
 Do not publish its install controls before the canonical registry exists and
 every referenced hash resolves. Pending: the patches kind

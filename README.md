@@ -420,23 +420,23 @@ preferences, Accessibility permissions, install receipts, and update identity.
 ## Website
 
 The public home, documentation, and Marketplace pages are a React/Vite project
-in `website/`. Durable static inputs live in `website/public/`; each production
-build replaces the ignored local `site/` directory with a clean generated
+in `site/`. Durable static inputs live in `site/public/`; each production build
+replaces the ignored local `site/dist/` directory with a clean generated
 artifact. GitHub Pages performs the same verified build during deployment. The
 three public routes remain `index.html`, `docs.html`, and `marketplace.html`.
 
 ```sh
-cd website
+cd site
 npm ci
 npm run dev       # http://127.0.0.1:4173
-npm run build     # type-checks, then cleanly regenerates ../site
+npm run build     # type-checks, then cleanly regenerates ./dist
 ```
 
-Full-length recording masters stay local under the ignored `website/media/`
+Full-length recording masters stay local under the ignored `site/media/`
 directory; only optimized public clips are committed. Selected terminal UI
 patterns are adapted from
 [SRCL / Sacred Computer](https://github.com/internet-development/www-sacred)
-under MIT; see `website/THIRD_PARTY_NOTICES.md`.
+under MIT; see `site/THIRD_PARTY_NOTICES.md`.
 
 **Error explanations** always have a private built-in fallback. Command translation,
 Compose, and fix proposals prefer Apple Intelligence on-device, then use Anthropic
@@ -576,8 +576,8 @@ cmdy/
 ├─ App/        the shell: windows/tabs/splits, menus, panes, engine surfaces
 ├─ Plugins/    CmdySDK + detox + bridge + swarm + sim (+ chromium/Browser,
 │              appdock parked) — external Extensions on the HTTP ABI
-├─ website/    React/Vite source for the public home, docs, and Marketplace
-├─ site/       ignored local static output; rebuilt by GitHub Pages
+├─ site/       React/Vite source for the public home, docs, and Marketplace;
+│              generated Pages output lives in the ignored site/dist/
 └─ Tests/      parked differential oracle (Tests/ORACLE.md, DIVERGENCES.md) ·
                replay corpus · TUI-zoo driver · perf-gate.sh (frame budgets)
 ```

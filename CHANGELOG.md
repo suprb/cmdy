@@ -11,6 +11,15 @@ be called out here with a migration path before a versioned release.
 
 ## [Unreleased]
 
+### Changed
+
+- The public website now has one canonical project under `site/`; verified
+  production output is generated into ignored `site/dist/`, and CI, Pages,
+  Dependabot, documentation, and repository checks use the same layout.
+- Ordinary CI now accepts a pending post-release publication record while still
+  enforcing engineering bindings; human approval remains required by the
+  notarized release workflow.
+
 ## [1.0.0] - 2026-09-01
 
 ### Added

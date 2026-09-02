@@ -40,10 +40,32 @@ generated_captures="$(git ls-files 'Tests/zoo-results/*.png' 'Tests/zoo-results/
     fail "tracked zoo captures may expose machine-local state"
 }
 
-generated_site="$(git ls-files 'site' 'site/**')"
+legacy_site_tree="$(git ls-files 'website' 'website/**')"
+[ -z "$legacy_site_tree" ] || {
+    printf '%s\n' "$legacy_site_tree" >&2
+    fail "legacy website/ tree is tracked; editable website source belongs in site/"
+}
+
+legacy_site_docs="$(git grep -nE 'website/|cd[[:space:]]+website|[[:space:]]website[[:space:]]+\.github|:[[:space:]]*"?/?website"?[[:space:]]*$' -- '*.md' '*.yml' '*.yaml' '*.json' '*.toml' || true)"
+[ -z "$legacy_site_docs" ] || {
+    printf '%s\n' "$legacy_site_docs" >&2
+    fail "tracked documentation or configuration still references the legacy website/ source path"
+}
+
+ci_publication_gate="$(grep -n -E '(^|[[:space:]])publication([[:space:]]|$)' .github/workflows/ci.yml || true)"
+[ -z "$ci_publication_gate" ] || {
+    printf '%s\n' "$ci_publication_gate" >&2
+    fail "ordinary CI must not require human publication approval; keep that gate in the release workflow"
+}
+
+for site_source in site/package.json site/vite.config.ts site/src/main.tsx; do
+    [ -f "$site_source" ] || fail "missing editable website source $site_source"
+done
+
+generated_site="$(git ls-files 'site/dist' 'site/dist/**')"
 [ -z "$generated_site" ] || {
     printf '%s\n' "$generated_site" >&2
-    fail "tracked website build output; publish a fresh build from website/"
+    fail "tracked website build output; publish a fresh build from site/"
 }
 
 while read -r mode _ _ tracked_path; do

@@ -8,8 +8,8 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { createServer } from "vite";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const website = resolve(here, "..");
-const snapshotSource = await readFile(resolve(website, "public/marketplace-data.js"), "utf8");
+const site = resolve(here, "..");
+const snapshotSource = await readFile(resolve(site, "public/marketplace-data.js"), "utf8");
 const snapshotSandbox = { window: {} };
 vm.runInNewContext(snapshotSource, snapshotSandbox, { filename: "marketplace-data.js", timeout: 1000 });
 
@@ -18,7 +18,7 @@ globalThis.document = { body: { dataset: {} }, documentElement: { style: {} } };
 globalThis.localStorage = { getItem: () => null, setItem: () => undefined };
 
 const vite = await createServer({
-  root: website,
+  root: site,
   appType: "custom",
   logLevel: "error",
   server: { middlewareMode: true }

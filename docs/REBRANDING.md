@@ -29,7 +29,7 @@ git switch -c rebrand/new-name
 ./scripts/check-product-identity.sh
 swift test --package-path Identity
 ./test.sh
-(cd website && npm test)
+(cd site && npm test)
 ./package.sh
 ```
 
@@ -227,8 +227,8 @@ Open the master and inspect it visually at both full size and thumbnail size.
 
 `App/IconGenerator.swift` reads this master and generates every required icon
 size. `package.sh` then creates the slug-named ICNS and places it in the app.
-The website build copies the same master to `site/app-icon.png` through
-`website/scripts/sync-brand.mjs`; do not edit the generated `site/app-icon.png`
+The website build copies the same master to `site/dist/app-icon.png` through
+`site/scripts/sync-brand.mjs`; do not edit the generated `site/dist/app-icon.png`
 by hand.
 
 After changing the artwork, update `Brand/README.md` so it names the archived
@@ -281,7 +281,7 @@ rg -n 'OLD DISPLAY NAME|old-slug' \
   README.md RELEASING.md Brand \
   ACTIONS.md CHANNELS.md EXTENSIONS.md EXTENSION_PROTOCOL.md \
   MARKETPLACE.md PLATFORM.md PLUGINS.md SHADERS.md SURFACE_PROTOCOL.md \
-  website .github
+  site .github
 ```
 
 Review every match; do not bulk-replace it. Typical manual updates include:
@@ -291,7 +291,7 @@ Review every match; do not bulk-replace it. Typical manual updates include:
 - Extension/Action/Channel/Marketplace author documentation.
 - Website headings, alt text, install commands, repository/registry URLs,
   local-storage keys, and test expectations.
-- `website/package.json` package name if the site package should follow the new
+- `site/package.json` package name if the site package should follow the new
   brand.
 - GitHub workflow display labels and release prose. Secret keys may stay
   stable as noted above.
@@ -299,9 +299,9 @@ Review every match; do not bulk-replace it. Typical manual updates include:
   assets in which the old name or icon is visible.
 - Any stale logo file still referenced by HTML, CSS, Swift, or scripts.
 
-The Vite build writes generated public files into `site/`. Edit the sources in
-`website/`, then rebuild; do not hand-maintain hashed files under
-`site/assets/`.
+The Vite build writes generated public files into `site/dist/`. Edit the sources
+in `site/`, then rebuild; do not hand-maintain hashed files under
+`site/dist/assets/`.
 
 After the edits, run a wider audit:
 
@@ -438,8 +438,8 @@ Each `serverInfo.name` should begin with the new slug.
 Finally rebuild and verify the website, including the synchronized icon:
 
 ```sh
-(cd website && npm test)
-cmp Brand/Assets/app-icon.png site/app-icon.png
+(cd site && npm test)
+cmp Brand/Assets/app-icon.png site/dist/app-icon.png
 ```
 
 ## 9. Build and inspect the real app bundle
@@ -598,7 +598,7 @@ Before committing or tagging, confirm every item:
 - [ ] Fresh-user behavior and old-config migration were tested separately.
 - [ ] The release ZIP and DMG are notarized, stapled, Gatekeeper-approved, and
       checksummed.
-- [ ] Generated files in `site/` reflect the website sources and canonical icon.
+- [ ] Generated files in `site/dist/` reflect the website sources and canonical icon.
 - [ ] The final diff contains no accidental global rename of internal APIs or
       compatibility identifiers.
 
@@ -609,11 +609,12 @@ Useful final checks:
 git diff --check
 git status --short
 git diff -- Identity Brand App/SystemInfo.swift README.md RELEASING.md \
-  website .github
+  site .github
 ```
 
-Commit the manifest, artwork, boot badge, public copy, generated website output,
-and tests together so no intermediate commit advertises a mixed identity.
+Commit the manifest, artwork, boot badge, public copy, editable website source,
+and tests together so no intermediate commit advertises a mixed identity. Rebuild
+the ignored `site/dist/` output from that committed source instead of committing it.
 
 ## Rollback
 
@@ -649,8 +650,8 @@ and environment variables are real compatibility inputs.
 | `package.sh` | App bundle, Info.plist, helpers, icon, and signing |
 | `release.sh` | ZIP/DMG, notarization, stapling, Gatekeeper, checksums |
 | `.github/workflows/release.yml` | CI signing and GitHub Release publication |
-| `website/` | Editable website source and editorial branding |
-| `site/` | Generated static deployment output |
+| `site/` | Editable website source and editorial branding |
+| `site/dist/` | Generated static deployment output |
 | GitHub repository/registry | External names and updater destinations |
 
 If a future rename seems to require editing dozens of functional Swift or

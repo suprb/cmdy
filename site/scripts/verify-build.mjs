@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import vm from "node:vm";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const site = resolve(here, "../../site");
+const site = resolve(here, "../dist");
 const pages = [
   ["index.html", "home"],
   ["docs.html", "docs"],

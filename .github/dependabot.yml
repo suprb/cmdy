@@ -10,11 +10,11 @@ updates:
           - "*"
 
   - package-ecosystem: npm
-    directory: "/website"
+    directory: "/site"
     schedule:
       interval: monthly
     groups:
-      website:
+      site:
         patterns:
           - "*"
 
