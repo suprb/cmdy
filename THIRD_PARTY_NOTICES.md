@@ -43,7 +43,7 @@ Upstream: [migueldeicaza/SwiftTerm](https://github.com/migueldeicaza/SwiftTerm)
 
 ## Website source and dependencies
 
-Versions below are pinned by `website/package-lock.json`.
+Versions below are pinned by `site/package-lock.json`.
 
 | Component | Use | License | Upstream license |
 | --- | --- | --- | --- |
@@ -56,7 +56,7 @@ Versions below are pinned by `website/package-lock.json`.
 
 The homepage ASCII shader adapts the glyph-bitmask technique from
 [andrico1234/codrops-ascii-ogl](https://github.com/andrico1234/codrops-ascii-ogl).
-The same notice is retained in `website/THIRD_PARTY_NOTICES.md`:
+The same notice is retained in `site/THIRD_PARTY_NOTICES.md`:
 
 > MIT License
 >
@@ -87,7 +87,7 @@ The implementation also uses OGL under the separate OGL license listed above.
 Small website interface primitives are adapted from
 [SRCL / Sacred Computer](https://github.com/internet-development/www-sacred).
 Its exact MIT notice, including the copyright for INTERNET DEVELOPMENT STUDIO
-COMPANY, is preserved in `website/THIRD_PARTY_NOTICES.md` and published with
+COMPANY, is preserved in `site/THIRD_PARTY_NOTICES.md` and published with
 the generated static site.
 
 ## Swift package dependencies
@@ -160,9 +160,9 @@ notices are stored locally as follows:
 | Nine Web437 faces | `Kit/Sources/CmdyKit/Fonts/Web437-NOTICE.md`; `Kit/Sources/CmdyKit/Fonts/CC-BY-SA-4.0.txt` | Creative Commons Attribution-ShareAlike 4.0 International |
 | iA Writer Duo, Mono, and Quattro | `Kit/Sources/CmdyKit/Fonts/iAWriter-LICENSE.md` | SIL Open Font License 1.1 with Reserved Font Names |
 
-`website/scripts/sync-brand.mjs` copies the Alpha Lyrae notices and Geist Mono
-license into `website/public/fonts/`; Vite then copies them into `site/fonts/`.
-`website/scripts/verify-build.mjs` requires the generated release files.
+`site/scripts/sync-brand.mjs` copies the Alpha Lyrae notices and Geist Mono
+license into `site/public/fonts/`; Vite then copies them into `site/dist/fonts/`.
+`site/scripts/verify-build.mjs` requires the generated release files.
 `SacredPack-LICENSES.txt` is a provenance index for the fonts originally
 discovered through the SACRED design system.
 

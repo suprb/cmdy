@@ -43,8 +43,8 @@ done
 # Public website links must follow the canonical repository. Legacy registry
 # URLs remain valid only in compatibility snapshots and runtime fallbacks.
 for source in \
-    website/src/components/SiteShell.tsx \
-    website/src/pages/HomePage.tsx; do
+    site/src/components/SiteShell.tsx \
+    site/src/pages/HomePage.tsx; do
     grep -Fq "https://github.com/$PRODUCT_GITHUB_REPOSITORY" "$source"
     if grep -Eq 'github\.com/[^/]+/(termite|term64)(/|"|$)' "$source"; then
         echo "Legacy public repository URL found in $source" >&2

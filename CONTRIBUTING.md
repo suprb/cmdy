@@ -34,7 +34,7 @@ swift test --package-path Plugins/CmdySDK -c release
 Build the app bundle with `./package.sh`. First-party extensions are built and
 installed for local testing with `./plugins.sh`; that command intentionally
 changes `~/.config/cmdy/extensions/`. Website changes use
-`cd website && npm ci && npm test`.
+`cd site && npm ci && npm test`.
 
 ## Boundaries
 

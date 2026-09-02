@@ -16,8 +16,8 @@ node_modules/
 .vite/
 *.tsbuildinfo
 
-# Generated website deployment output; CI rebuilds it from website/.
-/site/
+# Generated website deployment output; CI rebuilds it from site/.
+/site/dist/
 
 # app packaging artifacts
 /*.app/
@@ -41,4 +41,4 @@ Plugins/*/.build/
 /Tests/zoo-results/*.png
 
 # Local full-length demo masters; optimized public clips stay tracked.
-/website/media/*.mp4
+/site/media/*.mp4

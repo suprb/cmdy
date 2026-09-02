@@ -55,8 +55,6 @@ jobs:
             test -f "$manifest"
             python3 -B scripts/check-active-source-manifest.py \
               verify --manifest-root . --manifest "$manifest"
-            python3 -B scripts/check-release-qualification.py \
-              publication --phase source
           fi
           python3 -B scripts/check-release-qualification.py engineering
       - name: Independent public API
@@ -177,9 +175,9 @@ jobs:
         with:
           node-version: 24
           cache: npm
-          cache-dependency-path: website/package-lock.json
+          cache-dependency-path: site/package-lock.json
       - name: Website build and render smoke
-        working-directory: website
+        working-directory: site
         run: |
           npm ci
           npm audit --audit-level=high

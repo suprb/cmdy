@@ -22,8 +22,7 @@ The governing rule is:
 | `Plugins/` | First-party reference Extensions: Browser/Chromium, Sim, Swarm, Bridge, and Detox, plus the parked AppDock experiment. | Separate executables using the same public API available to third parties. Optional host components are explicit exceptions and must remain narrowly reviewed. |
 | `Schemas/` | Machine-readable v1 manifests and Surface documents. | Public contracts; schemas and typed models change together. |
 | `Vendor/` | Source retained from separately bounded upstream components, including the Bridge engine. | Keep upstream attribution and avoid leaking vendor internals into public protocols. |
-| `website/` | React/Vite source, build verification, and render smoke tests for the public website. | Produces `site/`. |
-| `site/` | Ignored local static website output and the transient GitHub Pages artifact. | Generated distributable; CI regenerates it from `website/` and never treats generated HTML or JavaScript as source. |
+| `site/` | React/Vite source, durable public assets, build verification, and render smoke tests for the public website. | Produces the ignored `site/dist/` Pages artifact. |
 | `Tests/` | Replay corpora, TUI zoo, oracle notes, performance gates, and UI-driving scripts. | Exercises public seams and application behavior. Package-local unit tests live beside their packages. |
 
 The package names retain some internal `Cmdy*` identifiers for source and
@@ -173,7 +172,7 @@ swift test --package-path Plugins/sim -c release
 swift test --package-path Vendor/BraincellBridge -c release
 
 # Static website
-cd website
+cd site
 npm ci
 npm test
 ```
