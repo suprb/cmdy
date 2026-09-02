@@ -482,6 +482,37 @@
   font-size: 13px;
 }
 
+.browser-edition {
+  display: flex;
+  padding-top: 18px !important;
+  padding-bottom: 18px !important;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+}
+
+.browser-edition h2 {
+  font: 600 13px/1.35 var(--sans);
+}
+
+.browser-edition p {
+  max-width: 760px;
+  margin-top: 4px;
+  color: var(--ink-3);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.browser-edition > a {
+  flex: none;
+  border-bottom: 1px solid currentColor;
+  color: var(--ink);
+  font: 500 11px/1.4 var(--mono);
+  text-decoration: none;
+}
+
 .market-toolbar {
   position: sticky;
   z-index: 10;
@@ -632,6 +663,14 @@
   gap: 8px;
 }
 
+.market-install-actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 9px;
+  white-space: nowrap;
+}
+
 .market-install code {
   min-width: 0;
   overflow: hidden;
@@ -642,6 +681,7 @@
 }
 
 .market-install button,
+.market-install a,
 .market-empty button,
 .registry-error button {
   padding: 0;
@@ -651,6 +691,7 @@
   background: transparent;
   font: 10.5px/1.35 var(--mono);
   cursor: pointer;
+  text-decoration: none;
 }
 
 .market-empty,
@@ -754,6 +795,12 @@ html.dark .code-block {
     align-items: stretch;
     flex-direction: column;
     gap: 10px;
+  }
+
+  .browser-edition {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
   }
 
   .market-search {

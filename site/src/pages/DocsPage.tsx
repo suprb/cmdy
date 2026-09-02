@@ -49,13 +49,15 @@ const sections: DocSection[] = [
     title: "Install",
     keywords: "build package macos apple silicon setup requirements doctor mcp",
     content: <>
-      <p>Requirements: macOS 26+ on Apple silicon. The terminal itself needs no account and no configuration.</p>
-      <Code>{`./package.sh
-# builds a signed cmdy.app; move it to /Applications`}</Code>
+      <p>Requirements: macOS 26+ on Apple silicon. Download the notarized lean DMG, open it, and drag <code>cmdy.app</code> to Applications. Choose the Browser edition when you want sandboxed Chromium; it replaces the lean app and keeps the same settings and sessions.</p>
+      <Code>{`# source build instead
+./package.sh
+open cmdy.app`}</Code>
       <p>On first launch, cmdy writes a commented template to <code>~/.config/cmdy/config</code>. Optional extensions can be installed later; none are required to use the terminal.</p>
+      <p><b>Upgrading from 1.0.0:</b> download 1.0.1 or newer manually once. Version 1.0.0 embedded the wrong GitHub owner and cannot discover this update; automatic updates resume afterward.</p>
       <div className="doc-actions">
-        <ActionButton hotkey="↵" href="https://github.com/suprb/cmdy#quick-start">Build instructions</ActionButton>
-        <ActionButton hotkey="G" href="https://github.com/suprb/cmdy">View source</ActionButton>
+        <ActionButton hotkey="↵" href="https://github.com/suprb/cmdy/releases/latest">Download cmdy</ActionButton>
+        <ActionButton hotkey="B" href="https://github.com/suprb/cmdy/releases/latest">Browser edition</ActionButton>
       </div>
     </>
   },
@@ -183,15 +185,15 @@ cmdy channel doctor [channel-id]`}</Code>
   {
     group: "Reference",
     id: "first-party",
-    title: "Extension examples",
+    title: "First-party packages",
     keywords: "detox swarm browser sim bridge demo inbox reference extensions panes agents chromium simulator mcp",
     content: <>
-      <p>These optional packages show how far an extension can go. They use the same public protocol available to everyone and are not required parts of the terminal.</p>
-      <SimpleTable label="First-party extensions" data={[
+      <p>These optional packages show the public extension protocol and the separate Browser app-edition boundary. None is required to use the terminal.</p>
+      <SimpleTable label="First-party packages" data={[
         ["Package", "What it proves", "State"],
         [<Case>Detox</Case>, "commands + native editor driving WebAudio", "Live"],
         [<Case>Swarm</Case>, "agent sessions + selected/all live-pane composition", "Live"],
-        [<Case>Browser</Case>, "sandboxed Chromium + local automation", "Source / ad hoc"],
+        [<Case>Browser</Case>, "sandboxed Chromium + local automation", "Downloadable edition"],
         [<Case>Sim</Case>, "Simulator build, run, input, logs, capture, reload", "Live"],
         [<Case>Bridge</Case>, "product-scale MCP runtime across several targets", "Live"],
         ["Channel catalog", "19 installable provider, feed, and local-workflow connectors", "Live"]

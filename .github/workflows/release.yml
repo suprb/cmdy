@@ -57,6 +57,7 @@ jobs:
       - name: Load product identity
         run: |
           source scripts/product-identity.sh
+          product_assert_release_repository "$GITHUB_REPOSITORY"
           echo "PRODUCT_SLUG=$PRODUCT_SLUG" >> "$GITHUB_ENV"
           echo "PRODUCT_TITLE_NAME=$PRODUCT_TITLE_NAME" >> "$GITHUB_ENV"
 

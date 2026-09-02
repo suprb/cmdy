@@ -239,6 +239,8 @@ fi
 # Scan only after both the lean resources and optional Browser payload are in
 # place. A stale build artifact or future copy step must never put a retired
 # SwiftTerm/Termite-named path into a distributable app.
+cmdy_assert_packaged_product_identity \
+    "$PRODUCT_IDENTITY_FILE" "$APP/Contents/Resources"
 cmdy_assert_no_retired_packaged_paths "$APP"
 
 # Release binaries must not disclose the build user's home directory or a

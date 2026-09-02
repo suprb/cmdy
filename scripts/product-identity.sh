@@ -72,6 +72,64 @@ product_env_value() {
     printf '%s' "$fallback"
 }
 
+product_github_repository_from_remote_url() {
+    if [ "$#" -ne 1 ]; then
+        echo "usage: product_github_repository_from_remote_url REMOTE_URL" >&2
+        return 2
+    fi
+
+    local remote_url="$1"
+    local repository=""
+    case "$remote_url" in
+        git@github.com:*) repository="${remote_url#git@github.com:}" ;;
+        ssh://git@github.com/*) repository="${remote_url#ssh://git@github.com/}" ;;
+        https://github.com/*) repository="${remote_url#https://github.com/}" ;;
+        *)
+            echo "Unsupported canonical GitHub remote: $remote_url" >&2
+            return 2
+            ;;
+    esac
+    repository="${repository%.git}"
+    case "$repository" in
+        */*) ;;
+        *)
+            echo "Invalid canonical GitHub repository in remote: $remote_url" >&2
+            return 2
+            ;;
+    esac
+    if [ "${repository#*/}" = "$repository" ] \
+       || [[ "${repository#*/}" == */* ]] \
+       || [[ "$repository" == *[?#]* ]]; then
+        echo "Invalid canonical GitHub repository in remote: $remote_url" >&2
+        return 2
+    fi
+    printf '%s' "$repository"
+}
+
+product_assert_release_repository() {
+    if [ "$#" -ne 1 ]; then
+        echo "usage: product_assert_release_repository OWNER/REPOSITORY" >&2
+        return 2
+    fi
+    if [ "$1" != "$PRODUCT_GITHUB_REPOSITORY" ]; then
+        echo "Release repository '$1' does not match packaged product identity '$PRODUCT_GITHUB_REPOSITORY'." >&2
+        return 3
+    fi
+}
+
+product_assert_canonical_checkout() {
+    local origin_url
+    local origin_repository
+    origin_url="$(git remote get-url origin 2>/dev/null || true)"
+    if [ -z "$origin_url" ]; then
+        echo "A canonical origin remote is required for a public release." >&2
+        return 3
+    fi
+    origin_repository="$(product_github_repository_from_remote_url "$origin_url")" \
+        || return $?
+    product_assert_release_repository "$origin_repository"
+}
+
 if [ -z "$PRODUCT_SLUG" ] || [ -z "$PRODUCT_ENV_PREFIX" ]; then
     echo "Invalid product identity in $PRODUCT_IDENTITY_FILE" >&2
     return 2 2>/dev/null || exit 2

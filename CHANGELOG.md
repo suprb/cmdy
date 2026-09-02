@@ -11,6 +11,27 @@ be called out here with a migration path before a versioned release.
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-09-02
+
+### Fixed
+
+- Release packaging now fails closed unless the canonical source checkout,
+  GitHub release repository, checked-in product identity, and identity embedded
+  in the finished app all agree on `suprb/cmdy`.
+- Marketplace Extension and Channel rows now provide direct reviewed ZIP
+  downloads, while Browser has a direct signed Browser-edition DMG instead of
+  the incompatible retired standalone Chromium package.
+- Stable latest-release DMG aliases provide version-independent direct download
+  URLs for both lean and Browser installers.
+- The legacy Marketplace endpoint now routes cmdy 1.0.0 installations to the
+  current public Extension and Channel archives.
+
+### Upgrade note
+
+- cmdy 1.0.0 embedded the wrong GitHub owner, so its app updater cannot discover
+  this repair. Install the 1.0.1 DMG once manually; automatic updates use the
+  canonical public repository after that.
+
 ### Changed
 
 - The public website now has one canonical project under `site/`; verified

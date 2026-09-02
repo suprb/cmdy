@@ -4,6 +4,8 @@ import { EditorialText } from "../components/EditorialCase";
 const REGISTRY_URL = "https://raw.githubusercontent.com/suprb/cmdy-registry/main/registry.json";
 const REGISTRY_REPO = "https://github.com/suprb/cmdy-registry";
 const REGISTRY_FILES = `${REGISTRY_REPO}/blob/main/`;
+const REGISTRY_RAW_FILES = "https://raw.githubusercontent.com/suprb/cmdy-registry/main/";
+const RELEASE_PAGE = "https://github.com/suprb/cmdy/releases/latest";
 const kinds = ["shader", "theme", "rig", "patch", "channel", "plugin"] as const;
 type Kind = typeof kinds[number];
 type Filter = "all" | "featured" | Kind;
@@ -32,6 +34,7 @@ type Entry = {
   license: string;
   name: string;
   setup: string;
+  sha256: string;
   url: string;
   version: string;
 };
@@ -41,6 +44,12 @@ type LoadState = "checking" | "live" | "snapshot" | "error";
 
 function value(raw: unknown, fallback: string, maximum = 500): string {
   return typeof raw === "string" && raw.trim() ? raw.trim().slice(0, maximum) : fallback;
+}
+
+function pinnedSHA256(raw: unknown): string {
+  if (typeof raw !== "string") return "";
+  const digest = raw.trim();
+  return /^[0-9a-f]{64}$/i.test(digest) ? digest : "";
 }
 
 function publicBrandText(text: string): string {
@@ -137,6 +146,7 @@ export function normalizeRegistry(raw: unknown): Registry {
       license: value(item.license, "unlisted", 120),
       name: publicBrandText(name),
       setup,
+      sha256: pinnedSHA256(item.sha256),
       url: publicBrandText(value(item.url, "", 1000)),
       version: value(item.version, "0", 120)
     });
@@ -157,6 +167,28 @@ export function safeURL(candidate: string): string {
   } catch {
     return "";
   }
+}
+
+function registryFileURL(file: string): string {
+  // Keep the public download surface as strict as the canonical registry
+  // schema. Native archives are published only as flat dist/*.zip files.
+  if (!/^dist\/[a-z0-9][a-z0-9.-]*\.zip$/.test(file)) return "";
+  const segments = file.split("/");
+  return `${REGISTRY_RAW_FILES}${segments.map(encodeURIComponent).join("/")}`;
+}
+
+export function entryDownloadURL(entry: Pick<Entry, "file" | "kind" | "sha256" | "url">): string {
+  if (entry.kind !== "plugin" && entry.kind !== "channel") return "";
+  if (!/^[0-9a-f]{64}$/i.test(entry.sha256)) return "";
+  const packaged = registryFileURL(entry.file);
+  if (packaged.toLowerCase().endsWith(".zip")) return packaged;
+  if (entry.file) return "";
+  const external = safeURL(entry.url);
+  if (external) {
+    const parsed = new URL(external);
+    if (parsed.protocol === "https:" && parsed.pathname.toLowerCase().endsWith(".zip")) return external;
+  }
+  return "";
 }
 
 function entryLink(entry: Entry): string {
@@ -190,6 +222,7 @@ function MarketplaceRow({ entry, featured }: { entry: Entry; featured: boolean }
   const command = `cmdy marketplace install ${packageId}`;
   const [copyState, setCopyState] = useState<"copy" | "copied" | "select">("copy");
   const copyLabel = { copy: "Copy", copied: "Copied", select: "Select" }[copyState];
+  const downloadURL = entryDownloadURL(entry);
   const onCopy = async () => {
     try {
       await copyCommand(command);
@@ -212,7 +245,10 @@ function MarketplaceRow({ entry, featured }: { entry: Entry; featured: boolean }
       <td className="market-install">
         <span className="market-install-inner">
           <code title={command}>{packageId}</code>
-          <button aria-label={`Copy install command for ${entry.name}`} onClick={onCopy} type="button">{copyLabel}</button>
+          <span className="market-install-actions">
+            <button aria-label={`Copy install command for ${entry.name}`} onClick={onCopy} type="button">{copyLabel}</button>
+            {downloadURL ? <a aria-label={`Download ${entry.name} ZIP`} href={downloadURL} rel="noreferrer" title={`SHA-256: ${entry.sha256}`}>Download ZIP</a> : null}
+          </span>
         </span>
       </td>
     </tr>
@@ -304,6 +340,14 @@ export function MarketplacePage() {
         </div>
         {error && loadState === "snapshot" ? <p className="market-status" title={error}>Live refresh unavailable</p> : null}
       </header>
+
+      <section className="browser-edition page-shell" aria-labelledby="browser-edition-title">
+        <div>
+          <h2 id="browser-edition-title">Browser installs with the Browser edition</h2>
+          <p>Chromium must live inside the signed app bundle on macOS. This DMG replaces the lean app and keeps the same settings and extensions.</p>
+        </div>
+        <a className="case" href={RELEASE_PAGE}>Open Browser edition download</a>
+      </section>
 
       <section className="market-toolbar page-shell" aria-label="Marketplace filters">
         <div className="filter-buttons">

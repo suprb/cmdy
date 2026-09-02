@@ -8,7 +8,8 @@ Once the release commit is pushed, run:
 ./publish-release.sh 1.2.0
 ```
 
-The command refuses dirty or unpushed source and refuses a private repository,
+The command refuses dirty or unpushed source, a private repository, or any
+release target that differs from the repository embedded in product identity,
 then dispatches `.github/workflows/release.yml`, watches the notarized build,
 and prints the published GitHub Release URL. Use `--no-watch` to dispatch and
 return immediately, or `--dry-run` to inspect the resolved version, repository,
@@ -51,12 +52,16 @@ PRODUCT_NOTARY_PROFILE=cmdy-notary \
 ./release.sh
 ```
 
-`release.sh` requires a `Developer ID Application` certificate. It creates a
+`release.sh` requires a canonical `suprb/cmdy` checkout and a
+`Developer ID Application` certificate. It creates a
 ZIP, submits it to Apple, requires an `Accepted` result, staples the ticket to
 the app, and validates the app with Gatekeeper. It then creates a signed
 drag-to-Applications DMG using a sparse APFS image, notarizes and staples the
 DMG, validates that with Gatekeeper, and writes SHA-256 checksums for both
-artifacts in `dist/`.
+artifacts in `dist/`. The real lean run also emits
+`cmdy-macOS-arm64.dmg` and its `.sha256`; the real Browser wrapper emits
+`cmdy-browser-macOS-arm64.dmg` and its `.sha256`. Rehearsal builds never create
+those stable aliases.
 It also retains each raw Apple JSON receipt beside the release artifacts, each
 submission identifier and pre-staple submitted hash, then writes a
 `*.publication.json` record for the final stapled package. The submitted and
