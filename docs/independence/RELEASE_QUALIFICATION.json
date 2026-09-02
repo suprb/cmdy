@@ -10,7 +10,7 @@
       {
         "path": "scripts/release-chromium-browser.sh",
         "purpose": "browser-release-script",
-        "sha256": "32aa5cbf5bbd74eb7f84c6ae6c65108ae5cb89ac8de7c5313ce4f5c79ec94201"
+        "sha256": "3799d84f4f1786bc735bfb5a2eb3ac31aed1fb7d30c7a1332914ebfbfc486e23"
       },
       {
         "path": ".github/workflows/ci.yml",
@@ -30,12 +30,12 @@
       {
         "path": "scripts/package-resource-policy.sh",
         "purpose": "package-resource-policy",
-        "sha256": "8a49c2be6ee2613f59bf1d24621a7821cc57dbe24a1c484345072aaf806ad6d3"
+        "sha256": "3477236fce9f61192fcd04c203a817cde2c5ae2dfbd89e7500d31be2f8020bc5"
       },
       {
         "path": "package.sh",
         "purpose": "package-script",
-        "sha256": "3fac90669bac55d2cce2521554c9b607cd3a3212e3c1ede8542f8382c4033965"
+        "sha256": "c38f3afeae1540f3bd5bb0bf8ef4e1b91e53740b0f075376fbd6e17f34eb8a62"
       },
       {
         "path": "Tests/perf-gate.sh",
@@ -46,6 +46,11 @@
         "path": "Identity/Sources/ProductIdentity/Resources/product-identity.json",
         "purpose": "product-identity",
         "sha256": "b98bf649bee7043f151d5f575a82d79d6959b8f90a5566460815ab5cf8e25e33"
+      },
+      {
+        "path": "scripts/product-identity.sh",
+        "purpose": "product-identity-script",
+        "sha256": "3f72a56a701089775128e64404e3b37154855d48006a9edc607eb80492fef928"
       },
       {
         "path": "docs/independence/WORKING_TREE_PROVENANCE_ALLOWLIST.json",
@@ -60,7 +65,7 @@
       {
         "path": "scripts/check-release-qualification.py",
         "purpose": "qualification-checker",
-        "sha256": "02d7c9c1e20985e8ff939219946526b28d24795f1ac31ebf9ecbb1816b7a1a33"
+        "sha256": "77ba0d3262b2609ff470039027b9b6981e1c66d8d1568bc1619db0b7094a1163"
       },
       {
         "path": "Schemas/release-qualification-v1.schema.json",
@@ -95,12 +100,12 @@
       {
         "path": "release.sh",
         "purpose": "release-script",
-        "sha256": "e771be9313a3bbc5eca58904bfef5444177639ad6c0cd695b1f00d49ff273404"
+        "sha256": "80e7c2c38b3090163d3e27457f770bea3aaf52c18cf2f89e4cbcb8ed5d8ec06e"
       },
       {
         "path": ".github/workflows/release.yml",
         "purpose": "release-workflow",
-        "sha256": "387dc08f72cdf3a959e456bbb1cc0b8042b22d8ea44d68508e5538656cee4c1f"
+        "sha256": "668e421432b13b6ee6d138d88ec7faa8408a7a63f0072fdb94b80ed546abdbcc"
       },
       {
         "path": "test.sh",

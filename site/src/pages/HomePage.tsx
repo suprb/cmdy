@@ -60,13 +60,13 @@ const featureGroups: FeatureGroup[] = [
         name: "Extensions",
         description: "resident, capability-scoped tools with native UI surfaces",
         examples: [
-          { name: "Browser", description: "source-only sandboxed Chromium for ad-hoc development" },
           { name: "Sim", description: "iOS Simulator split or live mirror with build, input and capture" },
           { name: "Swarm", description: "find, follow and gather live agent sessions" },
           { name: "Bridge", description: "MCP runtime spanning browser, macOS, Simulator and native apps" },
           { name: "Detox", description: "optional live-coding modular synth inside the terminal" }
         ]
       },
+      { name: "Browser edition", description: "sandboxed Chromium packaged inside a separately notarized complete app" },
       { name: "Actions", description: "one-shot scripts, commands and multi-pane workflows" },
       {
         name: "Channels",

@@ -42,6 +42,7 @@ if [ "$VERSION" != "$PROJECT_VERSION" ]; then
 fi
 
 REPOSITORY="${PRODUCT_RELEASE_REPOSITORY:-$PRODUCT_GITHUB_REPOSITORY}"
+product_assert_release_repository "$REPOSITORY"
 BRANCH="$(git symbolic-ref --quiet --short HEAD 2>/dev/null || true)"
 if [ -z "$BRANCH" ]; then
     echo "Publish from a branch, not a detached HEAD." >&2
@@ -59,6 +60,10 @@ fi
 
 if ! command -v gh >/dev/null 2>&1; then
     echo "GitHub CLI is required. Install it with: brew install gh" >&2
+    exit 3
+fi
+if ! command -v jq >/dev/null 2>&1; then
+    echo "jq is required to verify published release assets. Install it with: brew install jq" >&2
     exit 3
 fi
 if [ -n "$(git status --porcelain)" ]; then
@@ -133,13 +138,15 @@ fi
 
 gh run watch "$run_id" --repo "$REPOSITORY" --exit-status
 browser_version="$(tr -d '[:space:]' < Plugins/chromium/VERSION)"
-asset_names="$(gh release view "v$VERSION" --repo "$REPOSITORY" \
-    --json assets --jq '.assets[].name')"
+release_assets="$(gh release view "v$VERSION" --repo "$REPOSITORY" --json assets)"
+asset_names="$(jq -r '.assets[].name' <<< "$release_assets")"
 expected_assets=(
     "$PRODUCT_RELEASE_PREFIX-$VERSION-macOS-arm64.zip"
     "$PRODUCT_RELEASE_PREFIX-$VERSION-macOS-arm64.zip.sha256"
     "$PRODUCT_RELEASE_PREFIX-$VERSION-macOS-arm64.dmg"
     "$PRODUCT_RELEASE_PREFIX-$VERSION-macOS-arm64.dmg.sha256"
+    "$PRODUCT_RELEASE_PREFIX-macOS-arm64.dmg"
+    "$PRODUCT_RELEASE_PREFIX-macOS-arm64.dmg.sha256"
     "$PRODUCT_RELEASE_PREFIX-$VERSION-macOS-arm64.archive-notary.json"
     "$PRODUCT_RELEASE_PREFIX-$VERSION-macOS-arm64.dmg-notary.json"
     "$PRODUCT_RELEASE_PREFIX-$VERSION-macOS-arm64.publication.json"
@@ -147,6 +154,8 @@ expected_assets=(
     "$PRODUCT_RELEASE_PREFIX-$VERSION-browser-$browser_version-macOS-arm64.zip.sha256"
     "$PRODUCT_RELEASE_PREFIX-$VERSION-browser-$browser_version-macOS-arm64.dmg"
     "$PRODUCT_RELEASE_PREFIX-$VERSION-browser-$browser_version-macOS-arm64.dmg.sha256"
+    "$PRODUCT_RELEASE_PREFIX-browser-macOS-arm64.dmg"
+    "$PRODUCT_RELEASE_PREFIX-browser-macOS-arm64.dmg.sha256"
     "$PRODUCT_RELEASE_PREFIX-$VERSION-browser-$browser_version-macOS-arm64.archive-notary.json"
     "$PRODUCT_RELEASE_PREFIX-$VERSION-browser-$browser_version-macOS-arm64.dmg-notary.json"
     "$PRODUCT_RELEASE_PREFIX-$VERSION-browser-$browser_version-macOS-arm64.publication.json"
@@ -155,6 +164,23 @@ expected_assets=(
 for expected_asset in "${expected_assets[@]}"; do
     if ! grep -Fxq "$expected_asset" <<< "$asset_names"; then
         echo "Published release is missing required asset: $expected_asset" >&2
+        exit 5
+    fi
+done
+lean_dmg="$PRODUCT_RELEASE_PREFIX-$VERSION-macOS-arm64.dmg"
+lean_alias="$PRODUCT_RELEASE_PREFIX-macOS-arm64.dmg"
+browser_dmg="$PRODUCT_RELEASE_PREFIX-$VERSION-browser-$browser_version-macOS-arm64.dmg"
+browser_alias="$PRODUCT_RELEASE_PREFIX-browser-macOS-arm64.dmg"
+for artifact_pair in "$lean_dmg:$lean_alias" "$browser_dmg:$browser_alias"; do
+    versioned_name="${artifact_pair%%:*}"
+    alias_name="${artifact_pair#*:}"
+    versioned_digest="$(jq -r --arg name "$versioned_name" \
+        '.assets[] | select(.name == $name) | .digest' <<< "$release_assets")"
+    alias_digest="$(jq -r --arg name "$alias_name" \
+        '.assets[] | select(.name == $name) | .digest' <<< "$release_assets")"
+    if ! [[ "$versioned_digest" =~ ^sha256:[0-9a-f]{64}$ ]] \
+       || [ "$alias_digest" != "$versioned_digest" ]; then
+        echo "Stable release alias does not match its versioned DMG: $alias_name" >&2
         exit 5
     fi
 done

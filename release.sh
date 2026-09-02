@@ -15,6 +15,7 @@ DEFAULT_BUILD="$(git rev-list --count HEAD 2>/dev/null || printf '1')"
 BUILD_NUMBER="$(product_env_value BUILD_NUMBER "$DEFAULT_BUILD")"
 DIST_DIR="$(product_env_value DIST_DIR dist)"
 RELEASE_VARIANT="$(product_env_value RELEASE_VARIANT)"
+RELEASE_ALIAS_VARIANT="$(product_env_value RELEASE_ALIAS_VARIANT "$RELEASE_VARIANT")"
 SKIP_NOTARIZE="${SKIP_NOTARIZE:-0}"
 NOTARY_TIMEOUT="$(product_env_value NOTARY_TIMEOUT 30m)"
 
@@ -39,6 +40,15 @@ if [ -n "$RELEASE_VARIANT" ] \
    && ! [[ "$RELEASE_VARIANT" =~ ^[a-z0-9]+([.-][a-z0-9]+)*$ ]]; then
     echo "PRODUCT_RELEASE_VARIANT must be lowercase letters, numbers, dots, and hyphens." >&2
     exit 2
+fi
+if [ -n "$RELEASE_ALIAS_VARIANT" ] \
+   && ! [[ "$RELEASE_ALIAS_VARIANT" =~ ^[a-z0-9]+([.-][a-z0-9]+)*$ ]]; then
+    echo "PRODUCT_RELEASE_ALIAS_VARIANT must be lowercase letters, numbers, dots, and hyphens." >&2
+    exit 2
+fi
+
+if [ "$SKIP_NOTARIZE" = "0" ]; then
+    product_assert_canonical_checkout
 fi
 
 # A local rehearsal is intentionally not a publication claim.  The real path
@@ -268,4 +278,16 @@ else
     echo "Archive receipt:  $ARCHIVE_NOTARY_RESULT"
     echo "DMG receipt:      $DMG_NOTARY_RESULT"
     echo "Qualification:    $QUALIFICATION_RECORD"
+
+    # Stable aliases let the public website link directly to the latest signed
+    # installer without hard-coding a release or Browser component version.
+    ALIAS_VARIANT_SUFFIX="${RELEASE_ALIAS_VARIANT:+-$RELEASE_ALIAS_VARIANT}"
+    ALIAS_DMG="$DIST_DIR/$PRODUCT_RELEASE_PREFIX$ALIAS_VARIANT_SUFFIX-macOS-$ARCHITECTURES.dmg"
+    cp "$DMG" "$ALIAS_DMG"
+    cmp -s "$DMG" "$ALIAS_DMG" || {
+        echo "Stable DMG alias differs from the qualified artifact." >&2
+        exit 5
+    }
+    shasum -a 256 "$ALIAS_DMG" > "$ALIAS_DMG.sha256"
+    echo "Stable DMG alias: $ALIAS_DMG"
 fi

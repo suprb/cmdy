@@ -60,6 +60,41 @@ cmdy_copy_required_swiftpm_resource_bundles() {
     done
 }
 
+cmdy_assert_packaged_product_identity() {
+    if [ "$#" -ne 2 ]; then
+        echo "usage: cmdy_assert_packaged_product_identity SOURCE_IDENTITY PACKAGED_RESOURCES" >&2
+        return 4
+    fi
+
+    local source_identity="$1"
+    local packaged_resources="$2"
+    local packaged_identity="$packaged_resources/ProductIdentity_ProductIdentity.bundle/product-identity.json"
+    local browser_identity="$packaged_resources/BrowserMCP/product-identity.json"
+
+    if [ ! -f "$source_identity" ]; then
+        echo "Missing canonical product identity: $source_identity" >&2
+        return 4
+    fi
+    if [ ! -f "$packaged_identity" ]; then
+        echo "Missing packaged product identity: $packaged_identity" >&2
+        return 4
+    fi
+    if ! cmp -s "$source_identity" "$packaged_identity"; then
+        echo "Packaged product identity differs from the canonical source manifest." >&2
+        return 4
+    fi
+    if [ -d "$packaged_resources/BrowserMCP" ]; then
+        if [ ! -f "$browser_identity" ]; then
+            echo "Browser MCP product identity is missing: $browser_identity" >&2
+            return 4
+        fi
+        if ! cmp -s "$source_identity" "$browser_identity"; then
+            echo "Browser MCP product identity differs from the canonical source manifest." >&2
+            return 4
+        fi
+    fi
+}
+
 cmdy_assert_no_retired_packaged_paths() {
     if [ "$#" -ne 1 ]; then
         echo "usage: cmdy_assert_no_retired_packaged_paths PACKAGE_ROOT" >&2

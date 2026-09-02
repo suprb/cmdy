@@ -36,7 +36,7 @@ on them.
 | Registry repository | `https://github.com/suprb/cmdy-registry` |
 | Registry index | `https://raw.githubusercontent.com/suprb/cmdy-registry/main/registry.json` |
 | Latest release API | `https://api.github.com/repos/suprb/cmdy/releases/latest` |
-| Downloads | `https://github.com/suprb/cmdy/releases/latest` |
+| Downloads | `https://github.com/suprb/cmdy/releases/latest` plus stable lean and Browser DMG aliases |
 | Website | The HTTPS URL stored in the source repository's GitHub **Website** field |
 
 Do not announce the project while any canonical URL redirects to the old
@@ -157,7 +157,10 @@ paths, hashes, archive boundaries, and shader compilation before merge.
       `-rehearsal` ZIP, DMG, app signature, bundle identifiers, architecture,
       and checksums. Rehearsal filenames must not collide with stable assets.
 - [ ] Publish one stable notarized release. It must contain matching
-      `cmdy-<version>-macOS-<arch>.zip`, `.dmg`, and `.sha256` assets.
+      `cmdy-<version>-macOS-<arch>.zip`, `.dmg`, and `.sha256` assets; the
+      corresponding Browser artifacts; and byte-identical stable
+      `cmdy-macOS-<arch>.dmg` / `cmdy-browser-macOS-<arch>.dmg` aliases with
+      `.sha256` files.
 - [ ] Download the public assets on a clean Mac, verify checksums and Gatekeeper,
       launch the app, and exercise the update check.
 - [ ] Confirm the latest-release API returns the stable release, not a draft or

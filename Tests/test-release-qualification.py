@@ -570,6 +570,12 @@ class ReleaseQualificationTests(unittest.TestCase):
         identity.write_bytes(qualification.canonical_bytes({
             "bundleIdentifier": "com.cmdy.app",
         }))
+        packaged_identity = (
+            app
+            / "Contents/Resources/ProductIdentity_ProductIdentity.bundle/product-identity.json"
+        )
+        packaged_identity.parent.mkdir(parents=True, exist_ok=True)
+        packaged_identity.write_bytes(identity.read_bytes())
         archive = self.fixture._write("dist/cmdy.zip", b"final archive")
         dmg = self.fixture._write("dist/cmdy.dmg", b"final dmg")
         archive_checksum = self.fixture._write(
@@ -600,6 +606,128 @@ class ReleaseQualificationTests(unittest.TestCase):
             result["artifacts"]["dmg"]["submittedSha256"],
             result["artifacts"]["dmg"]["finalSha256"])
         self.assertTrue(output.is_file())
+
+        packaged_identity.unlink()
+        with self.assertRaisesRegex(
+                qualification.QualificationError, "missing or symlinked"):
+            qualification.verify_artifacts(
+                {"sourceCommit": "a" * 40}, self.fixture.record_path,
+                self.fixture.root, app=app, archive=archive,
+                archive_checksum=archive_checksum,
+                archive_receipt=archive_receipt,
+                archive_submitted_sha256=digest_bytes(b"submitted archive"),
+                dmg=dmg, dmg_checksum=dmg_checksum,
+                dmg_receipt=dmg_receipt,
+                dmg_submitted_sha256=digest_bytes(b"submitted dmg"),
+                version="1.2.3", build="42", variant="lean", output=output,
+                assessor=lambda _app, _dmg: {
+                    "teamIdentifier": "ABCDEFGHIJ", "cdHash": "abc123",
+                })
+        packaged_identity.symlink_to(identity)
+        with self.assertRaisesRegex(
+                qualification.QualificationError, "missing or symlinked"):
+            qualification.verify_artifacts(
+                {"sourceCommit": "a" * 40}, self.fixture.record_path,
+                self.fixture.root, app=app, archive=archive,
+                archive_checksum=archive_checksum,
+                archive_receipt=archive_receipt,
+                archive_submitted_sha256=digest_bytes(b"submitted archive"),
+                dmg=dmg, dmg_checksum=dmg_checksum,
+                dmg_receipt=dmg_receipt,
+                dmg_submitted_sha256=digest_bytes(b"submitted dmg"),
+                version="1.2.3", build="42", variant="lean", output=output,
+                assessor=lambda _app, _dmg: {
+                    "teamIdentifier": "ABCDEFGHIJ", "cdHash": "abc123",
+                })
+        packaged_identity.unlink()
+        packaged_identity.write_bytes(identity.read_bytes())
+
+        browser_identity = app / "Contents/Resources/BrowserMCP/product-identity.json"
+        browser_identity.parent.mkdir(parents=True, exist_ok=True)
+        browser_identity.write_bytes(identity.read_bytes())
+        qualification.verify_artifacts(
+            {"sourceCommit": "a" * 40}, self.fixture.record_path,
+            self.fixture.root, app=app, archive=archive,
+            archive_checksum=archive_checksum, archive_receipt=archive_receipt,
+            archive_submitted_sha256=digest_bytes(b"submitted archive"),
+            dmg=dmg, dmg_checksum=dmg_checksum, dmg_receipt=dmg_receipt,
+            dmg_submitted_sha256=digest_bytes(b"submitted dmg"),
+            version="1.2.3", build="42", variant="browser-2.0.0", output=output,
+            assessor=lambda _app, _dmg: {
+                "teamIdentifier": "ABCDEFGHIJ", "cdHash": "abc123",
+            })
+        browser_identity.unlink()
+        with self.assertRaisesRegex(
+                qualification.QualificationError, "Browser MCP.*missing or symlinked"):
+            qualification.verify_artifacts(
+                {"sourceCommit": "a" * 40}, self.fixture.record_path,
+                self.fixture.root, app=app, archive=archive,
+                archive_checksum=archive_checksum,
+                archive_receipt=archive_receipt,
+                archive_submitted_sha256=digest_bytes(b"submitted archive"),
+                dmg=dmg, dmg_checksum=dmg_checksum,
+                dmg_receipt=dmg_receipt,
+                dmg_submitted_sha256=digest_bytes(b"submitted dmg"),
+                version="1.2.3", build="42", variant="browser-2.0.0", output=output,
+                assessor=lambda _app, _dmg: {
+                    "teamIdentifier": "ABCDEFGHIJ", "cdHash": "abc123",
+                })
+        browser_identity.symlink_to(identity)
+        with self.assertRaisesRegex(
+                qualification.QualificationError, "Browser MCP.*missing or symlinked"):
+            qualification.verify_artifacts(
+                {"sourceCommit": "a" * 40}, self.fixture.record_path,
+                self.fixture.root, app=app, archive=archive,
+                archive_checksum=archive_checksum,
+                archive_receipt=archive_receipt,
+                archive_submitted_sha256=digest_bytes(b"submitted archive"),
+                dmg=dmg, dmg_checksum=dmg_checksum,
+                dmg_receipt=dmg_receipt,
+                dmg_submitted_sha256=digest_bytes(b"submitted dmg"),
+                version="1.2.3", build="42", variant="browser-2.0.0", output=output,
+                assessor=lambda _app, _dmg: {
+                    "teamIdentifier": "ABCDEFGHIJ", "cdHash": "abc123",
+                })
+        browser_identity.unlink()
+        browser_identity.write_bytes(qualification.canonical_bytes({
+            "bundleIdentifier": "com.cmdy.app",
+            "repositoryOwner": "wrong",
+        }))
+        with self.assertRaisesRegex(
+                qualification.QualificationError, "Browser MCP.*qualified source manifest"):
+            qualification.verify_artifacts(
+                {"sourceCommit": "a" * 40}, self.fixture.record_path,
+                self.fixture.root, app=app, archive=archive,
+                archive_checksum=archive_checksum,
+                archive_receipt=archive_receipt,
+                archive_submitted_sha256=digest_bytes(b"submitted archive"),
+                dmg=dmg, dmg_checksum=dmg_checksum,
+                dmg_receipt=dmg_receipt,
+                dmg_submitted_sha256=digest_bytes(b"submitted dmg"),
+                version="1.2.3", build="42", variant="browser-2.0.0", output=output,
+                assessor=lambda _app, _dmg: {
+                    "teamIdentifier": "ABCDEFGHIJ", "cdHash": "abc123",
+                })
+
+        packaged_identity.write_bytes(qualification.canonical_bytes({
+            "bundleIdentifier": "com.cmdy.app",
+            "repositoryOwner": "wrong",
+        }))
+        with self.assertRaisesRegex(
+                qualification.QualificationError, "qualified source manifest"):
+            qualification.verify_artifacts(
+                {"sourceCommit": "a" * 40}, self.fixture.record_path,
+                self.fixture.root, app=app, archive=archive,
+                archive_checksum=archive_checksum,
+                archive_receipt=archive_receipt,
+                archive_submitted_sha256=digest_bytes(b"submitted archive"),
+                dmg=dmg, dmg_checksum=dmg_checksum,
+                dmg_receipt=dmg_receipt,
+                dmg_submitted_sha256=digest_bytes(b"submitted dmg"),
+                version="1.2.3", build="42", variant="lean", output=output,
+                assessor=lambda _app, _dmg: {
+                    "teamIdentifier": "ABCDEFGHIJ", "cdHash": "abc123",
+                })
 
 
 if __name__ == "__main__":

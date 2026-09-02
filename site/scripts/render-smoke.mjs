@@ -27,11 +27,11 @@ const vite = await createServer({
 try {
   const { App } = await vite.ssrLoadModule("/src/App.tsx");
   const { editorialCaseString } = await vite.ssrLoadModule("/src/components/EditorialCase.tsx");
-  const { normalizeRegistry, safeURL } = await vite.ssrLoadModule("/src/pages/MarketplacePage.tsx");
+  const { entryDownloadURL, normalizeRegistry, safeURL } = await vite.ssrLoadModule("/src/pages/MarketplacePage.tsx");
   const expectations = {
     home: ["A terminal turned platform.", "Metal terminal", "Automatic window grid", "Grid ↔ splits", "Command intelligence", "Extensions", "Browser", "Detox", "Actions", "Channels", "Slack", "GitHub Issues", "RSS and Atom Feed", "Apple Reminders", "Updates", "Open source", "Andreas Pihlström", "builder at Shopify"],
     docs: ["cmdy docs", "What cmdy is", "Choose one of three paths", "Extensions add capabilities", "Path", "Use it when", "macOS", "AI, optional", "option-as-meta", "cmdy action install-starters"],
-    marketplace: ["Marketplace", "Package", "Type", "Description", "Install", "Demo Inbox", "Slack", "iMessage", "Apple Reminders"]
+    marketplace: ["Marketplace", "Browser installs with the Browser edition", "Open Browser edition download", "Package", "Type", "Description", "Install", "Demo Inbox", "Slack", "iMessage", "Apple Reminders"]
   };
 
   for (const [page, markers] of Object.entries(expectations)) {
@@ -71,15 +71,15 @@ try {
       }
       assert.ok(!markup.includes('class="hacker-backdrop"'), "home: cinematic backdrop should be unmounted");
       assert.ok(!markup.includes('class="signal-video"'), "home: video shader should be unmounted");
-      assert.equal((markup.match(/class="feature-item"/g) ?? []).length, 25, "home: feature inventory must contain all 25 primary rows");
+      assert.equal((markup.match(/class="feature-item"/g) ?? []).length, 26, "home: feature inventory must contain all 26 primary rows");
       assert.equal((markup.match(/class="feature-examples"/g) ?? []).length, 2, "home: Extensions and Channels must each list examples");
-      assert.equal((markup.match(/class="feature-example"/g) ?? []).length, 11, "home: feature inventory must contain all 11 Extension and Channel examples");
+      assert.equal((markup.match(/class="feature-example"/g) ?? []).length, 10, "home: feature inventory must contain all 10 Extension and Channel examples");
       assert.equal((markup.match(/>Including</g) ?? []).length, 2, "home: Extensions and Channels must use the Including label");
       assert.ok(!markup.includes(">Examples<"), "home: feature inventory should not use the Examples label");
       for (const removed of ["Everything in cmdy.", "Terminal</h3>", "Windows + Workflow", "Intelligence</h3>", "Platform</h3>", "Your terminal. More capable.", 'class="closing-cta"']) {
         assert.ok(!markup.includes(removed), `home: removed feature chrome returned: ${removed}`);
       }
-      const narrative = ["Metal terminal", "Sessions + workspaces", "Keybinding import", "Automatic window grid", "Command intelligence", "Extensions", "Browser", "Detox", "Actions", "Channels", "Slack", "Apple Reminders", "Marketplace", "Updates", "Open source"];
+      const narrative = ["Metal terminal", "Sessions + workspaces", "Keybinding import", "Automatic window grid", "Command intelligence", "Extensions", "Detox", "Browser edition", "Actions", "Channels", "Slack", "Apple Reminders", "Marketplace", "Updates", "Open source"];
       for (let index = 1; index < narrative.length; index += 1) {
         assert.ok(renderedText.indexOf(narrative[index - 1]) < renderedText.indexOf(narrative[index]), `home: narrative order is wrong near ${narrative[index]}`);
       }
@@ -112,6 +112,8 @@ try {
         "marketplace: must not cosmetically rewrite stable Extension IDs"
       );
       assert.ok(markup.includes('class="market-table"'), "marketplace: missing the package table");
+      assert.ok(markup.includes("Download ZIP"), "marketplace: Extension archives must be directly downloadable");
+      assert.ok(markup.includes("https://github.com/suprb/cmdy/releases/latest"), "marketplace: Browser edition release is missing");
       for (const removed of ["market-visual", "market-card", "market-grid", "registry-summary", "marketplace-hero", "market-trust", "What it actually does"]) {
         assert.ok(!markup.includes(removed), `marketplace: removed visual chrome returned: ${removed}`);
       }
@@ -131,6 +133,32 @@ try {
   assert.deepEqual(normalized.featured, ["dev.example.channel"], "featured entries must exist in the normalized catalog");
   assert.equal(safeURL("javascript:alert(1)"), "", "unsafe link protocols must be rejected");
   assert.equal(safeURL("https://example.com/project"), "https://example.com/project", "HTTPS project links must be retained");
+  assert.equal(
+    entryDownloadURL({ kind: "plugin", file: "dist/example-1.0.0.zip", sha256: "a".repeat(64), url: "" }),
+    "https://raw.githubusercontent.com/suprb/cmdy-registry/main/dist/example-1.0.0.zip",
+    "local Extension archives must resolve to direct registry downloads"
+  );
+  assert.equal(
+    entryDownloadURL({ kind: "channel", file: "", sha256: "b".repeat(64), url: "https://example.com/channel.zip" }),
+    "https://example.com/channel.zip",
+    "HTTPS Channel archives must remain downloadable"
+  );
+  assert.equal(
+    entryDownloadURL({ kind: "plugin", file: "dist/reviewed.zip", sha256: "c".repeat(64), url: "https://example.com/different.zip" }),
+    "https://raw.githubusercontent.com/suprb/cmdy-registry/main/dist/reviewed.zip",
+    "registry-local archives must take precedence over external URLs like the native installer"
+  );
+  assert.equal(entryDownloadURL({ kind: "plugin", file: "../secret.zip", sha256: "d".repeat(64), url: "" }), "", "traversal paths must not become downloads");
+  assert.equal(entryDownloadURL({ kind: "plugin", file: "private/example.zip", sha256: "d".repeat(64), url: "" }), "", "native archives outside dist/ must not become downloads");
+  assert.equal(entryDownloadURL({ kind: "plugin", file: "private/example.zip", sha256: "d".repeat(64), url: "https://example.com/fallback.zip" }), "", "invalid local archive declarations must not fall through to external downloads");
+  assert.equal(entryDownloadURL({ kind: "plugin", file: "", sha256: "e".repeat(64), url: "http://example.com/plugin.zip" }), "", "insecure Extension archives must not become downloads");
+  assert.equal(entryDownloadURL({ kind: "plugin", file: "dist/unpinned.zip", sha256: "", url: "" }), "", "unpinned native archives must not become downloads");
+  for (const invalidDigest of ["f".repeat(63), "f".repeat(65), `${"f".repeat(63)}g`]) {
+    const [invalidEntry] = normalizeRegistry({
+      entries: [{ kind: "plugin", id: `dev.example.invalid-${invalidDigest.length}`, name: "Invalid digest", file: "dist/invalid.zip", sha256: invalidDigest }]
+    }).entries;
+    assert.equal(entryDownloadURL(invalidEntry), "", "registry normalization must not make malformed digests downloadable");
+  }
   assert.equal(
     editorialCaseString("WHY I USE MACOS AND GITHUB"),
     "why I use macOS and GitHub",

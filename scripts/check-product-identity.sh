@@ -8,6 +8,22 @@ test "$PRODUCT_APP_BUNDLE" = "$PRODUCT_SLUG.app"
 test "$PRODUCT_EXECUTABLE" = "$PRODUCT_SLUG"
 test "$PRODUCT_GITHUB_REPOSITORY" \
     = "$PRODUCT_REPOSITORY_OWNER/$PRODUCT_SLUG"
+test "$(product_github_repository_from_remote_url \
+    'git@github.com:suprb/cmdy.git')" = "$PRODUCT_GITHUB_REPOSITORY"
+test "$(product_github_repository_from_remote_url \
+    'https://github.com/suprb/cmdy')" = "$PRODUCT_GITHUB_REPOSITORY"
+test "$(product_github_repository_from_remote_url \
+    'ssh://git@github.com/suprb/cmdy.git')" = "$PRODUCT_GITHUB_REPOSITORY"
+if product_assert_release_repository 'andreas-pihlstrom/cmdy' >/dev/null 2>&1; then
+    echo "Mismatched release repository was accepted" >&2
+    exit 1
+fi
+product_assert_release_repository "$PRODUCT_GITHUB_REPOSITORY"
+if PRODUCT_RELEASE_ALIAS_VARIANT='../escape' SKIP_NOTARIZE=1 \
+    ./release.sh >/dev/null 2>&1; then
+    echo "Unsafe release alias variant was accepted" >&2
+    exit 1
+fi
 
 node_values="$(node -e '
 const p = require("./Identity/Node/product-identity.js");
@@ -22,6 +38,8 @@ test "$node_values" \
 for script in package.sh release.sh publish-release.sh plugins.sh test.sh; do
     grep -Fq 'source scripts/product-identity.sh' "$script"
 done
+grep -Fq 'product_assert_canonical_checkout' release.sh
+grep -Fq 'product_assert_release_repository "$REPOSITORY"' publish-release.sh
 
 grep -Fq "${PRODUCT_ENV_PREFIX}_PORT=4664" EXTENSIONS.md
 grep -Fq "os.environ['${PRODUCT_ENV_PREFIX}_TOKEN']" EXTENSIONS.md
@@ -44,7 +62,8 @@ done
 # URLs remain valid only in compatibility snapshots and runtime fallbacks.
 for source in \
     site/src/components/SiteShell.tsx \
-    site/src/pages/HomePage.tsx; do
+    site/src/pages/HomePage.tsx \
+    site/src/pages/MarketplacePage.tsx; do
     grep -Fq "https://github.com/$PRODUCT_GITHUB_REPOSITORY" "$source"
     if grep -Eq 'github\.com/[^/]+/(termite|term64)(/|"|$)' "$source"; then
         echo "Legacy public repository URL found in $source" >&2

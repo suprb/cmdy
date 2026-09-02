@@ -149,19 +149,18 @@ who don't have cmdy yet; every card ends in the same line:
 Steps 1–2 are the soul; 3 makes it a real package manager; 4 makes it a
 community; 5 makes it marketing; 6 makes it trustworthy at scale.
 
-## Implementation status (pre-publication)
+## Implementation status
 
 The host, installer, authoring tools, and static gallery are implemented in this
-source tree. The canonical `cmdy-registry` repository and its release assets
-must still be created from a separately reviewed clean snapshot before the
-Marketplace is announced or used for public installs.
+source tree. The canonical public `cmdy-registry` repository contains the
+reviewed package files and pinned hashes used by both the app and website.
 
 - **Registry tooling** includes a schema, CI validator that compiles every
-  shader, and a pack-plugin tool. The reviewed launch snapshot is intended to
-  contain the calm set as forkable sources, four themes, two rigs, the
-  distributable first-party Extensions, and the credential-free Demo Inbox
-  Channel. Until that repository and every versioned archive are public, use an
-  explicit local `--registry` only for development.
+  shader, and a pack-plugin tool. The public snapshot contains the calm set as
+  forkable sources, four themes, two rigs, distributable first-party
+  Extensions, and nineteen Channel connectors. The legacy registry endpoint
+  remains as a compatibility bridge for cmdy 1.0.0 and resolves native packages
+  from the canonical public registry.
   Browser ships as a separately signed/notarized cmdy edition rather than a
   Marketplace payload. Current upstream CEF cannot safely load its framework
   from an external Extension under the macOS renderer/GPU sandbox; the old v1
@@ -189,10 +188,12 @@ Marketplace is announced or used for public installs.
   Settings or with `marketplace-update-checks = false`. Source-only installs do
   not trigger automatic registry access.
 
-The deployable web gallery is generated into `site/dist/`; it will prefer the public
+The deployable web gallery is generated into `site/dist/`; it prefers the public
 registry and falls back to its checked-in last-known snapshot for browsing.
-Do not publish its install controls before the canonical registry exists and
-every referenced hash resolves. Pending: the patches kind
-(which needs a Detox library format), and republishing legacy
-registry archives with v1 Extension manifests. Capability-scoped tokens and
-route ACLs are complete.
+Extension and Channel rows include the CLI install command plus a direct,
+hash-pinned ZIP link for manual download and source inspection. The CLI or
+in-app action remains the verified, consented installation path. Browser links
+to the complete signed Browser-edition release instead of pretending Chromium
+can be installed as an ordinary Extension archive.
+Pending: the patches kind, which needs a Detox library format.
+Capability-scoped tokens and route ACLs are complete.

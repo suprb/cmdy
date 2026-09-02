@@ -166,7 +166,8 @@ This ordinary local package does not need CEF and contains no Browser code.
 Both the ordinary and Browser editions copy exactly the active SwiftPM resource
 bundles `Kit_CmdyKit.bundle` (fonts) and
 `ProductIdentity_ProductIdentity.bundle` (canonical identity). Packaging fails
-if either bundle is missing or if any path in the assembled app contains a
+if either bundle is missing, if its embedded identity differs byte-for-byte
+from the source manifest, or if any path in the assembled app contains a
 retired `SwiftTerm` or `Termite` name; stale incremental build bundles are never
 copied by wildcard.
 
@@ -230,7 +231,9 @@ Then build the lean public app, ZIP, and DMG:
 PRODUCT_NOTARY_PROFILE=cmdy-notary ./release.sh
 ```
 
-The lean release does not need CEF. It signs cmdy with hardened runtime,
+The lean release does not need CEF. A notarized release additionally refuses a
+checkout whose `origin` is not the repository declared by product identity. It
+signs cmdy with hardened runtime,
 notarizes and staples the app and DMG, runs Gatekeeper checks, and writes
 SHA-256 files under `dist/`.
 
@@ -271,7 +274,9 @@ SKIP_NOTARIZE=1 ./scripts/release-chromium-browser.sh
 The Browser release produces a ZIP, DMG, their SHA-256 files, and a metadata
 JSON under `dist/browser/`. Artifact names contain both the cmdy app version and
 the independently tracked Browser version; local rehearsals also end in
-`-rehearsal`. The script:
+`-rehearsal`. Notarized lean and Browser runs also create stable DMG aliases for
+the website; those aliases are byte-for-byte copies of the qualified stapled
+DMGs. The script:
 
 1. Verifies and builds the pinned CEF source inputs.
 2. Packages the Browser edition with CEF, the host library, and four helpers.

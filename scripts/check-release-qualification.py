@@ -49,6 +49,7 @@ REQUIRED_BINDINGS = {
     "package-resource-policy",
     "performance-gate",
     "product-identity",
+    "product-identity-script",
     "provenance-allowlist",
     "provenance-checker",
     "qualification-checker",
@@ -1119,9 +1120,23 @@ def verify_artifacts(
         info = plistlib.loads(info_path.read_bytes())
     except (plistlib.InvalidFileException, OSError) as error:
         raise QualificationError(f"invalid app Info.plist: {error}") from error
-    identity = parse_json_bytes(
-        (root / "Identity/Sources/ProductIdentity/Resources/product-identity.json").read_bytes(),
-        "product identity")
+    identity_path = root / "Identity/Sources/ProductIdentity/Resources/product-identity.json"
+    identity_bytes = identity_path.read_bytes()
+    identity = parse_json_bytes(identity_bytes, "product identity")
+    def require_packaged_identity(path: Path, label: str) -> None:
+        if path.is_symlink() or not path.is_file():
+            raise QualificationError(f"{label} is missing or symlinked")
+        if path.read_bytes() != identity_bytes:
+            raise QualificationError(
+                f"{label} differs from the qualified source manifest")
+
+    require_packaged_identity(
+        app / "Contents/Resources/ProductIdentity_ProductIdentity.bundle/product-identity.json",
+        "artifact product identity")
+    if variant == "browser" or variant.startswith("browser-"):
+        require_packaged_identity(
+            app / "Contents/Resources/BrowserMCP/product-identity.json",
+            "Browser MCP product identity")
     if info.get("CFBundleIdentifier") != identity.get("bundleIdentifier"):
         raise QualificationError("artifact bundle identifier differs from product identity")
     if info.get("CFBundleShortVersionString") != version:

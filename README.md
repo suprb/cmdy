@@ -4,12 +4,24 @@
 own VT engine and every frame rendered through Metal. Its public platform has
 resident Extensions and one-shot Actions; Channels complete the loop by
 bringing work in from other applications and optionally sending the result back.
-Detox, Swarm, Browser, Sim, and Bridge are external first-party reference
-Extensions built on the same API available to everyone.
+Detox, Swarm, Sim, and Bridge are external first-party reference Extensions
+built on the same API available to everyone. Browser instead ships as an
+optional complete app edition because Chromium must live inside the signed
+macOS app bundle.
 
 ## Quick start
 
-Source builds require macOS 26+, Apple silicon, and Swift 6.2 / Xcode 26.
+Requires macOS 26+ on Apple silicon. Open the
+[latest release](https://github.com/suprb/cmdy/releases/latest), choose the lean
+or Browser-edition DMG, then drag `cmdy.app` to Applications. The Browser
+edition replaces the lean app while keeping the same settings, sessions, and
+extensions.
+
+If you installed cmdy 1.0.0, download 1.0.1 or newer manually once: 1.0.0
+embedded the wrong GitHub owner, so that version cannot discover its own update.
+Automatic updates resume after the manual upgrade.
+
+To build from source, install Swift 6.2 / Xcode 26 and run:
 
 ```sh
 git clone https://github.com/suprb/cmdy.git
