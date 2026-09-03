@@ -28,7 +28,6 @@ cleanup() {
 trap cleanup EXIT
 
 cat > "$GATE/config" <<CFG
-banner = false
 restore-session = false
 sounds = false
 ghost-text = false

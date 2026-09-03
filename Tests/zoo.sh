@@ -50,7 +50,6 @@ cat > "$CFG/config" <<EOF
 theme = C64
 cursor-style = block
 cursor-blink = false
-banner = false
 restore-session = false
 shader = None
 sounds = false

@@ -199,7 +199,7 @@ cmdy channel doctor [channel-id]`}</Code>
         [<Case>Bridge</Case>, "product-scale MCP runtime across several targets", "Live"],
         ["Channel catalog", "19 installable provider, feed, and local-workflow connectors", "Live"]
       ]} />
-      <p><Case>Browser</Case> ships as an optional, separately signed and notarized cmdy edition so CEF can stay inside the app layout required by Chromium&apos;s macOS sandbox. The lean edition remains small, both editions share the same settings and sessions, and app updates preserve the edition you installed. The incompatible v1 marketplace artifact is withheld. Open extensions with <kbd>⌘⇧L</kbd> to inspect purpose, creator, version, source, grants, and runtime state. Distributable marketplace packages use pinned hashes and explicit native-code consent.</p>
+      <p><Case>Browser</Case> ships as an optional, separately signed and notarized cmdy edition so CEF can stay inside the app layout required by Chromium&apos;s macOS sandbox. The lean edition remains small, both editions share the same settings and sessions, and app updates preserve the edition you installed. The incompatible v1 marketplace artifact is withheld. Open Extensions with <kbd>⌘⇧L</kbd>: Browser remains listed on lean installs and its row downloads the Browser edition. The Browser toolbar button offers the same recovery path. Distributable marketplace packages use pinned hashes and explicit native-code consent.</p>
     </>
   },
   {

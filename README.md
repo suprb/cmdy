@@ -294,7 +294,9 @@ included as an example of what the SDK can carry — remove or disable it like a
   agent-drivable over an MCP shim. The lean download stays small; a separately
   signed and notarized Browser edition includes CEF in its sandbox-supported
   app layout. Both editions use the same cmdy identity, settings, and sessions;
-  app updates preserve the installed edition instead of silently removing Browser
+  app updates preserve the installed edition instead of silently removing Browser.
+  On lean installs, Browser remains visible in Extensions and the toolbar so
+  either surface can download the Browser edition.
 
 **Marketplace** ([MARKETPLACE.md](MARKETPLACE.md)) — a public registry of shaders,
 themes, rigs (whole-look presets), and Extensions; browse and install from the palette
@@ -473,7 +475,6 @@ cursor-blink = true
 option-as-meta = true
 shell-integration = true
 clean-prompt = true
-banner = false
 hide-traffic-lights = false # AppKit's native window controls
 margin = 10
 workspace-navigator = false
@@ -586,8 +587,8 @@ cmdy/
 ├─ Kit/        CmdyKit — inline panels, Surfaces, palette, config engine,
 │              capability-scoped Extension bus, sessions, themes, bundled fonts
 ├─ App/        the shell: windows/tabs/splits, menus, panes, engine surfaces
-├─ Plugins/    CmdySDK + detox + bridge + swarm + sim (+ chromium/Browser,
-│              appdock parked) — external Extensions on the HTTP ABI
+├─ Plugins/    CmdySDK + detox + bridge + swarm + sim (external Extensions),
+│              chromium/Browser edition source, and the parked appdock
 ├─ site/       React/Vite source for the public home, docs, and Marketplace;
 │              generated Pages output lives in the ignored site/dist/
 └─ Tests/      parked differential oracle (Tests/ORACLE.md, DIVERGENCES.md) ·
@@ -608,7 +609,7 @@ Key modules: `TerminalWindowController` (window chrome + split-pane tree),
 Diagnostics: `--selftest` (35+ unit checks), `--scroll-test` (scrollback holds under
 streaming output), `--wheel-test` (wheel → SGR mouse / arrows / scrollback routing),
 `--reflow-test` (block anchors survive zoom + resize reflows), `--graphics-test`
-(kitty + sixel decode and placement), `--banner`, `--ai-test`, `--make-iconset`.
+(kitty + sixel decode and placement), `--ai-test`, `--make-iconset`.
 Engine verification: `./test.sh` runs every suite; the Core tests replay the
 full regression corpus (every fuzz divergence ever caught, plus recorded real
 sessions) deterministically; `Tests/zoo.sh` drives vim/htop/less/man/tmux/
@@ -626,7 +627,8 @@ layer without giving up the terminal's byte-stream contract or hot-loop isolatio
 Landed: the dedicated CmdyCore VT engine, Metal rendering, the capability-scoped
 HTTP/SSE Extension Protocol, deterministic decision hooks, project trust, live
 development, native Surface Protocol, programmable Actions, the Channels SDK and
-durable Work Inbox/Outbox, marketplace, five first-party reference Extensions,
+durable Work Inbox/Outbox, marketplace, four external first-party reference
+Extensions plus the Browser app edition,
 live pane composition, command blocks, splits, palette, live config, themes,
 ghost text, agent mode, session restore, and a defended performance gate.
 

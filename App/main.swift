@@ -362,7 +362,6 @@ private func buildMainMenu() -> NSMenu {
     terminalMenu.addItem(item("Shell Integration", #selector(AppDelegate.toggleShellIntegration(_:)), "", modifiers: []))
     terminalMenu.addItem(item("Automatic Error Help", #selector(AppDelegate.toggleAutomaticErrorHelp(_:)), "", modifiers: []))
     terminalMenu.addItem(item("Clean Prompt (no user@host)", #selector(AppDelegate.toggleCleanPrompt(_:)), "", modifiers: []))
-    terminalMenu.addItem(item("Boot Banner", #selector(AppDelegate.toggleBanner(_:)), "", modifiers: []))
     let scrollSpeedItem = NSMenuItem(title: "Scroll Speed", action: nil, keyEquivalent: "")
     let scrollSpeedMenu = NSMenu(title: "Scroll Speed")
     scrollSpeedItem.submenu = scrollSpeedMenu
@@ -520,7 +519,6 @@ if CommandLine.arguments.count >= 2, CommandLine.arguments[1] == "share" {
     MarketplaceCLI.share()
 }
 
-if CommandLine.arguments.contains("--banner") { print(SystemInfo.bootBanner()); exit(0) }
 if CommandLine.arguments.contains("--ai-test") {
     // Headless check of the local-first command explanation chain.
     let sem = DispatchSemaphore(value: 0)

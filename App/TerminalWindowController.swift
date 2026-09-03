@@ -987,7 +987,8 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
         (handle: Bool, attached: Bool, nativeSubviews: Int, pageLoaded: Bool,
          cornerRadius: CGFloat, masksToBounds: Bool, chromeOverlap: CGFloat,
          chromePassthrough: Bool, toolbarOverlapsBrowser: Bool,
-         toolbarTintBrightness: CGFloat,
+         toolbarTintBrightness: CGFloat, toolbarTintMatchesTheme: Bool,
+         browserChromeMatchesTheme: Bool,
          topGap: CGFloat, bottomGap: CGFloat, horizontalGap: CGFloat) {
         applyCompactToolbarTint()
         let layout = embeddedBrowserController.layoutDiagnostic
@@ -1013,10 +1014,20 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
         } else {
             chromePassthrough = true
         }
-        let toolbarTintBrightness = compactToolbarGroup?.arrangedSubviews
+        let toolbarTint = compactToolbarGroup?.arrangedSubviews
             .compactMap({ ($0 as? NSButton)?.contentTintColor })
-            .first?
-            .usingColorSpace(.deviceRGB)?.brightnessComponent ?? 1
+            .first?.usingColorSpace(.deviceRGB)
+        let expectedToolbarTint = effectiveCompactToolbarTint()
+            .usingColorSpace(.deviceRGB)
+        let toolbarTintMatchesTheme = zip(
+            [toolbarTint?.redComponent, toolbarTint?.greenComponent,
+             toolbarTint?.blueComponent],
+            [expectedToolbarTint?.redComponent, expectedToolbarTint?.greenComponent,
+             expectedToolbarTint?.blueComponent]
+        ).allSatisfy { actual, expected in
+            guard let actual, let expected else { return false }
+            return abs(actual - expected) < 0.01
+        }
         return (
             embeddedBrowserController.browserHandle != nil,
             embeddedBrowserController.isAttachedToCmdyWindow,
@@ -1027,7 +1038,9 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
             overlap,
             chromePassthrough,
             compactToolbarOverlapsEmbeddedBrowser(),
-            toolbarTintBrightness,
+            toolbarTint?.brightnessComponent ?? 1,
+            toolbarTintMatchesTheme,
+            embeddedBrowserController.chromeBackground == effectiveTheme.background,
             layout.topGap,
             layout.bottomGap,
             layout.horizontalGap
@@ -1103,6 +1116,8 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
     func toggleEmbeddedBrowser(focusLocation: Bool = false) {
         if isEmbeddedBrowserVisible {
             hideEmbeddedBrowser()
+        } else if !EmbeddedChromiumRuntime.shared.isAvailable {
+            BrowserEditionInstaller.presentDownloadPrompt(relativeTo: window)
         } else if !showEmbeddedBrowser(focusLocation: focusLocation) {
             NSSound.beep()
         }
@@ -1111,12 +1126,18 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
     func focusEmbeddedBrowserLocation() {
         if isEmbeddedBrowserVisible {
             presentEmbeddedBrowserControls(focusLocation: true)
+        } else if !EmbeddedChromiumRuntime.shared.isAvailable {
+            BrowserEditionInstaller.presentDownloadPrompt(relativeTo: window)
         } else if !showEmbeddedBrowser(focusLocation: true) {
             NSSound.beep()
         }
     }
 
     func reloadEmbeddedBrowser() {
+        guard EmbeddedChromiumRuntime.shared.isAvailable else {
+            BrowserEditionInstaller.presentDownloadPrompt(relativeTo: window)
+            return
+        }
         guard showEmbeddedBrowser() else {
             NSSound.beep()
             return
@@ -1125,6 +1146,10 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
     }
 
     func openEmbeddedBrowserDevTools() {
+        guard EmbeddedChromiumRuntime.shared.isAvailable else {
+            BrowserEditionInstaller.presentDownloadPrompt(relativeTo: window)
+            return
+        }
         guard showEmbeddedBrowser() else {
             NSSound.beep()
             return
@@ -1791,8 +1816,15 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
     private func updateNativeToolbarToggleStates() {
         let update: (CompactToolbarButton) -> Void = { [weak self] button in
             guard let self, let raw = button.identifier?.rawValue else { return }
-            button.isToggledOn = self.isNativeToolbarItemToggled(
-                NSToolbarItem.Identifier(raw))
+            let identifier = NSToolbarItem.Identifier(raw)
+            button.isToggledOn = self.isNativeToolbarItemToggled(identifier)
+            if identifier == NativeToolbarItem.browser {
+                let description = EmbeddedChromiumRuntime.shared.isAvailable
+                    ? "Show or Hide Browser"
+                    : "Browser is not installed — download Browser Edition"
+                button.toolTip = description
+                button.setAccessibilityLabel(description)
+            }
         }
         compactToolbarGroup?.arrangedSubviews
             .compactMap { $0 as? CompactToolbarButton }
@@ -1801,6 +1833,34 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
             .flatMap(\.items)
             .compactMap { $0.view as? CompactToolbarButton }
             .forEach(update)
+    }
+
+    func browserInstallToolbarDiagnosticForTesting() -> (
+        present: Bool, tooltip: String?, accessibilityLabel: String?,
+        toggled: Bool
+    ) {
+        updateNativeToolbarToggleStates()
+        let button = compactToolbarGroup?.arrangedSubviews
+            .compactMap { $0 as? CompactToolbarButton }
+            .first {
+                $0.identifier?.rawValue == NativeToolbarItem.browser.rawValue
+            }
+        return (
+            button != nil,
+            button?.toolTip,
+            button?.accessibilityLabel(),
+            button?.isToggledOn ?? false)
+    }
+
+    @discardableResult
+    func activateBrowserToolbarForTesting() -> Bool {
+        guard let button = compactToolbarGroup?.arrangedSubviews
+            .compactMap({ $0 as? CompactToolbarButton })
+            .first(where: {
+                $0.identifier?.rawValue == NativeToolbarItem.browser.rawValue
+            }) else { return false }
+        button.performClick(nil)
+        return true
     }
 
     @objc private func performCompactToolbarAction(_ sender: NSButton) {
@@ -2965,7 +3025,7 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
             lastFocused = panes.first
             applyPreferences()
             if startsShells {
-                for pane in panes { pane.startShell(banner: false) }
+                for pane in panes { pane.startShell() }
             }
             window?.initialFirstResponder = panes.first?.surface.view
             if let f = node["frame"] as? String {
@@ -3252,7 +3312,7 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
         panes.append(newPane)
         insert(newPane, nextTo: pane, vertical: vertical)
         newPane.applyPreferences()
-        if startsShells { newPane.startShell(banner: false) }
+        if startsShells { newPane.startShell() }
         applyPreferences()   // recolor dividers etc.
         relayoutPanes(focus: newPane)
         return newPane
@@ -5027,6 +5087,7 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
 
         for pane in panes { applyPreferences(to: pane) }
         for editor in editorPanes { editor.applyPreferences(theme: theme) }
+        embeddedBrowserController.applyTheme(theme)
         windowInlinePanel?.themeOverride = theme
         windowInlinePanel?.refreshMetrics()
         updateMinimumWindowHeight()

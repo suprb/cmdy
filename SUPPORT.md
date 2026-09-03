@@ -42,8 +42,8 @@ third-party Extension, or external service, but those projects remain
 responsible for their own behavior.
 
 The source checkout currently requires macOS 26 and a matching Xcode toolchain.
-The optional Chromium Extension additionally needs the separately documented CEF
-payload; see [Plugins/chromium/README-CEF.md](Plugins/chromium/README-CEF.md).
+Building the optional Browser edition additionally needs the separately documented
+CEF payload; see [Plugins/chromium/README-CEF.md](Plugins/chromium/README-CEF.md).
 
 ## Security and conduct
 

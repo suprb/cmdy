@@ -411,6 +411,7 @@ if ! grep -Fq 'ALL SHADER TESTS PASS' <<< "$SHADER_SMOKE"; then
 fi
 if [ "$BROWSER_EDITION" = "1" ]; then
     echo "Running packaged Browser sandbox/UI smoke..."
+    BROWSER_SMOKE_STARTED=$SECONDS
     BROWSER_SMOKE="$(env \
         HOME="$RESOURCE_SMOKE_DIR/home" \
         CFFIXED_USER_HOME="$RESOURCE_SMOKE_DIR/home" \
@@ -421,10 +422,16 @@ if [ "$BROWSER_EDITION" = "1" ]; then
         echo "Packaged Browser smoke failed." >&2
         exit 5
     }
+    BROWSER_SMOKE_SECONDS=$((SECONDS - BROWSER_SMOKE_STARTED))
     if ! grep -Fq 'UIBROWSER ' <<< "$BROWSER_SMOKE" \
        || ! grep -Fq 'ok=true' <<< "$BROWSER_SMOKE"; then
         printf '%s\n' "$BROWSER_SMOKE" >&2
         echo "Packaged Browser did not load a sandboxed page." >&2
+        exit 5
+    fi
+    if [ "$BROWSER_SMOKE_SECONDS" -gt 12 ]; then
+        printf '%s\n' "$BROWSER_SMOKE" >&2
+        echo "Packaged Browser Cmd-W shutdown took ${BROWSER_SMOKE_SECONDS}s (limit: 12s)." >&2
         exit 5
     fi
 fi

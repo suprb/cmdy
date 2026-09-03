@@ -388,11 +388,10 @@ enum SelfTest {
             check(defaults.cleanPrompt && defaults.contentMargin == 10
                     && defaults.scrollSpeed == 1.5,
                   "first-launch terminal behavior matches the default config")
-            check(!defaults.showBanner
-                    && !defaults.workspaceNavigatorVisible
+            check(!defaults.workspaceNavigatorVisible
                     && !defaults.workspaceInspectorVisible
                     && !TerminalWindowController.embeddedBrowserStartsVisible,
-                  "first launch starts without banner, sidebar, browser, or inspector")
+                  "first launch starts without sidebar, browser, or inspector")
             check(defaults.nativeToolbarStyle == "compact",
                   "the default inset selects AppKit unified compact")
             check(Preferences.nativeToolbarStyle(forContentMargin: 0) == "compact"
@@ -956,6 +955,12 @@ enum SelfTest {
                     toolbarBand: 40, titleBandVisible: false,
                     backingScale: 2) == 0,
               "embedded browser: toolbar clearance adds one device pixel")
+        let browserChrome = EmbeddedChromiumViewController()
+        browserChrome.applyTheme(.c64)
+        check(browserChrome.chromeBackground == Theme.c64.background,
+              "embedded browser: chrome inherits the active window theme")
+        check(EmbeddedChromiumRuntime.applicationTerminationWaitMilliseconds == 0,
+              "embedded browser: app termination never blocks for CEF shutdown")
 
         let sourceFrame = NSRect(x: 100, y: 200, width: 860, height: 540)
         let nextFrame = AppDelegate.cascadedWindowFrame(

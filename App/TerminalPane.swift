@@ -755,18 +755,13 @@ final class TerminalPane: DropView, InlinePanelHost, ExtensionSurfaceHost,
         return relevant.isEmpty && [48, 124].contains(keyCode)
     }
 
-    /// `banner: false` for split panes — the boot banner belongs to the first
-    /// session of a window, and it garbles at narrow pane widths.
-    func startShell(banner: Bool = true) {
+    func startShell() {
         let shell = ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh"
         let env = ShellIntegration.makeEnvironment(
             shellPath: shell,
             integrationEnabled: Preferences.shared.shellIntegration,
             cleanPrompt: Preferences.shared.cleanPrompt)
 
-        if banner && Preferences.shared.showBanner {
-            surface.engine.feed(text: SystemInfo.bootBanner())
-        }
         if let restored = pendingRestoreText, !restored.isEmpty {
             // Dimmed so it reads as history, with a rule where the new shell begins.
             let text = restored.replacingOccurrences(of: "\n", with: "\r\n")

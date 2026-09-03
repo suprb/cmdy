@@ -35,12 +35,12 @@
       {
         "path": "package.sh",
         "purpose": "package-script",
-        "sha256": "c38f3afeae1540f3bd5bb0bf8ef4e1b91e53740b0f075376fbd6e17f34eb8a62"
+        "sha256": "b2fbb98987ffaebd5cdda2be94168503e4e95e89a9d8b18b53e2ca4b5d0e4b2c"
       },
       {
         "path": "Tests/perf-gate.sh",
         "purpose": "performance-gate",
-        "sha256": "0f8327312e7a9a42bfbe1ebf5c789d797372721074d2da2b906fab06a9649db5"
+        "sha256": "31bf6649420557b5f7d1ef55e51cab89d0b28ed3d5c6fe32e85b60050db43827"
       },
       {
         "path": "Identity/Sources/ProductIdentity/Resources/product-identity.json",
@@ -110,12 +110,12 @@
       {
         "path": "test.sh",
         "purpose": "resource-stress-gate",
-        "sha256": "f02d42f9e4f38d08b187e44591525c9cf8a6b31769418feb9f35fd16c5d49005"
+        "sha256": "3038b7d2a57dfb8a608d0023846d7a5aab002e4b6cec1b20ce41033feb93e337"
       },
       {
         "path": "Tests/zoo.sh",
         "purpose": "tui-zoo-gate",
-        "sha256": "17484f307058b84bdccf40d62e48a8ff9ad843ae9ba8e16f9cf59b14962d397f"
+        "sha256": "d5195ceeeb072a40305d5f4ae5a84268581d36653ab456e4840dc2405cb99f21"
       },
       {
         "path": "scripts/check-zoo-review.py",
@@ -161,12 +161,12 @@
   "kind": "cmdy-release-qualification",
   "publication": {
     "approval": {
-      "approvalReference": "Project owner requested the 1.0.1 install repair, publication, and merge to main in this session on 2026-09-02.",
-      "approvedPublicWording": "Engineering qualification and install-path verification passed for the exact cmdy 1.0.1 source and evidence set. Project-owner approval; this is not an independent authorship or legal clean-room review.",
+      "approvalReference": "Project owner requested the Browser install, theme, close-path, and banner fixes, publication, and merge to main in this session on 2026-09-03.",
+      "approvedPublicWording": "Engineering qualification and Browser install, theme, and close-path verification passed for the exact cmdy 1.0.2 source and evidence set. Project-owner approval; this is not an independent authorship or legal clean-room review.",
       "decision": "approved",
-      "engineeringDigestSha256": "44b715d084753151090f1970916f6fd40041ad6aecd2cd364d45e93321966961",
-      "evidenceDigestSha256": "f57fdbef1b7b9db9436eaca13d693a368e30d7c8e87702fecd234ee416a1440e",
-      "reviewedAtUTC": "2026-09-02T19:32:31Z",
+      "engineeringDigestSha256": "d44ec1d92a6dc29f08328af0a229d9f800aa186784d38f9c1812802f93d59b60",
+      "evidenceDigestSha256": "436906d35210efb6edb2eece8472d3c212900d5999319d0a094cc7c167c1a41b",
+      "reviewedAtUTC": "2026-09-03T16:58:23Z",
       "reviewerAffiliation": "cmdy project owner",
       "reviewerIndependentFromImplementation": false,
       "reviewerKind": "human",
@@ -176,16 +176,16 @@
       "core": {
         "record": {
           "path": "docs/independence/qualification/core-17-seed.json",
-          "sha256": "3443ec362396815568a9b98746201f1cfd7d2e6c04b793b579ecd3c721dd419d"
+          "sha256": "e8546c228880944f5975044d4999c4bc6637ea54bd7ef6a4629bc4db911418a3"
         },
-        "sourceManifestSha256": "9170b9b44bcca17c6dd68e9ef3d93b6a0880c771525e0432b66775e5e728fa10"
+        "sourceManifestSha256": "126167a2487c089bc66c31de3f1361c0b7bc2bc6d9bd23b7ffcbb2732b7faf48"
       },
       "operational": {
         "record": {
           "path": "docs/independence/qualification/operational-review.json",
-          "sha256": "61b6d6dbf3d74341ccee5d937d0f64c8765038c80b4effd7e56082eeb5e09a4d"
+          "sha256": "20378aa27b6436dcb8fc61ca40a616cdda69f5796ac2558b7ec34d806b868852"
         },
-        "sourceManifestSha256": "9170b9b44bcca17c6dd68e9ef3d93b6a0880c771525e0432b66775e5e728fa10"
+        "sourceManifestSha256": "126167a2487c089bc66c31de3f1361c0b7bc2bc6d9bd23b7ffcbb2732b7faf48"
       },
       "renderer": {
         "checkerSha256": "886a21d8601f7917bbab544ac285b5952d3f79a60203c56d25bb1632f7690ee7",
@@ -197,20 +197,20 @@
           "path": "docs/independence/qualification/renderer-environment.json",
           "sha256": "17d430cd7191f8872de0acb497ef7010c2913757e10574cb2e69b152218bfc39"
         },
-        "sourceManifestSha256": "9170b9b44bcca17c6dd68e9ef3d93b6a0880c771525e0432b66775e5e728fa10"
+        "sourceManifestSha256": "126167a2487c089bc66c31de3f1361c0b7bc2bc6d9bd23b7ffcbb2732b7faf48"
       }
     },
     "source": {
       "activeSourceManifest": {
         "path": "docs/independence/qualification/active-terminal-sources.json",
-        "sha256": "9170b9b44bcca17c6dd68e9ef3d93b6a0880c771525e0432b66775e5e728fa10"
+        "sha256": "126167a2487c089bc66c31de3f1361c0b7bc2bc6d9bd23b7ffcbb2732b7faf48"
       },
       "provenanceReport": {
         "path": "docs/independence/qualification/working-tree-provenance.json",
-        "sha256": "272b0387b09fe4a462d4c70a8e9f74fd2d030e6d6582c1b38959503745428a04"
+        "sha256": "b9ac3ee8bfe18c294ddf54c17ecab7f7856b1861294ab2c428de41a6bb08a2b6"
       },
-      "sourceCommit": "161d589bfdb625d2b405261ae305bf9b930cac79",
-      "sourceTree": "28c9f960be1037ee12f4cf224a5752fb816317b1"
+      "sourceCommit": "6490631c120fde33381bd3cd5dd1ec2ee8162a1a",
+      "sourceTree": "b3ca140db6cf402294c77de4f11d4e47b3c93132"
     },
     "state": "approved"
   },

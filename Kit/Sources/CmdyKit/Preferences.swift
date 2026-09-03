@@ -13,6 +13,7 @@ public final class Preferences {
     public static let defaultThemeName = "Light"
     public static let defaultFontName = "FragmentMono-Regular"
     public static let defaultFontSize: CGFloat = 13
+    @available(*, deprecated, message: "The startup banner was removed in cmdy 1.0.2.")
     public static let defaultShowBanner = false
     public static let defaultWorkspaceNavigatorVisible = false
     public static let defaultWorkspaceInspectorVisible = false
@@ -27,7 +28,6 @@ public final class Preferences {
         static let cursorColorOverride = "cursorColorOverride"
         static let optionAsMeta = "optionAsMeta"
         static let attentionSignals = "attentionSignals"
-        static let showBanner = "showBanner"
         static let shellIntegration = "shellIntegration"
         static let cleanPrompt = "cleanPrompt"
         static let lineHeight = "lineHeight"
@@ -78,7 +78,6 @@ public final class Preferences {
             // GPU is the point. CmdyGPU keeps glyphs and the cursor snapped to
             // the terminal grid so GPU output is crisper than a generic text view.
             Key.optionAsMeta: true,
-            Key.showBanner: Self.defaultShowBanner,
             Key.shellIntegration: true,
             Key.cleanPrompt: true,
             Key.contentMargin: 10.0,
@@ -207,10 +206,13 @@ public final class Preferences {
         set { guard newValue != optionAsMeta else { return }
               d.set(newValue, forKey: Key.optionAsMeta); sync("option-as-meta", "\(newValue)"); changed() }
     }
+    /// Source-compatibility shim for clients built against cmdy 1.0.1.
+    /// The startup banner is gone, so reads are always false and writes do
+    /// nothing; no preference or config surface is recreated.
+    @available(*, deprecated, message: "The startup banner was removed in cmdy 1.0.2.")
     public var showBanner: Bool {
-        get { d.bool(forKey: Key.showBanner) }
-        set { guard newValue != showBanner else { return }
-              d.set(newValue, forKey: Key.showBanner); sync("banner", "\(newValue)"); changed() }
+        get { false }
+        set { }
     }
     public var shellIntegration: Bool {
         get { d.bool(forKey: Key.shellIntegration) }

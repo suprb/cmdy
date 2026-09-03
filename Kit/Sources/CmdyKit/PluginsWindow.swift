@@ -41,6 +41,7 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
 
     private enum RowAction {
         case none(String)
+        case downloadBrowserEdition
         case download(Marketplace.Entry)
         case update(Marketplace.Entry, installed: String)
     }
@@ -73,6 +74,9 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
     private func reload() {
         rows.removeAll()
         let marketplacePlugins = marketplaceEntries.filter { $0.kind == "plugin" }
+        let browserDistribution = PluginManager.shared.hostComponentDistribution(
+            BrowserEdition.hostComponentIdentifier)
+        var hasExternalBrowser = false
         var matchedMarketplaceIDs = Set<String>()
         // Built-in plugins.
         for type in PluginManager.builtins {
@@ -99,6 +103,14 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
                 // Channel connectors share the process sandbox but have their
                 // own manager and must not be presented as Extensions.
                 guard !manifest.allows(.channels) else { continue }
+                let isBrowser = manifest.hostComponent
+                    == BrowserEdition.hostComponentIdentifier
+                if isBrowser {
+                    hasExternalBrowser = true
+                    // A Browser-edition app owns its sealed Chromium runtime.
+                    // Do not expose a stale legacy Extension copy as removable.
+                    if browserDistribution == .bundled { continue }
+                }
                 let name = manifest.name
                 let enabled = manifest.enabled
                 let runtime = PluginManager.shared.extensionRuntimeStatus(at: dir)
@@ -110,7 +122,12 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
                 if let marketplaceEntry { matchedMarketplaceIDs.insert(marketplaceEntry.id) }
                 let action: RowAction
                 var installedVersion = manifest.version
-                if let entry = marketplaceEntry {
+                if isBrowser {
+                    // Legacy local Browser installs remain manageable, while
+                    // this action provides their supported signed-edition
+                    // upgrade path now that Browser is no longer in Marketplace.
+                    action = .downloadBrowserEdition
+                } else if let entry = marketplaceEntry {
                     switch Marketplace.state(of: entry) {
                     case .notInstalled:
                         action = .download(entry)
@@ -163,6 +180,17 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
                 action: .download(entry)
             ))
         }
+        switch BrowserEdition.rowState(
+            distribution: browserDistribution,
+            hasExternalInstall: hasExternalBrowser
+        ) {
+        case .included:
+            rows.append(browserEditionRow(installed: true))
+        case .notInstalled:
+            rows.append(browserEditionRow(installed: false))
+        case nil:
+            break
+        }
         rows.sort {
             if $0.kind == "built-in" && $1.kind != "built-in" { return true }
             if $0.kind != "built-in" && $1.kind == "built-in" { return false }
@@ -178,7 +206,7 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
         } else {
             let available = rows.filter {
                 switch $0.action {
-                case .download, .update: return true
+                case .download, .update, .downloadBrowserEdition: return true
                 case .none: return false
                 }
             }.count
@@ -187,6 +215,61 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
                 : " · all extensions are current"
             statusLabel.stringValue = "\(extCount) installed\(suffix)"
         }
+    }
+
+    private func browserEditionRow(installed: Bool) -> Row {
+        Row(
+            name: "Browser",
+            kind: "edition",
+            summary: installed
+                ? "Web browsing is included in this signed app edition."
+                : "Web browsing inside cmdy; available in the signed Browser edition.",
+            detail: installed
+                ? "Browser edition · installed"
+                : "Browser edition · not installed",
+            guide: BrowserEdition.guide,
+            enabled: installed,
+            dir: nil,
+            builtinId: nil,
+            sourceURL: nil,
+            marketplaceEntry: nil,
+            canToggle: false,
+            action: installed ? .none("Included") : .downloadBrowserEdition)
+    }
+
+    /// Assembled-app test seam for the exact native Extensions row.
+    public func browserEditionDiagnosticForTesting() -> (
+        count: Int, detail: String?, action: String?, canToggle: Bool?
+    ) {
+        _ = ensureWindow()
+        reload()
+        let browserRows = rows.filter {
+            $0.name.caseInsensitiveCompare("Browser") == .orderedSame
+        }
+        let row = browserRows.first
+        let action: String?
+        switch row?.action {
+        case .some(.downloadBrowserEdition): action = "Download Edition"
+        case .some(.none(let label)): action = label
+        case .some(.download): action = "Download"
+        case .some(.update): action = "Update"
+        case nil: action = nil
+        }
+        return (browserRows.count, row?.detail, action, row?.canToggle)
+    }
+
+    /// Activates the same row action as its visible native button.
+    @discardableResult
+    public func triggerBrowserEditionDownloadForTesting() -> Bool {
+        reload()
+        guard let index = rows.firstIndex(where: {
+            if case .downloadBrowserEdition = $0.action { return true }
+            return false
+        }) else { return false }
+        let sender = NSButton()
+        sender.tag = index
+        installRow(sender)
+        return true
     }
 
     private static func webURL(_ raw: String?) -> URL? {
@@ -529,6 +612,8 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
             primary = text
         case .download:
             primary = actionButton(title: "Download", row: index)
+        case .downloadBrowserEdition:
+            primary = actionButton(title: "Download Edition", row: index)
         case .update:
             primary = actionButton(title: "Update", row: index)
         }
@@ -595,7 +680,9 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
         let row = rows[sender.tag]
         CmdyProductGuidePresenter.shared.show(
             title: row.name,
-            category: row.kind == "available" ? "Available Extension" : "Extension",
+            category: row.kind == "edition"
+                ? "Browser Edition"
+                : (row.kind == "available" ? "Available Extension" : "Extension"),
             summary: row.summary,
             guide: row.guide,
             relativeTo: window)
@@ -618,6 +705,9 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
         switch row.action {
         case .download(let candidate): entry = candidate; verb = "Download"
         case .update(let candidate, _): entry = candidate; verb = "Update"
+        case .downloadBrowserEdition:
+            BrowserEditionInstaller.presentDownloadPrompt(relativeTo: window)
+            return
         case .none: return
         }
         let alert = NSAlert()

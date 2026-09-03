@@ -169,7 +169,6 @@ final class CmdyMenuIconInstaller: NSObject {
             ("shell integration", "point.3.connected.trianglepath.dotted"),
             ("automatic error help", "cross.case"),
             ("clean prompt", "text.badge.checkmark"),
-            ("boot banner", "flag"),
             ("scroll speed", "speedometer"),
             ("window chrome", "macwindow"),
             ("hide window buttons", "button.horizontal.top.press"),
