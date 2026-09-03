@@ -9,7 +9,7 @@
       },
       "mode": "normal",
       "passed": true,
-      "scriptSha256": "0f8327312e7a9a42bfbe1ebf5c789d797372721074d2da2b906fab06a9649db5"
+      "scriptSha256": "31bf6649420557b5f7d1ef55e51cab89d0b28ed3d5c6fe32e85b60050db43827"
     },
     {
       "exceptions": [],
@@ -19,7 +19,7 @@
       },
       "mode": "maximized",
       "passed": true,
-      "scriptSha256": "0f8327312e7a9a42bfbe1ebf5c789d797372721074d2da2b906fab06a9649db5"
+      "scriptSha256": "31bf6649420557b5f7d1ef55e51cab89d0b28ed3d5c6fe32e85b60050db43827"
     }
   ],
   "resourcePlateau": {
@@ -31,7 +31,7 @@
     "monotonicGrowth": false,
     "passed": true,
     "runs": 3,
-    "scriptSha256": "f02d42f9e4f38d08b187e44591525c9cf8a6b31769418feb9f35fd16c5d49005",
+    "scriptSha256": "3038b7d2a57dfb8a608d0023846d7a5aab002e4b6cec1b20ce41033feb93e337",
     "zombieCount": 0
   },
   "review": {
@@ -41,7 +41,7 @@
     "reviewerName": "Andreas Pihlström"
   },
   "schemaVersion": 1,
-  "sourceManifestSha256": "9170b9b44bcca17c6dd68e9ef3d93b6a0880c771525e0432b66775e5e728fa10",
+  "sourceManifestSha256": "126167a2487c089bc66c31de3f1361c0b7bc2bc6d9bd23b7ffcbb2732b7faf48",
   "zoo": {
     "captureCount": 14,
     "captureManifest": {
@@ -50,7 +50,7 @@
     },
     "exceptions": [],
     "passed": true,
-    "scriptSha256": "17484f307058b84bdccf40d62e48a8ff9ad843ae9ba8e16f9cf59b14962d397f",
+    "scriptSha256": "d5195ceeeb072a40305d5f4ae5a84268581d36653ab456e4840dc2405cb99f21",
     "visualReview": {
       "path": "docs/independence/qualification/zoo-visual-review.json",
       "sha256": "4eac1abde8a08cfbba1affebc185600199ef286ac5418c0326206592deac487f"
