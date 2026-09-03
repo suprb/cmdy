@@ -191,7 +191,6 @@ public final class InlinePanel: NSView {
         var sounds: Bool
         var ghostText: Bool
         var automaticErrorHelp: Bool
-        var showBanner: Bool
     }
     private var prefsSnapshot: PreferencesSnapshot?
     private var previewHooks: InlinePanelPreviewHooks?
@@ -213,8 +212,7 @@ public final class InlinePanel: NSView {
             smoothScroll: p.smoothScroll,
             sounds: p.sounds,
             ghostText: p.ghostText,
-            automaticErrorHelp: p.automaticErrorHelp,
-            showBanner: p.showBanner
+            automaticErrorHelp: p.automaticErrorHelp
         )
     }
 
@@ -246,7 +244,6 @@ public final class InlinePanel: NSView {
         if p.sounds != s.sounds { p.sounds = s.sounds }
         if p.ghostText != s.ghostText { p.ghostText = s.ghostText }
         if p.automaticErrorHelp != s.automaticErrorHelp { p.automaticErrorHelp = s.automaticErrorHelp }
-        if p.showBanner != s.showBanner { p.showBanner = s.showBanner }
         p.isPreviewing = false
         previewHooks?.restore()
     }

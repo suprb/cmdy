@@ -344,7 +344,7 @@ export function MarketplacePage() {
       <section className="browser-edition page-shell" aria-labelledby="browser-edition-title">
         <div>
           <h2 id="browser-edition-title">Browser installs with the Browser edition</h2>
-          <p>Chromium must live inside the signed app bundle on macOS. This DMG replaces the lean app and keeps the same settings and extensions.</p>
+          <p>Chromium must live inside the signed app bundle on macOS. This DMG replaces the lean app and keeps the same settings and extensions. You can also get it from the Browser row in cmdy&apos;s Extensions window.</p>
         </div>
         <a className="case" href={browserDownloadURL}>Download Browser edition</a>
       </section>

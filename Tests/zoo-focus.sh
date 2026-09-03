@@ -22,7 +22,7 @@ restore() {
 trap restore EXIT
 
 mkdir -p "$CFG"
-printf 'theme = C64\ncursor-style = block\ncursor-blink = false\nbanner = false\nrestore-session = false\nshader = None\nsounds = false\nghost-text = false\n' > "$CFG/config"
+printf 'theme = C64\ncursor-style = block\ncursor-blink = false\nrestore-session = false\nshader = None\nsounds = false\nghost-text = false\n' > "$CFG/config"
 
 cd /private/tmp
 CMDY_DEFAULTS_DOMAIN="$DEFAULTS_DOMAIN" CMDY_CONFIG_DIR="$CFG" "$BIN" &

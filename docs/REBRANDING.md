@@ -9,7 +9,7 @@ The rule to remember is:
 
 - Change the product name through the identity script.
 - Change the app artwork through the canonical brand master.
-- Manually redraw the terminal boot badge and update public copy/media.
+- Update public copy and media.
 - Keep compatibility identifiers stable unless a separate breaking migration
   has been designed and tested.
 
@@ -23,7 +23,6 @@ git switch -c rebrand/new-name
 
 # Replace Brand/Assets/app-icon.png with the new 1024 x 1024 PNG.
 # Add the untouched source artwork under Brand/Assets/ for provenance.
-# Redraw the terminal badge in App/SystemInfo.swift.
 # Update public prose, links, screenshots, and the GitHub repository.
 
 ./scripts/check-product-identity.sh
@@ -64,7 +63,6 @@ identity from that value.
 | `Info.plist` display and executable values | identity plus derived slug | Automatic |
 | App icon and website icon | `Brand/Assets/app-icon.png` | Replace manually |
 | Original logo artwork | `Brand/Assets/` | Archive manually |
-| Terminal boot badge | `App/SystemInfo.swift` | Redraw manually |
 | Website prose, docs, examples, screenshots | several editorial files | Review manually |
 | GitHub repository, registry, domains, social accounts | external services | Rename manually |
 
@@ -235,43 +233,7 @@ After changing the artwork, update `Brand/README.md` so it names the archived
 source file and briefly records how the square master was prepared. Never
 overwrite the only copy of original supplied artwork.
 
-## 5. Redraw the terminal boot badge
-
-The startup badge is text, not a raster image. Its cell geometry lives in:
-
-```text
-App/SystemInfo.swift
-```
-
-Update the `logo` string array so it is a recognizable terminal-cell reduction
-of the new mark. Also update the nearby source-art comment. The product name in
-the banner header already comes from `ProductIdentity`; do not hardcode it.
-
-Keep these constraints in mind:
-
-- Every row should be visually close to the same cell width.
-- Use full, half, or block glyphs deliberately; test with the bundled default
-  font as well as a narrow fallback.
-- Preserve enough negative space that the mark reads at normal terminal size.
-- The mark should resemble the real logo, not merely spell the product name in
-  an unrelated type style.
-- Keep ANSI color resets intact so the badge cannot leak styling into the
-  prompt.
-
-Preview the exact banner without launching a full interactive session:
-
-```sh
-bash <<'BASH'
-source scripts/product-identity.sh
-swift build
-".build/debug/$PRODUCT_EXECUTABLE" --banner
-BASH
-```
-
-Then launch the packaged app and inspect the badge on Light, B/W, W/B, and at
-least one colored theme.
-
-## 6. Update public copy, links, and media
+## 5. Update public copy, links, and media
 
 Functional identity is derived, but editorial language is deliberately human
 written. Search the public-facing areas for the old display name and slug:
@@ -324,7 +286,7 @@ of the following:
 
 Everything the user sees as current product branding should use the new name.
 
-## 7. Rename external services in the right order
+## 6. Rename external services in the right order
 
 The identity manifest cannot rename external accounts. Check each of these:
 
@@ -363,7 +325,7 @@ For the registry, update both the repository/link and any registry URLs in
 website or app configuration. Existing package identifiers should normally
 remain stable so installed Extensions are not duplicated.
 
-## 8. Verify identity and compatibility
+## 7. Verify identity and compatibility
 
 Run the fast identity gates first:
 
@@ -442,7 +404,7 @@ Finally rebuild and verify the website, including the synchronized icon:
 cmp Brand/Assets/app-icon.png site/dist/app-icon.png
 ```
 
-## 9. Build and inspect the real app bundle
+## 8. Build and inspect the real app bundle
 
 `swift build` only builds an executable. It does not produce the app a user
 will install. Build the bundle with:
@@ -484,7 +446,7 @@ BASH
 
 Visually inspect Finder/Dock icon, menu bar name, About/update UI, window title,
 config editor path, Marketplace install commands, Extension menus, MCP names,
-startup badge, website favicon, and all Light/Dark appearance combinations.
+website favicon, and all Light/Dark appearance combinations.
 Also check the 16/32 px icon in Finder list view; a logo that works only at
 1024 px is not a finished app icon.
 
@@ -492,7 +454,7 @@ Also check the 16/32 px icon in Finder list view; a logo that works only at
 former slug may remain beside it, so confirm which exact `.app` you launch.
 Quit old running copies before judging name, icon, updater, or config behavior.
 
-## 10. Test fresh install and upgrade migration
+## 9. Test fresh install and upgrade migration
 
 Test both user stories before release:
 
@@ -533,7 +495,7 @@ Never use a real user's only config directory as a migration fixture, and do
 not delete the old directory during the rebrand. Keeping it is the downgrade
 and rollback safety net.
 
-## 11. Build the production release
+## 10. Build the production release
 
 A signed local app is not the same as a Gatekeeper-ready download.
 `package.sh` signs the bundle; `release.sh` creates, notarizes, staples, and
@@ -579,7 +541,7 @@ Its existing `TERMITE_*` repository secret names may remain unchanged because
 they are private CI keys, not customer-facing brand. Rename them only in one
 coordinated change that updates both repository secrets and workflow references.
 
-## 12. Final audit and commit checklist
+## 11. Final audit and commit checklist
 
 Before committing or tagging, confirm every item:
 
@@ -588,7 +550,6 @@ Before committing or tagging, confirm every item:
 - [ ] The new slug has no collision with a previous identity.
 - [ ] `Brand/Assets/app-icon.png` is a visually approved 1024 x 1024 PNG.
 - [ ] Untouched source artwork is archived under `Brand/Assets/`.
-- [ ] The terminal-cell badge visibly resembles the new logo.
 - [ ] Public docs, website copy, URLs, commands, screenshots, and recordings
       use the new brand.
 - [ ] The main GitHub repository exists at the updater's derived URL.
@@ -608,12 +569,12 @@ Useful final checks:
 ./scripts/check-product-identity.sh
 git diff --check
 git status --short
-git diff -- Identity Brand App/SystemInfo.swift README.md RELEASING.md \
+git diff -- Identity Brand App README.md RELEASING.md \
   site .github
 ```
 
-Commit the manifest, artwork, boot badge, public copy, editable website source,
-and tests together so no intermediate commit advertises a mixed identity. Rebuild
+Commit the manifest, artwork, public copy, editable website source, and tests
+together so no intermediate commit advertises a mixed identity. Rebuild
 the ignored `site/dist/` output from that committed source instead of committing it.
 
 ## Rollback
@@ -625,7 +586,7 @@ If it has shipped, treat rollback as another migration:
 
 1. Run `rename-product.sh` with the restored public name so the temporary name
    becomes a compatibility alias.
-2. Restore the previous canonical icon and terminal badge from version control.
+2. Restore the previous canonical icon from version control.
 3. Restore public links and ensure the updater's derived repository exists.
 4. Repeat all fresh-user, upgrade, package, notarization, and Gatekeeper gates.
 5. Leave both generations of user config untouched.
@@ -646,7 +607,6 @@ and environment variables are real compatibility inputs.
 | `Brand/Assets/<slug>-logo-source.*` | Untouched source artwork/provenance |
 | `Brand/README.md` | Artwork provenance and preparation notes |
 | `App/IconGenerator.swift` | Iconset renderer; normally no rebrand edit needed |
-| `App/SystemInfo.swift` | Manual terminal-cell boot badge |
 | `package.sh` | App bundle, Info.plist, helpers, icon, and signing |
 | `release.sh` | ZIP/DMG, notarization, stapling, Gatekeeper, checksums |
 | `.github/workflows/release.yml` | CI signing and GitHub Release publication |

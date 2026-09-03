@@ -73,6 +73,34 @@ else
   FAIL=1
 fi
 
+# The lean app must keep Browser discoverable even without a legacy local
+# Chromium Extension: View menu, default toolbar, Extensions row, and all
+# three native recovery prompts must point at the signed Browser edition.
+BROWSER_INSTALL_HOME=$(mktemp -d "/tmp/$PRODUCT_SLUG-browser-install.XXXXXX")
+mkdir -p "$BROWSER_INSTALL_HOME/config"
+BROWSER_INSTALL_DEFAULTS="$PRODUCT_BUNDLE_IDENTIFIER.browser-install.$PPID.$$"
+out=$(env HOME="$BROWSER_INSTALL_HOME" CFFIXED_USER_HOME="$BROWSER_INSTALL_HOME" \
+    "${PRODUCT_ENV_PREFIX}_CONFIG_DIR=$BROWSER_INSTALL_HOME/config" \
+    "${PRODUCT_ENV_PREFIX}_DEFAULTS_DOMAIN=$BROWSER_INSTALL_DEFAULTS" \
+    "$BIN" --ui-test-browser-install-recovery 2>&1)
+code=$?
+/usr/bin/defaults delete "$BROWSER_INSTALL_DEFAULTS" >/dev/null 2>&1 || true
+rm -rf "$BROWSER_INSTALL_HOME"
+if [ $code -eq 0 ] && grep -Fq "UIBROWSERINSTALL unavailable=true" <<< "$out" \
+    && grep -Fq "menu=true" <<< "$out" \
+    && grep -Fq "menuPrompt=true" <<< "$out" \
+    && grep -Fq "toolbar=true" <<< "$out" \
+    && grep -Fq "toolbarPrompt=true" <<< "$out" \
+    && grep -Fq "row=true" <<< "$out" \
+    && grep -Fq "rowPrompt=true" <<< "$out" \
+    && grep -Fq "ok=true" <<< "$out"; then
+  echo "PASS  --ui-test-browser-install-recovery  lean menu, toolbar, row, and prompts passed"
+else
+  echo "FAIL  --ui-test-browser-install-recovery"
+  echo "$out" | tail -24
+  FAIL=1
+fi
+
 # The compact Finder-style controls live inside the full-size titlebar. Send a
 # real mouse down/up to one visible icon so titlebar dragging or toolbar-layout
 # normalization cannot silently make the controls unclickable again.

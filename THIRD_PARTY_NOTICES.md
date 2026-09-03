@@ -109,7 +109,7 @@ upstream notice with distributions that include SwiftNIO.
 
 ## Optional Chromium Embedded Framework payload
 
-The Browser Extension can be built with Chromium Embedded Framework (CEF)
+The optional Browser app edition can be built with Chromium Embedded Framework (CEF)
 `145.0.28+g51162e8+chromium-145.0.7632.160`. CEF is BSD-licensed; its complete
 license is tracked at `Plugins/chromium/CEF-LICENSE.txt`.
 
@@ -121,8 +121,8 @@ SHA-256 and installs both of these files with the optional framework payload:
 - `Plugins/chromium/Frameworks/CEF-CREDITS.html`
 
 The bootstrap's `--check` mode fails when either notice is absent, and
-`plugins.sh` preserves the complete `Frameworks/` directory when installing the
-Browser Extension. The generated credits file is not duplicated in Git; it is
+Browser packaging preserves the complete `Frameworks/` directory inside the
+signed app. The generated credits file is not duplicated in Git; it is
 reproduced from the exact pinned upstream archive. See
 `Plugins/chromium/CEF-NOTICE.md` for the payload and redistribution details.
 

@@ -11,6 +11,27 @@ be called out here with a migration path before a versioned release.
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-09-03
+
+### Fixed
+
+- Browser now remains visible in Extensions on lean installations, where its
+  row offers the signed Browser-edition DMG instead of disappearing when no
+  legacy Chromium Extension folder exists.
+- Clicking Browser in the toolbar or menu on a lean installation now explains
+  that Browser is not installed and offers the same Browser-edition download.
+- Browser chrome now inherits the active tab's theme and restores the themed
+  toolbar immediately when Browser is opened or closed.
+- Closing the final Browser window no longer blocks AppKit for up to ten
+  seconds while Chromium shuts down; unfinished Chromium cleanup is safely
+  left to process exit.
+- The Browser component version is now 2.0.1.
+
+### Removed
+
+- The startup boot banner and its menu, command-palette, config, diagnostic,
+  and rebranding surfaces have been removed.
+
 ## [1.0.1] - 2026-09-02
 
 ### Fixed

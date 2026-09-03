@@ -93,6 +93,7 @@ private enum EmbeddedChromiumError: LocalizedError {
 /// directory, while lean editions contain neither.
 final class EmbeddedChromiumRuntime {
     static let shared = EmbeddedChromiumRuntime()
+    static let applicationTerminationWaitMilliseconds: Int32 = 0
 
     private var extensionDirectory: URL?
     private var libraryHandle: UnsafeMutableRawPointer?
@@ -115,6 +116,15 @@ final class EmbeddedChromiumRuntime {
         ))
 
     var isAvailable: Bool { enabled && extensionDirectory != nil }
+
+    var distribution: HostComponentDistribution {
+        if isComplete(bundledRuntimeLayout()) { return .bundled }
+        guard let extensionDirectory,
+              isComplete(runtimeLayout(in: extensionDirectory)) else {
+            return .unavailable
+        }
+        return .external
+    }
 
     private init() {}
 
@@ -225,12 +235,17 @@ final class EmbeddedChromiumRuntime {
         closeAllBrowsers()
         messagePump?.invalidate()
         messagePump = nil
-        if initialized, functions?.shutdown(10_000) == 1 {
+        // Application termination must never spin the AppKit main thread for
+        // CEF's old ten-second close deadline. Request closure and shut down
+        // immediately only when CEF has no live lifecycle left; otherwise the
+        // process exit safely releases the already-unlinked framework.
+        if initialized,
+           functions?.shutdown(Self.applicationTerminationWaitMilliseconds) == 1 {
             initialized = false
         } else if initialized {
             // CEF explicitly refused an unsafe shutdown. Keep the dylib loaded;
             // process teardown is safer than dlclosing live browser objects.
-            NSLog("embedded chromium: timed out waiting for browser shutdown")
+            NSLog("embedded chromium: deferred shutdown to process exit")
             return
         }
         functions = nil
@@ -585,7 +600,8 @@ final class EmbeddedChromiumViewController: NSViewController {
     private let browserHost = EmbeddedChromiumHostView(frame: .zero)
     private var browserHostTopConstraint: NSLayoutConstraint?
     private var session: EmbeddedChromiumSession?
-    private var preferenceObserver: NSObjectProtocol?
+    private var chromeTheme = Preferences.shared.theme
+    var chromeBackground: TermColor { chromeTheme.background }
     private(set) var lastLoadedURL = ""
     var onPageLoaded: ((String) -> Void)?
     var topContentInset: CGFloat = 0 {
@@ -645,18 +661,7 @@ final class EmbeddedChromiumViewController: NSViewController {
             browserHost.bottomAnchor.constraint(equalTo: root.bottomAnchor),
         ])
         view = root
-        refreshTheme()
-        preferenceObserver = NotificationCenter.default.addObserver(
-            forName: .cmdyPreferencesChanged, object: nil, queue: .main
-        ) { [weak self] _ in
-            Task { @MainActor [weak self] in self?.refreshTheme() }
-        }
-    }
-
-    deinit {
-        if let preferenceObserver {
-            NotificationCenter.default.removeObserver(preferenceObserver)
-        }
+        applyTheme(chromeTheme)
     }
 
     @discardableResult
@@ -711,9 +716,10 @@ final class EmbeddedChromiumViewController: NSViewController {
         session = nil
     }
 
-    private func refreshTheme() {
-        let theme = Preferences.shared.theme
-        let background = theme.ns(theme.background)
+    func applyTheme(_ theme: Theme) {
+        chromeTheme = theme
+        loadViewIfNeeded()
+        let background = chromeTheme.ns(chromeTheme.background)
         view.layer?.backgroundColor = background.cgColor
     }
 }

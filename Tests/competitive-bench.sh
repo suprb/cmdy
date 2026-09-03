@@ -72,7 +72,6 @@ BENCH
 chmod 700 "$RUN/drain.sh"
 
 cat > "$RUN/config" <<'CFG'
-banner = false
 restore-session = false
 shell-integration = true
 clean-prompt = true

@@ -7,7 +7,7 @@ import ProductIdentity
 /// the file live on every save — edit, save, watch every open terminal update.
 public enum ConfigFile {
     private static let retiredKeys: Set<String> = [
-        "use-gpu", "hide-toolbar", "window-buttons",
+        "use-gpu", "hide-toolbar", "window-buttons", "banner",
     ]
 
     public static var directory: URL {
@@ -159,7 +159,6 @@ public enum ConfigFile {
         if let v = kv["attention-signals"].flatMap(bool) { p.attentionSignals = v }
         if let v = kv["shell-integration"].flatMap(bool) { p.shellIntegration = v }
         if let v = kv["clean-prompt"].flatMap(bool) { p.cleanPrompt = v }
-        if let v = kv["banner"].flatMap(bool) { p.showBanner = v }
         if let v = kv["hide-traffic-lights"].flatMap(bool) { p.hideTrafficLights = v }
         if let v = kv["margin"], let n = Double(v), (0...60).contains(n) { p.contentMargin = CGFloat(n) }
         if let v = kv["window-grid"].flatMap(bool) { p.windowGridEnabled = v }
@@ -404,9 +403,6 @@ public enum ConfigFile {
         # screen-shares and recordings. Turn it off to preserve a custom prompt
         # (starship, powerlevel10k, …).
         clean-prompt = \(p.cleanPrompt)
-        # Opt in to the \(ProductIdentity.current.displayName) boot badge and system info on launch.
-        banner = \(p.showBanner)
-
         # ── Window chrome ──────────────────────────────────────────────
         # hide-traffic-lights: remove the red/yellow/green window buttons for a
         #   distraction-free look (close/minimize/zoom still work from the menu

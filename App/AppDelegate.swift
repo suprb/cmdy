@@ -264,6 +264,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             return EmbeddedChromiumRuntime.shared.setEnabled(
                 enabled, directory: directory)
         }
+        PluginManager.shared.hostComponentDistribution = { identifier in
+            guard identifier == BrowserEdition.hostComponentIdentifier else {
+                return .unavailable
+            }
+            return EmbeddedChromiumRuntime.shared.distribution
+        }
         PluginManager.shared.activateAll()
         // The optional Browser edition is a separately downloaded cmdy build
         // whose CEF runtime is sealed inside the app's standard Frameworks
@@ -366,7 +372,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         } else if uiTestSplitAffordance {
             Preferences.shared.workspaceNavigatorVisible = false
             Preferences.shared.workspaceInspectorVisible = false
-            Preferences.shared.showBanner = false
             newWindow(nil)
             runSplitAffordanceSmokeTest()
         } else if CommandLine.arguments.contains("--ui-test-tab-theme") {
@@ -417,6 +422,101 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                     exit(ok ? 0 : 1)
                 }
             }
+        } else if CommandLine.arguments.contains(
+            "--ui-test-browser-install-recovery") {
+            Preferences.shared.workspaceNavigatorVisible = false
+            Preferences.shared.workspaceInspectorVisible = false
+            newWindow(nil)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                [weak self] in
+                guard let self, let controller = self.controllers.first,
+                      let viewMenu = NSApp.mainMenu?.items.compactMap(\.submenu)
+                        .first(where: { $0.title == "View" }),
+                      let browserItem = viewMenu.items.first(where: {
+                        $0.action == #selector(self.toggleEmbeddedBrowser(_:))
+                      })
+                else { exit(1) }
+
+                let unavailable = !EmbeddedChromiumRuntime.shared.isAvailable
+                let menuEnabled = self.validateMenuItem(browserItem)
+                let menuCorrect = menuEnabled
+                    && browserItem.state == .off
+                    && browserItem.title == "Install Browser Edition…"
+                self.toggleEmbeddedBrowser(browserItem)
+
+                let promptIsCorrect = {
+                    guard let prompt = BrowserEditionInstaller
+                        .promptDiagnosticForTesting() else { return false }
+                    return prompt.message == "Browser isn't installed"
+                        && prompt.information.contains("Browser edition")
+                        && prompt.buttons
+                            == ["Download Browser Edition", "Cancel"]
+                        && prompt.downloadURL
+                            == BrowserEdition.downloadURL().absoluteString
+                }
+
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                    let menuPrompt = promptIsCorrect()
+                    let menuCancelled = BrowserEditionInstaller
+                        .pressPromptButtonForTesting(at: 1)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                        let toolbar = controller
+                            .browserInstallToolbarDiagnosticForTesting()
+                        let expectedToolbarText =
+                            "Browser is not installed — download Browser Edition"
+                        let toolbarCorrect = toolbar.present
+                            && !toolbar.toggled
+                            && toolbar.tooltip == expectedToolbarText
+                            && toolbar.accessibilityLabel == expectedToolbarText
+                        let toolbarActivated = controller
+                            .activateBrowserToolbarForTesting()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                            let toolbarPrompt = promptIsCorrect()
+                            let toolbarCancelled = BrowserEditionInstaller
+                                .pressPromptButtonForTesting(at: 1)
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                                PluginsWindow.shared.show()
+                                DispatchQueue.main.asyncAfter(
+                                    deadline: .now() + 0.15
+                                ) {
+                                    let row = PluginsWindow.shared
+                                        .browserEditionDiagnosticForTesting()
+                                    let rowCorrect = row.count == 1
+                                        && row.detail
+                                            == "Browser edition · not installed"
+                                        && row.action == "Download Edition"
+                                        && row.canToggle == false
+                                    let rowActivated = PluginsWindow.shared
+                                        .triggerBrowserEditionDownloadForTesting()
+                                    DispatchQueue.main.asyncAfter(
+                                        deadline: .now() + 0.15
+                                    ) {
+                                        let rowPrompt = promptIsCorrect()
+                                        let rowCancelled = BrowserEditionInstaller
+                                            .pressPromptButtonForTesting(at: 1)
+                                        let ok = unavailable && menuCorrect
+                                            && menuPrompt && menuCancelled
+                                            && toolbarCorrect && toolbarActivated
+                                            && toolbarPrompt && toolbarCancelled
+                                            && rowCorrect && rowActivated
+                                            && rowPrompt && rowCancelled
+                                        print(
+                                            "UIBROWSERINSTALL unavailable=\(unavailable) "
+                                                + "menu=\(menuCorrect) "
+                                                + "menuPrompt=\(menuPrompt) "
+                                                + "toolbar=\(toolbarCorrect) "
+                                                + "toolbarPrompt=\(toolbarPrompt) "
+                                                + "row=\(rowCorrect) "
+                                                + "rowPrompt=\(rowPrompt) ok=\(ok)")
+                                        fflush(stdout)
+                                        exit(ok ? 0 : 1)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         } else if CommandLine.arguments.contains("--ui-test-embedded-browser") {
             let checksToolbarContrast = CommandLine.arguments.contains(
                 "--ui-test-embedded-browser-toolbar-contrast")
@@ -426,6 +526,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
                 [weak self] in
                 guard let controller = self?.currentController else { exit(1) }
+                // Pin a per-tab color that differs from the fresh global
+                // default. Browser chrome must inherit this exact active-tab
+                // theme rather than falling back to Preferences.shared.
+                controller.setTabTheme("C64")
                 let shown = controller.showEmbeddedBrowser()
                 DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
                     let checksDoctorWidth = CommandLine.arguments.contains(
@@ -460,6 +564,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                         && diagnostic.horizontalGap < 0.5
                     let toolbarContrastIsCorrect = !checksToolbarContrast
                         || !diagnostic.toolbarOverlapsBrowser
+                    controller.hideEmbeddedBrowser()
+                    controller.window?.contentView?.layoutSubtreeIfNeeded()
+                    let closedDiagnostic = controller.embeddedBrowserDiagnostic
+                    let browserChromeFollowsTheme =
+                        diagnostic.browserChromeMatchesTheme
+                        && diagnostic.toolbarTintMatchesTheme
+                        && closedDiagnostic.browserChromeMatchesTheme
+                        && closedDiagnostic.toolbarTintMatchesTheme
+                        && !closedDiagnostic.toolbarOverlapsBrowser
                     let browserMenu = self?.extensionCommandGroups.contains {
                         $0.plugin.caseInsensitiveCompare("Browser") == .orderedSame
                     } ?? false
@@ -477,6 +590,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                         && diagnostic.nativeSubviews > 0
                         && diagnostic.pageLoaded && browserIsFlush
                         && toolbarContrastIsCorrect
+                        && browserChromeFollowsTheme
                         && doctorIsWindowWide
                         && rect.width >= 240
                         && rect.height >= 200 && browserMenu && browserMenuItem
@@ -491,6 +605,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                             + "passthrough=\(diagnostic.chromePassthrough) "
                             + "toolbarOverlap=\(diagnostic.toolbarOverlapsBrowser) "
                             + "toolbarBrightness=\(diagnostic.toolbarTintBrightness) "
+                            + "toolbarTheme=\(diagnostic.toolbarTintMatchesTheme) "
+                            + "browserChromeTheme=\(diagnostic.browserChromeMatchesTheme) "
+                            + "closedToolbarTheme=\(closedDiagnostic.toolbarTintMatchesTheme) "
                             + "topGap=\(diagnostic.topGap) "
                             + "bottomGap=\(diagnostic.bottomGap) "
                             + "horizontalGap=\(diagnostic.horizontalGap) "
@@ -504,9 +621,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                             + "window=\(controller.window?.windowNumber ?? 0) "
                             + "rect=\(NSStringFromRect(rect)) ok=\(ok)")
                     fflush(stdout)
-                    if !CommandLine.arguments.contains(
+                    if CommandLine.arguments.contains(
                         "--ui-test-embedded-browser-hold") {
-                        exit(ok ? 0 : 1)
+                        return
+                    }
+                    guard ok else { exit(1) }
+                    // Exercise the user's real Cmd-W path: the only window is
+                    // disposable, so closing it must tear down Browser and
+                    // terminate without blocking AppKit's main thread.
+                    controller.window?.performClose(nil)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                        // A successful last-window close terminates the process
+                        // before this watchdog can fire.
+                        exit(1)
                     }
                 }
             }
@@ -537,7 +664,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             Preferences.shared.shaderName = "Databloom"
             Preferences.shared.workspaceNavigatorVisible = false
             Preferences.shared.workspaceInspectorVisible = false
-            Preferences.shared.showBanner = false
             newWindow(nil)
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { [weak self] in
                 guard let controller = self?.controllers.first,
@@ -573,7 +699,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         } else if CommandLine.arguments.contains("--ui-test-window-close-confirmation")
                     || CommandLine.arguments.contains(
                         "--ui-test-window-close-confirmation-hold") {
-            Preferences.shared.showBanner = false
             newWindow(nil)
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
                 guard let self,
@@ -931,7 +1056,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             return Int32(argument.dropFirst(prefix.count))
         }.first.map { max(1, min(96, abs($0))) } ?? 3
         let historyCount = eventPixels > 3 ? 1_200 : 180
-        Preferences.shared.showBanner = false
         Preferences.shared.workspaceNavigatorVisible = false
         Preferences.shared.workspaceInspectorVisible = false
         Preferences.shared.ghostText = false
@@ -1126,7 +1250,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     /// at trackpad/pointer cadence, so row-cache work and presentation lag are
     /// observable together.
     private func runDenseSelectionPerformanceProfile() {
-        Preferences.shared.showBanner = false
         Preferences.shared.workspaceNavigatorVisible = false
         Preferences.shared.workspaceInspectorVisible = false
         Preferences.shared.ghostText = false
@@ -1306,7 +1429,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     /// The pure layout tests cover resize math; this gate proves that AppKit's
     /// visible frames follow the same model in the assembled application.
     private func runWindowGridSmokeTest() {
-        Preferences.shared.showBanner = false
         Preferences.shared.workspaceNavigatorVisible = false
         Preferences.shared.workspaceInspectorVisible = false
         Preferences.shared.contentMargin = 10
@@ -1510,7 +1632,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     /// nested small leaves. Its multiple simultaneous neighbor animations used
     /// to confuse WindowDock's mover heuristic and replace the real source.
     private func runWindowGridNestedDragSmokeTest() {
-        Preferences.shared.showBanner = false
         Preferences.shared.workspaceNavigatorVisible = false
         Preferences.shared.workspaceInspectorVisible = false
         Preferences.shared.contentMargin = 10
@@ -1681,7 +1802,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     private func runWindowGridStressSmokeTest() {
-        Preferences.shared.showBanner = false
         Preferences.shared.workspaceNavigatorVisible = false
         Preferences.shared.workspaceInspectorVisible = false
         Preferences.shared.contentMargin = 10
@@ -1778,7 +1898,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     /// every new window alive and catches a newest window stranded in its
     /// compact pre-grid frame until a later Cmd-N happens to heal the layout.
     private func runWindowGridAddStressSmokeTest() {
-        Preferences.shared.showBanner = false
         Preferences.shared.workspaceNavigatorVisible = false
         Preferences.shared.workspaceInspectorVisible = false
         // Keep all 32 leaves feasible on GitHub's 1024x768 virtual display.
@@ -1833,7 +1952,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     /// Proves the reversible model conversion with real windows and real live
     /// TerminalPane instances: split tree -> grid windows -> split tree.
     private func runWindowGridConversionSmokeTest() {
-        Preferences.shared.showBanner = false
         Preferences.shared.workspaceNavigatorVisible = false
         Preferences.shared.workspaceInspectorVisible = false
         Preferences.shared.contentMargin = 10
@@ -1939,7 +2057,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     /// must still describe the original balanced grid rather than squeezed
     /// right-edge slivers.
     private func runWindowGridConversionStressSmokeTest() {
-        Preferences.shared.showBanner = false
         Preferences.shared.workspaceNavigatorVisible = false
         Preferences.shared.workspaceInspectorVisible = false
         // Match the add-only stress fixture: a zero-gap 32-leaf topology fits
@@ -2139,7 +2256,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             case #selector(toggleShellIntegration(_:)): item.state = p.shellIntegration ? .on : .off
             case #selector(toggleAutomaticErrorHelp(_:)): item.state = p.automaticErrorHelp ? .on : .off
             case #selector(toggleCleanPrompt(_:)): item.state = p.cleanPrompt ? .on : .off
-            case #selector(toggleBanner(_:)): item.state = p.showBanner ? .on : .off
             case #selector(toggleHideTrafficLights(_:)): item.state = p.hideTrafficLights ? .on : .off
             case #selector(toggleWindowGrid(_:)): item.state = p.windowGridEnabled ? .on : .off
             case #selector(toggleBlur(_:)): item.state = p.blur ? .on : .off
@@ -4540,7 +4656,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     @objc func toggleShellIntegration(_ sender: Any?) { Preferences.shared.shellIntegration.toggle() }
     @objc func toggleAutomaticErrorHelp(_ sender: Any?) { Preferences.shared.automaticErrorHelp.toggle() }
     @objc func toggleCleanPrompt(_ sender: Any?) { Preferences.shared.cleanPrompt.toggle() }
-    @objc func toggleBanner(_ sender: Any?) { Preferences.shared.showBanner.toggle() }
     @objc func toggleHideTrafficLights(_ sender: Any?) { Preferences.shared.hideTrafficLights.toggle() }
     @objc func toggleWindowGrid(_ sender: Any?) {
         Preferences.shared.windowGridEnabled.toggle()
@@ -4986,8 +5101,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                          if enabled { MarketplaceUpdateMonitor.shared.checkIfDue(force: true) }
                          else { MarketplaceUpdateMonitor.shared.clearKnownUpdates() }
                      }),
-            .section("Boot Banner", p.showBanner ? "on" : "off",
-                     booleanPaletteItems(current: p.showBanner) { p.showBanner = $0 }),
         ]))
 
         let marketplaceUpdateCount = MarketplaceUpdateMonitor.shared.extensionUpdateCount
@@ -5360,8 +5473,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             item.state = p.automaticErrorHelp ? .on : .off
         case #selector(toggleCleanPrompt(_:)):
             item.state = p.cleanPrompt ? .on : .off
-        case #selector(toggleBanner(_:)):
-            item.state = p.showBanner ? .on : .off
         case #selector(toggleHideTrafficLights(_:)):
             item.state = p.hideTrafficLights ? .on : .off
         case #selector(toggleWindowGrid(_:)):
@@ -5374,8 +5485,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             item.state = p.workspaceInspectorVisible ? .on : .off
         case #selector(toggleEmbeddedBrowser(_:)):
             item.state = currentController?.isEmbeddedBrowserVisible == true ? .on : .off
-            item.title = item.state == .on ? "Hide Browser" : "Show Browser"
-            return EmbeddedChromiumRuntime.shared.isAvailable
+            if !EmbeddedChromiumRuntime.shared.isAvailable {
+                item.state = .off
+                item.title = "Install Browser Edition…"
+            } else {
+                item.title = item.state == .on ? "Hide Browser" : "Show Browser"
+            }
+            return true
         case #selector(toggleWorkspaceFocusMode(_:)):
             item.state = currentController?.isWorkspaceFocusMode == true ? .on : .off
         default:
