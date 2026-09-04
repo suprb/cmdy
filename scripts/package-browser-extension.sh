@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
 # Build the small Browser activation package.
 #
-# CEF itself stays sealed in cmdy.app because Chromium's macOS sandbox requires
-# that layout. This ordinary .cmdyext record controls whether cmdy loads it, so
-# Browser installs, disables, updates, and removes through the same Extension
-# lifecycle as every other capability while its UI remains a real in-app split.
+# CEF itself must stay sealed in cmdy.app because Chromium's macOS sandbox
+# requires that layout. Installing this activation makes cmdy download and
+# verify the complete Browser app variant; removal swaps back to the lean app.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -77,10 +76,10 @@ cat > "$EXTENSION_ROOT/manifest.json" <<JSON
     ],
     "safety": [
       "Chromium's signed sandbox workers stay sealed inside cmdy.app; the visible browser stays embedded in cmdy.",
-      "Disabling or removing the Extension closes its browser splits and prevents the runtime from loading."
+      "Disable stops Browser without deleting it. Remove restarts into the lean app and deletes Chromium code while preserving your browsing profile."
     ],
     "setup": [
-      "Choose Install in Extensions. cmdy verifies the package and turns on the integrated Browser immediately."
+      "Choose Install in Extensions. cmdy downloads the notarized Browser build, verifies its checksum and Apple signature, then restarts with Browser enabled."
     ]
   }
 }
@@ -99,4 +98,4 @@ shasum -a 256 "$OUTPUT_ARCHIVE" > "$OUTPUT_ARCHIVE.sha256"
 printf 'Browser Extension: %s\n' "$OUTPUT_ARCHIVE"
 printf 'SHA-256:          %s\n' "$(awk '{print $1}' "$OUTPUT_ARCHIVE.sha256")"
 printf 'Signing:          %s\n' "$([ "$SIGN_ID" = "-" ] && echo ad-hoc || echo Developer-ID)"
-printf 'Runtime:          bundled in cmdy.app (sandboxed, in-window)\n'
+printf 'Runtime:          downloaded as the signed Browser app variant (sandboxed, in-window)\n'

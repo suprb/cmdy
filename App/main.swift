@@ -2,6 +2,14 @@ import AppKit
 import ProductIdentity
 import CmdyKit
 
+// The copied, signed executable performs app-bundle replacement before AppKit
+// is created. The replacement app acknowledges only after AppDelegate finishes
+// launching, so a startup or Browser-runtime failure can still roll back.
+if let helperExit = BrowserComponentInstaller.runHelperIfRequested(
+    CommandLine.arguments) {
+    exit(helperExit)
+}
+
 // cmdy — a native macOS GPU terminal turned platform.
 // Foundation: the native CmdyCore engine and CmdyGPU renderer.
 

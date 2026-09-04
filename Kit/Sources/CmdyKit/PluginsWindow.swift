@@ -118,6 +118,10 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
                 let name = manifest.name
                 let enabled = manifest.enabled
                 let runtime = PluginManager.shared.extensionRuntimeStatus(at: dir)
+                let isBrowser = BrowserEdition.authorizesHostComponent(
+                    BrowserEdition.hostComponentIdentifier, manifest: manifest)
+                let hasBrowserRuntime = !isBrowser
+                    || BrowserComponentInstaller.currentBundleHasBrowserRuntime
                 let grant = manifest.isLegacy ? "legacy full access"
                     : "\(manifest.capabilities.count) capabilities"
                 let marketplaceEntry = marketplacePlugins.first {
@@ -159,7 +163,8 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
                                     channel: false),
                                 enabled: enabled,
                                 dir: dir, builtinId: nil, sourceURL: sourceURL,
-                                marketplaceEntry: marketplaceEntry, canToggle: true,
+                                marketplaceEntry: marketplaceEntry,
+                                canToggle: hasBrowserRuntime,
                                 action: action))
             }
         }
@@ -493,7 +498,11 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
         alert.alertStyle = .warning
         alert.messageText = "\(verb) \(manifest.name) \(manifest.version)?"
         alert.informativeText = "\(summary)\n\nCapabilities:\n\(capabilities.isEmpty ? "• None" : capabilities)\n\nSource: \(source)\nExtensions run as your macOS user."
-        alert.addButton(withTitle: verb)
+        let installsBrowser = BrowserEdition.authorizesHostComponent(
+            BrowserEdition.hostComponentIdentifier, manifest: manifest)
+            && BrowserComponentInstaller.currentBundleNeedsBrowserSwitch(
+                requiredBrowserVersion: manifest.version)
+        alert.addButton(withTitle: installsBrowser ? "Download & Restart" : verb)
         alert.addButton(withTitle: "Cancel")
         let proceed = { [weak self] in self?.performPackageInstall(package) }
         let cancel = { [weak self] in self?.cancelPackageInstall() }
@@ -525,7 +534,9 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
                     }
                 }
                 DispatchQueue.main.sync {
-                    if wasEnabled {
+                    if BrowserComponentInstaller.relaunchWasScheduled {
+                        // The relaunched Browser-capable app activates it.
+                    } else if wasEnabled {
                         _ = PluginManager.shared.launchPlugin(at: directory)
                     } else {
                         try? PluginManager.shared.setPluginEnabled(
@@ -562,6 +573,12 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
         installAllButton.isEnabled = true
         installPackageButton.isEnabled = true
         reload()
+        if error == nil, BrowserComponentInstaller.relaunchWasScheduled {
+            statusLabel.stringValue = BrowserComponentInstaller.scheduledDescription
+                ?? "Restarting cmdy to finish installing Browser…"
+            BrowserComponentInstaller.requestRelaunchIfScheduled()
+            return
+        }
         let alert = NSAlert()
         if let error {
             alert.alertStyle = .warning
@@ -611,8 +628,14 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
         let alert = NSAlert()
         alert.alertStyle = .warning
         alert.messageText = "Install \(pending.count) extension\(pending.count == 1 ? "" : "s")?"
+        let includesBrowser = pending.contains {
+            $0.id == BrowserEdition.marketplaceID
+        }
         alert.informativeText = pending.map(\.name).joined(separator: ", ")
-            + "\n\nExtensions are isolated native processes and run as your macOS user. Review their capabilities before installing."
+            + "\n\nMost Extensions are isolated native processes and run as your macOS user. Review their capabilities before installing."
+            + (includesBrowser
+                ? "\n\nBrowser downloads the notarized Chromium-bearing cmdy build and restarts cmdy after the other installs finish."
+                : "")
         alert.addButton(withTitle: "Install All")
         alert.addButton(withTitle: "Cancel")
         guard let window else {
@@ -627,6 +650,12 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
     }
 
     private func performInstallAll(_ plugins: [Marketplace.Entry]) {
+        // Browser is the only Extension that schedules an app restart. Install
+        // it last so every ordinary package has committed before cmdy quits.
+        let plugins = plugins.sorted {
+            ($0.id == BrowserEdition.marketplaceID ? 1 : 0)
+                < ($1.id == BrowserEdition.marketplaceID ? 1 : 0)
+        }
         statusLabel.stringValue = "Installing \(plugins.count) extension\(plugins.count == 1 ? "" : "s")…"
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             var failures: [String] = []
@@ -644,7 +673,9 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
                         }
                     }
                     DispatchQueue.main.sync {
-                        _ = PluginManager.shared.launchPlugin(at: dir)
+                        if !BrowserComponentInstaller.relaunchWasScheduled {
+                            _ = PluginManager.shared.launchPlugin(at: dir)
+                        }
                         MarketplaceUpdateMonitor.shared.markInstalled(id: entry.id)
                     }
                 } catch {
@@ -672,6 +703,17 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
         installAllButton.isEnabled = true
         installPackageButton.isEnabled = true
         reload()
+        if BrowserComponentInstaller.relaunchWasScheduled {
+            statusLabel.stringValue = BrowserComponentInstaller.scheduledDescription
+                ?? "Restarting cmdy to finish installing Browser…"
+            if !failures.isEmpty {
+                Notifier.post(
+                    title: "Some Extensions need attention",
+                    body: failures.joined(separator: "\n"))
+            }
+            BrowserComponentInstaller.requestRelaunchIfScheduled()
+            return
+        }
         let alert = NSAlert()
         alert.messageText = failures.isEmpty ? "Extensions installed" : "Some extensions could not be installed"
         alert.informativeText = failures.isEmpty
@@ -844,7 +886,10 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
         alert.alertStyle = .warning
         alert.messageText = "\(verb) \(entry.name) \(entry.version)?"
         alert.informativeText = entry.guide.plainText
-        alert.addButton(withTitle: verb)
+        let installsBrowser = entry.id == BrowserEdition.marketplaceID
+            && BrowserComponentInstaller.currentBundleNeedsBrowserSwitch(
+                requiredBrowserVersion: entry.version)
+        alert.addButton(withTitle: installsBrowser ? "Download & Restart" : verb)
         alert.addButton(withTitle: "Cancel")
         let proceed = { [weak self] in self?.performRowInstall(entry, previousRow: row) }
         if let window {
@@ -862,9 +907,17 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
         let alert = NSAlert()
         alert.alertStyle = .warning
         alert.messageText = "Remove \(row.name)?"
-        alert.informativeText = "This stops the Extension and removes its installed files. "
-            + "You can download marketplace Extensions again later."
-        alert.addButton(withTitle: "Remove")
+        let removesBrowser = row.marketplaceEntry?.id == BrowserEdition.marketplaceID
+            || (try? ExtensionManifest.load(from: dir).id)
+                == BrowserEdition.marketplaceID
+        let switchesToLean = removesBrowser
+            && (BrowserComponentInstaller.currentBundleIsBrowserEdition
+                || BrowserComponentInstaller.currentBundleContainsBrowserPayload)
+        alert.informativeText = switchesToLean
+            ? "This closes Browser, downloads and verifies the lean cmdy app, then restarts. The bundled Chromium code is deleted to reclaim its disk space; your browsing profile is preserved."
+            : "This stops the Extension and removes its installed files. "
+                + "You can download marketplace Extensions again later."
+        alert.addButton(withTitle: switchesToLean ? "Remove & Restart" : "Remove")
         alert.addButton(withTitle: "Cancel")
         alert.buttons.first?.hasDestructiveAction = true
         let proceed = { [weak self] in self?.performRowRemoval(row, at: dir) }
@@ -886,7 +939,21 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
         reload()
         statusLabel.stringValue = "Removing \(row.name)…"
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            let result = Result { try FileManager.default.removeItem(at: dir) }
+            let isBrowser = (try? ExtensionManifest.load(from: dir).id)
+                == BrowserEdition.marketplaceID
+            let result = Result { () -> Bool in
+                if isBrowser {
+                    return try BrowserComponentInstaller.removeBrowserActivation(
+                        at: dir
+                    ) { line in
+                        DispatchQueue.main.async {
+                            self?.statusLabel.stringValue = "\(row.name): \(line)"
+                        }
+                    }
+                }
+                try FileManager.default.removeItem(at: dir)
+                return false
+            }
             DispatchQueue.main.async {
                 guard let self else { return }
                 self.isInstalling = false
@@ -897,8 +964,15 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
                 }
                 self.reload()
                 switch result {
-                case .success:
-                    self.statusLabel.stringValue = "\(row.name) removed"
+                case .success(let relaunching):
+                    if relaunching {
+                        self.statusLabel.stringValue =
+                            BrowserComponentInstaller.scheduledDescription
+                                ?? "Restarting cmdy to finish removing Browser…"
+                        BrowserComponentInstaller.requestRelaunchIfScheduled()
+                    } else {
+                        self.statusLabel.stringValue = "\(row.name) removed"
+                    }
                 case .failure(let error):
                     let failure = NSAlert()
                     failure.alertStyle = .warning
@@ -929,7 +1003,10 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
                     DispatchQueue.main.async { self?.statusLabel.stringValue = "\(entry.name): \(line)" }
                 }
                 DispatchQueue.main.sync {
-                    if shouldEnable {
+                    if BrowserComponentInstaller.relaunchWasScheduled {
+                        // The replacement app starts this activation after its
+                        // signed bundle swap has been acknowledged.
+                    } else if shouldEnable {
                         _ = PluginManager.shared.launchPlugin(at: dir)
                     } else {
                         try? PluginManager.shared.setPluginEnabled(false, at: dir)
@@ -955,6 +1032,12 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
         installPackageButton.isEnabled = true
         if error == nil { MarketplaceUpdateMonitor.shared.markInstalled(id: entry.id) }
         reload()
+        if error == nil, BrowserComponentInstaller.relaunchWasScheduled {
+            statusLabel.stringValue = BrowserComponentInstaller.scheduledDescription
+                ?? "Restarting cmdy to finish installing Browser…"
+            BrowserComponentInstaller.requestRelaunchIfScheduled()
+            return
+        }
         let alert = NSAlert()
         alert.messageText = error == nil ? "\(entry.name) is current" : "Could not install \(entry.name)"
         alert.informativeText = error?.localizedDescription

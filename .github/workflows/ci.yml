@@ -195,7 +195,14 @@ jobs:
         run: ./scripts/bootstrap-chromium.sh
       - name: Full Browser build and lifecycle smoke
         run: ./scripts/check-chromium-build.sh
-      - name: Package Browser-capable app and load a real page
+      - name: Package lean and Browser apps, then exercise install and removal
         env:
           PRODUCT_SIGN_ID: '-'
-        run: PRODUCT_BROWSER_EDITION=1 ./package.sh
+        run: |
+          PRODUCT_BROWSER_EDITION=0 ./package.sh
+          ditto cmdy.app "$RUNNER_TEMP/cmdy-lean.app"
+          PRODUCT_BROWSER_EDITION=1 ./package.sh
+          ditto cmdy.app "$RUNNER_TEMP/cmdy-browser.app"
+          ./scripts/test-browser-component-swap.sh \
+            "$RUNNER_TEMP/cmdy-lean.app" \
+            "$RUNNER_TEMP/cmdy-browser.app"

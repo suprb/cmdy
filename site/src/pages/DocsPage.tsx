@@ -50,7 +50,7 @@ const sections: DocSection[] = [
     title: "Install",
     keywords: "build package macos apple silicon setup requirements doctor mcp",
     content: <>
-      <p>Requirements: macOS 26+ on Apple silicon. Download the notarized DMG, open it, and drag <code>cmdy.app</code> to Applications. There is one complete app. Install Browser later from Extensions when you want sandboxed Chromium in an in-window split.</p>
+      <p>Requirements: macOS 26+ on Apple silicon. Download the lean notarized DMG, open it, and drag <code>cmdy.app</code> to Applications. Install Browser later from Extensions when you want sandboxed Chromium in an in-window split; cmdy downloads and verifies the Browser build, then restarts automatically.</p>
       <Code>{`# source build instead
 ./package.sh
 open cmdy.app`}</Code>
@@ -199,7 +199,7 @@ cmdy channel doctor [channel-id]`}</Code>
         [<Case>Bridge</Case>, "product-scale MCP runtime across several targets", "Live"],
         ["Channel catalog", "19 installable provider, feed, and local-workflow connectors", "Live"]
       ]} />
-      <p><Case>Browser</Case> is a normal installable and removable Extension. Chromium&apos;s framework and signed sandbox workers stay sealed in the one notarized cmdy app; the Extension controls whether that runtime loads and whether its real in-window split is available. Open Extensions with <kbd>⌘⇧L</kbd>, choose Browser, and install it. Disable or remove it there at any time. The Browser toolbar button offers the same one-click install path, and serve-sim mirrors into that same built-in Browser split. Distributable marketplace packages use pinned hashes and explicit install consent.</p>
+      <p><Case>Browser</Case> is a normal installable and removable Extension. The base download contains no Chromium. Open Extensions with <kbd>⌘⇧L</kbd> and choose Browser: cmdy downloads the notarized Browser app variant, verifies its checksum and Apple signature, swaps it in, and restarts. Disable stops Browser without deleting it; Remove swaps back to the lean app and reclaims Chromium storage. Its UI is always a real in-window split, and serve-sim mirrors into that same split. Distributable marketplace packages use pinned hashes and explicit install consent.</p>
     </>
   },
   {

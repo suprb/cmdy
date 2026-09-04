@@ -14,7 +14,7 @@
     },
     {
       "path": "App/AppDelegate.swift",
-      "sha256": "0603a5302d2b788595e1f6c1ba05f8a9fb5b1e8a4cb3e03810f35ef5d569d24b"
+      "sha256": "aeef55f9cd3314b00555d248360a4b4a579ba090316ef0764c3a0a6d174cdde9"
     },
     {
       "path": "App/AppUpdateWindow.swift",
@@ -74,7 +74,7 @@
     },
     {
       "path": "App/EmbeddedChromium.swift",
-      "sha256": "4cf9ee02e7bb88de17389c55c21f032bb7717a6fd855160709018dd341f6c671"
+      "sha256": "4fea1145b9d24f033524ffbed0c37e5b0a53222526300651a4593f61a6a30b9f"
     },
     {
       "path": "App/EngineFactory.swift",
@@ -106,7 +106,7 @@
     },
     {
       "path": "App/MarketplaceUI.swift",
-      "sha256": "19e77bd85ed0bce629eebc5e73fc3dcd3e3672248afdd7503389e5b40b7bd2ff"
+      "sha256": "72af06d8cceba9690a159b14860165366d53f67262b2eda0d0115c617a600a4f"
     },
     {
       "path": "App/MenuUtilities.swift",
@@ -178,7 +178,7 @@
     },
     {
       "path": "App/main.swift",
-      "sha256": "69dda747cacc5f71fe37afb7c72f4aba3997f709b357788138a082a1478fb89d"
+      "sha256": "ccbacb81c2992a10962e3ed4382686a584b13e6fcac866cb8de1ffa560a52e90"
     },
     {
       "path": "Core/Sources/CmdyC/lib_cmdy.swift",
@@ -290,7 +290,7 @@
     },
     {
       "path": "Kit/Sources/CmdyKit/AppUpdates.swift",
-      "sha256": "c00976db2edfbdc17c596e2499605d15b78a21975d41f312d695c142675ca7b3"
+      "sha256": "ccbd7da666171dccb473fce5f51855d886574e73da32b8e25617186dca408be0"
     },
     {
       "path": "Kit/Sources/CmdyKit/Blocks.swift",
@@ -305,8 +305,12 @@
       "sha256": "50d05cba016e5efe278d448c1484935166e8ad6973667933fcc037a1e33b8e61"
     },
     {
+      "path": "Kit/Sources/CmdyKit/BrowserComponentInstaller.swift",
+      "sha256": "5a3055f9d5e65e3102464909d85565203a01347c43300ad25f61e280ec9726aa"
+    },
+    {
       "path": "Kit/Sources/CmdyKit/BrowserEdition.swift",
-      "sha256": "36e2eeb922255d25619c244a31e6d209cf1ea89e571bef3583fb69f35ce69125"
+      "sha256": "dd776077d7d5c9a5169984494e3d5066599afa9ad18a338d91bb3d0e9b05a48a"
     },
     {
       "path": "Kit/Sources/CmdyKit/CmdyActions.swift",
@@ -338,7 +342,7 @@
     },
     {
       "path": "Kit/Sources/CmdyKit/ExtensionCLI.swift",
-      "sha256": "e79f738f83a57163afccaf0e57cb54d9b303a6dd8a32a04e9be7f253d8331137"
+      "sha256": "760fa9d28fe99aeb2967abe0fd09d201c353257282fb365d8f38df2c646c4301"
     },
     {
       "path": "Kit/Sources/CmdyKit/ExtensionControlBar.swift",
@@ -370,7 +374,7 @@
     },
     {
       "path": "Kit/Sources/CmdyKit/Marketplace.swift",
-      "sha256": "2f438a7d9b7007b05a28679b3e5b7aede1ba7449161d406639559441f0cea4ef"
+      "sha256": "c48a6d1ef66dd5717def9bd798d29ab3373c380a63f1e82a3617990565846eee"
     },
     {
       "path": "Kit/Sources/CmdyKit/MarketplaceUpdates.swift",
@@ -386,11 +390,11 @@
     },
     {
       "path": "Kit/Sources/CmdyKit/PluginKit.swift",
-      "sha256": "d6016d8b751a3e6970065a03fae9507a7797b6858324cd207b456d7b09853fab"
+      "sha256": "91005542f54074cf60fff0aedf0bde82b56d1f8512061054bc42793e8ca2f177"
     },
     {
       "path": "Kit/Sources/CmdyKit/PluginsWindow.swift",
-      "sha256": "e50fbb9a56227a393f7c3d7c4275fa435be7b03c8a70cd11ec4ffd62345ac500"
+      "sha256": "a1f5253afdb42c5466a7e657e9d8cdac937547e7cf7a70966328a14709887516"
     },
     {
       "path": "Kit/Sources/CmdyKit/Preferences.swift",
@@ -3490,10 +3494,10 @@
       "sourceCount": 111
     }
   },
-  "reportSHA256": "62df9d2d9dc7ba35e5628dc6da02fdea5cd3eab88247c9b69d6d46082d0455d6",
+  "reportSHA256": "d492c15901df31ead29531c53b7f7275621cb711c58a44f98010e36a6c2f8ae7",
   "schemaVersion": 1,
   "summary": {
-    "activeSourceCount": 128,
+    "activeSourceCount": 129,
     "classifiedMatchCount": 156,
     "issueCount": 0,
     "matchCount": 156,

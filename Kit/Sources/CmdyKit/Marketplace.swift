@@ -405,7 +405,11 @@ public enum Marketplace {
     /// Download to URLSession's temporary file first, then enforce the size
     /// limit before materializing Data. This prevents a large registry or
     /// archive response from growing the app's heap without bound.
-    static func fetchData(_ url: URL, maxBytes: Int = 16 * 1024 * 1024) throws -> Data {
+    static func fetchData(
+        _ url: URL,
+        maxBytes: Int = 16 * 1024 * 1024,
+        timeout: TimeInterval = 60
+    ) throws -> Data {
         let boundedMax = min(max(maxBytes, 1), 1024 * 1024 * 1024)
         if url.isFileURL {
             do { return try readFile(url, maxBytes: boundedMax) }
@@ -413,7 +417,14 @@ public enum Marketplace {
         }
         let state = FetchState()
         let sem = DispatchSemaphore(value: 0)
-        let task = URLSession.shared.downloadTask(with: url) { temporaryURL, resp, err in
+        var request = URLRequest(
+            url: url,
+            cachePolicy: .reloadIgnoringLocalCacheData,
+            timeoutInterval: timeout)
+        request.setValue(
+            "\(ProductIdentity.current.slug)/marketplace",
+            forHTTPHeaderField: "User-Agent")
+        let task = URLSession.shared.downloadTask(with: request) { temporaryURL, resp, err in
             if let err { state.complete(.failure(err)) }
             else if url.scheme?.lowercased() == "https",
                     resp?.url?.scheme?.lowercased() != "https" {
@@ -441,7 +452,7 @@ public enum Marketplace {
             sem.signal()
         }
         task.resume()
-        guard sem.wait(timeout: .now() + 60) == .success else {
+        guard sem.wait(timeout: .now() + timeout) == .success else {
             task.cancel()
             throw MarketplaceError.network("timeout fetching \(url.lastPathComponent)")
         }
@@ -699,6 +710,28 @@ public enum Marketplace {
         }
         let execURL = try validateEntrypoint(parsedManifest, inside: unpacked)
 
+        // Browser's small .cmdyext is still a normal activation package, but a
+        // lean cmdy installation also needs the real CEF-bearing app variant.
+        // Fully download and validate that signed app before touching the live
+        // activation. The restart helper is scheduled only after the activation
+        // swap below has succeeded, so either both halves commit or both roll
+        // back.
+        let installsBrowser = BrowserEdition.authorizesHostComponent(
+            BrowserEdition.hostComponentIdentifier,
+            manifest: parsedManifest)
+        let preparedBrowserSwitch = installsBrowser
+            ? try BrowserComponentInstaller.prepareSwitch(
+                to: .browser,
+                requiredBrowserVersion: parsedManifest.version,
+                progress: progress)
+            : nil
+        var browserSwitchLeaseResolved = false
+        defer {
+            if let preparedBrowserSwitch, !browserSwitchLeaseResolved {
+                BrowserComponentInstaller.discard(preparedBrowserSwitch)
+            }
+        }
+
         // Payload (chromium's CEF): fetched separately, assembled next to the binary.
         if let payload = entry.payload {
             if payload.url.contains("PLACEHOLDER") {
@@ -774,13 +807,61 @@ public enum Marketplace {
         try FileManager.default.createDirectory(at: PluginManager.pluginsDirectory,
                                                 withIntermediateDirectories: true)
         let hadPrevious = FileManager.default.fileExists(atPath: dest.path)
-        if hadPrevious { try FileManager.default.moveItem(at: dest, to: backup) }
+        let activationChange = try preparedBrowserSwitch.map {
+            try BrowserComponentInstaller.beginInstalledActivation(
+                $0,
+                destination: dest,
+                previousBackup: hadPrevious ? backup : nil)
+        }
         do {
+            if hadPrevious {
+                try FileManager.default.moveItem(at: dest, to: backup)
+            }
             try FileManager.default.moveItem(at: unpacked, to: dest)
-            if hadPrevious { try? FileManager.default.removeItem(at: backup) }
+            if let preparedBrowserSwitch,
+               let activationChange,
+               preparedBrowserSwitch.requiresRelaunch {
+                try BrowserComponentInstaller.scheduleInstalledActivation(
+                    preparedBrowserSwitch,
+                    activation: activationChange)
+                browserSwitchLeaseResolved = true
+            } else {
+                if let preparedBrowserSwitch, let activationChange {
+                    try BrowserComponentInstaller.completeWithoutRelaunch(
+                        preparedBrowserSwitch,
+                        activation: activationChange)
+                    browserSwitchLeaseResolved = true
+                } else if hadPrevious {
+                    try? FileManager.default.removeItem(at: backup)
+                }
+            }
         } catch {
-            try? FileManager.default.removeItem(at: dest)
-            if hadPrevious { try? FileManager.default.moveItem(at: backup, to: dest) }
+            if let activationChange {
+                if let preparedBrowserSwitch,
+                   BrowserComponentInstaller.leaseRequiresRecovery(
+                    preparedBrowserSwitch) {
+                    // The still-live helper is the sole rollback owner. Keep
+                    // its lease and activation backup intact.
+                    browserSwitchLeaseResolved = true
+                    throw error
+                }
+                do {
+                    try BrowserComponentInstaller.rollbackPreparedActivation(
+                        activationChange)
+                } catch let rollbackError {
+                    // Do not release the app-scoped lease when restoration did
+                    // not verify. Its durable activation intent is the recovery
+                    // record that prevents a conflicting Browser operation.
+                    browserSwitchLeaseResolved = true
+                    throw BrowserComponentSwitchError.helperLaunchFailed(
+                        "installation failed (\(error.localizedDescription)); activation recovery also failed: \(rollbackError.localizedDescription)")
+                }
+            } else {
+                try? FileManager.default.removeItem(at: dest)
+                if hadPrevious {
+                    try? FileManager.default.moveItem(at: backup, to: dest)
+                }
+            }
             throw error
         }
 
@@ -910,7 +991,7 @@ public enum Marketplace {
     /// the system extractor. Post-extraction validation still checks links
     /// and expanded size; this preflight prevents entries from ever naming a
     /// path outside the staging directory.
-    private static func validateArchivePaths(_ archive: URL) throws {
+    static func validateArchivePaths(_ archive: URL) throws {
         let listing = try ProcessCapture.run(
             URL(fileURLWithPath: "/usr/bin/zipinfo"),
             arguments: ["-1", archive.path],
@@ -1116,6 +1197,13 @@ public enum Marketplace {
             guard let installedVersion else {
                 return FileManager.default.fileExists(atPath: dir.path)
                     ? .installed("local") : .notInstalled
+            }
+            if entry.id == BrowserEdition.marketplaceID,
+               !BrowserComponentInstaller.currentBundleHasBrowserRuntime {
+                // An activation record without the signed CEF-bearing app is
+                // not an installed Browser. Keep the Marketplace action on
+                // Download so one click repairs the complete installation.
+                return .notInstalled
             }
             if isVersion(entry.version, newerThan: installedVersion) {
                 return .updateAvailable(installedVersion)

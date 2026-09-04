@@ -41,6 +41,7 @@ CORE_CASES_PER_SEED = 3176
 CORE_TOTAL_CASES = 53992
 REQUIRED_BINDINGS = {
     "active-source-checker",
+    "browser-component-swap-test",
     "browser-extension-package-script",
     "browser-release-script",
     "ci-workflow",
@@ -1081,6 +1082,74 @@ def default_platform_assessor(app: Path, dmg: Path) -> dict[str, str]:
     }
 
 
+def validate_artifact_variant_layout(
+        app: Path, info: dict[str, object], variant: str) -> None:
+    """Require an exact lean or Browser app layout before publication."""
+    is_browser = variant == "browser" or variant.startswith("browser-")
+    frameworks = app / "Contents/Frameworks"
+    cef_binary = (
+        frameworks
+        / "Chromium Embedded Framework.framework/Chromium Embedded Framework")
+    host = frameworks / "libCmdyChromiumHost.dylib"
+    browser_mcp = app / "Contents/Resources/BrowserMCP"
+    mcp_index = browser_mcp / "index.js"
+    helpers = list(frameworks.glob("* Chromium Helper*.app"))
+
+    def require_regular(path: Path, label: str, minimum_size: int) -> None:
+        if path.is_symlink() or not path.is_file():
+            raise QualificationError(f"{label} is missing or symlinked")
+        if path.stat().st_size < minimum_size:
+            raise QualificationError(f"{label} is incomplete")
+
+    if not is_browser:
+        prohibited = [cef_binary, host, browser_mcp, *helpers]
+        browser_keys = {
+            "CMDYBrowserEdition",
+            "CMDYBrowserVersion",
+            "CMDYBrowserEnabledByDefault",
+        }
+        if browser_keys.intersection(info) or any(
+                path.exists() or path.is_symlink() for path in prohibited):
+            raise QualificationError(
+                "lean artifact contains a Browser marker or Chromium payload")
+        return
+
+    if info.get("CMDYBrowserEdition") is not True:
+        raise QualificationError("Browser artifact marker is missing")
+    expected_browser_version = (
+        variant.removeprefix("browser-")
+        if variant.startswith("browser-") else None)
+    browser_version = info.get("CMDYBrowserVersion")
+    if (not isinstance(browser_version, str)
+            or not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", browser_version)
+            or (expected_browser_version is not None
+                and browser_version != expected_browser_version)):
+        raise QualificationError("Browser artifact component version is wrong")
+    require_regular(cef_binary, "Browser CEF framework", 50 * 1024 * 1024)
+    require_regular(host, "Browser host library", 64 * 1024)
+    require_regular(mcp_index, "Browser MCP adapter", 1024)
+    if len(helpers) != 4:
+        raise QualificationError(
+            "Browser artifact must contain exactly four Chromium helpers")
+    for helper in helpers:
+        if helper.is_symlink() or not helper.is_dir():
+            raise QualificationError("Browser helper app is missing or symlinked")
+        helper_info_path = helper / "Contents/Info.plist"
+        if helper_info_path.is_symlink() or not helper_info_path.is_file():
+            raise QualificationError("Browser helper Info.plist is missing or symlinked")
+        try:
+            helper_info = plistlib.loads(helper_info_path.read_bytes())
+        except (plistlib.InvalidFileException, OSError) as error:
+            raise QualificationError(
+                f"invalid Browser helper Info.plist: {error}") from error
+        executable = helper_info.get("CFBundleExecutable")
+        if not isinstance(executable, str) or not executable:
+            raise QualificationError("Browser helper executable identity is missing")
+        require_regular(
+            helper / "Contents/MacOS" / executable,
+            "Browser helper executable", 64 * 1024)
+
+
 def verify_artifacts(
     source_identity: dict[str, object], record_path: Path, root: Path, *,
     app: Path, archive: Path, archive_checksum: Path, archive_receipt: Path,
@@ -1144,6 +1213,7 @@ def verify_artifacts(
         raise QualificationError("artifact version differs from requested version")
     if str(info.get("CFBundleVersion")) != build:
         raise QualificationError("artifact build differs from requested build")
+    validate_artifact_variant_layout(app, info, variant)
 
     signature = assessor(app, dmg)
     output_record: dict[str, object] = {

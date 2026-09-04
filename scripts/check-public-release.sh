@@ -6,6 +6,7 @@ set -uo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
+source scripts/product-identity.sh
 
 OWNER="${CMDY_GITHUB_OWNER:-suprb}"
 APP_REPOSITORY="${CMDY_PUBLIC_REPOSITORY:-$OWNER/cmdy}"
@@ -15,6 +16,12 @@ EXPECTED_SITE_URL="${CMDY_SITE_URL:-}"
 MAX_INITIAL_COMMITS="${CMDY_MAX_INITIAL_COMMITS:-5}"
 EXPECTED_PUBLIC_ROOT="${CMDY_PUBLIC_ROOT_COMMIT:-d9205a4a0673548a1552219337cf89f09d37a730}"
 REGISTRY_URL="https://raw.githubusercontent.com/$REGISTRY_REPOSITORY/$DEFAULT_BRANCH/registry.json"
+PROJECT_VERSION="$(tr -d '[:space:]' < VERSION)"
+BROWSER_VERSION="$(tr -d '[:space:]' < Plugins/chromium/VERSION)"
+EXPECTED_RELEASE_TAG="v$PROJECT_VERSION"
+EXPECTED_BROWSER_ASSET="chromium-$BROWSER_VERSION.cmdyext"
+EXPECTED_BROWSER_URL="https://github.com/$APP_REPOSITORY/releases/download/$EXPECTED_RELEASE_TAG/$EXPECTED_BROWSER_ASSET"
+EXPECTED_BROWSER_SHA=""
 
 FAILURES=0
 PASSES=0
@@ -340,9 +347,9 @@ check_release() {
     [ "$draft" = "false" ] && [ "$prerelease" = "false" ] \
         && pass "latest release is stable" \
         || fail "latest release is a draft or prerelease"
-    [[ "$tag" =~ ^v[0-9]+\.[0-9]+(\.[0-9]+)?$ ]] \
-        && pass "latest release tag is numeric: $tag" \
-        || fail "latest release tag is not a numeric v-prefixed version: ${tag:-missing}"
+    [ "$tag" = "$EXPECTED_RELEASE_TAG" ] \
+        && pass "latest release is the checked-out version: $tag" \
+        || fail "latest release is '${tag:-missing}', expected $EXPECTED_RELEASE_TAG"
 
     python3 - "$release_file" >"$assets_file" <<'PY'
 import json
@@ -376,6 +383,123 @@ PY
             && pass "release includes the DMG checksum" \
             || fail "release is missing $dmg.sha256"
     fi
+
+    local expected_assets browser_asset_url browser_checksum_url
+    local asset_file checksum_file checksum_value actual_checksum release_digest
+    expected_assets=(
+        "$PRODUCT_RELEASE_PREFIX-$PROJECT_VERSION-macOS-arm64.zip"
+        "$PRODUCT_RELEASE_PREFIX-$PROJECT_VERSION-macOS-arm64.zip.sha256"
+        "$PRODUCT_RELEASE_PREFIX-$PROJECT_VERSION-macOS-arm64.dmg"
+        "$PRODUCT_RELEASE_PREFIX-$PROJECT_VERSION-macOS-arm64.dmg.sha256"
+        "$PRODUCT_RELEASE_PREFIX-macOS-arm64.dmg"
+        "$PRODUCT_RELEASE_PREFIX-macOS-arm64.dmg.sha256"
+        "$PRODUCT_RELEASE_PREFIX-$PROJECT_VERSION-browser-$BROWSER_VERSION-macOS-arm64.zip"
+        "$PRODUCT_RELEASE_PREFIX-$PROJECT_VERSION-browser-$BROWSER_VERSION-macOS-arm64.zip.sha256"
+        "$PRODUCT_RELEASE_PREFIX-$PROJECT_VERSION-browser-$BROWSER_VERSION-macOS-arm64.dmg"
+        "$PRODUCT_RELEASE_PREFIX-$PROJECT_VERSION-browser-$BROWSER_VERSION-macOS-arm64.dmg.sha256"
+        "$PRODUCT_RELEASE_PREFIX-browser-macOS-arm64.dmg"
+        "$PRODUCT_RELEASE_PREFIX-browser-macOS-arm64.dmg.sha256"
+        "$EXPECTED_BROWSER_ASSET"
+        "$EXPECTED_BROWSER_ASSET.sha256"
+    )
+    for expected in "${expected_assets[@]}"; do
+        grep -Fxq "$expected" "$assets_file" \
+            && pass "release includes $expected" \
+            || fail "release is missing $expected"
+    done
+
+    browser_asset_url="$(python3 - "$release_file" "$EXPECTED_BROWSER_ASSET" <<'PY'
+import json
+import sys
+with open(sys.argv[1], "r", encoding="utf-8") as handle:
+    release = json.load(handle)
+for asset in release.get("assets", []):
+    if asset.get("name") == sys.argv[2]:
+        print(asset.get("browser_download_url", ""))
+        break
+PY
+)"
+    browser_checksum_url="$(python3 - "$release_file" "$EXPECTED_BROWSER_ASSET.sha256" <<'PY'
+import json
+import sys
+with open(sys.argv[1], "r", encoding="utf-8") as handle:
+    release = json.load(handle)
+for asset in release.get("assets", []):
+    if asset.get("name") == sys.argv[2]:
+        print(asset.get("browser_download_url", ""))
+        break
+PY
+)"
+    checksum_file="$CHECK_TMP/browser-extension.sha256"
+    if [ -n "$browser_checksum_url" ] \
+        && fetch_url "Browser activation checksum" "$browser_checksum_url" "$checksum_file"; then
+        if checksum_value="$(python3 - "$checksum_file" "$EXPECTED_BROWSER_ASSET" <<'PY'
+import pathlib
+import re
+import sys
+
+lines = pathlib.Path(sys.argv[1]).read_text(encoding="utf-8").splitlines()
+if len(lines) != 1:
+    raise SystemExit(1)
+parts = lines[0].split()
+if (len(parts) != 2 or not re.fullmatch(r"[0-9a-fA-F]{64}", parts[0])
+        or pathlib.PurePosixPath(parts[1]).name != sys.argv[2]):
+    raise SystemExit(1)
+print(parts[0].lower())
+PY
+)"; then
+            pass "Browser activation checksum names the exact release asset"
+        else
+            fail "Browser activation checksum is malformed"
+        fi
+    else
+        fail "Browser activation checksum asset URL is missing"
+    fi
+
+    asset_file="$CHECK_TMP/$EXPECTED_BROWSER_ASSET"
+    if [ -n "$browser_asset_url" ] \
+        && fetch_url "Browser activation asset" "$browser_asset_url" "$asset_file"; then
+        actual_checksum="$(python3 - "$asset_file" <<'PY'
+import hashlib
+import pathlib
+import sys
+
+digest = hashlib.sha256()
+with pathlib.Path(sys.argv[1]).open("rb") as handle:
+    for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+        digest.update(chunk)
+print(digest.hexdigest())
+PY
+)"
+        if [ -n "${checksum_value:-}" ] \
+            && [ "$actual_checksum" = "$checksum_value" ]; then
+            EXPECTED_BROWSER_SHA="$actual_checksum"
+            pass "Browser activation bytes match the published checksum"
+        else
+            fail "Browser activation bytes do not match the published checksum"
+        fi
+    else
+        fail "Browser activation asset URL is missing"
+    fi
+
+    release_digest="$(python3 - "$release_file" "$EXPECTED_BROWSER_ASSET" <<'PY'
+import json
+import sys
+with open(sys.argv[1], "r", encoding="utf-8") as handle:
+    release = json.load(handle)
+for asset in release.get("assets", []):
+    if asset.get("name") == sys.argv[2]:
+        digest = asset.get("digest")
+        if isinstance(digest, str):
+            print(digest)
+        break
+PY
+)"
+    if [ -n "$release_digest" ]; then
+        [ "$release_digest" = "sha256:$EXPECTED_BROWSER_SHA" ] \
+            && pass "GitHub release metadata binds the Browser activation digest" \
+            || fail "GitHub release metadata has a different Browser activation digest"
+    fi
 }
 
 check_registry_index() {
@@ -384,7 +508,8 @@ check_registry_index() {
         return
     fi
     local summary
-    if summary="$(python3 - "$registry_file" <<'PY'
+    if summary="$(python3 - "$registry_file" "$BROWSER_VERSION" \
+        "$EXPECTED_BROWSER_URL" "$EXPECTED_BROWSER_SHA" <<'PY'
 import json
 import sys
 
@@ -398,7 +523,18 @@ if len(ids) != len(entries) or any(not isinstance(item, str) or not item for ite
     raise SystemExit("every registry entry must have a non-empty string id")
 if len(ids) != len(set(ids)):
     raise SystemExit("registry entry ids must be unique")
-print(f"{len(entries)} unique entries")
+browser = next((entry for entry in entries
+                if entry.get("id") == "dev.termite.chromium"), None)
+if not isinstance(browser, dict):
+    raise SystemExit("Browser entry is missing")
+expected_version, expected_url, expected_sha = sys.argv[2:]
+if browser.get("version") != expected_version:
+    raise SystemExit(f"Browser version is {browser.get('version')!r}, expected {expected_version}")
+if browser.get("url") != expected_url:
+    raise SystemExit("Browser URL does not target the expected immutable release")
+if not expected_sha or browser.get("sha256", "").lower() != expected_sha:
+    raise SystemExit("Browser SHA-256 does not match the published checksum")
+print(f"{len(entries)} unique entries; Browser {expected_version} is release-bound")
 PY
 )"; then
         pass "canonical registry is valid ($summary)"
@@ -440,6 +576,41 @@ check_site() {
     fi
     fetch_url "live documentation" "$base/docs.html" "$CHECK_TMP/site-docs.html" || true
     fetch_url "live Marketplace" "$base/marketplace.html" "$CHECK_TMP/site-marketplace.html" || true
+    local snapshot_file="$CHECK_TMP/site-marketplace-data.js"
+    local registry_file="$CHECK_TMP/registry.json"
+    if fetch_url "live Marketplace snapshot" "$base/marketplace-data.js" "$snapshot_file" \
+        && [ -s "$registry_file" ]; then
+        local snapshot_summary
+        if snapshot_summary="$(python3 - "$snapshot_file" "$registry_file" <<'PY'
+import hashlib
+import json
+import re
+import sys
+
+snapshot_bytes = open(sys.argv[1], "rb").read()
+registry_bytes = open(sys.argv[2], "rb").read()
+snapshot_text = snapshot_bytes.decode("utf-8")
+match = re.search(r"window\.CMDY_MARKETPLACE_SNAPSHOT\s*=\s*(\{.*\})\s*;\s*$",
+                  snapshot_text, re.DOTALL)
+if not match:
+    raise SystemExit("snapshot JavaScript does not contain the registry object")
+snapshot = json.loads(match.group(1))
+registry = json.loads(registry_bytes)
+if snapshot != registry:
+    raise SystemExit("snapshot content differs from the live registry")
+digest = hashlib.sha256(registry_bytes).hexdigest()
+if f"Registry sha256: {digest}" not in snapshot_text:
+    raise SystemExit("snapshot header does not bind the live registry digest")
+browser = next(entry for entry in snapshot["entries"]
+               if entry.get("id") == "dev.termite.chromium")
+print(f"Browser {browser['version']}; registry sha256 {digest[:12]}")
+PY
+)"; then
+            pass "live Marketplace snapshot matches the registry ($snapshot_summary)"
+        else
+            fail "live Marketplace snapshot is stale or invalid: $snapshot_summary"
+        fi
+    fi
 }
 
 printf 'cmdy public-release preflight (read-only)\n'
@@ -458,7 +629,6 @@ if fetch_repository "source repository" "$APP_REPOSITORY" "$APP_METADATA"; then
     check_branch_protection "source" "$APP_REPOSITORY" "$DEFAULT_BRANCH"
     check_app_files "$APP_REPOSITORY" "$DEFAULT_BRANCH"
     check_release "$APP_REPOSITORY"
-    check_site "$APP_METADATA"
 else
     fail "latest release, live website, source security, and source branch protection cannot be verified"
 fi
@@ -472,6 +642,9 @@ else
 fi
 
 check_registry_index
+if [ -s "$APP_METADATA" ]; then
+    check_site "$APP_METADATA"
+fi
 
 if [ "$FAILURES" -ne 0 ]; then
     printf '\nResult: %d passed, %d failed.\n' "$PASSES" "$FAILURES" >&2

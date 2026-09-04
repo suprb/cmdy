@@ -21,6 +21,11 @@ public enum BrowserEdition {
             forInfoDictionaryKey: "CMDYBrowserEnabledByDefault") as? Bool == true
     }
 
+    public static var isInstalled: Bool {
+        isActivationInstalled
+            && BrowserComponentInstaller.currentBundleHasBrowserRuntime
+    }
+
     /// The stable v1 ID is retained so old Browser installs upgrade in place.
     public static var isActivationInstalled: Bool {
         let directories = (try? FileManager.default.contentsOfDirectory(
@@ -31,10 +36,9 @@ public enum BrowserEdition {
         }
     }
 
-    /// Browser-edition users from before the unified app automatically receive
-    /// the same removable activation record as a fresh Marketplace install.
-    /// The CEF payload remains sealed in cmdy.app; deleting this directory is
-    /// therefore a real uninstall of the capability without mutating the app.
+    /// Browser-edition users automatically receive the same removable
+    /// activation record as a fresh Marketplace install. Removing Browser now
+    /// also swaps to the signed lean app so the sealed CEF payload is deleted.
     @discardableResult
     public static func ensureBundledActivationInstalled(force: Bool = false) -> Bool {
         guard force || isBundledEnabledByDefault,
@@ -94,10 +98,11 @@ public enum BrowserEdition {
             ],
             safety: [
                 "The visible browser is built into \(product); only Chromium's sandbox workers run as signed helper processes.",
-                "Disable or remove Browser from Extensions to close its splits and delete its activation record.",
+                "Disable Browser to stop it without deleting anything.",
+                "Remove Browser to restart into the lean app and delete the bundled Chromium code; your browsing profile is preserved.",
             ],
             setup: [
-                "Choose Install. \(product) downloads, verifies, and turns on the integrated Browser for you.",
+                "Choose Install. \(product) downloads the notarized Browser build, verifies its checksum and Apple signature, then restarts with Browser enabled.",
             ])
     }
 

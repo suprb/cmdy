@@ -1,6 +1,6 @@
 # Releasing cmdy for macOS
 
-## Publish in one command
+## Publish signed artifacts
 
 Once the release commit is pushed, run:
 
@@ -11,9 +11,19 @@ Once the release commit is pushed, run:
 The command refuses dirty or unpushed source, a private repository, or any
 release target that differs from the repository embedded in product identity,
 then dispatches `.github/workflows/release.yml`, watches the notarized build,
-and prints the published GitHub Release URL. Use `--no-watch` to dispatch and
-return immediately, or `--dry-run` to inspect the resolved version, repository,
-branch, and commit without contacting GitHub.
+and verifies the published GitHub Release assets. Use `--no-watch` to dispatch
+and return immediately, or `--dry-run` to inspect the resolved version,
+repository, branch, and commit without contacting GitHub.
+
+GitHub assets are the first publication phase. Pin the released Browser
+activation URL and SHA-256 in `cmdy-registry`, merge that change, refresh
+`site/public/marketplace-data.js` from the merged registry, and merge the site
+snapshot. The release is complete only when this strict live cross-repository
+gate passes:
+
+```sh
+./scripts/check-public-release.sh
+```
 
 The public repository named by `product-identity.json` must exist before the
 first release, and these Actions secrets must be configured:
@@ -47,7 +57,6 @@ For a complete release, store notary credentials once in the login keychain:
 
 ```sh
 xcrun notarytool store-credentials cmdy-notary
-PRODUCT_VERSION=1.0.0 \
 PRODUCT_NOTARY_PROFILE=cmdy-notary \
 ./release.sh
 ```
@@ -59,10 +68,11 @@ the app, and validates the app with Gatekeeper. It then creates a signed
 drag-to-Applications DMG using a sparse APFS image, notarizes and staples the
 DMG, validates that with Gatekeeper, and writes SHA-256 checksums for both
 artifacts in `dist/`. The canonical run also emits `cmdy-macOS-arm64.dmg` and
-its `.sha256`. The legacy updater-compatibility wrapper still emits
-`cmdy-browser-macOS-arm64.dmg` and its `.sha256` for pre-1.0.3 Browser-edition
-clients; the website does not present it as a second app. Rehearsal builds
-never create those stable aliases.
+its `.sha256`; this is the lean public download and contains no Chromium. The
+Browser release emits `cmdy-browser-macOS-arm64.dmg` and its `.sha256` as a
+stable manual download. Marketplace installation and Browser-edition updates
+select the versioned Browser ZIP and checksum from the release API. Rehearsal
+builds never create stable aliases.
 It also retains each raw Apple JSON receipt beside the release artifacts, each
 submission identifier and pre-staple submitted hash, then writes a
 `*.publication.json` record for the final stapled package. The submitted and
@@ -73,7 +83,6 @@ artifact attestation.
 App Store Connect API keys are also supported, which is the path used by CI:
 
 ```sh
-PRODUCT_VERSION=1.0.0 \
 PRODUCT_NOTARY_KEY_FILE=/secure/AuthKey_ABC123.p8 \
 PRODUCT_NOTARY_KEY_ID=ABC123 \
 PRODUCT_NOTARY_ISSUER_ID=00000000-0000-0000-0000-000000000000 \
@@ -103,12 +112,12 @@ The `.p12` and `.p8` values are base64-encoded file contents. The workflow
 deletes the temporary certificate, API key, and keychain even when a release
 step fails.
 
-Every `v*` release has one canonical cmdy app containing CEF and its four
-signed helper apps in `cmdy.app/Contents/Frameworks`, the layout required by
-Chromium's macOS sandbox. Browser stays inert until its hash-pinned `.cmdyext`
-activation package is installed. The workflow also publishes a Browser-enabled
-compatibility artifact solely so pre-1.0.3 edition-preserving updaters can reach
-the unified release and migrate to the removable activation record. Build that
-compatibility artifact with `./scripts/release-chromium-browser.sh`; see
+Every `v*` release publishes two signed layouts of the same app: a canonical
+lean build with no Chromium and a Browser build containing CEF and its four
+signed helpers in `cmdy.app/Contents/Frameworks`, the layout required by
+Chromium's macOS sandbox. Installing the hash-pinned `.cmdyext` activation makes
+cmdy download, verify, swap to, and restart the Browser build; removal verifies
+and restores the lean build. Build the Browser component with
+`./scripts/release-chromium-browser.sh`; see
 [BUILDING.md](BUILDING.md) for the signing graph, artifact names, clean-Mac
 verification, and rollback path.

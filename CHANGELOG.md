@@ -11,6 +11,30 @@ be called out here with a migration path before a versioned release.
 
 ## [Unreleased]
 
+## [1.0.4] - 2026-09-04
+
+### Added
+
+- Installing Browser now downloads the complete notarized Browser app, verifies
+  its release checksum, version, bundle identity, Developer ID Team, hardened
+  runtime, Gatekeeper assessment, and exact CEF layout, then restarts cmdy.
+- Browser removal transactionally restores the verified lean app, deletes the
+  Chromium-bearing app after startup confirmation, and preserves the browsing
+  profile. Failed launches roll back both the app and Extension activation.
+
+### Changed
+
+- The canonical cmdy download is lean again and contains no Chromium. Every
+  release publishes matching lean and Browser variants of the same app.
+- Browser 2.2.0 uses the same download, install, disable, remove, update, CLI,
+  deep-link, direct-package, and agent API surfaces as other Extensions.
+
+### Security
+
+- Release qualification and packaging now fail if a lean artifact contains any
+  Browser marker or payload, or if a Browser artifact lacks CEF, its signed host,
+  four helper apps, or Browser MCP adapter.
+
 ## [1.0.3] - 2026-09-03
 
 ### Added

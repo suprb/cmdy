@@ -10,17 +10,22 @@
       {
         "path": "scripts/package-browser-extension.sh",
         "purpose": "browser-extension-package-script",
-        "sha256": "349e184e129abd4c7b15100fbdb52da3d73028c9ef2f8e160e7cbb7041937345"
+        "sha256": "21627c214bd7014aec993abdc4fb7c0ed83ccabc198f8f1f18446b08459753de"
+      },
+      {
+        "path": "scripts/test-browser-component-swap.sh",
+        "purpose": "browser-component-swap-test",
+        "sha256": "2cbc79b998511c0905e47c31d1c892bd9aadbf80df984a6a507542d108a4182a"
       },
       {
         "path": "scripts/release-chromium-browser.sh",
         "purpose": "browser-release-script",
-        "sha256": "3982747f91ddb02d239f1c0426776584864e324e705f2525a4e7f2db530c4157"
+        "sha256": "63f9ff6b8d48a0a8ae90dccd8d2239e630278b98d304d75015e89649484b7def"
       },
       {
         "path": ".github/workflows/ci.yml",
         "purpose": "ci-workflow",
-        "sha256": "d88b01c453551bf5e41d05a4bfa76ef393ca25db1553d55dd6c169efbd881a3f"
+        "sha256": "6e528776587e9609119e5f16047601c809146f549eb65d10536ae457cad6d6bf"
       },
       {
         "path": "scripts/check-core-blackbox-parity.py",
@@ -40,7 +45,7 @@
       {
         "path": "package.sh",
         "purpose": "package-script",
-        "sha256": "99919be1be28d60ee54ffc3d2d1b906b74e63cbd9bf5c0bec2e530326e1a5770"
+        "sha256": "e5d61e3d01f2c98a4b5d0e294c99b32ac435735e527c5a33a766ef25f4df482e"
       },
       {
         "path": "Tests/perf-gate.sh",
@@ -70,7 +75,7 @@
       {
         "path": "scripts/check-release-qualification.py",
         "purpose": "qualification-checker",
-        "sha256": "9472a051228e801d3ea4d57a6f4ddcc2d5553b8927f0e916ae7acf56c6a3fe4a"
+        "sha256": "9fe014872b46ea8f03454bb7d2300b267564410d1e2e5241a8f39531c34e8565"
       },
       {
         "path": "Schemas/release-qualification-v1.schema.json",
@@ -105,12 +110,12 @@
       {
         "path": "release.sh",
         "purpose": "release-script",
-        "sha256": "c7dcc5d419c2d7f93b928575066c3f8273092d4cde09b612c9c34d18ce6e3110"
+        "sha256": "e7c1006d6ebe63018d42805f6cea6ea63a71af21d0d803efebf047e789b3dc4a"
       },
       {
         "path": ".github/workflows/release.yml",
         "purpose": "release-workflow",
-        "sha256": "25dcbf1fbeb7106f02af86dcfe23d0b06e2e41d97fa7d33ad94b915d58848879"
+        "sha256": "36915f266295959ce99fb063eb6420baa77fab3ef81e2ac0f17a74ce444849e7"
       },
       {
         "path": "test.sh",
@@ -165,59 +170,10 @@
   },
   "kind": "cmdy-release-qualification",
   "publication": {
-    "approval": {
-      "approvalReference": "Project owner requested downloadable, installable, removable, and shareable Extensions; embedded Chromium for Browser and serve-sim; site repair; publication; and all changes on main in this session on 2026-09-03.",
-      "approvedPublicWording": "Engineering qualification and embedded Browser and serve-sim, Extension lifecycle, theme, close-path, updater, and site verification passed for the exact cmdy 1.0.3 source and evidence set. Project-owner approval; this is not an independent authorship or legal clean-room review.",
-      "decision": "approved",
-      "engineeringDigestSha256": "321979a06bdacc727c7775a1be8564b737f02dd90341ea99c54b51b90ae144a3",
-      "evidenceDigestSha256": "1a8c02c4085fe6c6056995a718f1c6bd07595b7616c72d319deaac4c08360437",
-      "reviewedAtUTC": "2026-09-04T00:38:17Z",
-      "reviewerAffiliation": "cmdy project owner",
-      "reviewerIndependentFromImplementation": false,
-      "reviewerKind": "human",
-      "reviewerName": "Andreas Pihlström"
-    },
-    "evidence": {
-      "core": {
-        "record": {
-          "path": "docs/independence/qualification/core-17-seed.json",
-          "sha256": "7e687480a4687dfc18be83db201ac9cce2391fe1f45fa3403b800eac13017bc7"
-        },
-        "sourceManifestSha256": "001dbfa10ebfe957de719190b4f2e4e66a22ac2c571e03849181e9ea4070e928"
-      },
-      "operational": {
-        "record": {
-          "path": "docs/independence/qualification/operational-review.json",
-          "sha256": "bfa33f63e5f918d048ea7783d8b95fc40333357972a5a781a9fa8c4790ac8d2b"
-        },
-        "sourceManifestSha256": "001dbfa10ebfe957de719190b4f2e4e66a22ac2c571e03849181e9ea4070e928"
-      },
-      "renderer": {
-        "checkerSha256": "886a21d8601f7917bbab544ac285b5952d3f79a60203c56d25bb1632f7690ee7",
-        "comparison": {
-          "path": "docs/independence/qualification/renderer-comparison.json",
-          "sha256": "c6de090c7605fea74481beed8b68c4fdd9d27c736713798b5099f578c95ed239"
-        },
-        "environment": {
-          "path": "docs/independence/qualification/renderer-environment.json",
-          "sha256": "17d430cd7191f8872de0acb497ef7010c2913757e10574cb2e69b152218bfc39"
-        },
-        "sourceManifestSha256": "001dbfa10ebfe957de719190b4f2e4e66a22ac2c571e03849181e9ea4070e928"
-      }
-    },
-    "source": {
-      "activeSourceManifest": {
-        "path": "docs/independence/qualification/active-terminal-sources.json",
-        "sha256": "001dbfa10ebfe957de719190b4f2e4e66a22ac2c571e03849181e9ea4070e928"
-      },
-      "provenanceReport": {
-        "path": "docs/independence/qualification/working-tree-provenance.json",
-        "sha256": "7232d211e1cdd77402c59dd7dc1eab0beb660e4c5119b3e0c8346949266b78e7"
-      },
-      "sourceCommit": "9280bd1e84cb7e219a502899ec66628901b14e74",
-      "sourceTree": "a39f12bd859a26e464d6ef8720753c507d2e2755"
-    },
-    "state": "approved"
+    "approval": null,
+    "evidence": null,
+    "source": null,
+    "state": "pending"
   },
   "schemaVersion": 1
 }

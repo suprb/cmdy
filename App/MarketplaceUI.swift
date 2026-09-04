@@ -268,7 +268,7 @@ extension AppDelegate {
             .section("Themes", "\(themes.count) · preview live", themes),
             .section("Rigs", "\(rigs.count) · the whole look", rigs),
             .section("Channels", "\(channels.count) · external work connectors", channels),
-            .section("Extensions", "\(plugins.count) · isolated processes", plugins),
+            .section("Extensions", "\(plugins.count) · native capabilities", plugins),
         ]
         let panel = pane.presentInlinePanel(takeFocus: true)
         marketplaceSession = session
@@ -309,7 +309,11 @@ extension AppDelegate {
                 hint: "pinned archive · native code runs as you · setup remains explicit")
         } else {
             panel.configureList(items: [
-                PaletteItem(title: "Install \(entry.name) \(entry.version)",
+                PaletteItem(title: entry.id == BrowserEdition.marketplaceID
+                            && BrowserComponentInstaller.currentBundleNeedsBrowserSwitch(
+                                requiredBrowserVersion: entry.version)
+                            ? "Download & Restart for \(entry.name) \(entry.version)"
+                            : "Install \(entry.name) \(entry.version)",
                             subtitle: "by \(entry.author) · native code, runs as you · \(entry.license)",
                             action: { [weak self] in self?.runPluginInstall(entry) }),
                 PaletteItem(title: "Cancel", subtitle: ""),
@@ -339,7 +343,14 @@ extension AppDelegate {
                 }
                 DispatchQueue.main.async {
                     MarketplaceUpdateMonitor.shared.markInstalled(id: entry.id)
-                    Notifier.post(title: "marketplace", body: "\(entry.name) installed")
+                    if BrowserComponentInstaller.relaunchWasScheduled {
+                        panel.appendLine(
+                            BrowserComponentInstaller.scheduledDescription
+                                ?? "restart required to finish installing Browser")
+                        BrowserComponentInstaller.requestRelaunchIfScheduled()
+                    } else {
+                        Notifier.post(title: "marketplace", body: "\(entry.name) installed")
+                    }
                     if entry.kind == "channel" {
                         do {
                             // Installed Channels remain stopped until the user
@@ -349,7 +360,7 @@ extension AppDelegate {
                         } catch {
                             panel.appendLine("installed, but could not enter safe setup mode: \(error.localizedDescription)")
                         }
-                    } else {
+                    } else if !BrowserComponentInstaller.relaunchWasScheduled {
                         let launched = PluginManager.shared.launchPlugin(at: dir)
                         let status = PluginManager.shared.extensionRuntimeStatus(at: dir)
                         panel.appendLine(launched
@@ -1113,11 +1124,22 @@ enum MarketplaceCLI {
                     try PluginManager.shared.setPluginEnabled(false, at: dir)
                     print("installed to \(dir.path) — stopped until Channels → Configure Installed Channel")
                 } else {
-                    print("installed to \(dir.path) — launches with "
-                        + "\(identity.displayName) (or toggle in ⇧⌘L)")
+                    if BrowserComponentInstaller.relaunchWasScheduled {
+                        print("installed activation to \(dir.path)")
+                        print(BrowserComponentInstaller.scheduledDescription
+                            ?? "restarting to finish installing Browser")
+                    } else {
+                        print("installed to \(dir.path) — launches with "
+                            + "\(identity.displayName) (or toggle in ⇧⌘L)")
+                    }
                 }
             default:
                 die("marketplace: cannot install kind '\(entry.kind)' yet")
+            }
+            if BrowserComponentInstaller.relaunchWasScheduled {
+                MainActor.assumeIsolated {
+                    BrowserComponentInstaller.requestRelaunchIfScheduled()
+                }
             }
             exit(0)
         } catch {
@@ -1130,14 +1152,21 @@ enum MarketplaceCLI {
             guard Marketplace.isExtensionKind(entry.kind) else { return false }
             if case .installed = Marketplace.state(of: entry) { return false }
             return true
+        }.sorted {
+            ($0.id == BrowserEdition.marketplaceID ? 1 : 0)
+                < ($1.id == BrowserEdition.marketplaceID ? 1 : 0)
         }
         guard !plugins.isEmpty else {
             print("all marketplace extensions are installed")
             exit(0)
         }
         if !yes {
-            print("The following extensions will run as isolated processes under your macOS user:")
+            print("The following Extensions will be installed:")
             plugins.forEach { print("  \($0.name) \($0.version) by \($0.author)") }
+            print("Most run as isolated processes under your macOS user.")
+            if plugins.contains(where: { $0.id == BrowserEdition.marketplaceID }) {
+                print("Browser downloads the notarized Chromium-bearing cmdy build and restarts cmdy last.")
+            }
             print("install all? [y/N] ", terminator: "")
             guard readLine()?.lowercased().hasPrefix("y") == true else { die("aborted") }
         }
@@ -1158,6 +1187,13 @@ enum MarketplaceCLI {
                 let message = "\(entry.name): \(error.localizedDescription)"
                 failures.append(message)
                 print("  failed: \(error.localizedDescription)")
+            }
+        }
+        if BrowserComponentInstaller.relaunchWasScheduled {
+            print(BrowserComponentInstaller.scheduledDescription
+                ?? "restarting to finish installing Browser")
+            MainActor.assumeIsolated {
+                BrowserComponentInstaller.requestRelaunchIfScheduled()
             }
         }
         guard failures.isEmpty else {
@@ -1190,6 +1226,13 @@ enum MarketplaceCLI {
             }
         }
         print(updated == 0 ? "everything is current" : "\(updated) updated")
+        if BrowserComponentInstaller.relaunchWasScheduled {
+            print(BrowserComponentInstaller.scheduledDescription
+                ?? "restarting to finish installing Browser")
+            MainActor.assumeIsolated {
+                BrowserComponentInstaller.requestRelaunchIfScheduled()
+            }
+        }
         exit(0)
     }
 
