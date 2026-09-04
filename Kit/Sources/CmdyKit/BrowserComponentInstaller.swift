@@ -1965,9 +1965,7 @@ public enum BrowserComponentInstaller {
                 .flatMap { isTeamIdentifier($0) ? $0 : nil }
             developerIDSigned = details.output.contains(
                 "Authority=Developer ID Application:")
-            hardenedRuntime = details.output
-                .split(whereSeparator: \Character.isNewline)
-                .contains { $0.hasPrefix("flags=") && $0.contains("runtime") }
+            hardenedRuntime = signatureHasHardenedRuntime(details.output)
         }
         return BundleInspection(
             identifier: identifier,
@@ -2194,6 +2192,25 @@ public enum BrowserComponentInstaller {
         return output.split(whereSeparator: \Character.isNewline)
             .first { $0.hasPrefix(prefix) }
             .map { String($0.dropFirst(prefix.count)) }
+    }
+
+    /// `codesign -dv --verbose=4` reports CodeDirectory flags among the other
+    /// CodeDirectory fields, rather than at the beginning of a line. Parse the
+    /// flag token itself so real Developer ID output is accepted without
+    /// mistaking the separate `Runtime Version` line for hardened runtime.
+    static func signatureHasHardenedRuntime(_ output: String) -> Bool {
+        output.split(whereSeparator: \Character.isNewline).contains { line in
+            guard line.hasPrefix("CodeDirectory ") else { return false }
+            return line.split(whereSeparator: \Character.isWhitespace).contains { field in
+                guard field.hasPrefix("flags="),
+                      let opening = field.firstIndex(of: "("),
+                      let closing = field.lastIndex(of: ")"),
+                      opening < closing else { return false }
+                return field[field.index(after: opening)..<closing]
+                    .split(separator: ",")
+                    .contains { $0 == "runtime" }
+            }
+        }
     }
 
     private static func isTeamIdentifier(_ value: String) -> Bool {

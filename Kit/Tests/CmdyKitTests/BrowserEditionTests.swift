@@ -2,6 +2,32 @@ import XCTest
 @testable import CmdyKit
 
 final class BrowserEditionTests: XCTestCase {
+    func testHardenedRuntimeDetectionMatchesRealCodesignOutput() {
+        let developerIDOutput = """
+        Executable=/Applications/cmdy.app/Contents/MacOS/cmdy
+        Identifier=com.cmdy.app
+        Format=app bundle with Mach-O thin (arm64)
+        CodeDirectory v=20500 size=12345 flags=0x10000(runtime) hashes=377+7 location=embedded
+        Signature size=9094
+        Authority=Developer ID Application: Example (ABCDE12345)
+        TeamIdentifier=ABCDE12345
+        Runtime Version=26.0.0
+        """
+        XCTAssertTrue(
+            BrowserComponentInstaller.signatureHasHardenedRuntime(developerIDOutput))
+
+        let unsignedOutput = """
+        CodeDirectory v=20400 size=12345 flags=0x2(adhoc) hashes=377+7 location=embedded
+        TeamIdentifier=not set
+        Runtime Version=26.0.0
+        """
+        XCTAssertFalse(
+            BrowserComponentInstaller.signatureHasHardenedRuntime(unsignedOutput))
+        XCTAssertFalse(
+            BrowserComponentInstaller.signatureHasHardenedRuntime(
+                "Runtime Version=26.0.0"))
+    }
+
     func testAtomicApplicationExchangeAlwaysKeepsDestinationLaunchable() throws {
         let fm = FileManager.default
         let root = fm.temporaryDirectory.appendingPathComponent(
