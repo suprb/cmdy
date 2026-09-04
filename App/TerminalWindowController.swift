@@ -1348,31 +1348,16 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
             && capturedOverlay === embeddedBrowserDividerOverlay
         let before = embeddedBrowserController.view.frame.width
 
-        func mouseEvent(
-            _ type: NSEvent.EventType, at point: NSPoint
-        ) -> NSEvent? {
-            NSEvent.mouseEvent(
-                with: type, location: point, modifierFlags: [],
-                timestamp: ProcessInfo.processInfo.systemUptime,
-                windowNumber: window.windowNumber, context: nil,
-                eventNumber: 0, clickCount: 1, pressure: 1)
+        // The outer-rail smoke covers WorkspaceDividerOverlayView's real
+        // mouse gesture. Here the Browser-specific regression is that CEF's
+        // native child wins the initial hit. Prove the root window selects our
+        // off-hairline overlay, then separately prove this split accepts the
+        // same resize; synthetic NSEvents do not retain AppKit mouse capture
+        // between calls on headless CI.
+        if expandedTargetCaptured {
+            centerSplitView.setPosition(
+                paintedRect.minX + delta, ofDividerAt: 0)
         }
-
-        guard let down = mouseEvent(.leftMouseDown, at: startInWindow),
-              let drag = mouseEvent(
-                .leftMouseDragged,
-                at: NSPoint(x: startInWindow.x + delta, y: startInWindow.y)),
-              let up = mouseEvent(
-                .leftMouseUp,
-                at: NSPoint(x: startInWindow.x + delta, y: startInWindow.y))
-        else { return nil }
-        // Root-window hit testing above proved which responder receives the
-        // mouse-down over CEF. Drive the rest of the gesture through that same
-        // captured responder; NSWindow.sendEvent does not retain mouse capture
-        // for separately injected synthetic events on headless CI.
-        capturedOverlay?.mouseDown(with: down)
-        capturedOverlay?.mouseDragged(with: drag)
-        capturedOverlay?.mouseUp(with: up)
         centerSplitView.layoutSubtreeIfNeeded()
 
         return (
