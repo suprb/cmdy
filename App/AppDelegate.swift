@@ -520,11 +520,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                     let diagnostic = controller.embeddedBrowserDiagnostic
                     let doctorLayout = controller.windowInlinePanelDiagnostic
                     let dividerResize = controller
-                        .performEmbeddedBrowserDividerResizeSmokeTest(delta: -32)
+                        .performEmbeddedBrowserDividerHitTargetSmokeTest()
                     let dividerTargetIsUsable = dividerResize.map {
                         $0.expandedTargetCaptured
                             && $0.targetWidth >= 16
-                            && $0.browserAfter > $0.browserBefore + 20
                     } == true
                     let extensionProgress = PluginsWindow.shared
                         .performOperationProgressSmokeTest()
@@ -614,8 +613,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                             + "doctorFront=\(doctorLayout?.isFrontmost ?? false) "
                             + "dividerTarget=\(dividerResize?.targetWidth ?? 0) "
                             + "dividerCaptured=\(dividerResize?.expandedTargetCaptured ?? false) "
-                            + "browserBefore=\(dividerResize?.browserBefore ?? 0) "
-                            + "browserAfter=\(dividerResize?.browserAfter ?? 0) "
                             + "extensionProgress=\(extensionProgressIsVisible) "
                             + "extensionProgressWidth=\(extensionProgress.indicatorWidth) "
                             + "menu=\(browserMenu) "

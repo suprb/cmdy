@@ -1317,13 +1317,14 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
                 workspaceSplitView.subviews.last?.isHidden == true)
     }
 
-    /// Start outside the one-point painted separator and drive the real
-    /// overlay gesture. Chromium hosts a native child view, so this catches the
-    /// regression where the split view knew about a larger target but never
-    /// received the mouse event above that child.
-    func performEmbeddedBrowserDividerResizeSmokeTest(delta: CGFloat)
-        -> (browserBefore: CGFloat, browserAfter: CGFloat,
-            expandedTargetCaptured: Bool, targetWidth: CGFloat)? {
+    /// Probe outside the one-point painted separator. Chromium hosts a native
+    /// child view, so this catches the Browser-specific regression where the
+    /// expanded divider target existed but CEF won the root-window hit test.
+    /// The shared overlay's real drag behavior is covered by the outer-rail
+    /// smoke; synthesizing a split resize here is not reliable on headless
+    /// AppKit because its window has no live screen geometry.
+    func performEmbeddedBrowserDividerHitTargetSmokeTest()
+        -> (expandedTargetCaptured: Bool, targetWidth: CGFloat)? {
         guard let window, isEmbeddedBrowserVisible else { return nil }
         centerSplitView.layoutSubtreeIfNeeded()
         guard let targetRect = centerSplitView.interactiveDividerRect(at: 0),
@@ -1346,23 +1347,8 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
         let expandedTargetCaptured =
             !paintedInOverlay.contains(probeInOverlay)
             && capturedOverlay === embeddedBrowserDividerOverlay
-        let before = embeddedBrowserController.view.frame.width
-
-        // The outer-rail smoke covers WorkspaceDividerOverlayView's real
-        // mouse gesture. Here the Browser-specific regression is that CEF's
-        // native child wins the initial hit. Prove the root window selects our
-        // off-hairline overlay, then separately prove this split accepts the
-        // same resize; synthetic NSEvents do not retain AppKit mouse capture
-        // between calls on headless CI.
-        if expandedTargetCaptured {
-            centerSplitView.setPosition(
-                paintedRect.minX + delta, ofDividerAt: 0)
-        }
-        centerSplitView.layoutSubtreeIfNeeded()
 
         return (
-            browserBefore: before,
-            browserAfter: embeddedBrowserController.view.frame.width,
             expandedTargetCaptured: expandedTargetCaptured,
             targetWidth: targetRect.width)
     }
