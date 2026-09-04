@@ -1340,10 +1340,12 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
         let startInWindow = embeddedBrowserDividerOverlay.convert(
             probeInOverlay, to: nil)
         let probeInContent = window.contentView?.convert(startInWindow, from: nil)
+        let capturedOverlay = probeInContent.flatMap {
+            window.contentView?.hitTest($0) as? WorkspaceDividerOverlayView
+        }
         let expandedTargetCaptured =
             !paintedInOverlay.contains(probeInOverlay)
-            && probeInContent.flatMap { window.contentView?.hitTest($0) }
-                === embeddedBrowserDividerOverlay
+            && capturedOverlay === embeddedBrowserDividerOverlay
         let before = embeddedBrowserController.view.frame.width
 
         func mouseEvent(
@@ -1364,12 +1366,13 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
                 .leftMouseUp,
                 at: NSPoint(x: startInWindow.x + delta, y: startInWindow.y))
         else { return nil }
-        // Route the complete gesture through NSWindow. Directly invoking the
-        // overlay would miss the production regression where CEF's native
-        // child view wins hit-testing before the separator sees mouse-down.
-        window.sendEvent(down)
-        window.sendEvent(drag)
-        window.sendEvent(up)
+        // Root-window hit testing above proved which responder receives the
+        // mouse-down over CEF. Drive the rest of the gesture through that same
+        // captured responder; NSWindow.sendEvent does not retain mouse capture
+        // for separately injected synthetic events on headless CI.
+        capturedOverlay?.mouseDown(with: down)
+        capturedOverlay?.mouseDragged(with: drag)
+        capturedOverlay?.mouseUp(with: up)
         centerSplitView.layoutSubtreeIfNeeded()
 
         return (
