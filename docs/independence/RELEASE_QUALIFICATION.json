@@ -171,12 +171,12 @@
   "kind": "cmdy-release-qualification",
   "publication": {
     "approval": {
-      "approvalReference": "Project owner reported that Browser installation crashed with unclear download state on a work computer, requested a usable embedded Browser divider, and directed the fixes and release to run until finished; after packaged CI exposed a synthetic divider-smoke mismatch, the release source was corrected and requalified on 2026-09-04.",
+      "approvalReference": "Project owner reported that Browser installation crashed with unclear download state on a work computer, requested a usable embedded Browser divider, and directed the fixes and release to run until finished; clean packaged CI then passed the full Browser lifecycle, off-hairline divider hit target, visible operation progress, and lean-to-Browser-to-lean app swap before the exact release source was requalified on 2026-09-04.",
       "approvedPublicWording": "Engineering qualification and Browser download progress, consent-preserving install routing, signed app-switch confirmation, rollback and relaunch recovery, removal, updater, packaging, divider interaction, and site build checks passed for the exact cmdy 1.0.6 source and evidence set. Project-owner approval; this is not an independent authorship or legal clean-room review.",
       "decision": "approved",
       "engineeringDigestSha256": "77f366b51bf0e5b9cd2f3a79146f3ec2e608ac1c7a19e3804fa79d7a81e0f221",
-      "evidenceDigestSha256": "6709dfe1fc1e78e8c8ccba7f4042475e19459f7b512e32e7b635d63da01f7285",
-      "reviewedAtUTC": "2026-09-04T23:05:59Z",
+      "evidenceDigestSha256": "5b214b92f539da6a26c7690146c1d665c1dd824b890d77dd64c12c5a6e16c219",
+      "reviewedAtUTC": "2026-09-04T23:33:01Z",
       "reviewerAffiliation": "cmdy project owner",
       "reviewerIndependentFromImplementation": false,
       "reviewerKind": "human",
@@ -186,16 +186,16 @@
       "core": {
         "record": {
           "path": "docs/independence/qualification/core-17-seed.json",
-          "sha256": "a0c1289f1b952955036ec2f47114bd14bdf00188cd4f41060b992d4ad13ce5ba"
+          "sha256": "b9a5addf4709dc525736a159647337721dbed72c4f9fccaf35d796a033e5bbdf"
         },
-        "sourceManifestSha256": "0978a96b91c16b2a09175933d75bc2d866a2688950e4e9508d6fa48c1e90cbb1"
+        "sourceManifestSha256": "b8c3b53ca49a015fc76e5075ba2b1d7fdcdf2a8dcbf5395ecc4c387887a0645a"
       },
       "operational": {
         "record": {
           "path": "docs/independence/qualification/operational-review.json",
-          "sha256": "266010147c7dc758502a74407105ed083e2e63c47a2783009ca6f07f37f5cf68"
+          "sha256": "fcbd4400940fc1dc08917bbff04e1493647c89780df1fceee1001baec5706bcd"
         },
-        "sourceManifestSha256": "0978a96b91c16b2a09175933d75bc2d866a2688950e4e9508d6fa48c1e90cbb1"
+        "sourceManifestSha256": "b8c3b53ca49a015fc76e5075ba2b1d7fdcdf2a8dcbf5395ecc4c387887a0645a"
       },
       "renderer": {
         "checkerSha256": "886a21d8601f7917bbab544ac285b5952d3f79a60203c56d25bb1632f7690ee7",
@@ -207,20 +207,20 @@
           "path": "docs/independence/qualification/renderer-environment.json",
           "sha256": "17d430cd7191f8872de0acb497ef7010c2913757e10574cb2e69b152218bfc39"
         },
-        "sourceManifestSha256": "0978a96b91c16b2a09175933d75bc2d866a2688950e4e9508d6fa48c1e90cbb1"
+        "sourceManifestSha256": "b8c3b53ca49a015fc76e5075ba2b1d7fdcdf2a8dcbf5395ecc4c387887a0645a"
       }
     },
     "source": {
       "activeSourceManifest": {
         "path": "docs/independence/qualification/active-terminal-sources.json",
-        "sha256": "0978a96b91c16b2a09175933d75bc2d866a2688950e4e9508d6fa48c1e90cbb1"
+        "sha256": "b8c3b53ca49a015fc76e5075ba2b1d7fdcdf2a8dcbf5395ecc4c387887a0645a"
       },
       "provenanceReport": {
         "path": "docs/independence/qualification/working-tree-provenance.json",
-        "sha256": "e701f6fce3bb4a3ffd9cba141f0512b8dbff5aa970de724506aae107a3f27d25"
+        "sha256": "a64ecc5ad62a02fa36959bebefe04f09af2f30e43e95c15b59c064f8ab02efaa"
       },
-      "sourceCommit": "7902c28542fdb1aef3c282f645183334134f5ad7",
-      "sourceTree": "d5ea6d903e7e58efe155501328d318fdbf9e5243"
+      "sourceCommit": "fdb50e4c69320b6237b983a3a25739f8b3239fa8",
+      "sourceTree": "706798d9c608d813ab9845a23ed57223ac420454"
     },
     "state": "approved"
   },

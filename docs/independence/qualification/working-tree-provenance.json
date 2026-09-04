@@ -14,7 +14,7 @@
     },
     {
       "path": "App/AppDelegate.swift",
-      "sha256": "05fe91bd9ed2ef1092153431e88399ec89617a645914e009ce1ae56d7def31eb"
+      "sha256": "b37a169d1ba0cbc8de8dbb6858f6afcc32b352568e310a7bb5931079ed0ec014"
     },
     {
       "path": "App/AppUpdateWindow.swift",
@@ -150,7 +150,7 @@
     },
     {
       "path": "App/TerminalWindowController.swift",
-      "sha256": "a7adaea1076a5a01d4cd9f60d50c92900826f0a37ac03fb8c1b3365b7df4783b"
+      "sha256": "2262e860fbd945a4ee334fcaeea5ed1309afc62e0dcbbd060a8a39542c1bd870"
     },
     {
       "path": "App/ToolbarCustomizationView.swift",
@@ -598,8 +598,8 @@
     {
       "active": "App/TerminalWindowController.swift",
       "activeLines": [
-        1519,
-        1529
+        1490,
+        1500
       ],
       "classificationId": "vendor-app-toolbar-list-structural-collision",
       "disposition": "non-substantive-structural-collision",
@@ -1244,8 +1244,8 @@
     {
       "active": "App/TerminalWindowController.swift",
       "activeLines": [
-        1519,
-        1529
+        1490,
+        1500
       ],
       "classificationId": "retired-app-toolbar-list-structural-collision",
       "disposition": "non-substantive-structural-collision",
@@ -3494,7 +3494,7 @@
       "sourceCount": 111
     }
   },
-  "reportSHA256": "1b57fb8ec68fc568960ca48de1803e9b4bda550acc30d3ca607da09c039d9561",
+  "reportSHA256": "70464599bcae4b793149a0ff4f2508dac2d5e3e66c728d6b328825a26253c364",
   "schemaVersion": 1,
   "summary": {
     "activeSourceCount": 129,
