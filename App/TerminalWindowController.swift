@@ -183,6 +183,7 @@ final class WorkspaceDividerOverlayView: NSView {
     weak var splitView: ThemedSplitView?
     var isLeadingRailVisible: (() -> Bool)?
     var isTrailingRailVisible: (() -> Bool)?
+    var onDragEnded: (() -> Void)?
 
     static func rememberedRailThickness(
         _ thickness: CGFloat?,
@@ -286,8 +287,7 @@ final class WorkspaceDividerOverlayView: NSView {
             window.invalidateCursorRects(for: splitView)
             window.invalidateCursorRects(for: self)
         }
-        (window?.windowController as? TerminalWindowController)?
-            .workspaceDividerDragDidEnd()
+        onDragEnded?()
     }
 }
 
@@ -666,6 +666,7 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
     private let centerSplitController = NSSplitViewController()
     private let centerSplitView = ThemedSplitView(frame: .zero)
     private let workspaceDividerOverlay = WorkspaceDividerOverlayView(frame: .zero)
+    private let embeddedBrowserDividerOverlay = WorkspaceDividerOverlayView(frame: .zero)
     private let workspaceContentView = NSView(frame: .zero)
     private let workspaceContentController = NSViewController()
     private let embeddedBrowserController = EmbeddedChromiumViewController()
@@ -1314,6 +1315,68 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
             inspectorCollapsed: inspectorSplitItem?.isCollapsed == true,
             inspectorSplitSubviewHidden:
                 workspaceSplitView.subviews.last?.isHidden == true)
+    }
+
+    /// Start outside the one-point painted separator and drive the real
+    /// overlay gesture. Chromium hosts a native child view, so this catches the
+    /// regression where the split view knew about a larger target but never
+    /// received the mouse event above that child.
+    func performEmbeddedBrowserDividerResizeSmokeTest(delta: CGFloat)
+        -> (browserBefore: CGFloat, browserAfter: CGFloat,
+            expandedTargetCaptured: Bool, targetWidth: CGFloat)? {
+        guard let window, isEmbeddedBrowserVisible else { return nil }
+        centerSplitView.layoutSubtreeIfNeeded()
+        guard let targetRect = centerSplitView.interactiveDividerRect(at: 0),
+              let paintedRect = centerSplitView.drawnDividerRect(at: 0)
+        else { return nil }
+
+        let targetInOverlay = embeddedBrowserDividerOverlay.convert(
+            targetRect, from: centerSplitView)
+        let paintedInOverlay = embeddedBrowserDividerOverlay.convert(
+            paintedRect, from: centerSplitView)
+        let probeInOverlay = NSPoint(
+            x: targetInOverlay.minX + 1,
+            y: targetInOverlay.midY)
+        let startInWindow = embeddedBrowserDividerOverlay.convert(
+            probeInOverlay, to: nil)
+        let probeInContent = window.contentView?.convert(startInWindow, from: nil)
+        let expandedTargetCaptured =
+            !paintedInOverlay.contains(probeInOverlay)
+            && probeInContent.flatMap { window.contentView?.hitTest($0) }
+                === embeddedBrowserDividerOverlay
+        let before = embeddedBrowserController.view.frame.width
+
+        func mouseEvent(
+            _ type: NSEvent.EventType, at point: NSPoint
+        ) -> NSEvent? {
+            NSEvent.mouseEvent(
+                with: type, location: point, modifierFlags: [],
+                timestamp: ProcessInfo.processInfo.systemUptime,
+                windowNumber: window.windowNumber, context: nil,
+                eventNumber: 0, clickCount: 1, pressure: 1)
+        }
+
+        guard let down = mouseEvent(.leftMouseDown, at: startInWindow),
+              let drag = mouseEvent(
+                .leftMouseDragged,
+                at: NSPoint(x: startInWindow.x + delta, y: startInWindow.y)),
+              let up = mouseEvent(
+                .leftMouseUp,
+                at: NSPoint(x: startInWindow.x + delta, y: startInWindow.y))
+        else { return nil }
+        // Route the complete gesture through NSWindow. Directly invoking the
+        // overlay would miss the production regression where CEF's native
+        // child view wins hit-testing before the separator sees mouse-down.
+        window.sendEvent(down)
+        window.sendEvent(drag)
+        window.sendEvent(up)
+        centerSplitView.layoutSubtreeIfNeeded()
+
+        return (
+            browserBefore: before,
+            browserAfter: embeddedBrowserController.view.frame.width,
+            expandedTargetCaptured: expandedTargetCaptured,
+            targetWidth: targetRect.width)
     }
 
     /// Adding or tearing out a native tab changes AppKit's bar after the key
@@ -2732,7 +2795,7 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
         centerSplitController.splitView = centerSplitView
         centerSplitView.isVertical = true
         centerSplitView.dividerStyle = .thin
-        centerSplitView.interactiveDividerHitTargetThickness = 12
+        centerSplitView.interactiveDividerHitTargetThickness = 16
         centerSplitView.onLayout = { [weak self] in
             self?.refreshEmbeddedBrowserChromeExclusion()
         }
@@ -2950,6 +3013,9 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
             return workspaceInspectorVisible
                 && inspectorSplitItem?.isCollapsed == false
         }
+        workspaceDividerOverlay.onDragEnded = { [weak self] in
+            self?.workspaceDividerDragDidEnd()
+        }
         workspaceDividerOverlay.translatesAutoresizingMaskIntoConstraints = false
         container.addSubview(workspaceDividerOverlay)
         NSLayoutConstraint.activate([
@@ -2960,6 +3026,26 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
             workspaceDividerOverlay.topAnchor.constraint(
                 equalTo: container.topAnchor),
             workspaceDividerOverlay.bottomAnchor.constraint(
+                equalTo: container.bottomAnchor),
+        ])
+
+        // Chromium owns a native child view and therefore needs the same
+        // transparent sibling used by the outer workspace rails. Without this
+        // overlay only the painted one-point separator receives a drag.
+        embeddedBrowserDividerOverlay.splitView = centerSplitView
+        embeddedBrowserDividerOverlay.onDragEnded = { [weak self] in
+            self?.refreshEmbeddedBrowserChromeExclusion()
+        }
+        embeddedBrowserDividerOverlay.translatesAutoresizingMaskIntoConstraints = false
+        container.addSubview(embeddedBrowserDividerOverlay)
+        NSLayoutConstraint.activate([
+            embeddedBrowserDividerOverlay.leadingAnchor.constraint(
+                equalTo: container.leadingAnchor),
+            embeddedBrowserDividerOverlay.trailingAnchor.constraint(
+                equalTo: container.trailingAnchor),
+            embeddedBrowserDividerOverlay.topAnchor.constraint(
+                equalTo: container.topAnchor),
+            embeddedBrowserDividerOverlay.bottomAnchor.constraint(
                 equalTo: container.bottomAnchor),
         ])
 

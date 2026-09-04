@@ -331,6 +331,18 @@ extension AppDelegate {
     }
 
     private func runPluginInstall(_ entry: Marketplace.Entry) {
+        if entry.id == BrowserEdition.marketplaceID,
+           BrowserComponentInstaller.currentBundleNeedsBrowserSwitch(
+                requiredBrowserVersion: entry.version) {
+            // The user already accepted the explicit Download & Restart
+            // action. Hand the swap to the Extensions manager now, after
+            // consent, because it owns persistent progress and cancellation
+            // status when unsaved editor work defers termination.
+            Task { @MainActor in
+                PluginsWindow.shared.installMarketplaceExtension(id: entry.id)
+            }
+            return
+        }
         guard let pane = currentController?.focusedPane else { return }
         let panel = pane.presentInlinePanel(takeFocus: false)
         panel.configureText(title: "marketplace", body: "installing \(entry.name)…", hint: "")
@@ -345,9 +357,12 @@ extension AppDelegate {
                     MarketplaceUpdateMonitor.shared.markInstalled(id: entry.id)
                     if BrowserComponentInstaller.relaunchWasScheduled {
                         panel.appendLine(
-                            BrowserComponentInstaller.scheduledDescription
-                                ?? "restart required to finish installing Browser")
-                        BrowserComponentInstaller.requestRelaunchIfScheduled()
+                            (BrowserComponentInstaller.scheduledDescription
+                                ?? "Restarting to finish installing Browser")
+                                + ". Verified — cmdy will close and reopen now…")
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.25) {
+                            BrowserComponentInstaller.requestRelaunchIfScheduled()
+                        }
                     } else {
                         Notifier.post(title: "marketplace", body: "\(entry.name) installed")
                     }

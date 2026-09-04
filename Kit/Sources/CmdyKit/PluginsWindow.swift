@@ -13,6 +13,7 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
     private var window: NSWindow?
     private let table = NSTableView()
     private let statusLabel = NSTextField(labelWithString: "")
+    private let installProgressIndicator = NSProgressIndicator()
     private lazy var installAllButton = NSButton(
         title: "Install All…", target: self, action: #selector(installAllPlugins))
     private lazy var installPackageButton = NSButton(
@@ -24,7 +25,17 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
     private var marketplaceEntries: [Marketplace.Entry] = []
     private var registryError: String?
     private var requestedInstallID: String?
+    private var operationStatusText: String?
+    private var relaunchMonitorGeneration = 0
     private var runtimeObserver: NSObjectProtocol?
+
+    public struct OperationProgressDiagnostic: Sendable {
+        public let statusSurvivedReload: Bool
+        public let determinateValue: Double
+        public let indeterminateStageVisible: Bool
+        public let restartNoticeVisible: Bool
+        public let indicatorWidth: Double
+    }
 
     private override init() {
         super.init()
@@ -192,11 +203,17 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
         table.reloadData()
 
         let extCount = rows.filter { $0.kind == "installed" }.count
-        if isLoadingRegistry {
+        if isInstalling, let operationStatusText {
+            statusLabel.stringValue = operationStatusText
+            updateProgressIndicator(for: operationStatusText)
+        } else if isLoadingRegistry {
+            stopProgressIndicator()
             statusLabel.stringValue = "Loading extension registry…"
         } else if let registryError {
+            stopProgressIndicator()
             statusLabel.stringValue = "Extension registry unavailable · \(registryError)"
         } else {
+            stopProgressIndicator()
             let available = rows.filter {
                 switch $0.action {
                 case .download, .update: return true
@@ -208,6 +225,148 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
                 : " · all extensions are current"
             statusLabel.stringValue = "\(extCount) installed\(suffix)"
         }
+    }
+
+    private func beginOperation(_ status: String) {
+        relaunchMonitorGeneration += 1
+        isInstalling = true
+        installAllButton.isEnabled = false
+        installPackageButton.isEnabled = false
+        updateOperationStatus(status)
+        reload()
+    }
+
+    private func endOperation() {
+        relaunchMonitorGeneration += 1
+        isInstalling = false
+        installAllButton.isEnabled = true
+        installPackageButton.isEnabled = true
+        operationStatusText = nil
+        stopProgressIndicator()
+    }
+
+    private func updateOperationStatus(_ status: String) {
+        operationStatusText = status
+        statusLabel.stringValue = status
+        updateProgressIndicator(for: status)
+    }
+
+    private func updateProgressIndicator(for status: String) {
+        guard isInstalling else {
+            stopProgressIndicator()
+            return
+        }
+        installProgressIndicator.isHidden = false
+        if let percent = Self.percentValue(in: status) {
+            installProgressIndicator.stopAnimation(nil)
+            installProgressIndicator.isIndeterminate = false
+            installProgressIndicator.doubleValue = Double(percent)
+        } else {
+            installProgressIndicator.isIndeterminate = true
+            installProgressIndicator.startAnimation(nil)
+        }
+    }
+
+    private func stopProgressIndicator() {
+        installProgressIndicator.stopAnimation(nil)
+        installProgressIndicator.isHidden = true
+        installProgressIndicator.isIndeterminate = true
+        installProgressIndicator.doubleValue = 0
+    }
+
+    nonisolated static func percentValue(in status: String) -> Int? {
+        guard let percentIndex = status.firstIndex(of: "%") else { return nil }
+        var start = percentIndex
+        while start > status.startIndex {
+            let candidate = status.index(before: start)
+            guard status[candidate].wholeNumberValue != nil else { break }
+            start = candidate
+        }
+        guard start < percentIndex,
+              let value = Int(status[start..<percentIndex]) else { return nil }
+        return min(max(value, 0), 100)
+    }
+
+    private func restartAfterShowingStatus(fallback: String) {
+        let action = BrowserComponentInstaller.scheduledDescription ?? fallback
+        showRestartStatus(action: action)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.25) {
+            BrowserComponentInstaller.requestRelaunchIfScheduled()
+        }
+    }
+
+    /// The app can decline its scheduled quit when an editor has unsaved
+    /// changes. Keep that safe choice visible and watch the helper's rollback
+    /// instead of leaving Extensions frozen on a false restart promise.
+    public func applicationTerminationWasCancelled() {
+        guard isInstalling else { return }
+        guard BrowserComponentInstaller.relaunchWasScheduled else {
+            endOperation()
+            reload()
+            statusLabel.stringValue =
+                "Browser change cancelled safely · save your work and try again"
+            return
+        }
+        relaunchMonitorGeneration += 1
+        let generation = relaunchMonitorGeneration
+        updateOperationStatus(
+            "Restart paused — save your work, then quit cmdy to finish. "
+                + "If cmdy stays open, the Browser change rolls back safely.")
+        monitorCancelledRelaunch(generation: generation)
+    }
+
+    private func monitorCancelledRelaunch(generation: Int) {
+        guard generation == relaunchMonitorGeneration, isInstalling else { return }
+        guard BrowserComponentInstaller.relaunchWasScheduled else {
+            endOperation()
+            reload()
+            statusLabel.stringValue =
+                "Browser change cancelled safely · save your work and try again"
+            return
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak self] in
+            self?.monitorCancelledRelaunch(generation: generation)
+        }
+    }
+
+    private func showRestartStatus(action: String) {
+        updateOperationStatus(
+            "\(action). Verified — cmdy will close and reopen now…")
+    }
+
+    /// Exercises the actual AppKit controls without starting a download or
+    /// relaunch. The packaged and unit smokes use this to catch reloads that
+    /// erase progress, regress the bar to the wrong mode, or hide the restart
+    /// notice before the delayed quit.
+    public func performOperationProgressSmokeTest() -> OperationProgressDiagnostic {
+        let window = ensureWindow()
+        beginOperation("Downloading Browser — 42% (42 MB of 100 MB)…")
+        reload()
+        window.contentView?.layoutSubtreeIfNeeded()
+        let statusSurvivedReload = operationStatusText == statusLabel.stringValue
+            && statusLabel.stringValue.contains("42%")
+            && !installProgressIndicator.isHidden
+            && !installProgressIndicator.isIndeterminate
+        let determinateValue = installProgressIndicator.doubleValue
+        let indicatorWidth = installProgressIndicator.frame.width
+
+        updateOperationStatus("Verifying Browser signature…")
+        let indeterminateStageVisible = !installProgressIndicator.isHidden
+            && installProgressIndicator.isIndeterminate
+
+        showRestartStatus(action: "Restarting cmdy to install Browser")
+        let restartNoticeVisible = operationStatusText == statusLabel.stringValue
+            && statusLabel.stringValue.contains("close and reopen now")
+            && !installProgressIndicator.isHidden
+        endOperation()
+        reload()
+
+        return OperationProgressDiagnostic(
+            statusSurvivedReload: statusSurvivedReload,
+            determinateValue: determinateValue,
+            indeterminateStageVisible: indeterminateStageVisible,
+            restartNoticeVisible: restartNoticeVisible,
+            indicatorWidth: indicatorWidth)
     }
 
     private static func webURL(_ raw: String?) -> URL? {
@@ -371,10 +530,22 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
             scroll.bottomAnchor.constraint(equalTo: list.bottomAnchor),
         ])
 
-        statusLabel.font = .systemFont(ofSize: 10)
+        statusLabel.font = .systemFont(ofSize: 11.5, weight: .medium)
         statusLabel.textColor = .secondaryLabelColor
         statusLabel.lineBreakMode = .byTruncatingMiddle
+        statusLabel.maximumNumberOfLines = 1
         statusLabel.translatesAutoresizingMaskIntoConstraints = false
+
+        installProgressIndicator.style = .bar
+        installProgressIndicator.controlSize = .small
+        installProgressIndicator.minValue = 0
+        installProgressIndicator.maxValue = 100
+        installProgressIndicator.isIndeterminate = true
+        installProgressIndicator.isDisplayedWhenStopped = true
+        installProgressIndicator.isHidden = true
+        installProgressIndicator.setAccessibilityLabel(
+            "Extension installation progress")
+        installProgressIndicator.translatesAutoresizingMaskIntoConstraints = false
 
         let makeButton = { (title: String, action: Selector) -> NSButton in
             let b = NSButton(title: title, target: self, action: action)
@@ -404,6 +575,7 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
         root.addSubview(intro)
         root.addSubview(list)
         root.addSubview(statusLabel)
+        root.addSubview(installProgressIndicator)
         root.addSubview(stack)
         NSLayoutConstraint.activate([
             intro.topAnchor.constraint(equalTo: root.topAnchor, constant: 20),
@@ -412,10 +584,18 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
             list.topAnchor.constraint(equalTo: intro.bottomAnchor, constant: 16),
             list.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 20),
             list.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -20),
-            list.bottomAnchor.constraint(equalTo: stack.topAnchor, constant: -16),
+            list.bottomAnchor.constraint(equalTo: statusLabel.topAnchor, constant: -14),
             statusLabel.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 20),
-            statusLabel.centerYAnchor.constraint(equalTo: stack.centerYAnchor),
-            statusLabel.trailingAnchor.constraint(lessThanOrEqualTo: stack.leadingAnchor, constant: -16),
+            statusLabel.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -20),
+            installProgressIndicator.topAnchor.constraint(
+                equalTo: statusLabel.bottomAnchor, constant: 6),
+            installProgressIndicator.leadingAnchor.constraint(
+                equalTo: statusLabel.leadingAnchor),
+            installProgressIndicator.trailingAnchor.constraint(
+                equalTo: statusLabel.trailingAnchor),
+            installProgressIndicator.heightAnchor.constraint(equalToConstant: 5),
+            stack.topAnchor.constraint(
+                equalTo: installProgressIndicator.bottomAnchor, constant: 12),
             stack.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -20),
             stack.bottomAnchor.constraint(equalTo: root.bottomAnchor, constant: -18),
         ])
@@ -454,19 +634,15 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
     public func installExtensionPackage(from sourceURL: URL) {
         show()
         guard !isInstalling else { return }
-        isInstalling = true
-        installAllButton.isEnabled = false
-        installPackageButton.isEnabled = false
-        reload()
-        statusLabel.stringValue = sourceURL.isFileURL
+        beginOperation(sourceURL.isFileURL
             ? "Inspecting \(sourceURL.lastPathComponent)…"
-            : "Downloading Extension package…"
+            : "Downloading Extension package…")
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             do {
                 let package = try Marketplace.prepareExtensionPackage(
                     from: sourceURL) { line in
                     DispatchQueue.main.async {
-                        self?.statusLabel.stringValue = line
+                        self?.updateOperationStatus(line)
                     }
                 }
                 DispatchQueue.main.async {
@@ -524,13 +700,13 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
             try? ExtensionManifest.load(from: $0).enabled
         } ?? true
         if let existing { PluginManager.shared.stopPlugin(at: existing) }
-        statusLabel.stringValue = "Installing \(package.manifest.name)…"
+        updateOperationStatus("Installing \(package.manifest.name)…")
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             do {
                 let directory = try Marketplace.installExtensionPackage(
                     package, consented: true) { line in
                     DispatchQueue.main.async {
-                        self?.statusLabel.stringValue = line
+                        self?.updateOperationStatus(line)
                     }
                 }
                 DispatchQueue.main.sync {
@@ -560,25 +736,20 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
     }
 
     private func cancelPackageInstall() {
-        isInstalling = false
-        installAllButton.isEnabled = true
-        installPackageButton.isEnabled = true
+        endOperation()
         reload()
     }
 
     private func finishPackageInstall(
         package: Marketplace.ExtensionPackage?, error: Error?
     ) {
-        isInstalling = false
-        installAllButton.isEnabled = true
-        installPackageButton.isEnabled = true
-        reload()
         if error == nil, BrowserComponentInstaller.relaunchWasScheduled {
-            statusLabel.stringValue = BrowserComponentInstaller.scheduledDescription
-                ?? "Restarting cmdy to finish installing Browser…"
-            BrowserComponentInstaller.requestRelaunchIfScheduled()
+            restartAfterShowingStatus(
+                fallback: "Restarting cmdy to finish installing Browser")
             return
         }
+        endOperation()
+        reload()
         let alert = NSAlert()
         if let error {
             alert.alertStyle = .warning
@@ -594,10 +765,7 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
 
     @objc private func installAllPlugins() {
         guard !isInstalling else { return }
-        isInstalling = true
-        installAllButton.isEnabled = false
-        installPackageButton.isEnabled = false
-        statusLabel.stringValue = "Loading the extension registry…"
+        beginOperation("Loading the extension registry…")
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             do {
                 let plugins = try Marketplace.fetchEntries().filter { $0.kind == "plugin" }
@@ -614,9 +782,7 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
             return true
         }
         guard !pending.isEmpty else {
-            isInstalling = false
-            installAllButton.isEnabled = true
-            installPackageButton.isEnabled = true
+            endOperation()
             reload()
             let alert = NSAlert()
             alert.messageText = "All marketplace extensions are installed"
@@ -656,20 +822,22 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
             ($0.id == BrowserEdition.marketplaceID ? 1 : 0)
                 < ($1.id == BrowserEdition.marketplaceID ? 1 : 0)
         }
-        statusLabel.stringValue = "Installing \(plugins.count) extension\(plugins.count == 1 ? "" : "s")…"
+        updateOperationStatus(
+            "Installing \(plugins.count) extension\(plugins.count == 1 ? "" : "s")…")
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             var failures: [String] = []
             for (index, entry) in plugins.enumerated() {
                 let dest = Marketplace.installedExtensionDirectory(id: entry.id)
                     ?? PluginManager.pluginsDirectory.appendingPathComponent(entry.folderName)
                 DispatchQueue.main.sync {
-                    self?.statusLabel.stringValue = "Installing \(entry.name) (\(index + 1)/\(plugins.count))…"
+                    self?.updateOperationStatus(
+                        "Installing \(entry.name) (\(index + 1)/\(plugins.count))…")
                     PluginManager.shared.stopPlugin(at: dest)
                 }
                 do {
                     let dir = try Marketplace.installPlugin(entry, consented: true) { line in
                         DispatchQueue.main.async {
-                            self?.statusLabel.stringValue = "\(entry.name): \(line)"
+                            self?.updateOperationStatus("\(entry.name): \(line)")
                         }
                     }
                     DispatchQueue.main.sync {
@@ -688,9 +856,7 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
     }
 
     private func cancelInstallAll() {
-        isInstalling = false
-        installAllButton.isEnabled = true
-        installPackageButton.isEnabled = true
+        endOperation()
         reload()
     }
 
@@ -699,21 +865,18 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
     }
 
     private func finishInstallAll(failures: [String]) {
-        isInstalling = false
-        installAllButton.isEnabled = true
-        installPackageButton.isEnabled = true
-        reload()
         if BrowserComponentInstaller.relaunchWasScheduled {
-            statusLabel.stringValue = BrowserComponentInstaller.scheduledDescription
-                ?? "Restarting cmdy to finish installing Browser…"
             if !failures.isEmpty {
                 Notifier.post(
                     title: "Some Extensions need attention",
                     body: failures.joined(separator: "\n"))
             }
-            BrowserComponentInstaller.requestRelaunchIfScheduled()
+            restartAfterShowingStatus(
+                fallback: "Restarting cmdy to finish installing Browser")
             return
         }
+        endOperation()
+        reload()
         let alert = NSAlert()
         alert.messageText = failures.isEmpty ? "Extensions installed" : "Some extensions could not be installed"
         alert.informativeText = failures.isEmpty
@@ -932,12 +1095,8 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
 
     private func performRowRemoval(_ row: Row, at dir: URL) {
         guard !isInstalling else { return }
-        isInstalling = true
-        installAllButton.isEnabled = false
-        installPackageButton.isEnabled = false
+        beginOperation("Removing \(row.name)…")
         PluginManager.shared.stopPlugin(at: dir)
-        reload()
-        statusLabel.stringValue = "Removing \(row.name)…"
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             let isBrowser = (try? ExtensionManifest.load(from: dir).id)
                 == BrowserEdition.marketplaceID
@@ -947,7 +1106,7 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
                         at: dir
                     ) { line in
                         DispatchQueue.main.async {
-                            self?.statusLabel.stringValue = "\(row.name): \(line)"
+                            self?.updateOperationStatus("\(row.name): \(line)")
                         }
                     }
                 }
@@ -956,24 +1115,22 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
             }
             DispatchQueue.main.async {
                 guard let self else { return }
-                self.isInstalling = false
-                self.installAllButton.isEnabled = true
-                self.installPackageButton.isEnabled = true
                 if case .failure = result, row.enabled {
                     _ = PluginManager.shared.launchPlugin(at: dir)
                 }
-                self.reload()
                 switch result {
                 case .success(let relaunching):
                     if relaunching {
-                        self.statusLabel.stringValue =
-                            BrowserComponentInstaller.scheduledDescription
-                                ?? "Restarting cmdy to finish removing Browser…"
-                        BrowserComponentInstaller.requestRelaunchIfScheduled()
+                        self.restartAfterShowingStatus(
+                            fallback: "Restarting cmdy to finish removing Browser")
                     } else {
+                        self.endOperation()
+                        self.reload()
                         self.statusLabel.stringValue = "\(row.name) removed"
                     }
                 case .failure(let error):
+                    self.endOperation()
+                    self.reload()
                     let failure = NSAlert()
                     failure.alertStyle = .warning
                     failure.messageText = "Could not remove \(row.name)"
@@ -987,20 +1144,19 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
 
     private func performRowInstall(_ entry: Marketplace.Entry, previousRow: Row) {
         guard !isInstalling else { return }
-        isInstalling = true
-        installAllButton.isEnabled = false
-        installPackageButton.isEnabled = false
-        reload()
         let dest = Marketplace.installedExtensionDirectory(id: entry.id)
             ?? PluginManager.pluginsDirectory.appendingPathComponent(entry.folderName)
         let wasInstalled = previousRow.dir != nil
         let shouldEnable = wasInstalled ? previousRow.enabled : true
-        statusLabel.stringValue = "\(wasInstalled ? "Updating" : "Downloading") \(entry.name)…"
+        beginOperation(
+            "\(wasInstalled ? "Updating" : "Downloading") \(entry.name)…")
         PluginManager.shared.stopPlugin(at: dest)
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             do {
                 let dir = try Marketplace.installPlugin(entry, consented: true) { line in
-                    DispatchQueue.main.async { self?.statusLabel.stringValue = "\(entry.name): \(line)" }
+                    DispatchQueue.main.async {
+                        self?.updateOperationStatus("\(entry.name): \(line)")
+                    }
                 }
                 DispatchQueue.main.sync {
                     if BrowserComponentInstaller.relaunchWasScheduled {
@@ -1027,17 +1183,14 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
     }
 
     private func finishRowInstall(entry: Marketplace.Entry, error: Error?) {
-        isInstalling = false
-        installAllButton.isEnabled = true
-        installPackageButton.isEnabled = true
         if error == nil { MarketplaceUpdateMonitor.shared.markInstalled(id: entry.id) }
-        reload()
         if error == nil, BrowserComponentInstaller.relaunchWasScheduled {
-            statusLabel.stringValue = BrowserComponentInstaller.scheduledDescription
-                ?? "Restarting cmdy to finish installing Browser…"
-            BrowserComponentInstaller.requestRelaunchIfScheduled()
+            restartAfterShowingStatus(
+                fallback: "Restarting cmdy to finish installing Browser")
             return
         }
+        endOperation()
+        reload()
         let alert = NSAlert()
         alert.messageText = error == nil ? "\(entry.name) is current" : "Could not install \(entry.name)"
         alert.informativeText = error?.localizedDescription

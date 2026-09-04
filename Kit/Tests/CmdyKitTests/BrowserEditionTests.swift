@@ -1,7 +1,133 @@
+import Foundation
 import XCTest
 @testable import CmdyKit
 
+private final class SlowDownloadURLProtocol: URLProtocol, @unchecked Sendable {
+    private let stateLock = NSLock()
+    private var stopped = false
+    static let chunkSize = 512 * 1024
+    static let chunkCount = 4
+
+    override class func canInit(with request: URLRequest) -> Bool {
+        request.url?.host == "progress.test"
+    }
+
+    override class func canonicalRequest(for request: URLRequest) -> URLRequest {
+        request
+    }
+
+    override func startLoading() {
+        guard let url = request.url,
+              let response = HTTPURLResponse(
+                url: url,
+                statusCode: 200,
+                httpVersion: "HTTP/1.1",
+                headerFields: [
+                    "Content-Length": String(Self.chunkSize * Self.chunkCount),
+                    "Content-Type": "application/zip",
+                ]) else {
+            client?.urlProtocol(self, didFailWithError: URLError(.badServerResponse))
+            return
+        }
+        client?.urlProtocol(
+            self, didReceive: response, cacheStoragePolicy: .notAllowed)
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self else { return }
+            for byte in 0..<Self.chunkCount {
+                self.stateLock.lock()
+                let stopped = self.stopped
+                self.stateLock.unlock()
+                if stopped { return }
+                self.client?.urlProtocol(
+                    self,
+                    didLoad: Data(
+                        repeating: UInt8(65 + byte), count: Self.chunkSize))
+                Thread.sleep(forTimeInterval: 0.14)
+            }
+            self.stateLock.lock()
+            let stopped = self.stopped
+            self.stateLock.unlock()
+            if !stopped { self.client?.urlProtocolDidFinishLoading(self) }
+        }
+    }
+
+    override func stopLoading() {
+        stateLock.lock()
+        stopped = true
+        stateLock.unlock()
+    }
+}
+
 final class BrowserEditionTests: XCTestCase {
+    func testFetchDataReportsRealIntermediateDownloadProgress() throws {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [SlowDownloadURLProtocol.self]
+        let session = URLSession(configuration: configuration)
+        defer { session.invalidateAndCancel() }
+        var snapshots: [Marketplace.DownloadProgress] = []
+
+        let data = try Marketplace.fetchData(
+            URL(string: "https://progress.test/browser.zip")!,
+            maxBytes: 4 * 1024 * 1024,
+            timeout: 5,
+            session: session,
+            downloadProgress: { snapshots.append($0) })
+
+        XCTAssertEqual(
+            data.count,
+            SlowDownloadURLProtocol.chunkSize * SlowDownloadURLProtocol.chunkCount)
+        XCTAssertTrue(snapshots.contains {
+            guard let percent = $0.percentComplete else { return false }
+            return percent > 0 && percent < 100
+        })
+        XCTAssertEqual(snapshots.last?.percentComplete, 100)
+        XCTAssertTrue(zip(snapshots, snapshots.dropFirst()).allSatisfy {
+            $0.receivedBytes <= $1.receivedBytes
+        })
+    }
+
+    func testExtensionWindowKeepsProgressVisibleAcrossReloads() async {
+        let diagnostic = await MainActor.run {
+            PluginsWindow.shared.performOperationProgressSmokeTest()
+        }
+
+        XCTAssertTrue(diagnostic.statusSurvivedReload)
+        XCTAssertEqual(diagnostic.determinateValue, 42)
+        XCTAssertTrue(diagnostic.indeterminateStageVisible)
+        XCTAssertTrue(diagnostic.restartNoticeVisible)
+        XCTAssertGreaterThan(diagnostic.indicatorWidth, 100)
+    }
+
+    func testBrowserDownloadProgressReportsBytesAndPercentage() {
+        let progress = Marketplace.DownloadProgress(
+            receivedBytes: 67_108_864,
+            expectedBytes: 134_217_728)
+
+        XCTAssertEqual(progress.percentComplete, 50)
+        let description = BrowserComponentInstaller.downloadProgressDescription(
+            variant: .browser,
+            progress: progress)
+        XCTAssertTrue(description.contains("Downloading Browser — 50%"))
+        XCTAssertTrue(description.contains(" of "))
+
+        let unknownSize = BrowserComponentInstaller.downloadProgressDescription(
+            variant: .browser,
+            progress: Marketplace.DownloadProgress(
+                receivedBytes: 1_048_576,
+                expectedBytes: nil))
+        XCTAssertTrue(unknownSize.contains("Downloading Browser —"))
+        XCTAssertFalse(unknownSize.contains("%"))
+    }
+
+    func testExtensionWindowExtractsDownloadPercentage() {
+        XCTAssertEqual(
+            PluginsWindow.percentValue(
+                in: "Browser: Downloading Browser — 42% (61 MB of 146 MB)…"),
+            42)
+        XCTAssertEqual(PluginsWindow.percentValue(in: "Downloading — 120%"), 100)
+        XCTAssertNil(PluginsWindow.percentValue(in: "Verifying download…"))
+    }
+
     func testHardenedRuntimeDetectionMatchesRealCodesignOutput() {
         let developerIDOutput = """
         Executable=/Applications/cmdy.app/Contents/MacOS/cmdy
@@ -426,6 +552,222 @@ final class BrowserEditionTests: XCTestCase {
             transactionURL: secondConfig.appendingPathComponent("switch.json")))
         BrowserComponentInstaller.releaseSwitchLock(at: lock, token: firstToken)
         XCTAssertFalse(FileManager.default.fileExists(atPath: lock.path))
+    }
+
+    func testFailedBrowserRelaunchExplainsVerifiedRollback() throws {
+        let environmentKey = "CMDY_CONFIG_DIR"
+        let previous = getenv(environmentKey).map { String(cString: $0) }
+        defer {
+            if let previous { setenv(environmentKey, previous, 1) }
+            else { unsetenv(environmentKey) }
+        }
+
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(
+            "cmdy-failed-relaunch-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        setenv(environmentKey, root.path, 1)
+
+        let token = UUID().uuidString
+        let transactionURL = root.appendingPathComponent("browser-switch.json")
+        let appParent = root.appendingPathComponent("Applications", isDirectory: true)
+        let lock = root.appendingPathComponent(
+            "com.cmdy.app/ComponentSwitch/.browser-component-switch.lock",
+            isDirectory: true)
+        let transaction = BrowserComponentInstaller.Transaction(
+            schemaVersion: 1,
+            token: token,
+            variant: .browser,
+            destinationAppPath: appParent.appendingPathComponent("cmdy.app").path,
+            stagedAppPath: appParent.appendingPathComponent(
+                ".cmdy-component-stage-test.app").path,
+            backupAppPath: appParent.appendingPathComponent(
+                ".cmdy-component-backup-test.app").path,
+            helperDirectoryPath: root.appendingPathComponent("helper").path,
+            lockDirectoryPath: lock.path,
+            bundleIdentifier: "com.cmdy.app",
+            candidateVersion: "1.0.6",
+            candidateBuild: "1",
+            waitingPIDs: [],
+            activation: nil,
+            browserComponentVersion: "2.2.0",
+            createdAt: Date().timeIntervalSince1970,
+            testOnlyExitAfterConfirmation: false,
+            testOnlySuppressConfirmation: false,
+            testOnlyConfirmationTimeoutSeconds: nil,
+            state: .failed,
+            message: "the replacement app exited before confirming startup")
+        try JSONEncoder().encode(transaction).write(
+            to: transactionURL, options: .atomic)
+
+        let message = BrowserComponentInstaller.failedRelaunchMessageIfRequested([
+            "cmdy", BrowserComponentInstaller.failureArgument,
+            transactionURL.path, token,
+        ])
+        XCTAssertEqual(
+            message,
+            "Browser could not start, so cmdy restored the previous app. "
+                + "the replacement app exited before confirming startup")
+        XCTAssertNil(BrowserComponentInstaller.failedRelaunchMessageIfRequested([
+            "cmdy", BrowserComponentInstaller.failureArgument,
+            transactionURL.path, "wrong-token",
+        ]))
+    }
+
+    func testConfirmationWaitDetectsReplacementProcessExitPromptly() throws {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/bin/sleep")
+        process.arguments = ["0.1"]
+        try process.run()
+
+        let startedAt = Date()
+        let result = BrowserComponentInstaller.waitForConfirmation(
+            at: FileManager.default.temporaryDirectory.appendingPathComponent(
+                "missing-browser-switch-\(UUID().uuidString).json"),
+            token: UUID().uuidString,
+            processIdentifier: process.processIdentifier,
+            timeout: 3)
+        process.waitUntilExit()
+
+        XCTAssertEqual(result, .processExited)
+        XCTAssertLessThan(Date().timeIntervalSince(startedAt), 1.5)
+    }
+
+    func testConfirmationWinsWhenReplacementExitsAtCommitPoint() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(
+            "cmdy-confirm-exit-race-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let token = UUID().uuidString
+        let transactionURL = root.appendingPathComponent("browser-switch.json")
+        let appParent = root.appendingPathComponent("Applications", isDirectory: true)
+        let lock = root.appendingPathComponent(
+            "com.cmdy.app/ComponentSwitch/.browser-component-switch.lock",
+            isDirectory: true)
+        var transaction = BrowserComponentInstaller.Transaction(
+            schemaVersion: 1,
+            token: token,
+            variant: .browser,
+            destinationAppPath: appParent.appendingPathComponent("cmdy.app").path,
+            stagedAppPath: appParent.appendingPathComponent(
+                ".cmdy-component-stage-test.app").path,
+            backupAppPath: appParent.appendingPathComponent(
+                ".cmdy-component-backup-test.app").path,
+            helperDirectoryPath: root.appendingPathComponent("helper").path,
+            lockDirectoryPath: lock.path,
+            bundleIdentifier: "com.cmdy.app",
+            candidateVersion: "1.0.6",
+            candidateBuild: "1",
+            waitingPIDs: [],
+            activation: nil,
+            browserComponentVersion: "2.2.0",
+            createdAt: Date().timeIntervalSince1970,
+            testOnlyExitAfterConfirmation: true,
+            testOnlySuppressConfirmation: false,
+            testOnlyConfirmationTimeoutSeconds: 1,
+            state: .awaitingConfirmation,
+            message: nil)
+        try JSONEncoder().encode(transaction).write(
+            to: transactionURL, options: .atomic)
+
+        var livenessChecks = 0
+        let result = BrowserComponentInstaller.waitForConfirmation(
+            at: transactionURL,
+            token: token,
+            processIdentifier: Int32.max,
+            timeout: 1,
+            processIsRunning: { _ in
+                livenessChecks += 1
+                transaction.state = .confirmed
+                try? JSONEncoder().encode(transaction).write(
+                    to: transactionURL, options: .atomic)
+                return false
+            })
+
+        XCTAssertEqual(livenessChecks, 1)
+        XCTAssertEqual(result, .confirmed)
+    }
+
+    func testRestoredAppRelaunchRetriesWithFailureContext() throws {
+        let transactionURL = URL(fileURLWithPath: "/tmp/browser-switch.json")
+        let token = UUID().uuidString
+        var attempts = 0
+        var receivedArguments: [String] = []
+        try BrowserComponentInstaller.relaunchRestoredApplication(
+            at: URL(fileURLWithPath: "/Applications/cmdy.app"),
+            transactionURL: transactionURL,
+            token: token,
+            attempts: 3,
+            retryDelayMicroseconds: 0,
+            launch: { _, arguments in
+                attempts += 1
+                receivedArguments = arguments
+                if attempts < 3 {
+                    throw BrowserComponentSwitchError.helperLaunchFailed(
+                        "simulated relaunch refusal")
+                }
+            })
+
+        XCTAssertEqual(attempts, 3)
+        XCTAssertEqual(receivedArguments, [
+            BrowserComponentInstaller.failureArgument,
+            transactionURL.path,
+            token,
+        ])
+    }
+
+    func testRetainedFailedSwitchExplainsAutomaticRelaunchFailure() async throws {
+        let fm = FileManager.default
+        let root = fm.temporaryDirectory.appendingPathComponent(
+            "cmdy-retained-relaunch-failure-\(UUID().uuidString)",
+            isDirectory: true)
+        let transactionURL = root.appendingPathComponent("browser-switch.json")
+        let appParent = root.appendingPathComponent("Applications", isDirectory: true)
+        let lock = root.appendingPathComponent(
+            "com.cmdy.app/ComponentSwitch/.browser-component-switch.lock",
+            isDirectory: true)
+        try fm.createDirectory(
+            at: lock.deletingLastPathComponent(),
+            withIntermediateDirectories: true)
+        defer { try? fm.removeItem(at: root) }
+        let token = UUID().uuidString
+        try BrowserComponentInstaller.acquireSwitchLock(
+            at: lock, token: token, transactionURL: transactionURL)
+        let transaction = BrowserComponentInstaller.Transaction(
+            schemaVersion: 1,
+            token: token,
+            variant: .browser,
+            destinationAppPath: appParent.appendingPathComponent("cmdy.app").path,
+            stagedAppPath: appParent.appendingPathComponent(
+                ".cmdy-component-stage-test.app").path,
+            backupAppPath: appParent.appendingPathComponent(
+                ".cmdy-component-backup-test.app").path,
+            helperDirectoryPath: root.appendingPathComponent(
+                "ComponentSwitch/\(UUID().uuidString)").path,
+            lockDirectoryPath: lock.path,
+            bundleIdentifier: "com.cmdy.app",
+            candidateVersion: "1.0.6",
+            candidateBuild: "1",
+            waitingPIDs: [],
+            activation: nil,
+            browserComponentVersion: "2.2.0",
+            createdAt: Date().timeIntervalSince1970,
+            testOnlyExitAfterConfirmation: false,
+            testOnlySuppressConfirmation: false,
+            testOnlyConfirmationTimeoutSeconds: nil,
+            state: .failed,
+            message: "the previous app was restored, but macOS refused every relaunch")
+        try JSONEncoder().encode(transaction).write(
+            to: transactionURL, options: .atomic)
+
+        let message = await BrowserComponentInstaller
+            .recoverInterruptedSwitchAfterLaunch(
+                lockDirectory: lock,
+                browserRuntimeReady: { false })
+
+        XCTAssertTrue(message?.contains("rolled back safely") == true)
+        XCTAssertTrue(message?.contains("macOS refused every relaunch") == true)
+        XCTAssertFalse(fm.fileExists(atPath: lock.path))
     }
 
     func testMissingTransactionActivationIntentRecoversEveryRenameBoundary() throws {

@@ -111,6 +111,18 @@ public enum Marketplace {
         }
     }
 
+    struct DownloadProgress: Equatable, Sendable {
+        let receivedBytes: Int64
+        let expectedBytes: Int64?
+
+        var percentComplete: Int? {
+            guard let expectedBytes, expectedBytes > 0 else { return nil }
+            let boundedReceived = min(max(receivedBytes, 0), expectedBytes)
+            return Int(
+                (Double(boundedReceived) / Double(expectedBytes) * 100).rounded(.down))
+        }
+    }
+
     public struct Entry: Sendable {
         public let kind: String        // shader | theme | rig | patch | plugin | channel
         public let id: String
@@ -408,7 +420,9 @@ public enum Marketplace {
     static func fetchData(
         _ url: URL,
         maxBytes: Int = 16 * 1024 * 1024,
-        timeout: TimeInterval = 60
+        timeout: TimeInterval = 60,
+        session: URLSession = .shared,
+        downloadProgress: (DownloadProgress) -> Void = { _ in }
     ) throws -> Data {
         let boundedMax = min(max(maxBytes, 1), 1024 * 1024 * 1024)
         if url.isFileURL {
@@ -424,7 +438,7 @@ public enum Marketplace {
         request.setValue(
             "\(ProductIdentity.current.slug)/marketplace",
             forHTTPHeaderField: "User-Agent")
-        let task = URLSession.shared.downloadTask(with: request) { temporaryURL, resp, err in
+        let task = session.downloadTask(with: request) { temporaryURL, resp, err in
             if let err { state.complete(.failure(err)) }
             else if url.scheme?.lowercased() == "https",
                     resp?.url?.scheme?.lowercased() != "https" {
@@ -452,10 +466,38 @@ public enum Marketplace {
             sem.signal()
         }
         task.resume()
-        guard sem.wait(timeout: .now() + timeout) == .success else {
-            task.cancel()
-            throw MarketplaceError.network("timeout fetching \(url.lastPathComponent)")
+
+        let deadline = DispatchTime.now() + timeout
+        var lastReportedBytes: Int64 = -1
+        var lastReportedPercent: Int?
+        func reportProgress(force: Bool = false) {
+            let received = max(0, task.countOfBytesReceived)
+            let expectedRaw = task.countOfBytesExpectedToReceive
+            // Keep the caller's useful "downloading…" stage text until the
+            // server has supplied a size or the first bytes actually arrive.
+            // URLSession reports both values as unknown/zero while connecting.
+            guard received > 0 || expectedRaw > 0 else { return }
+            let snapshot = DownloadProgress(
+                receivedBytes: received,
+                expectedBytes: expectedRaw > 0 ? expectedRaw : nil)
+            let percent = snapshot.percentComplete
+            let changedEnough = percent.map { $0 != lastReportedPercent }
+                ?? (received - lastReportedBytes >= 1_048_576)
+            guard force || lastReportedBytes < 0 || changedEnough else { return }
+            lastReportedBytes = received
+            lastReportedPercent = percent
+            downloadProgress(snapshot)
         }
+        reportProgress()
+        while sem.wait(timeout: .now() + .milliseconds(100)) == .timedOut {
+            reportProgress()
+            guard DispatchTime.now() < deadline else {
+                task.cancel()
+                throw MarketplaceError.network(
+                    "timeout fetching \(url.lastPathComponent)")
+            }
+        }
+        reportProgress(force: true)
         guard let result = state.take() else {
             throw MarketplaceError.network("request completed without a result")
         }

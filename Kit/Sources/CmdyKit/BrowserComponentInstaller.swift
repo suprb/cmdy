@@ -51,6 +51,7 @@ public enum BrowserComponentSwitchError: LocalizedError {
 public enum BrowserComponentInstaller {
     public static let helperArgument = "--browser-component-swap-helper"
     public static let confirmationArgument = "--browser-component-switch-confirm"
+    public static let failureArgument = "--browser-component-switch-failed"
 
     public struct PreparedSwitch: @unchecked Sendable {
         public let variant: BrowserComponentVariant
@@ -198,6 +199,12 @@ public enum BrowserComponentInstaller {
         }
     }
 
+    enum ConfirmationResult: Equatable {
+        case confirmed
+        case processExited
+        case timedOut
+    }
+
     private static let pendingState = PendingState()
     private static let maximumReleaseBytes = 1_048_576
     private static let maximumArchiveBytes = 1024 * 1024 * 1024
@@ -264,6 +271,24 @@ public enum BrowserComponentInstaller {
         case .lean:
             return browserEdition || containsRuntimePayload
         }
+    }
+
+    static func downloadProgressDescription(
+        variant: BrowserComponentVariant,
+        progress: Marketplace.DownloadProgress
+    ) -> String {
+        let buildName = variant == .browser ? "Browser" : "lean cmdy"
+        let received = ByteCountFormatter.string(
+            fromByteCount: progress.receivedBytes,
+            countStyle: .file)
+        if let expectedBytes = progress.expectedBytes,
+           let percent = progress.percentComplete {
+            let expected = ByteCountFormatter.string(
+                fromByteCount: expectedBytes,
+                countStyle: .file)
+            return "Downloading \(buildName) — \(percent)% (\(received) of \(expected))…"
+        }
+        return "Downloading \(buildName) — \(received)…"
     }
 
     /// Download, hash, extract, inspect, and stage the requested complete app.
@@ -388,10 +413,16 @@ public enum BrowserComponentInstaller {
         }
 
         progress(variant == .browser
-            ? "downloading Chromium and the signed Browser build…"
-            : "downloading the signed lean build…")
+            ? "Downloading Chromium and the signed Browser build…"
+            : "Downloading the signed lean build…")
         let archive = try Marketplace.fetchData(
-            assetURL, maxBytes: maximumArchiveBytes, timeout: 600)
+            assetURL,
+            maxBytes: maximumArchiveBytes,
+            timeout: 600,
+            downloadProgress: {
+                progress(downloadProgressDescription(
+                    variant: variant, progress: $0))
+            })
         let actualChecksum = SHA256.hash(data: archive)
             .map { String(format: "%02x", $0) }.joined()
         guard actualChecksum == expectedChecksum else {
@@ -862,13 +893,47 @@ public enum BrowserComponentInstaller {
         }
     }
 
+    /// A failed candidate is rolled back before the previous app is relaunched.
+    /// Carry that verified outcome into the restored app so an early Browser
+    /// exit never looks like an unexplained disappearance.
+    public static func failedRelaunchMessageIfRequested(
+        _ arguments: [String]
+    ) -> String? {
+        guard let index = arguments.firstIndex(of: failureArgument),
+              index + 2 < arguments.count else { return nil }
+        let transactionURL = URL(fileURLWithPath: arguments[index + 1])
+        let token = arguments[index + 2]
+        guard path(transactionURL, isInside: ConfigFile.directory),
+              let transaction = try? readTransaction(at: transactionURL),
+              transaction.token == token,
+              transaction.state == .failed,
+              validateTransactionPaths(
+                transaction, transactionURL: transactionURL)
+        else { return nil }
+        let action = transaction.variant == .browser
+            ? "Browser could not start"
+            : "Browser could not be removed"
+        let detail = String((transaction.message
+            ?? "the replacement app did not confirm startup").prefix(2_048))
+        return "\(action), so cmdy restored the previous app. \(detail)"
+    }
+
     /// Finish or safely unwind an interrupted helper after a later successful
     /// app launch. Ambiguous/failed rollback states remain locked and visible.
     @MainActor
     public static func recoverInterruptedSwitchAfterLaunch(
         browserRuntimeReady: () -> Bool
     ) -> String? {
-        let lock = switchLockDirectory()
+        recoverInterruptedSwitchAfterLaunch(
+            lockDirectory: switchLockDirectory(),
+            browserRuntimeReady: browserRuntimeReady)
+    }
+
+    @MainActor
+    static func recoverInterruptedSwitchAfterLaunch(
+        lockDirectory lock: URL,
+        browserRuntimeReady: () -> Bool
+    ) -> String? {
         guard let record = try? readSwitchLock(at: lock),
               !processOwnsSwitchLock(record, excludingCurrentProcess: true)
         else { return nil }
@@ -881,9 +946,18 @@ public enum BrowserComponentInstaller {
                 transaction, transactionURL: transactionURL) else {
             return "The saved Browser transaction contains unsafe paths. Reinstall the current cmdy release, then retry."
         }
-        if transaction.state == .completed || transaction.state == .failed {
+        if transaction.state == .completed {
             releaseSwitchLock(at: lock, token: record.token)
+            removeSafeHelperDirectory(transaction)
             return nil
+        }
+        if transaction.state == .failed {
+            let detail = String((transaction.message
+                ?? "the previous app was restored after the Browser change failed")
+                .prefix(2_048))
+            releaseSwitchLock(at: lock, token: record.token)
+            removeSafeHelperDirectory(transaction)
+            return "The Browser change was rolled back safely, but cmdy could not reopen automatically. \(detail)"
         }
         let destination = URL(fileURLWithPath: transaction.destinationAppPath)
         let backup = URL(fileURLWithPath: transaction.backupAppPath)
@@ -1078,14 +1152,22 @@ public enum BrowserComponentInstaller {
 
             transaction.state = .awaitingConfirmation
             try write(transaction, to: transactionURL)
-            try launchApplication(
+            let replacement = try launchApplication(
                 at: destination,
-                transactionURL: transactionURL,
-                token: token)
-            guard waitForConfirmation(
+                arguments: [
+                    confirmationArgument, transactionURL.path, token,
+                ])
+            switch waitForConfirmation(
                 at: transactionURL,
                 token: token,
-                timeout: validatedConfirmationTimeout(transaction)) else {
+                processIdentifier: replacement.processIdentifier,
+                timeout: validatedConfirmationTimeout(transaction)) {
+            case .confirmed:
+                break
+            case .processExited:
+                throw BrowserComponentSwitchError.helperLaunchFailed(
+                    "the replacement app exited before confirming startup")
+            case .timedOut:
                 throw BrowserComponentSwitchError.helperLaunchFailed(
                     "the replacement app did not confirm startup")
             }
@@ -1137,7 +1219,22 @@ public enum BrowserComponentInstaller {
             transaction.message = error.localizedDescription
             try? write(transaction, to: transactionURL)
             if transaction.testOnlyExitAfterConfirmation != true {
-                _ = try? launchApplication(at: destination)
+                do {
+                    try relaunchRestoredApplication(
+                        at: destination,
+                        transactionURL: transactionURL,
+                        token: token)
+                } catch let relaunchError {
+                    transaction.message = error.localizedDescription
+                        + "; the previous app was restored, but macOS could not reopen it automatically after three attempts: "
+                        + relaunchError.localizedDescription
+                    try? write(transaction, to: transactionURL)
+                    // Keep the transaction and lease. A later manual launch of
+                    // the restored app consumes them and shows the failure,
+                    // instead of losing the only explanation while cmdy is
+                    // closed.
+                    return 9
+                }
             }
             releaseSwitchLock(at: lockDirectory, token: token)
             removeSafeHelperDirectory(transaction)
@@ -1147,9 +1244,8 @@ public enum BrowserComponentInstaller {
 
     private static func launchApplication(
         at app: URL,
-        transactionURL: URL? = nil,
-        token: String? = nil
-    ) throws {
+        arguments: [String] = []
+    ) throws -> NSRunningApplication {
         let configuration = NSWorkspace.OpenConfiguration()
         configuration.activates = true
         configuration.addsToRecentItems = false
@@ -1158,11 +1254,7 @@ public enum BrowserComponentInstaller {
         // contract explicit so isolated configuration roots used by the real
         // packaged-app lifecycle smoke survive the restart as well.
         configuration.environment = ProcessInfo.processInfo.environment
-        if let transactionURL, let token {
-            configuration.arguments = [
-                confirmationArgument, transactionURL.path, token,
-            ]
-        }
+        configuration.arguments = arguments
         let completion = DispatchSemaphore(value: 0)
         let result = LaunchResult()
         NSWorkspace.shared.openApplication(
@@ -1177,10 +1269,39 @@ public enum BrowserComponentInstaller {
         }
         let (application, error) = result.snapshot()
         if let error { throw error }
-        guard application != nil else {
+        guard let application else {
             throw BrowserComponentSwitchError.helperLaunchFailed(
                 "macOS did not launch the replacement app")
         }
+        return application
+    }
+
+    static func relaunchRestoredApplication(
+        at app: URL,
+        transactionURL: URL,
+        token: String,
+        attempts: Int = 3,
+        retryDelayMicroseconds: useconds_t = 250_000,
+        launch: ((URL, [String]) throws -> Void)? = nil
+    ) throws {
+        let launch = launch ?? { app, arguments in
+            _ = try launchApplication(at: app, arguments: arguments)
+        }
+        let arguments = [failureArgument, transactionURL.path, token]
+        var lastError: Error?
+        for attempt in 0..<max(1, attempts) {
+            do {
+                try launch(app, arguments)
+                return
+            } catch {
+                lastError = error
+                if attempt + 1 < max(1, attempts), retryDelayMicroseconds > 0 {
+                    usleep(retryDelayMicroseconds)
+                }
+            }
+        }
+        throw lastError ?? BrowserComponentSwitchError.helperLaunchFailed(
+            "macOS did not reopen the restored app")
     }
 
     private static func waitForProcessesToExit(
@@ -1198,21 +1319,35 @@ public enum BrowserComponentInstaller {
         return false
     }
 
-    private static func waitForConfirmation(
+    static func waitForConfirmation(
         at url: URL,
         token: String,
-        timeout: TimeInterval
-    ) -> Bool {
+        processIdentifier: Int32,
+        timeout: TimeInterval,
+        processIsRunning: ((Int32) -> Bool)? = nil
+    ) -> ConfirmationResult {
+        let processIsRunning = processIsRunning ?? { processIdentifier in
+            errno = 0
+            return processIdentifier > 0
+                && (kill(processIdentifier, 0) == 0 || errno == EPERM)
+        }
+        func isConfirmed() -> Bool {
+            guard let transaction = try? readTransaction(at: url) else { return false }
+            return transaction.token == token && transaction.state == .confirmed
+        }
         let deadline = Date().addingTimeInterval(timeout)
         while Date() < deadline {
-            if let transaction = try? readTransaction(at: url),
-               transaction.token == token,
-               transaction.state == .confirmed {
-                return true
+            if isConfirmed() { return .confirmed }
+            if !processIsRunning(processIdentifier) {
+                // Confirmation is the commit point. The replacement may write
+                // it and immediately exit (the packaged smoke does exactly
+                // that), so close the read/PID race before rolling anything
+                // back.
+                return isConfirmed() ? .confirmed : .processExited
             }
             usleep(100_000)
         }
-        return false
+        return .timedOut
     }
 
     private static func validatedConfirmationTimeout(

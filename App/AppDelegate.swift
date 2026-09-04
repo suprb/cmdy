@@ -519,6 +519,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                     }
                     let diagnostic = controller.embeddedBrowserDiagnostic
                     let doctorLayout = controller.windowInlinePanelDiagnostic
+                    let dividerResize = controller
+                        .performEmbeddedBrowserDividerResizeSmokeTest(delta: -32)
+                    let dividerTargetIsUsable = dividerResize.map {
+                        $0.expandedTargetCaptured
+                            && $0.targetWidth >= 16
+                            && $0.browserAfter > $0.browserBefore + 20
+                    } == true
+                    let extensionProgress = PluginsWindow.shared
+                        .performOperationProgressSmokeTest()
+                    let extensionProgressIsVisible =
+                        extensionProgress.statusSurvivedReload
+                            && extensionProgress.determinateValue == 42
+                            && extensionProgress.indeterminateStageVisible
+                            && extensionProgress.restartNoticeVisible
+                            && extensionProgress.indicatorWidth > 100
                     let doctorIsWindowWide = !checksDoctorWidth || doctorLayout.map {
                         abs($0.panelWidth - $0.windowWidth) < 0.5
                             && $0.panelHeight > 20
@@ -571,6 +586,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                         && toolbarContrastIsCorrect
                         && browserChromeFollowsTheme
                         && doctorIsWindowWide
+                        && dividerTargetIsUsable
+                        && extensionProgressIsVisible
                         && rect.width >= 240
                         && rect.height >= 200 && browserMenu && browserMenuItem
                     print(
@@ -595,6 +612,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                             + "windowWidth=\(doctorLayout?.windowWidth ?? 0) "
                             + "doctorHeight=\(doctorLayout?.panelHeight ?? 0) "
                             + "doctorFront=\(doctorLayout?.isFrontmost ?? false) "
+                            + "dividerTarget=\(dividerResize?.targetWidth ?? 0) "
+                            + "dividerCaptured=\(dividerResize?.expandedTargetCaptured ?? false) "
+                            + "browserBefore=\(dividerResize?.browserBefore ?? 0) "
+                            + "browserAfter=\(dividerResize?.browserAfter ?? 0) "
+                            + "extensionProgress=\(extensionProgressIsVisible) "
+                            + "extensionProgressWidth=\(extensionProgress.indicatorWidth) "
                             + "menu=\(browserMenu) "
                             + "menuItem=\(browserMenuItem) "
                             + "window=\(controller.window?.windowNumber ?? 0) "
@@ -1015,15 +1038,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             browserRuntimeReady: {
                 EmbeddedChromiumRuntime.shared.verifyReadyForComponentCommit()
             })
-        if let recoveryMessage =
+        let failedRelaunchMessage = BrowserComponentInstaller
+            .failedRelaunchMessageIfRequested(CommandLine.arguments)
+        let recoveryMessage =
             BrowserComponentInstaller.recoverInterruptedSwitchAfterLaunch(
                 browserRuntimeReady: {
                     EmbeddedChromiumRuntime.shared.verifyReadyForComponentCommit()
-                }) {
+                })
+        if let message = failedRelaunchMessage ?? recoveryMessage {
             let alert = NSAlert()
-            alert.alertStyle = .critical
-            alert.messageText = "Browser recovery required"
-            alert.informativeText = recoveryMessage
+            alert.alertStyle = failedRelaunchMessage == nil ? .critical : .warning
+            alert.messageText = failedRelaunchMessage == nil
+                ? "Browser recovery required"
+                : "Browser change did not finish"
+            alert.informativeText = message
             alert.addButton(withTitle: "OK")
             if let window = controllers.first?.window {
                 alert.beginSheetModal(for: window)
@@ -2392,6 +2420,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             guard let self else { return }
             self.editorTerminationApproved = approved
             if approved { self.controllers.forEach { $0.approveNextWindowClose() } }
+            else { PluginsWindow.shared.applicationTerminationWasCancelled() }
             sender.reply(toApplicationShouldTerminate: approved)
         }
         return .terminateLater

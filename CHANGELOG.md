@@ -11,6 +11,20 @@ be called out here with a migration path before a versioned release.
 
 ## [Unreleased]
 
+## [1.0.6] - 2026-09-04
+
+### Fixed
+
+- Browser downloads now show persistent byte and percentage progress, followed
+  by an explicit restart notice instead of disappearing without explanation.
+- If the replacement Browser app exits before startup confirmation, cmdy now
+  detects it promptly, restores the previous app, retries reopening it, and
+  preserves an explanation for the next manual launch if macOS refuses.
+- Cancelling a Browser restart to protect unsaved editor work now shows the
+  paused state and clears the Extensions UI after the safe rollback.
+- The embedded Browser divider now has a real 16-point drag target above the
+  native Chromium child view instead of an effectively one-pixel target.
+
 ## [1.0.5] - 2026-09-04
 
 ### Fixed
