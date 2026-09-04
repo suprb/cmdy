@@ -1,5 +1,5 @@
 import { Case, EditorialText } from "../components/EditorialCase";
-import { leanDownloadURL } from "../downloads";
+import { appDownloadURL } from "../downloads";
 
 type FeatureExample = {
   description: string;
@@ -59,13 +59,13 @@ const featureGroups: FeatureGroup[] = [
         name: "Extensions",
         description: "resident, capability-scoped tools with native UI surfaces",
         examples: [
-          { name: "Sim", description: "iOS Simulator split or live mirror with build, input and capture" },
+          { name: "Sim", description: "iOS Simulator control plus a serve-sim live mirror in the built-in Browser split" },
           { name: "Swarm", description: "find, follow and gather live agent sessions" },
           { name: "Bridge", description: "MCP runtime spanning browser, macOS, Simulator and native apps" },
           { name: "Detox", description: "optional live-coding modular synth inside the terminal" }
         ]
       },
-      { name: "Browser edition", description: "sandboxed Chromium packaged inside a separately notarized complete app" },
+      { name: "Browser", description: "installable sandboxed Chromium in a real split inside the cmdy window" },
       { name: "Actions", description: "one-shot scripts, commands and multi-pane workflows" },
       {
         name: "Channels",
@@ -123,7 +123,7 @@ export function HomePage() {
         <div className="wrap">
           <h1>A terminal turned platform.</h1>
           <div className="ctas">
-            <a className="btn solid" href={leanDownloadURL}>Download for{" "}<Case>macOS</Case></a>
+            <a className="btn solid" href={appDownloadURL}>Download for{" "}<Case>macOS</Case></a>
             <a className="btn ghost" href="https://github.com/suprb/cmdy">View source</a>
           </div>
         </div>

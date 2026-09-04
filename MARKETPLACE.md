@@ -29,8 +29,8 @@ see → publish in one sitting. A store is a mall; this is a scene.
 | theme | one theme file (existing format) | safe — colors | live | `~/.config/cmdy/themes/` |
 | rig | config preset: theme+shader+font+border+cursor as one file | safe — known keys only | live + diff panel before apply | applied via ConfigFile |
 | patch | Detox instrument (JS for the synth's WKWebView) | sandboxed-ish — audible, not ambient | play it | Detox library |
-| Channel | v1 Extension archive, registry `kind: channel`, manifest grants `channels` | **native code** — same consent and OS trust as an Extension | metadata + author + repo | `~/.config/cmdy/extensions/<id>/` |
-| Extension | v1 `manifest.json` + entrypoint (+ payload), zipped | **native code** — scoped cmdy capabilities, but OS-level trust is still required | metadata + author + repo | `~/.config/cmdy/extensions/<id>/` |
+| Channel | `.cmdyext` archive, registry `kind: channel`, manifest grants `channels` | **native code** — same consent and OS trust as an Extension | metadata + author + repo | `~/.config/cmdy/extensions/<id>/` |
+| Extension | `.cmdyext` archive with one v1 manifest + entrypoint | **native code** — scoped cmdy capabilities, but OS-level trust is still required | metadata + author + repo | `~/.config/cmdy/extensions/<id>/` |
 
 Rigs matter more than they look: people screenshot their terminals
 constantly — a rig is the shareable behind the screenshot. One link
@@ -54,10 +54,11 @@ One git repo, `cmdy-registry`:
 - **Content kinds live IN the repo** (`shaders/`, `themes/`, `rigs/`,
   `patches/`) — a contribution is one PR with one file. Lowest possible
   friction; this is where the community starts.
-- **Extensions and Channel connectors are pointers**: GitHub Release asset URL + a
-  required 64-hex `sha256` + min `sdk` version + arch. Big assets (chromium's
-  CEF) use a `payload` `{url, sha256}` field with its own required 64-hex
-  digest. Missing or malformed native-code digests fail before any download.
+- **Extensions and Channel connectors are hash-pinned `.cmdyext` packages**,
+  either checked into `dist/` or referenced by an HTTPS release URL, plus a
+  minimum SDK version and architecture. Missing or malformed native-code
+  digests fail before any download. Browser's package is small because CEF must
+  stay sealed in cmdy.app for Chromium's macOS sandbox.
 - CI validates every PR: schema, license present, `xcrun metal -c` compiles
   each shader, themes parse, Extension URLs and hashes resolve. A `channel`
   entry must request the `channels` capability. Merged = published.
@@ -99,9 +100,9 @@ One git repo, `cmdy-registry`:
   honest.
 - The founding content is ours: the built-in calm shader set exported as
   forkable sources, the bundled themes, and signed first-party Extensions.
-  Browser v1 is permanently withheld. Browser's independent signed/notarized
-  release is a complete cmdy edition because current CEF requires its runtime
-  inside the host app for the macOS sandbox.
+  Browser is the host-component example: its `.cmdyext` installs and removes
+  like every other Extension while the sandboxed CEF runtime stays inside the
+  one notarized app.
 
 ## Trust, in tiers
 
@@ -131,8 +132,9 @@ whenever the public registry changes.
 Theme cards read their real palettes when available; rigs read their actual
 config; shader cards clearly defer the live effect to cmdy instead of
 pretending a static thumbnail is the shader. The site is discovery for people
-who don't have cmdy yet; every card ends in the same line:
-`cmdy marketplace install author/name`.
+who don't have cmdy yet. Native-package rows offer one-click
+`cmdy://extension/install?id=…`, a direct `.cmdyext` download, and the
+equivalent `cmdy marketplace install author/name` command.
 
 ## Build order
 
@@ -161,10 +163,11 @@ reviewed package files and pinned hashes used by both the app and website.
   Extensions, and nineteen Channel connectors. The legacy registry endpoint
   remains as a compatibility bridge for cmdy 1.0.0 and resolves native packages
   from the canonical public registry.
-  Browser ships as a separately signed/notarized cmdy edition rather than a
-  Marketplace payload. Current upstream CEF cannot safely load its framework
-  from an external Extension under the macOS renderer/GPU sandbox; the old v1
-  archive is not a compatible fallback.
+  Browser is a Marketplace Extension backed by a small activation package.
+  Current upstream CEF cannot safely load its framework from an external
+  Extension under the macOS renderer/GPU sandbox, so the framework and helpers
+  stay sealed in the canonical cmdy app and the Extension only controls their
+  lifecycle.
 - **In-app**: palette / View ▸ Browse the Marketplace… — sections per kind,
   live shader/theme try-on (previews are real installs, reverted and deleted
   on esc), remembered section positions, rig safe-preview, Extension consent +
@@ -190,10 +193,9 @@ reviewed package files and pinned hashes used by both the app and website.
 
 The deployable web gallery is generated into `site/dist/`; it prefers the public
 registry and falls back to its checked-in last-known snapshot for browsing.
-Extension and Channel rows include the CLI install command plus a direct,
-hash-pinned ZIP link for manual download and source inspection. The CLI or
-in-app action remains the verified, consented installation path. Browser links
-to the complete signed Browser-edition release instead of pretending Chromium
-can be installed as an ordinary Extension archive.
+Extension and Channel rows include one-click install, the CLI command, and a
+direct hash-pinned `.cmdyext` download for double-click installation or sharing.
+Every path enters the same verified, consented in-app installer. Browser uses
+that exact flow; only its sandbox runtime is pre-sealed in cmdy.app.
 Pending: the patches kind, which needs a Detox library format.
 Capability-scoped tokens and route ACLs are complete.

@@ -7,7 +7,7 @@ import {
   TerminalInput
 } from "../components/Sacred";
 import { Case, EditorialText, editorialCaseString } from "../components/EditorialCase";
-import { browserDownloadURL, leanDownloadURL } from "../downloads";
+import { appDownloadURL, browserInstallURL } from "../downloads";
 
 const repo = "https://github.com/suprb/cmdy/blob/main";
 
@@ -50,15 +50,15 @@ const sections: DocSection[] = [
     title: "Install",
     keywords: "build package macos apple silicon setup requirements doctor mcp",
     content: <>
-      <p>Requirements: macOS 26+ on Apple silicon. Download the notarized lean DMG, open it, and drag <code>cmdy.app</code> to Applications. Choose the Browser edition when you want sandboxed Chromium; it replaces the lean app and keeps the same settings and sessions.</p>
+      <p>Requirements: macOS 26+ on Apple silicon. Download the notarized DMG, open it, and drag <code>cmdy.app</code> to Applications. There is one complete app. Install Browser later from Extensions when you want sandboxed Chromium in an in-window split.</p>
       <Code>{`# source build instead
 ./package.sh
 open cmdy.app`}</Code>
       <p>On first launch, cmdy writes a commented template to <code>~/.config/cmdy/config</code>. Optional extensions can be installed later; none are required to use the terminal.</p>
       <p><b>Upgrading from 1.0.0:</b> download 1.0.1 or newer manually once. Version 1.0.0 embedded the wrong GitHub owner and cannot discover this update; automatic updates resume afterward.</p>
       <div className="doc-actions">
-        <ActionButton hotkey="↵" href={leanDownloadURL}>Download cmdy</ActionButton>
-        <ActionButton hotkey="B" href={browserDownloadURL}>Browser edition</ActionButton>
+        <ActionButton hotkey="↵" href={appDownloadURL}>Download cmdy</ActionButton>
+        <ActionButton hotkey="B" href={browserInstallURL}>Install Browser</ActionButton>
       </div>
     </>
   },
@@ -189,17 +189,17 @@ cmdy channel doctor [channel-id]`}</Code>
     title: "First-party packages",
     keywords: "detox swarm browser sim bridge demo inbox reference extensions panes agents chromium simulator mcp",
     content: <>
-      <p>These optional packages show the public extension protocol and the separate Browser app-edition boundary. None is required to use the terminal.</p>
+      <p>These optional packages show the public extension protocol. None is required to use the terminal.</p>
       <SimpleTable label="First-party packages" data={[
         ["Package", "What it proves", "State"],
         [<Case>Detox</Case>, "commands + native editor driving WebAudio", "Live"],
         [<Case>Swarm</Case>, "agent sessions + selected/all live-pane composition", "Live"],
-        [<Case>Browser</Case>, "sandboxed Chromium + local automation", "Downloadable edition"],
-        [<Case>Sim</Case>, "Simulator build, run, input, logs, capture, reload", "Live"],
+        [<Case>Browser</Case>, "sandboxed Chromium + local automation in an in-window split", "Installable Extension"],
+        [<Case>Sim</Case>, "Simulator control + serve-sim mirror in the Browser split", "Live"],
         [<Case>Bridge</Case>, "product-scale MCP runtime across several targets", "Live"],
         ["Channel catalog", "19 installable provider, feed, and local-workflow connectors", "Live"]
       ]} />
-      <p><Case>Browser</Case> ships as an optional, separately signed and notarized cmdy edition so CEF can stay inside the app layout required by Chromium&apos;s macOS sandbox. The lean edition remains small, both editions share the same settings and sessions, and app updates preserve the edition you installed. The incompatible v1 marketplace artifact is withheld. Open Extensions with <kbd>⌘⇧L</kbd>: Browser remains listed on lean installs and its row downloads the Browser edition. The Browser toolbar button offers the same recovery path. Distributable marketplace packages use pinned hashes and explicit native-code consent.</p>
+      <p><Case>Browser</Case> is a normal installable and removable Extension. Chromium&apos;s framework and signed sandbox workers stay sealed in the one notarized cmdy app; the Extension controls whether that runtime loads and whether its real in-window split is available. Open Extensions with <kbd>⌘⇧L</kbd>, choose Browser, and install it. Disable or remove it there at any time. The Browser toolbar button offers the same one-click install path, and serve-sim mirrors into that same built-in Browser split. Distributable marketplace packages use pinned hashes and explicit install consent.</p>
     </>
   },
   {

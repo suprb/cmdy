@@ -1114,28 +1114,31 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
     }
 
     func toggleEmbeddedBrowser(focusLocation: Bool = false) {
+        if PluginManager.shared.runCommand(id: "chromium.toggle") { return }
         if isEmbeddedBrowserVisible {
             hideEmbeddedBrowser()
         } else if !EmbeddedChromiumRuntime.shared.isAvailable {
-            BrowserEditionInstaller.presentDownloadPrompt(relativeTo: window)
+            BrowserEditionInstaller.presentInstallPrompt(relativeTo: window)
         } else if !showEmbeddedBrowser(focusLocation: focusLocation) {
             NSSound.beep()
         }
     }
 
     func focusEmbeddedBrowserLocation() {
+        if PluginManager.shared.runCommand(id: "chromium.open") { return }
         if isEmbeddedBrowserVisible {
             presentEmbeddedBrowserControls(focusLocation: true)
         } else if !EmbeddedChromiumRuntime.shared.isAvailable {
-            BrowserEditionInstaller.presentDownloadPrompt(relativeTo: window)
+            BrowserEditionInstaller.presentInstallPrompt(relativeTo: window)
         } else if !showEmbeddedBrowser(focusLocation: true) {
             NSSound.beep()
         }
     }
 
     func reloadEmbeddedBrowser() {
+        if PluginManager.shared.runCommand(id: "chromium.reload") { return }
         guard EmbeddedChromiumRuntime.shared.isAvailable else {
-            BrowserEditionInstaller.presentDownloadPrompt(relativeTo: window)
+            BrowserEditionInstaller.presentInstallPrompt(relativeTo: window)
             return
         }
         guard showEmbeddedBrowser() else {
@@ -1146,8 +1149,9 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
     }
 
     func openEmbeddedBrowserDevTools() {
+        if PluginManager.shared.runCommand(id: "chromium.devtools") { return }
         guard EmbeddedChromiumRuntime.shared.isAvailable else {
-            BrowserEditionInstaller.presentDownloadPrompt(relativeTo: window)
+            BrowserEditionInstaller.presentInstallPrompt(relativeTo: window)
             return
         }
         guard showEmbeddedBrowser() else {
@@ -1820,8 +1824,9 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
             button.isToggledOn = self.isNativeToolbarItemToggled(identifier)
             if identifier == NativeToolbarItem.browser {
                 let description = EmbeddedChromiumRuntime.shared.isAvailable
+                    || PluginManager.shared.hasCommand(id: "chromium.toggle")
                     ? "Show or Hide Browser"
-                    : "Browser is not installed — download Browser Edition"
+                    : "Browser is not installed — click to install"
                 button.toolTip = description
                 button.setAccessibilityLabel(description)
             }

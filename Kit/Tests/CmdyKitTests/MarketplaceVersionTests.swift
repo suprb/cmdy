@@ -4,6 +4,106 @@ import XCTest
 @testable import CmdyKit
 
 final class MarketplaceVersionTests: XCTestCase {
+    func testShareablePackageIsInspectedBeforeInstall() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("cmdy-package-inspection-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let archive = try makeNativeArchive(in: root, id: "dev.example.shared")
+
+        let package = try Marketplace.prepareExtensionPackage(from: archive)
+
+        XCTAssertEqual(package.manifest.id, "dev.example.shared")
+        XCTAssertEqual(package.manifest.name, "Native")
+        XCTAssertEqual(package.manifest.capabilities, [.events])
+        XCTAssertEqual(package.sha256, try sha256(of: archive))
+        XCTAssertEqual(package.archiveByteCount, try Data(contentsOf: archive).count)
+
+        let legacyName = root.appendingPathComponent("legacy.zip")
+        try FileManager.default.copyItem(at: archive, to: legacyName)
+        XCTAssertThrowsError(
+            try Marketplace.prepareExtensionPackage(from: legacyName)
+        ) { error in
+            XCTAssertTrue(error.localizedDescription.contains(".cmdyext"))
+        }
+    }
+
+    func testShareablePackageRejectsDuplicateArchivePaths() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("cmdy-package-duplicate-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        try FileManager.default.createDirectory(
+            at: root, withIntermediateDirectories: true)
+        let archive = root.appendingPathComponent("duplicate.cmdyext")
+        let writer = Process()
+        writer.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+        writer.arguments = [
+            "python3", "-c",
+            "import sys,zipfile; z=zipfile.ZipFile(sys.argv[1],'w'); "
+                + "z.writestr('duplicate/manifest.json','{}'); "
+                + "z.writestr('duplicate/manifest.json','{}'); z.close()",
+            archive.path,
+        ]
+        writer.standardOutput = FileHandle.nullDevice
+        writer.standardError = FileHandle.nullDevice
+        try writer.run()
+        writer.waitUntilExit()
+        XCTAssertEqual(writer.terminationStatus, 0)
+
+        XCTAssertThrowsError(
+            try Marketplace.prepareExtensionPackage(from: archive)
+        ) { error in
+            XCTAssertTrue(
+                error.localizedDescription.contains("duplicate path"),
+                error.localizedDescription)
+        }
+    }
+
+    func testInstallLinksAcceptOnlySafeMarketplaceIDsAndHTTPSPackages() throws {
+        XCTAssertEqual(
+            Marketplace.extensionInstallRequest(
+                from: URL(string: "cmdy://extension/install?id=dev.termite.chromium")!),
+            .marketplace(id: "dev.termite.chromium"))
+
+        var components = URLComponents(string: "cmdy://extension/install")!
+        components.queryItems = [
+            URLQueryItem(
+                name: "url",
+                value: "https://example.com/releases/tool-1.0.0.cmdyext"),
+        ]
+        XCTAssertEqual(
+            Marketplace.extensionInstallRequest(from: try XCTUnwrap(components.url)),
+            .package(URL(string: "https://example.com/releases/tool-1.0.0.cmdyext")!))
+        XCTAssertNil(Marketplace.extensionInstallRequest(
+            from: URL(string: "cmdy://extension/install?id=../escape")!))
+
+        components.queryItems = [
+            URLQueryItem(name: "url", value: "http://example.com/tool.cmdyext"),
+        ]
+        XCTAssertNil(Marketplace.extensionInstallRequest(
+            from: try XCTUnwrap(components.url)))
+        components.queryItems = [
+            URLQueryItem(name: "url", value: "https://example.com/tool.zip"),
+        ]
+        XCTAssertNil(Marketplace.extensionInstallRequest(
+            from: try XCTUnwrap(components.url)))
+    }
+
+    func testNestedAppEntrypointIsRecognizedAsOneSignedUnit() throws {
+        let root = URL(fileURLWithPath: "/tmp/cmdy-extension-test/chromium")
+        let executable = root.appendingPathComponent(
+            "cmdy Browser.app/Contents/MacOS/cmdy Browser")
+        XCTAssertEqual(
+            Marketplace.enclosingAppBundle(for: executable, inside: root)?.path,
+            root.appendingPathComponent("cmdy Browser.app").path)
+        XCTAssertNil(Marketplace.enclosingAppBundle(
+            for: root.appendingPathComponent("bin/browser"), inside: root))
+        XCTAssertNil(Marketplace.enclosingAppBundle(
+            for: root.deletingLastPathComponent().appendingPathComponent(
+                "Outside.app/Contents/MacOS/outside"),
+            inside: root))
+    }
+
     func testDefaultRegistryIncludesPublishedLegacyFallbacks() {
         XCTAssertEqual(
             Marketplace.registryURLs(
@@ -73,7 +173,7 @@ final class MarketplaceVersionTests: XCTestCase {
             .appendingPathComponent("cmdy-marketplace-digest-\(UUID().uuidString)")
         defer { try? FileManager.default.removeItem(at: root) }
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
-        let archive = root.appendingPathComponent("native.zip")
+        let archive = root.appendingPathComponent("native.cmdyext")
         try Data("not the pinned archive".utf8).write(to: archive)
         let entry = try XCTUnwrap(Marketplace.Entry([
             "kind": "plugin", "id": "dev.example.mismatch", "name": "Native",
@@ -82,7 +182,9 @@ final class MarketplaceVersionTests: XCTestCase {
         ]))
         XCTAssertThrowsError(try Marketplace.installPlugin(
             entry, consented: true, progress: { _ in })) { error in
-            XCTAssertTrue(error.localizedDescription.contains("sha256 mismatch"))
+            XCTAssertTrue(
+                error.localizedDescription.contains("sha256 mismatch"),
+                error.localizedDescription)
         }
     }
 
@@ -128,7 +230,9 @@ final class MarketplaceVersionTests: XCTestCase {
 
         XCTAssertThrowsError(try Marketplace.installPlugin(
             entry, consented: true, progress: { _ in })) { error in
-            XCTAssertTrue(error.localizedDescription.contains("sha256 mismatch"))
+            XCTAssertTrue(
+                error.localizedDescription.contains("sha256 mismatch"),
+                error.localizedDescription)
         }
     }
 
@@ -413,7 +517,7 @@ final class MarketplaceVersionTests: XCTestCase {
             to: executable, atomically: true, encoding: .utf8)
         try FileManager.default.setAttributes(
             [.posixPermissions: 0o755], ofItemAtPath: executable.path)
-        let archive = root.appendingPathComponent("native.zip")
+        let archive = root.appendingPathComponent("native.cmdyext")
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/ditto")
         process.arguments = ["-c", "-k", "--keepParent", bundle.path, archive.path]

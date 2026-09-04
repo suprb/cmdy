@@ -58,10 +58,11 @@ ZIP, submits it to Apple, requires an `Accepted` result, staples the ticket to
 the app, and validates the app with Gatekeeper. It then creates a signed
 drag-to-Applications DMG using a sparse APFS image, notarizes and staples the
 DMG, validates that with Gatekeeper, and writes SHA-256 checksums for both
-artifacts in `dist/`. The real lean run also emits
-`cmdy-macOS-arm64.dmg` and its `.sha256`; the real Browser wrapper emits
-`cmdy-browser-macOS-arm64.dmg` and its `.sha256`. Rehearsal builds never create
-those stable aliases.
+artifacts in `dist/`. The canonical run also emits `cmdy-macOS-arm64.dmg` and
+its `.sha256`. The legacy updater-compatibility wrapper still emits
+`cmdy-browser-macOS-arm64.dmg` and its `.sha256` for pre-1.0.3 Browser-edition
+clients; the website does not present it as a second app. Rehearsal builds
+never create those stable aliases.
 It also retains each raw Apple JSON receipt beside the release artifacts, each
 submission identifier and pre-staple submitted hash, then writes a
 `*.publication.json` record for the final stapled package. The submitted and
@@ -102,12 +103,12 @@ The `.p12` and `.p8` values are base64-encoded file contents. The workflow
 deletes the temporary certificate, API key, and keychain even when a release
 step fails.
 
-Every `v*` release contains two separately downloadable apps: the lean cmdy
-edition and the complete Browser edition. The Browser edition is signed and
-notarized with the same Apple credentials but contains CEF and its four helper
-apps inside `cmdy.app/Contents/Frameworks`, which is the layout required by
-CEF's macOS sandbox. The updater preserves the installed edition and never
-replaces Browser cmdy with the lean archive. Build the Browser artifact locally
-with `./scripts/release-chromium-browser.sh`; see [BUILDING.md](BUILDING.md) for
-the full signing graph, artifact names, clean-Mac verification, and rollback
-path.
+Every `v*` release has one canonical cmdy app containing CEF and its four
+signed helper apps in `cmdy.app/Contents/Frameworks`, the layout required by
+Chromium's macOS sandbox. Browser stays inert until its hash-pinned `.cmdyext`
+activation package is installed. The workflow also publishes a Browser-enabled
+compatibility artifact solely so pre-1.0.3 edition-preserving updaters can reach
+the unified release and migrate to the removable activation record. Build that
+compatibility artifact with `./scripts/release-chromium-browser.sh`; see
+[BUILDING.md](BUILDING.md) for the signing graph, artifact names, clean-Mac
+verification, and rollback path.

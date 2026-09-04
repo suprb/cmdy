@@ -87,10 +87,10 @@ private enum EmbeddedChromiumError: LocalizedError {
     }
 }
 
-/// Optional Chromium runtime used by the Browser edition and source/ad-hoc
-/// Extension installs. The Swift app has no CEF linkage; Browser editions load
-/// a signed bridge and the framework from cmdy.app's standard Frameworks
-/// directory, while lean editions contain neither.
+/// Optional Chromium runtime activated by the removable Browser Extension.
+/// The framework and sandbox helpers stay sealed inside cmdy.app, but the
+/// Swift app has no static CEF linkage and loads them only after Browser is
+/// enabled. The visible CEF view is a real child of cmdy's center split.
 final class EmbeddedChromiumRuntime {
     static let shared = EmbeddedChromiumRuntime()
     static let applicationTerminationWaitMilliseconds: Int32 = 0
@@ -116,15 +116,6 @@ final class EmbeddedChromiumRuntime {
         ))
 
     var isAvailable: Bool { enabled && extensionDirectory != nil }
-
-    var distribution: HostComponentDistribution {
-        if isComplete(bundledRuntimeLayout()) { return .bundled }
-        guard let extensionDirectory,
-              isComplete(runtimeLayout(in: extensionDirectory)) else {
-            return .unavailable
-        }
-        return .external
-    }
 
     private init() {}
 
@@ -169,9 +160,7 @@ final class EmbeddedChromiumRuntime {
     }
 
     private func runtimeLayout(in directory: URL) -> RuntimeLayout {
-        // The distributable Browser edition keeps CEF in the only layout that
-        // upstream CEF's macOS sandbox supports: inside cmdy.app itself. The
-        // ordinary cmdy package has none of these files and remains lean.
+        // Keep legacy Browser-edition apps working during migration.
         let bundled = bundledRuntimeLayout()
         if isComplete(bundled) { return bundled }
 
@@ -186,9 +175,8 @@ final class EmbeddedChromiumRuntime {
                 "Frameworks", isDirectory: true))
     }
 
-    /// Browser-edition packages activate their sealed, bundled runtime without
-    /// creating a mutable Extension copy. Returns false in the ordinary lean
-    /// package and in source builds that have not installed Browser locally.
+    /// Compatibility builds activate their sealed, bundled runtime when an old
+    /// Browser-edition install cannot create its removable Extension record.
     @discardableResult
     func enableBundledRuntimeIfPresent() -> Bool {
         precondition(Thread.isMainThread)

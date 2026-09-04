@@ -1,7 +1,7 @@
 # Building cmdy
 
-This is the complete build and release reference for the app and its optional
-Browser edition. Keep this file current whenever packaging, signing,
+This is the complete build and release reference for the unified app and its
+installable Browser Extension. Keep this file current whenever packaging, signing,
 notarization, CEF, Marketplace, or release automation changes.
 
 ## Requirements
@@ -162,8 +162,8 @@ certificate exists:
 codesign --verify --deep --strict --verbose=2 cmdy.app
 ```
 
-This ordinary local package does not need CEF and contains no Browser code.
-Both the ordinary and Browser editions copy exactly the active SwiftPM resource
+This fast local developer package does not need CEF and cannot activate Browser.
+Both developer and Browser-capable packages copy exactly the active SwiftPM resource
 bundles `Kit_CmdyKit.bundle` (fonts) and
 `ProductIdentity_ProductIdentity.bundle` (canonical identity). Packaging fails
 if either bundle is missing, if its embedded identity differs byte-for-byte
@@ -183,16 +183,14 @@ full lifecycle and sandbox smoke:
 ./scripts/check-chromium-build.sh
 ```
 
-For a source/ad-hoc Browser install:
+For the Browser-capable unified app plus its installable activation package:
 
 ```sh
-PRODUCT_SIGN_ID=- ./plugins.sh
-```
-
-For the complete Browser edition of the app:
-
-```sh
-PRODUCT_BROWSER_EDITION=1 ./package.sh
+PRODUCT_BROWSER_EDITION=1 \
+PRODUCT_BROWSER_UPDATE_VARIANT=0 \
+PRODUCT_BROWSER_DEFAULT_ENABLED=0 \
+./package.sh
+./scripts/package-browser-extension.sh
 ```
 
 This copies CEF and the host library into `cmdy.app/Contents/Frameworks`, builds
@@ -214,8 +212,9 @@ Do not try to place CEF in a second app and load it into cmdy. CEF's current
 macOS renderer/GPU sandbox blocks that external framework path even when both
 apps are signed and notarized by the same Apple Team. Upstream tracks support
 for that layout in [CEF issue #3940](https://github.com/chromiumembedded/cef/issues/3940).
-The separately downloadable Browser edition keeps the ordinary download small
-while using CEF's supported, sandboxed internal layout after installation.
+The canonical public app therefore contains CEF in its supported internal
+layout. A small `.cmdyext` package controls activation; CEF stays unloaded when
+Browser is absent or disabled.
 
 ## Signed and notarized cmdy release
 
@@ -225,13 +224,14 @@ Store local notary credentials once:
 xcrun notarytool store-credentials cmdy-notary
 ```
 
-Then build the lean public app, ZIP, and DMG:
+Then build the unified public app, ZIP, and DMG:
 
 ```sh
 PRODUCT_NOTARY_PROFILE=cmdy-notary ./release.sh
 ```
 
-The lean release does not need CEF. A notarized release additionally refuses a
+`release.sh` defaults to the Browser-capable package with Browser disabled until
+its Extension is installed. A notarized release additionally refuses a
 checkout whose `origin` is not the repository declared by product identity. It
 signs cmdy with hardened runtime,
 notarizes and staples the app and DMG, runs Gatekeeper checks, and writes
@@ -248,15 +248,18 @@ Those rehearsal artifacts use a `-rehearsal` filename suffix so they cannot
 overwrite the canonical notarized ZIP or DMG. They are not public or
 Gatekeeper-ready.
 
-## Browser-edition release artifact
+## Browser activation and updater-compatibility artifacts
 
 Browser remains optional and has its own component version in
-`Plugins/chromium/VERSION`. The Browser artifact is a complete cmdy app
-containing CEF in its standard internal layout; the lean artifact remains
-unchanged. Public releases always upload both editions to the same immutable
-`v<cmdy-version>` GitHub Release. A Browser component change therefore ships
-with a cmdy app-version bump even though both versions remain visible in the
-Browser artifact name and metadata.
+`Plugins/chromium/VERSION`. `scripts/package-browser-extension.sh` builds the
+small `chromium-<version>.cmdyext` activation package published through the
+Marketplace. It contains no CEF payload; the canonical app already contains the
+signed framework and helpers.
+
+Releases also retain one Browser-enabled compatibility app under
+`dist/browser/`. It exists only because pre-1.0.3 Browser-edition installations
+select `-browser-` assets in the updater. It migrates those users to the same
+removable activation record and is not a second product download.
 
 Build, sign, notarize, staple, and verify it with the same credentials:
 
@@ -271,56 +274,58 @@ For a signed local rehearsal:
 SKIP_NOTARIZE=1 ./scripts/release-chromium-browser.sh
 ```
 
-The Browser release produces a ZIP, DMG, their SHA-256 files, and a metadata
+The compatibility release produces a ZIP, DMG, their SHA-256 files, and a metadata
 JSON under `dist/browser/`. Artifact names contain both the cmdy app version and
 the independently tracked Browser version; local rehearsals also end in
-`-rehearsal`. Notarized lean and Browser runs also create stable DMG aliases for
-the website; those aliases are byte-for-byte copies of the qualified stapled
-DMGs. The script:
+`-rehearsal`. The canonical release creates the website's stable DMG alias; the
+compatibility release keeps its older alias only for legacy updater clients.
+Both aliases are byte-for-byte copies of qualified stapled DMGs. The script:
 
 1. Verifies and builds the pinned CEF source inputs.
-2. Packages the Browser edition with CEF, the host library, and four helpers.
+2. Packages the compatibility app with CEF, the host library, and four helpers.
 3. Requires every code object to share cmdy's Developer-ID Team.
 4. Requires only the helper JIT/executable-memory entitlements.
 5. Runs the actual embedded page-load UI smoke with Chromium's sandbox on.
 6. Notarizes and staples the app and DMG, then runs Gatekeeper checks.
 
-Install by dragging the Browser edition over the lean `cmdy.app`. Both editions
-have the same bundle identifier, app version, updater identity, config, and
-sessions; only the sealed Browser runtime differs. Installing the lean edition
-again removes Browser. Neither installer edits or re-signs an existing app.
+Fresh users install only the canonical cmdy DMG. Browser is then installed,
+disabled, removed, or reinstalled in **View → Extensions…**; those lifecycle
+actions close its in-window splits without modifying or re-signing cmdy.app.
 
-The Browser MCP shim is packaged at
-`/Applications/cmdy.app/Contents/Resources/BrowserMCP/index.js`. Register it
-after installing the Browser edition:
+The Browser activation package installs its MCP shim at
+`~/.config/cmdy/extensions/chromium/mcp/index.js`, and Integration Doctor can
+register it with supported agent clients. The signed app also keeps a matching
+fallback copy at `/Applications/cmdy.app/Contents/Resources/BrowserMCP/index.js`.
+For manual registration:
 
 ```sh
 claude mcp add --scope user cmdy-browser -- node \
-  /Applications/cmdy.app/Contents/Resources/BrowserMCP/index.js
+  ~/.config/cmdy/extensions/chromium/mcp/index.js
 codex mcp add cmdy-browser -- node \
-  /Applications/cmdy.app/Contents/Resources/BrowserMCP/index.js
+  ~/.config/cmdy/extensions/chromium/mcp/index.js
 ```
 
 ## Publication order
 
 1. Update `VERSION`, and update `Plugins/chromium/VERSION` when Browser changed.
 2. Land the matching app and Browser code together.
-3. Run `release.yml`; it builds the lean artifact first and the Browser edition
-   second with the same Apple credentials.
-4. Publish both sets of ZIP/DMG/checksum assets, plus Browser metadata, on the
-   same immutable `v<cmdy-version>` GitHub Release.
-5. Verify both editions on a clean Mac, including a real Browser page load,
-   before linking either download publicly.
+3. Run `release.yml`; it builds the canonical unified app, the activation
+   `.cmdyext`, and the updater-compatibility artifact with the same Apple Team.
+4. Publish all checksums and metadata on the same immutable
+   `v<cmdy-version>` GitHub Release.
+5. Verify the canonical app on a clean Mac: install Browser from the registry,
+   load a real page in-window, run serve-sim into that split, remove Browser,
+   and reinstall it.
 
 Never replace an asset under an existing version; bump the cmdy app version and
-publish a new release instead. Do not advertise Browser as a normal Marketplace
-payload: installing CEF outside the host app is not supported by the current
-upstream sandbox.
+publish a new release instead. Browser is a normal Marketplace lifecycle
+package, but CEF itself must never move outside the host app because the current
+upstream sandbox rejects that layout.
 
-The updater preserves the installed edition. Lean cmdy selects only the lean
-ZIP from a release; Browser cmdy selects only the `-browser-` ZIP and will never
-silently fall back to the lean archive. Because both editions share settings,
-the cached update record is also invalidated when the installed edition changes.
+Current unified cmdy selects the canonical ZIP. Legacy Browser-edition cmdy
+selects the `-browser-` compatibility ZIP, which keeps Browser enabled during
+the upgrade and creates the removable activation record. The cached update
+record is invalidated when that legacy selection changes.
 
 ## GitHub Actions and secrets
 
@@ -328,13 +333,13 @@ the cached update record is also invalidated when the installed edition changes.
   Unicode, active-tree provenance, public-API, dependency/import, and linked
   symbol gates. Its main checkout keeps full history so the two frozen
   provenance commits can be resolved. A separate job performs the pinned full
-  CEF build, lifecycle stress test, helper sandbox smoke, and an ad-hoc Browser
-  edition page-load smoke.
+  CEF build, lifecycle stress test, helper sandbox smoke, and an ad-hoc
+  Browser-capable page-load smoke.
 - `.github/workflows/release.yml` produces, notarizes, verifies, and publishes
-  both the lean cmdy app and the optional Browser edition in one immutable
-  GitHub Release.
+  the unified app, Browser activation package, and legacy updater-compatibility
+  artifact in one immutable GitHub Release.
 
-The release workflow uses these secrets for both editions:
+The release workflow uses these secrets for every notarized app artifact:
 
 - `CMDY_DEVELOPER_ID_P12_BASE64`
 - `CMDY_DEVELOPER_ID_P12_PASSWORD`
@@ -479,7 +484,9 @@ Then mount the generated DMG, verify that CEF and all four helpers are inside
 non-empty `TeamIdentifier`. A notarized run must also pass:
 
 ```sh
-xcrun stapler validate -v dist/browser/*.dmg
-spctl --assess --type open --context context:primary-signature \
-  --verbose=2 dist/browser/*.dmg
+for dmg in dist/*.dmg dist/browser/*.dmg; do
+  xcrun stapler validate -v "$dmg"
+  spctl --assess --type open --context context:primary-signature \
+    --verbose=2 "$dmg"
+done
 ```

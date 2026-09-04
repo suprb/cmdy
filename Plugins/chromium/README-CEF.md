@@ -17,17 +17,18 @@ passes a real in-window `NSView` to `cef_bridge_create_browser`.
 Browser sits in cmdy's native split hierarchy between the terminal and the
 outer-right Inspector. It does not create or align a second window.
 
-The framework is intentionally not committed to the main repository. The lean
-lean cmdy artifact does not contain it; the separately downloadable Browser
-edition in the same GitHub Release does. Source
-builds use the reproducible bootstrap below, which downloads CEF from the
+The framework is intentionally not committed to the main repository. The
+canonical public cmdy artifact contains it so Browser can be activated safely;
+fast local developer packages omit it. Source builds use the reproducible
+bootstrap below, which downloads CEF from the
 upstream build service, verifies the archive's SHA-256 digest, builds
 `libcef_dll_wrapper`, and compiles the open-source bridge in this repository:
 
 ```sh
 ./scripts/bootstrap-chromium.sh
 ./scripts/bootstrap-chromium.sh --check
-./plugins.sh
+PRODUCT_BROWSER_EDITION=1 PRODUCT_BROWSER_DEFAULT_ENABLED=0 ./package.sh
+./scripts/package-browser-extension.sh
 ```
 
 The pin is CEF `145.0.28+g51162e8+chromium-145.0.7632.160` for Apple silicon.
@@ -64,7 +65,7 @@ element intersecting it. The queued record includes selectors, bounds,
 accessibility names, useful computed styles, React debug metadata when present,
 and Sim Mirror device metadata when the page is `serve-sim`.
 
-Agents speak MCP through the stdio shim. Browser editions keep it at a stable
+Agents speak MCP through the stdio shim. Browser-capable apps keep it at a stable
 path inside the app:
 
     claude mcp add --scope user cmdy-browser -- node /Applications/cmdy.app/Contents/Resources/BrowserMCP/index.js
@@ -101,7 +102,7 @@ loaded; failure aborts that subprocess.
 
 Debug executables can re-exec a flat helper binary, but a signed `.app` cannot.
 Chromium requires type-specific app bundles and otherwise terminates its
-renderer with launch error 1003. The Browser package
+renderer with launch error 1003. The Browser-capable app package
 (`PRODUCT_BROWSER_EDITION=1 ./package.sh`) builds these four loader bundles into
 `cmdy.app/Contents/Frameworks` from
 `Sources/ChromiumHost/ChromiumHelper.mm`:
@@ -113,9 +114,9 @@ renderer with launch error 1003. The Browser package
 
 Their hardened-runtime signatures use `ChromiumHelper.entitlements` only for
 JIT and executable memory. They do not disable Apple library validation. The
-Browser edition re-signs the complete framework, sandbox library, host, and
+canonical release re-signs the complete framework, sandbox library, host, and
 helpers with cmdy's Developer ID as one trust domain, then notarizes and staples
-the complete app and DMG. The ordinary cmdy package contains none of this code.
+the complete app and DMG. Fast local packages may omit this code.
 The legacy external `chromium` executable remains the flat subprocess fallback
 for consistently ad-hoc source-checkout builds.
 
@@ -124,8 +125,9 @@ after its real renderer/GPU sandbox is applied, even when both bundles share a
 Developer ID and valid notary tickets. This is the open upstream external-load
 work tracked in https://github.com/chromiumembedded/cef/issues/3940. cmdy does
 not work around that with `no-sandbox`, disabled library validation, or altered
-signature checks. The supported distribution is therefore a separately
-downloaded Browser edition of cmdy with CEF in the standard internal layout.
+signature checks. The supported distribution is therefore one cmdy app with
+CEF in the standard internal layout and a small removable `.cmdyext` activation
+package. The visible Browser remains a child view in cmdy's split hierarchy.
 
 The full build gate compiles both Swift and Objective-C++ hosts, stress-tests
 concurrent lifecycle ordering, and proves that the production helper enters the
@@ -135,5 +137,6 @@ pinned sandbox:
 ./scripts/bootstrap-chromium.sh
 ./scripts/check-chromium-build.sh
 PRODUCT_BROWSER_EDITION=1 ./package.sh
-PRODUCT_NOTARY_PROFILE=cmdy-notary ./scripts/release-chromium-browser.sh
+PRODUCT_NOTARY_PROFILE=cmdy-notary ./release.sh
+./scripts/package-browser-extension.sh
 ```

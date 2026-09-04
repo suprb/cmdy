@@ -257,24 +257,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         PluginManager.shared.hostComponentLifecycle = {
             [weak self] identifier, directory, enabled in
-            guard identifier == "embedded-chromium" else { return false }
+            guard let manifest = try? ExtensionManifest.load(from: directory),
+                  BrowserEdition.authorizesHostComponent(
+                    identifier, manifest: manifest) else {
+                return false
+            }
             if !enabled {
                 self?.controllers.forEach { $0.hideEmbeddedBrowser() }
             }
             return EmbeddedChromiumRuntime.shared.setEnabled(
                 enabled, directory: directory)
         }
-        PluginManager.shared.hostComponentDistribution = { identifier in
-            guard identifier == BrowserEdition.hostComponentIdentifier else {
-                return .unavailable
-            }
-            return EmbeddedChromiumRuntime.shared.distribution
-        }
+        let browserSmoke = CommandLine.arguments.contains(
+            "--ui-test-embedded-browser")
+        _ = BrowserEdition.ensureBundledActivationInstalled(force: browserSmoke)
         PluginManager.shared.activateAll()
-        // The optional Browser edition is a separately downloaded cmdy build
-        // whose CEF runtime is sealed inside the app's standard Frameworks
-        // directory. The normal package has no such files and this is a no-op.
-        EmbeddedChromiumRuntime.shared.enableBundledRuntimeIfPresent()
+        // If a legacy Browser-edition app cannot create its migration record,
+        // preserve Browser for this launch. Normal installs always activate
+        // through the removable Extension record above.
+        if BrowserEdition.isBundledEnabledByDefault
+            && !BrowserEdition.isActivationInstalled {
+            EmbeddedChromiumRuntime.shared.enableBundledRuntimeIfPresent()
+        }
         // Beam is app UI (chips drawn on panes) — its global hotkeys live
         // here now that Bridge runs as an external plugin.
         PluginManager.shared.registerHotKey(keyCode: UInt32(11) /* B */, modifiers: UInt32(4352) /* ⌃⌘ */) {
@@ -438,21 +442,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 else { exit(1) }
 
                 let unavailable = !EmbeddedChromiumRuntime.shared.isAvailable
+                    && !PluginManager.shared.hasCommand(id: "chromium.toggle")
                 let menuEnabled = self.validateMenuItem(browserItem)
                 let menuCorrect = menuEnabled
                     && browserItem.state == .off
-                    && browserItem.title == "Install Browser Edition…"
+                    && browserItem.title == "Install Browser…"
                 self.toggleEmbeddedBrowser(browserItem)
 
                 let promptIsCorrect = {
                     guard let prompt = BrowserEditionInstaller
                         .promptDiagnosticForTesting() else { return false }
                     return prompt.message == "Browser isn't installed"
-                        && prompt.information.contains("Browser edition")
+                        && prompt.information.contains("visible browser is built into")
                         && prompt.buttons
-                            == ["Download Browser Edition", "Cancel"]
-                        && prompt.downloadURL
-                            == BrowserEdition.downloadURL().absoluteString
+                            == ["Install Browser", "Cancel"]
+                        && prompt.marketplaceID == BrowserEdition.marketplaceID
                 }
 
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
@@ -463,7 +467,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                         let toolbar = controller
                             .browserInstallToolbarDiagnosticForTesting()
                         let expectedToolbarText =
-                            "Browser is not installed — download Browser Edition"
+                            "Browser is not installed — click to install"
                         let toolbarCorrect = toolbar.present
                             && !toolbar.toggled
                             && toolbar.tooltip == expectedToolbarText
@@ -475,43 +479,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                             let toolbarCancelled = BrowserEditionInstaller
                                 .pressPromptButtonForTesting(at: 1)
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                                PluginsWindow.shared.show()
-                                DispatchQueue.main.asyncAfter(
-                                    deadline: .now() + 0.15
-                                ) {
-                                    let row = PluginsWindow.shared
-                                        .browserEditionDiagnosticForTesting()
-                                    let rowCorrect = row.count == 1
-                                        && row.detail
-                                            == "Browser edition · not installed"
-                                        && row.action == "Download Edition"
-                                        && row.canToggle == false
-                                    let rowActivated = PluginsWindow.shared
-                                        .triggerBrowserEditionDownloadForTesting()
-                                    DispatchQueue.main.asyncAfter(
-                                        deadline: .now() + 0.15
-                                    ) {
-                                        let rowPrompt = promptIsCorrect()
-                                        let rowCancelled = BrowserEditionInstaller
-                                            .pressPromptButtonForTesting(at: 1)
-                                        let ok = unavailable && menuCorrect
-                                            && menuPrompt && menuCancelled
-                                            && toolbarCorrect && toolbarActivated
-                                            && toolbarPrompt && toolbarCancelled
-                                            && rowCorrect && rowActivated
-                                            && rowPrompt && rowCancelled
-                                        print(
-                                            "UIBROWSERINSTALL unavailable=\(unavailable) "
-                                                + "menu=\(menuCorrect) "
-                                                + "menuPrompt=\(menuPrompt) "
-                                                + "toolbar=\(toolbarCorrect) "
-                                                + "toolbarPrompt=\(toolbarPrompt) "
-                                                + "row=\(rowCorrect) "
-                                                + "rowPrompt=\(rowPrompt) ok=\(ok)")
-                                        fflush(stdout)
-                                        exit(ok ? 0 : 1)
-                                    }
-                                }
+                                let ok = unavailable && menuCorrect
+                                    && menuPrompt && menuCancelled
+                                    && toolbarCorrect && toolbarActivated
+                                    && toolbarPrompt && toolbarCancelled
+                                print(
+                                    "UIBROWSERINSTALL unavailable=\(unavailable) "
+                                        + "menu=\(menuCorrect) "
+                                        + "menuPrompt=\(menuPrompt) "
+                                        + "toolbar=\(toolbarCorrect) "
+                                        + "toolbarPrompt=\(toolbarPrompt) ok=\(ok)")
+                                fflush(stdout)
+                                exit(ok ? 0 : 1)
                             }
                         }
                     }
@@ -2362,7 +2341,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     func application(_ sender: NSApplication, open urls: [URL]) {
-        for url in urls { CmdyEditorManager.shared.open(url, respectPreference: false) }
+        for url in urls {
+            if url.pathExtension.caseInsensitiveCompare("cmdyext") == .orderedSame {
+                PluginsWindow.shared.installExtensionPackage(from: url)
+                continue
+            }
+            if let request = Marketplace.extensionInstallRequest(from: url) {
+                switch request {
+                case .marketplace(let id):
+                    PluginsWindow.shared.installMarketplaceExtension(id: id)
+                case .package(let packageURL):
+                    PluginsWindow.shared.installExtensionPackage(from: packageURL)
+                }
+                continue
+            }
+            CmdyEditorManager.shared.open(url, respectPreference: false)
+        }
     }
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
@@ -5485,9 +5479,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             item.state = p.workspaceInspectorVisible ? .on : .off
         case #selector(toggleEmbeddedBrowser(_:)):
             item.state = currentController?.isEmbeddedBrowserVisible == true ? .on : .off
-            if !EmbeddedChromiumRuntime.shared.isAvailable {
+            if !EmbeddedChromiumRuntime.shared.isAvailable
+                && !PluginManager.shared.hasCommand(id: "chromium.toggle") {
                 item.state = .off
-                item.title = "Install Browser Edition…"
+                item.title = "Install Browser…"
             } else {
                 item.title = item.state == .on ? "Hide Browser" : "Show Browser"
             }

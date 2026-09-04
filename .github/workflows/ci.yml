@@ -195,7 +195,7 @@ jobs:
         run: ./scripts/bootstrap-chromium.sh
       - name: Full Browser build and lifecycle smoke
         run: ./scripts/check-chromium-build.sh
-      - name: Package Browser edition and load a real page
+      - name: Package Browser-capable app and load a real page
         env:
           PRODUCT_SIGN_ID: '-'
         run: PRODUCT_BROWSER_EDITION=1 ./package.sh

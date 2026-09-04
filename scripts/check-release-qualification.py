@@ -41,6 +41,7 @@ CORE_CASES_PER_SEED = 3176
 CORE_TOTAL_CASES = 53992
 REQUIRED_BINDINGS = {
     "active-source-checker",
+    "browser-extension-package-script",
     "browser-release-script",
     "ci-workflow",
     "core-parity-checker",

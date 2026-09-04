@@ -134,11 +134,11 @@ register_mcp sim "$DEST/sim/mcp/index.js"
 if [ ! -d "Plugins/chromium/Frameworks/Chromium Embedded Framework.framework" ]; then
     echo "skipping chromium (no CEF payload — see Plugins/chromium/README-CEF.md)"
 elif [ "$SIGN_ID" != "-" ]; then
-    # Distributed Browser is a complete cmdy edition so CEF can remain in the
-    # sandbox-supported app layout. This installer only owns external process
-    # Extensions and must not assemble or re-sign that edition in user config.
-    echo "skipping chromium (use the signed Browser edition of cmdy)"
-    echo "  build: ./scripts/release-chromium-browser.sh"
+    # A distributed build keeps CEF sealed in cmdy.app and installs only the
+    # small Browser activation through the normal Extension lifecycle.
+    echo "skipping local chromium payload (use the Browser .cmdyext activation)"
+    echo "  build app: PRODUCT_BROWSER_EDITION=1 ./package.sh"
+    echo "  build activation: ./scripts/package-browser-extension.sh"
 else
     # Keep the retired sidecar executable as an ad-hoc compatibility wrapper.
     # Source-checkout debug builds also use it as their flat CEF subprocess.

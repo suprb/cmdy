@@ -38,10 +38,9 @@ public enum BrowserAPIError: LocalizedError {
 
 public typealias ChromiumBrowserHandle = UnsafeMutableRawPointer
 
-/// The browser API is shared by the legacy sidecar and cmdy's embedded host.
-/// Keeping CEF behind these operations lets the same app code serve both the
-/// lean edition and the optional Browser edition without statically linking a
-/// 292 MB framework into every build.
+/// The browser API is shared by the legacy development sidecar and cmdy's
+/// embedded host. Keeping CEF behind these operations lets the app leave its
+/// sealed runtime unloaded until the Browser Extension is enabled.
 public struct ChromiumBrowserOperations: @unchecked Sendable {
     public let executeJavaScript: (ChromiumBrowserHandle, String) -> Void
     public let reload: (ChromiumBrowserHandle) -> Void

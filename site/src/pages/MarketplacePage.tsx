@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EditorialText } from "../components/EditorialCase";
-import { browserDownloadURL } from "../downloads";
+import { browserInstallURL } from "../downloads";
 
 const REGISTRY_URL = "https://raw.githubusercontent.com/suprb/cmdy-registry/main/registry.json";
 const REGISTRY_REPO = "https://github.com/suprb/cmdy-registry";
@@ -171,8 +171,8 @@ export function safeURL(candidate: string): string {
 
 function registryFileURL(file: string): string {
   // Keep the public download surface as strict as the canonical registry
-  // schema. Native archives are published only as flat dist/*.zip files.
-  if (!/^dist\/[a-z0-9][a-z0-9.-]*\.zip$/.test(file)) return "";
+  // schema. Native archives are published only as flat dist/*.cmdyext files.
+  if (!/^dist\/[a-z0-9][a-z0-9.-]*\.cmdyext$/.test(file)) return "";
   const segments = file.split("/");
   return `${REGISTRY_RAW_FILES}${segments.map(encodeURIComponent).join("/")}`;
 }
@@ -181,14 +181,20 @@ export function entryDownloadURL(entry: Pick<Entry, "file" | "kind" | "sha256" |
   if (entry.kind !== "plugin" && entry.kind !== "channel") return "";
   if (!/^[0-9a-f]{64}$/i.test(entry.sha256)) return "";
   const packaged = registryFileURL(entry.file);
-  if (packaged.toLowerCase().endsWith(".zip")) return packaged;
+  if (packaged.toLowerCase().endsWith(".cmdyext")) return packaged;
   if (entry.file) return "";
   const external = safeURL(entry.url);
   if (external) {
     const parsed = new URL(external);
-    if (parsed.protocol === "https:" && parsed.pathname.toLowerCase().endsWith(".zip")) return external;
+    if (parsed.protocol === "https:" && parsed.pathname.toLowerCase().endsWith(".cmdyext")) return external;
   }
   return "";
+}
+
+export function entryInstallURL(entry: Pick<Entry, "id" | "kind">): string {
+  if (entry.kind !== "plugin" && entry.kind !== "channel") return "";
+  if (!/^[A-Za-z0-9][A-Za-z0-9_-]*(?:\.[A-Za-z0-9][A-Za-z0-9_-]*)+$/.test(entry.id)) return "";
+  return `cmdy://extension/install?id=${encodeURIComponent(entry.id)}`;
 }
 
 function entryLink(entry: Entry): string {
@@ -223,6 +229,7 @@ function MarketplaceRow({ entry, featured }: { entry: Entry; featured: boolean }
   const [copyState, setCopyState] = useState<"copy" | "copied" | "select">("copy");
   const copyLabel = { copy: "Copy", copied: "Copied", select: "Select" }[copyState];
   const downloadURL = entryDownloadURL(entry);
+  const installURL = downloadURL ? entryInstallURL(entry) : "";
   const onCopy = async () => {
     try {
       await copyCommand(command);
@@ -246,8 +253,9 @@ function MarketplaceRow({ entry, featured }: { entry: Entry; featured: boolean }
         <span className="market-install-inner">
           <code title={command}>{packageId}</code>
           <span className="market-install-actions">
+            {installURL ? <a aria-label={`Install ${entry.name} in cmdy`} href={installURL}>Install in cmdy</a> : null}
             <button aria-label={`Copy install command for ${entry.name}`} onClick={onCopy} type="button">{copyLabel}</button>
-            {downloadURL ? <a aria-label={`Download ${entry.name} ZIP`} href={downloadURL} rel="noreferrer" title={`SHA-256: ${entry.sha256}`}>Download ZIP</a> : null}
+            {downloadURL ? <a aria-label={`Download ${entry.name} package`} href={downloadURL} rel="noreferrer" title={`SHA-256: ${entry.sha256}`}>Download package</a> : null}
           </span>
         </span>
       </td>
@@ -341,12 +349,12 @@ export function MarketplacePage() {
         {error && loadState === "snapshot" ? <p className="market-status" title={error}>Live refresh unavailable</p> : null}
       </header>
 
-      <section className="browser-edition page-shell" aria-labelledby="browser-edition-title">
+      <section className="browser-extension page-shell" aria-labelledby="browser-extension-title">
         <div>
-          <h2 id="browser-edition-title">Browser installs with the Browser edition</h2>
-          <p>Chromium must live inside the signed app bundle on macOS. This DMG replaces the lean app and keeps the same settings and extensions. You can also get it from the Browser row in cmdy&apos;s Extensions window.</p>
+          <h2 id="browser-extension-title">Browser is an Extension</h2>
+          <p>Install or remove it like any other Extension. Chromium opens as a real split inside cmdy, and serve-sim uses that same in-window Browser. Its sandbox runtime is already sealed inside the notarized app.</p>
         </div>
-        <a className="case" href={browserDownloadURL}>Download Browser edition</a>
+        <a className="case" href={browserInstallURL}>Install Browser in cmdy</a>
       </section>
 
       <section className="market-toolbar page-shell" aria-label="Marketplace filters">

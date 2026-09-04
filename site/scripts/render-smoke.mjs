@@ -9,8 +9,8 @@ import { createServer } from "vite";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const site = resolve(here, "..");
-const leanDownloadURL = "https://github.com/suprb/cmdy/releases/latest/download/cmdy-macOS-arm64.dmg";
-const browserDownloadURL = "https://github.com/suprb/cmdy/releases/latest/download/cmdy-browser-macOS-arm64.dmg";
+const appDownloadURL = "https://github.com/suprb/cmdy/releases/latest/download/cmdy-macOS-arm64.dmg";
+const browserInstallURL = "cmdy://extension/install?id=dev.termite.chromium";
 const snapshotSource = await readFile(resolve(site, "public/marketplace-data.js"), "utf8");
 const snapshotSandbox = { window: {} };
 vm.runInNewContext(snapshotSource, snapshotSandbox, { filename: "marketplace-data.js", timeout: 1000 });
@@ -29,11 +29,11 @@ const vite = await createServer({
 try {
   const { App } = await vite.ssrLoadModule("/src/App.tsx");
   const { editorialCaseString } = await vite.ssrLoadModule("/src/components/EditorialCase.tsx");
-  const { entryDownloadURL, normalizeRegistry, safeURL } = await vite.ssrLoadModule("/src/pages/MarketplacePage.tsx");
+  const { entryDownloadURL, entryInstallURL, normalizeRegistry, safeURL } = await vite.ssrLoadModule("/src/pages/MarketplacePage.tsx");
   const expectations = {
     home: ["A terminal turned platform.", "Metal terminal", "Automatic window grid", "Grid ↔ splits", "Command intelligence", "Extensions", "Browser", "Detox", "Actions", "Channels", "Slack", "GitHub Issues", "RSS and Atom Feed", "Apple Reminders", "Updates", "Open source", "Andreas Pihlström", "builder at Shopify"],
     docs: ["cmdy docs", "What cmdy is", "Choose one of three paths", "Extensions add capabilities", "Path", "Use it when", "macOS", "AI, optional", "option-as-meta", "cmdy action install-starters"],
-    marketplace: ["Marketplace", "Browser installs with the Browser edition", "Download Browser edition", "Package", "Type", "Description", "Install", "Demo Inbox", "Slack", "iMessage", "Apple Reminders"]
+    marketplace: ["Marketplace", "Browser is an Extension", "Install Browser in cmdy", "Package", "Type", "Description", "Install", "Demo Inbox", "Slack", "iMessage", "Apple Reminders"]
   };
 
   for (const [page, markers] of Object.entries(expectations)) {
@@ -52,9 +52,9 @@ try {
     }
     assert.ok(markup.includes('id="main-content"'), `${page}: missing main content landmark`);
     assert.ok(markup.includes('class="site-footer"'), `${page}: missing shared footer`);
-    const leanDownloadCount = markup.split(`href="${leanDownloadURL}"`).length - 1;
-    const browserDownloadCount = markup.split(`href="${browserDownloadURL}"`).length - 1;
-    assert.ok(leanDownloadCount >= 1, `${page}: shared Download must point directly to the lean DMG`);
+    const appDownloadCount = markup.split(`href="${appDownloadURL}"`).length - 1;
+    const browserInstallCount = markup.split(`href="${browserInstallURL}"`).length - 1;
+    assert.ok(appDownloadCount >= 1, `${page}: shared Download must point directly to the unified DMG`);
     if (page === "home") {
       assert.ok(markup.includes('class="hero"'), "home: missing static editorial hero");
       assert.equal((markup.match(/class="hero-vid"/g) ?? []).length, 3, "home: expected one lead recording and two secondary recordings");
@@ -76,8 +76,8 @@ try {
       }
       assert.ok(!markup.includes('class="hacker-backdrop"'), "home: cinematic backdrop should be unmounted");
       assert.ok(!markup.includes('class="signal-video"'), "home: video shader should be unmounted");
-      assert.equal(leanDownloadCount, 2, "home: both Download buttons must point directly to the lean DMG");
-      assert.equal(browserDownloadCount, 0, "home: must not substitute the Browser edition for the lean download");
+      assert.equal(appDownloadCount, 2, "home: both Download buttons must point directly to the unified DMG");
+      assert.equal(browserInstallCount, 0, "home: Browser activation must not replace the app download");
       assert.equal((markup.match(/class="feature-item"/g) ?? []).length, 26, "home: feature inventory must contain all 26 primary rows");
       assert.equal((markup.match(/class="feature-examples"/g) ?? []).length, 2, "home: Extensions and Channels must each list examples");
       assert.equal((markup.match(/class="feature-example"/g) ?? []).length, 10, "home: feature inventory must contain all 10 Extension and Channel examples");
@@ -86,7 +86,7 @@ try {
       for (const removed of ["Everything in cmdy.", "Terminal</h3>", "Windows + Workflow", "Intelligence</h3>", "Platform</h3>", "Your terminal. More capable.", 'class="closing-cta"']) {
         assert.ok(!markup.includes(removed), `home: removed feature chrome returned: ${removed}`);
       }
-      const narrative = ["Metal terminal", "Sessions + workspaces", "Keybinding import", "Automatic window grid", "Command intelligence", "Extensions", "Detox", "Browser edition", "Actions", "Channels", "Slack", "Apple Reminders", "Marketplace", "Updates", "Open source"];
+      const narrative = ["Metal terminal", "Sessions + workspaces", "Keybinding import", "Automatic window grid", "Command intelligence", "Extensions", "Detox", "installable sandboxed Chromium", "Actions", "Channels", "Slack", "Apple Reminders", "Marketplace", "Updates", "Open source"];
       for (let index = 1; index < narrative.length; index += 1) {
         assert.ok(renderedText.indexOf(narrative[index - 1]) < renderedText.indexOf(narrative[index]), `home: narrative order is wrong near ${narrative[index]}`);
       }
@@ -101,8 +101,8 @@ try {
       assert.match(link[0], /\brel="[^"]*noreferrer[^"]*"/, `${page}: new-window link is missing noreferrer`);
     }
     if (page === "docs") {
-      assert.equal(leanDownloadCount, 2, "docs: shell and lean install actions must point directly to the lean DMG");
-      assert.equal(browserDownloadCount, 1, "docs: Browser install action must point directly to the Browser DMG");
+      assert.equal(appDownloadCount, 2, "docs: shell and install actions must point directly to the unified DMG");
+      assert.equal(browserInstallCount, 1, "docs: Browser must use the one-click Extension install URL");
       for (const id of ["platform", "actions", "extensions", "surfaces", "channels", "config", "proof"]) {
         assert.ok(ids.includes(id), `docs: missing ${id} section`);
       }
@@ -121,9 +121,11 @@ try {
         "marketplace: must not cosmetically rewrite stable Extension IDs"
       );
       assert.ok(markup.includes('class="market-table"'), "marketplace: missing the package table");
-      assert.ok(markup.includes("Download ZIP"), "marketplace: Extension archives must be directly downloadable");
-      assert.equal(leanDownloadCount, 1, "marketplace: shared Download must point directly to the lean DMG");
-      assert.equal(browserDownloadCount, 1, "marketplace: Browser edition must point directly to the Browser DMG");
+      assert.ok(markup.includes("Install in cmdy"), "marketplace: Extensions must have one-click install links");
+      assert.ok(markup.includes("Download package"), "marketplace: Extension packages must be directly downloadable");
+      assert.ok(markup.includes(`href="${browserInstallURL}"`), "marketplace: Browser must use the one-click Extension install URL");
+      assert.equal(appDownloadCount, 1, "marketplace: shared Download must point directly to the unified DMG");
+      assert.ok(browserInstallCount >= 2, "marketplace: Browser header and row must both install the Extension");
       for (const removed of ["market-visual", "market-card", "market-grid", "registry-summary", "marketplace-hero", "market-trust", "What it actually does"]) {
         assert.ok(!markup.includes(removed), `marketplace: removed visual chrome returned: ${removed}`);
       }
@@ -144,28 +146,32 @@ try {
   assert.equal(safeURL("javascript:alert(1)"), "", "unsafe link protocols must be rejected");
   assert.equal(safeURL("https://example.com/project"), "https://example.com/project", "HTTPS project links must be retained");
   assert.equal(
-    entryDownloadURL({ kind: "plugin", file: "dist/example-1.0.0.zip", sha256: "a".repeat(64), url: "" }),
-    "https://raw.githubusercontent.com/suprb/cmdy-registry/main/dist/example-1.0.0.zip",
+    entryDownloadURL({ kind: "plugin", file: "dist/example-1.0.0.cmdyext", sha256: "a".repeat(64), url: "" }),
+    "https://raw.githubusercontent.com/suprb/cmdy-registry/main/dist/example-1.0.0.cmdyext",
     "local Extension archives must resolve to direct registry downloads"
   );
   assert.equal(
-    entryDownloadURL({ kind: "channel", file: "", sha256: "b".repeat(64), url: "https://example.com/channel.zip" }),
-    "https://example.com/channel.zip",
+    entryDownloadURL({ kind: "channel", file: "", sha256: "b".repeat(64), url: "https://example.com/channel.cmdyext" }),
+    "https://example.com/channel.cmdyext",
     "HTTPS Channel archives must remain downloadable"
   );
   assert.equal(
-    entryDownloadURL({ kind: "plugin", file: "dist/reviewed.zip", sha256: "c".repeat(64), url: "https://example.com/different.zip" }),
-    "https://raw.githubusercontent.com/suprb/cmdy-registry/main/dist/reviewed.zip",
+    entryDownloadURL({ kind: "plugin", file: "dist/reviewed.cmdyext", sha256: "c".repeat(64), url: "https://example.com/different.cmdyext" }),
+    "https://raw.githubusercontent.com/suprb/cmdy-registry/main/dist/reviewed.cmdyext",
     "registry-local archives must take precedence over external URLs like the native installer"
   );
-  assert.equal(entryDownloadURL({ kind: "plugin", file: "../secret.zip", sha256: "d".repeat(64), url: "" }), "", "traversal paths must not become downloads");
-  assert.equal(entryDownloadURL({ kind: "plugin", file: "private/example.zip", sha256: "d".repeat(64), url: "" }), "", "native archives outside dist/ must not become downloads");
-  assert.equal(entryDownloadURL({ kind: "plugin", file: "private/example.zip", sha256: "d".repeat(64), url: "https://example.com/fallback.zip" }), "", "invalid local archive declarations must not fall through to external downloads");
-  assert.equal(entryDownloadURL({ kind: "plugin", file: "", sha256: "e".repeat(64), url: "http://example.com/plugin.zip" }), "", "insecure Extension archives must not become downloads");
-  assert.equal(entryDownloadURL({ kind: "plugin", file: "dist/unpinned.zip", sha256: "", url: "" }), "", "unpinned native archives must not become downloads");
+  assert.equal(entryDownloadURL({ kind: "plugin", file: "../secret.cmdyext", sha256: "d".repeat(64), url: "" }), "", "traversal paths must not become downloads");
+  assert.equal(entryDownloadURL({ kind: "plugin", file: "private/example.cmdyext", sha256: "d".repeat(64), url: "" }), "", "native archives outside dist/ must not become downloads");
+  assert.equal(entryDownloadURL({ kind: "plugin", file: "private/example.cmdyext", sha256: "d".repeat(64), url: "https://example.com/fallback.cmdyext" }), "", "invalid local archive declarations must not fall through to external downloads");
+  assert.equal(entryDownloadURL({ kind: "plugin", file: "", sha256: "e".repeat(64), url: "http://example.com/plugin.cmdyext" }), "", "insecure Extension archives must not become downloads");
+  assert.equal(entryDownloadURL({ kind: "plugin", file: "dist/unpinned.cmdyext", sha256: "", url: "" }), "", "unpinned native archives must not become downloads");
+  assert.equal(entryDownloadURL({ kind: "plugin", file: "dist/legacy.zip", sha256: "e".repeat(64), url: "" }), "", "legacy ZIP names must not be presented as installable packages");
+  assert.equal(entryInstallURL({ kind: "plugin", id: "dev.termite.chromium" }), browserInstallURL, "Browser must produce the native one-click install URL");
+  assert.equal(entryInstallURL({ kind: "shader", id: "cmdy/breath" }), "", "data packages must not produce Extension install URLs");
+  assert.equal(entryInstallURL({ kind: "plugin", id: "../escape" }), "", "unsafe Extension IDs must not produce install URLs");
   for (const invalidDigest of ["f".repeat(63), "f".repeat(65), `${"f".repeat(63)}g`]) {
     const [invalidEntry] = normalizeRegistry({
-      entries: [{ kind: "plugin", id: `dev.example.invalid-${invalidDigest.length}`, name: "Invalid digest", file: "dist/invalid.zip", sha256: invalidDigest }]
+      entries: [{ kind: "plugin", id: `dev.example.invalid-${invalidDigest.length}`, name: "Invalid digest", file: "dist/invalid.cmdyext", sha256: invalidDigest }]
     }).entries;
     assert.equal(entryDownloadURL(invalidEntry), "", "registry normalization must not make malformed digests downloadable");
   }

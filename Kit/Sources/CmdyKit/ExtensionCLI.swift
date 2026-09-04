@@ -31,9 +31,11 @@ public enum ExtensionCLI {
         case "dev": dev(Array(arguments.dropFirst()))
         case "validate": validate(Array(arguments.dropFirst()))
         case "new": create(Array(arguments.dropFirst()))
+        case "pack": pack(Array(arguments.dropFirst()))
         case "install": install(Array(arguments.dropFirst()))
         case "enable": setEnabled(Array(arguments.dropFirst()), enabled: true)
         case "disable": setEnabled(Array(arguments.dropFirst()), enabled: false)
+        case "remove", "uninstall": remove(Array(arguments.dropFirst()))
         case "trust": trust(Array(arguments.dropFirst()), trusted: true)
         case "untrust": trust(Array(arguments.dropFirst()), trusted: false)
         case "trusted": listTrusted()
@@ -148,15 +150,88 @@ public enum ExtensionCLI {
     }
 
     private static func install(_ arguments: [String]) -> Never {
-        guard let path = arguments.first else { usage("extension install needs a directory") }
-        let source = expandedURL(path)
+        guard let rawSource = arguments.first else {
+            usage("extension install needs a directory, .cmdyext file, or HTTPS URL")
+        }
+        let source: URL
+        if rawSource.lowercased().hasPrefix("https://"),
+           let remote = URL(string: rawSource) {
+            source = remote
+        } else {
+            source = expandedURL(rawSource)
+        }
+        var isDirectory: ObjCBool = false
+        if source.isFileURL,
+           FileManager.default.fileExists(
+                atPath: source.path, isDirectory: &isDirectory),
+           isDirectory.boolValue {
+            installDirectory(source)
+        }
+
+        do {
+            let package = try Marketplace.prepareExtensionPackage(from: source) {
+                print("  \($0)")
+            }
+            print("Extension: \(package.manifest.name) \(package.manifest.version)")
+            print("  id: \(package.manifest.id)")
+            print("  capabilities: "
+                + package.manifest.capabilities.map(\.rawValue).sorted()
+                    .joined(separator: ", "))
+
+            let existing = installedDirectory(id: package.manifest.id)
+            let wasEnabled = existing.flatMap {
+                try? ExtensionManifest.load(from: $0).enabled
+            } ?? true
+            let connection = liveConnection()
+            if existing != nil, let connection {
+                let stopped = request(
+                    connection, method: "POST", path: "/v1/extensions/state",
+                    body: ["id": package.manifest.id, "enabled": false])
+                guard stopped.status == 200 else {
+                    die(stopped.json["error"] as? String
+                        ?? "could not stop the installed Extension")
+                }
+            }
+
+            let destination: URL
+            do {
+                destination = try Marketplace.installExtensionPackage(
+                    package, consented: true) { print("  \($0)") }
+            } catch {
+                if existing != nil, wasEnabled, let connection {
+                    _ = request(
+                        connection, method: "POST", path: "/v1/extensions/state",
+                        body: ["id": package.manifest.id, "enabled": true])
+                }
+                throw error
+            }
+            print("installed \(package.manifest.name) to \(destination.path)")
+            if let connection, wasEnabled {
+                let response = request(
+                    connection, method: "POST", path: "/v1/extensions/state",
+                    body: ["id": package.manifest.id, "enabled": true])
+                if response.status == 200 {
+                    print("running now in \(identity.titleName)")
+                } else {
+                    print("installed but not started: "
+                        + (response.json["error"] as? String ?? "launch failed"))
+                }
+            } else if connection == nil {
+                print("It will start when \(identity.titleName) opens.")
+            }
+            print("Enable, disable, or remove it in View > Extensions.")
+            exit(0)
+        } catch { die(error.localizedDescription) }
+    }
+
+    private static func installDirectory(_ source: URL) -> Never {
         do {
             let manifest = try validatedManifest(at: source)
             let root = PluginManager.extensionsDirectory
             let destination = root
                 .appendingPathComponent(manifest.id, isDirectory: true)
             guard !FileManager.default.fileExists(atPath: destination.path) else {
-                die("\(manifest.id) is already installed; remove it or use the marketplace updater")
+                die("\(manifest.id) is already installed; use a .cmdyext package to update it")
             }
             try FileManager.default.createDirectory(
                 at: root, withIntermediateDirectories: true)
@@ -168,18 +243,129 @@ public enum ExtensionCLI {
             try FileManager.default.moveItem(at: staging, to: destination)
             print("installed \(manifest.name) to \(destination.path)")
             if let connection = liveConnection() {
-                let response = request(connection, method: "POST", path: "/v1/extensions/reload",
-                                       body: ["id": manifest.id])
+                let response = request(
+                    connection, method: "POST", path: "/v1/extensions/reload",
+                    body: ["id": manifest.id])
                 if response.status == 200 {
                     print("running now in \(identity.titleName)")
+                } else {
+                    print("installed but not started: "
+                        + (response.json["error"] as? String ?? "reload failed"))
                 }
-                else { print("installed but not started: \(response.json["error"] as? String ?? "reload failed")") }
             } else {
                 print("It will start when \(identity.titleName) opens.")
             }
-            print("Enable or disable it in View > Extensions.")
+            print("Enable, disable, or remove it in View > Extensions.")
             exit(0)
         } catch { die(error.localizedDescription) }
+    }
+
+    private static func pack(_ arguments: [String]) -> Never {
+        guard let rawPath = arguments.first else {
+            usage("extension pack needs an Extension directory")
+        }
+        let source = expandedURL(rawPath)
+        do {
+            let manifest = try validatedManifest(at: source)
+            guard !manifest.isLegacy else {
+                die("shareable packages require a v1 manifest with explicit capabilities")
+            }
+            let output: URL
+            if arguments.count >= 2 {
+                let requested = expandedURL(arguments[1])
+                output = requested.pathExtension.lowercased() == "cmdyext"
+                    ? requested
+                    : requested.appendingPathExtension("cmdyext")
+            } else {
+                output = source.deletingLastPathComponent().appendingPathComponent(
+                    "\(manifest.id)-\(manifest.version).cmdyext")
+            }
+            guard !FileManager.default.fileExists(atPath: output.path) else {
+                die("\(output.path) already exists")
+            }
+
+            let temporaryRoot = FileManager.default.temporaryDirectory
+                .appendingPathComponent(
+                    "\(identity.slug)-pack-\(UUID().uuidString)", isDirectory: true)
+            defer { try? FileManager.default.removeItem(at: temporaryRoot) }
+            try FileManager.default.createDirectory(
+                at: temporaryRoot, withIntermediateDirectories: true)
+            let cleanSource = temporaryRoot.appendingPathComponent(
+                source.lastPathComponent, isDirectory: true)
+            try Marketplace.run(
+                "/usr/bin/ditto", "--norsrc", "--noextattr", "--noqtn", "--noacl",
+                source.path, cleanSource.path)
+            removePackageOnlyState(from: cleanSource)
+            try Marketplace.run(
+                "/usr/bin/ditto", "-c", "-k", "--keepParent", "--norsrc",
+                "--noextattr", "--noqtn", "--noacl", cleanSource.path, output.path)
+            do {
+                let package = try Marketplace.prepareExtensionPackage(from: output)
+                print("packed \(package.manifest.name) \(package.manifest.version)")
+                print("  \(output.path)")
+                print("  sha256 \(package.sha256)")
+                print("Share this .cmdyext file; recipients can double-click it to install.")
+                exit(0)
+            } catch {
+                try? FileManager.default.removeItem(at: output)
+                throw error
+            }
+        } catch { die(error.localizedDescription) }
+    }
+
+    private static func removePackageOnlyState(from root: URL) {
+        let names: Set<String> = [
+            ".git", ".build", ".DS_Store", ".marketplace.json", "config.json",
+        ]
+        guard let enumerator = FileManager.default.enumerator(
+            at: root, includingPropertiesForKeys: [.isDirectoryKey], options: [])
+        else { return }
+        var removals: [URL] = []
+        for case let item as URL in enumerator {
+            let name = item.lastPathComponent
+            if names.contains(name) || name == ".env" || name.hasPrefix(".env.") {
+                removals.append(item)
+                enumerator.skipDescendants()
+            }
+        }
+        for item in removals.sorted(by: { $0.path.count > $1.path.count }) {
+            try? FileManager.default.removeItem(at: item)
+        }
+    }
+
+    private static func remove(_ arguments: [String]) -> Never {
+        guard let id = arguments.first else {
+            usage("extension remove needs an Extension id")
+        }
+        guard let directory = installedDirectory(id: id) else {
+            die("no installed \(identity.titleName) Extension '\(id)'")
+        }
+        let manifest = try? ExtensionManifest.load(from: directory)
+        if let connection = liveConnection(), let manifest {
+            let response = request(
+                connection, method: "POST", path: "/v1/extensions/state",
+                body: ["id": manifest.id, "enabled": false])
+            guard response.status == 200 else {
+                die(response.json["error"] as? String
+                    ?? "could not stop the Extension")
+            }
+        }
+        do {
+            try FileManager.default.removeItem(at: directory)
+            print("removed \(manifest?.name ?? id)")
+            exit(0)
+        } catch { die(error.localizedDescription) }
+    }
+
+    private static func installedDirectory(id: String) -> URL? {
+        let directories = (try? FileManager.default.contentsOfDirectory(
+            at: PluginManager.extensionsDirectory,
+            includingPropertiesForKeys: [.isDirectoryKey],
+            options: [.skipsHiddenFiles])) ?? []
+        return directories.first {
+            (try? ExtensionManifest.load(from: $0).id) == id
+                || $0.lastPathComponent == id
+        }
     }
 
     private static func trust(_ arguments: [String], trusted: Bool) -> Never {
@@ -426,9 +612,11 @@ public enum ExtensionCLI {
           new <directory>                 create a minimal extension
           dev <path> [--capability NAME]  run, watch, and restart it live
           validate <directory>            check its manifest
-          install <directory>             install a local extension
+          pack <directory> [output]       make a shareable .cmdyext package
+          install <path|URL>              install a folder or .cmdyext package
           enable <id>                     enable and start an installed extension
           disable <id>                    stop and disable an installed extension
+          remove <id>                     stop and uninstall an extension
           list                            list installed extensions
           trust <project>                 allow \(identity.projectDirectoryName)/extensions in a project
           untrust <project>               revoke project trust

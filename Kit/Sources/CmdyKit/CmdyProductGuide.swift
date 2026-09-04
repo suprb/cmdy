@@ -301,16 +301,17 @@ public struct CmdyProductGuide: Equatable, Sendable {
                 "Install and enable Bridge; register its bundled MCP shim with an agent client if automatic registration is unavailable.",
             ]),
             "dev.cmdy.chromium": CmdyProductGuide(whatItDoes: [
-                "Adds a real Chromium browser as a docked companion beside the terminal.",
+                "Adds a real Chromium browser as a split inside the cmdy window.",
                 "Its MCP shim lets an agent navigate, inspect, type, and capture the browser.",
             ], safety: [
-                "Browser pages remain live external content; the Extension requests companion UI, pane typing, commands, hotkeys, events, and hooks.",
-                "The Chromium framework is a large native payload and runs as your macOS user.",
+                "Chromium's framework and sandbox helpers stay sealed inside the signed cmdy app.",
+                "Disabling or removing Browser closes its splits and prevents the runtime from loading.",
             ], setup: [
-                "Install the Extension and its verified Chromium payload, enable it, and register the bundled MCP shim with your agent client.",
+                "Install Browser from Extensions, then register the bundled MCP shim if your agent client needs it.",
             ]),
             "dev.cmdy.sim": CmdyProductGuide(whatItDoes: [
-                "Attaches the iOS Simulator as a \(product) companion and adds build, run, and screenshot commands.",
+                "Adds Simulator build, run, input, and screenshot commands.",
+                "Streams serve-sim into the Browser split attached to the same cmdy window.",
                 "Its MCP shim lets an agent drive those Simulator workflows.",
             ], safety: [
                 "Requests events, pane typing, commands, hotkeys, panels, and companion UI.",

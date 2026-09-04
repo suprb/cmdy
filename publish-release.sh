@@ -160,6 +160,8 @@ expected_assets=(
     "$PRODUCT_RELEASE_PREFIX-$VERSION-browser-$browser_version-macOS-arm64.dmg-notary.json"
     "$PRODUCT_RELEASE_PREFIX-$VERSION-browser-$browser_version-macOS-arm64.publication.json"
     "$PRODUCT_RELEASE_PREFIX-$VERSION-browser-$browser_version-macOS-arm64.json"
+    "chromium-$browser_version.cmdyext"
+    "chromium-$browser_version.cmdyext.sha256"
 )
 for expected_asset in "${expected_assets[@]}"; do
     if ! grep -Fxq "$expected_asset" <<< "$asset_names"; then
@@ -167,11 +169,11 @@ for expected_asset in "${expected_assets[@]}"; do
         exit 5
     fi
 done
-lean_dmg="$PRODUCT_RELEASE_PREFIX-$VERSION-macOS-arm64.dmg"
-lean_alias="$PRODUCT_RELEASE_PREFIX-macOS-arm64.dmg"
+canonical_dmg="$PRODUCT_RELEASE_PREFIX-$VERSION-macOS-arm64.dmg"
+canonical_alias="$PRODUCT_RELEASE_PREFIX-macOS-arm64.dmg"
 browser_dmg="$PRODUCT_RELEASE_PREFIX-$VERSION-browser-$browser_version-macOS-arm64.dmg"
 browser_alias="$PRODUCT_RELEASE_PREFIX-browser-macOS-arm64.dmg"
-for artifact_pair in "$lean_dmg:$lean_alias" "$browser_dmg:$browser_alias"; do
+for artifact_pair in "$canonical_dmg:$canonical_alias" "$browser_dmg:$browser_alias"; do
     versioned_name="${artifact_pair%%:*}"
     alias_name="${artifact_pair#*:}"
     versioned_digest="$(jq -r --arg name "$versioned_name" \
@@ -187,4 +189,11 @@ done
 release_url="$(gh release view "v$VERSION" --repo "$REPOSITORY" \
     --json url --jq .url)"
 echo "Published: $release_url"
-echo "Verified lean and Browser edition assets."
+extension_digest="$(jq -r --arg name "chromium-$browser_version.cmdyext" \
+    '.assets[] | select(.name == $name) | .digest' <<< "$release_assets")"
+if ! [[ "$extension_digest" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+    echo "Published Browser activation has no SHA-256 asset digest." >&2
+    exit 5
+fi
+echo "Browser activation: ${extension_digest#sha256:}"
+echo "Verified unified app, Browser activation, and updater compatibility assets."
