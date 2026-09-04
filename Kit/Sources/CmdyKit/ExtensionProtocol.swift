@@ -119,9 +119,9 @@ public struct ExtensionManifest: Equatable, Sendable {
     public var entrypoint: String
     public var enabled: Bool
     public var capabilities: [ExtensionCapability]
-    /// Optional app-hosted native payload. The executable remains available
-    /// as a subprocess helper, while the app decides whether it supports and
-    /// can safely load this component identifier.
+    /// Optional app-hosted component activation. The package still carries an
+    /// executable-shaped entrypoint for a uniform install contract, but the
+    /// app allow-lists the manifest identity and owns the component lifecycle.
     public var hostComponent: String?
     public var description: String?
     public var guide: CmdyProductGuide?

@@ -73,9 +73,9 @@ else
   FAIL=1
 fi
 
-# The lean app must keep Browser discoverable even without a legacy local
-# Chromium Extension: View menu, default toolbar, Extensions row, and all
-# three native recovery prompts must point at the signed Browser edition.
+# A build without an installed Browser activation must keep Browser
+# discoverable from the View menu and default toolbar; both entry points use
+# the same native one-click Marketplace install prompt.
 BROWSER_INSTALL_HOME=$(mktemp -d "/tmp/$PRODUCT_SLUG-browser-install.XXXXXX")
 mkdir -p "$BROWSER_INSTALL_HOME/config"
 BROWSER_INSTALL_DEFAULTS="$PRODUCT_BUNDLE_IDENTIFIER.browser-install.$PPID.$$"
@@ -91,10 +91,8 @@ if [ $code -eq 0 ] && grep -Fq "UIBROWSERINSTALL unavailable=true" <<< "$out" \
     && grep -Fq "menuPrompt=true" <<< "$out" \
     && grep -Fq "toolbar=true" <<< "$out" \
     && grep -Fq "toolbarPrompt=true" <<< "$out" \
-    && grep -Fq "row=true" <<< "$out" \
-    && grep -Fq "rowPrompt=true" <<< "$out" \
     && grep -Fq "ok=true" <<< "$out"; then
-  echo "PASS  --ui-test-browser-install-recovery  lean menu, toolbar, row, and prompts passed"
+  echo "PASS  --ui-test-browser-install-recovery  menu, toolbar, and install prompts passed"
 else
   echo "FAIL  --ui-test-browser-install-recovery"
   echo "$out" | tail -24

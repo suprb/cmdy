@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Build cmdy's optional Browser edition as a complete signed/notarized app.
+# Build cmdy's Browser-enabled compatibility artifact as a complete
+# signed/notarized app.
 #
 # CEF's macOS sandbox requires its framework and helper apps to live inside the
-# hosting app's standard Contents/Frameworks directory. Therefore the ordinary
-# cmdy download stays lean, while this separately downloadable edition contains
-# Browser and replaces the lean app when installed. Both artifacts are published
-# on the same app release and use the same bundle identifier, app version,
-# Developer ID, updater, and user data.
+# hosting app's standard Contents/Frameworks directory. Current releases bundle
+# CEF in the canonical app and use a removable Extension activation record. This
+# artifact remains only so older Browser-edition installations can follow their
+# edition-preserving updater path into the unified release.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -32,6 +32,8 @@ fi
 ./scripts/check-chromium-build.sh
 
 export PRODUCT_BROWSER_EDITION=1
+export PRODUCT_BROWSER_UPDATE_VARIANT=1
+export PRODUCT_BROWSER_DEFAULT_ENABLED=1
 export PRODUCT_RELEASE_VARIANT="browser-$BROWSER_VERSION"
 export PRODUCT_RELEASE_ALIAS_VARIANT="browser"
 export PRODUCT_DIST_DIR="$DIST_DIR"
@@ -41,7 +43,7 @@ CEF_VERSION="$(tr -d '[:space:]' < "$CEF_VERSION_FILE")"
 APP_TEAM="$(codesign -dv --verbose=4 "$PRODUCT_APP_BUNDLE" 2>&1 \
     | awk -F= '/^TeamIdentifier=/{print $2; exit}')"
 if ! [[ "$APP_TEAM" =~ ^[A-Z0-9]{10}$ ]]; then
-    echo "Could not derive a valid Apple Team identifier from Browser edition." >&2
+    echo "Could not derive a valid Apple Team identifier from Browser compatibility artifact." >&2
     exit 3
 fi
 
@@ -78,8 +80,8 @@ cat > "$METADATA" <<JSON
 }
 JSON
 
-printf 'Browser edition ZIP: %s\n' "$ARCHIVE"
-printf 'Browser edition DMG: %s\n' "$DMG"
+printf 'Browser compatibility ZIP: %s\n' "$ARCHIVE"
+printf 'Browser compatibility DMG: %s\n' "$DMG"
 printf 'Browser metadata:    %s\n' "$METADATA"
 printf 'Apple Team:          %s\n' "$APP_TEAM"
 printf 'Sandbox policy:      enabled (no no-sandbox or library-validation bypass)\n'

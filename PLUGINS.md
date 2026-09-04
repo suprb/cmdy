@@ -4,8 +4,9 @@
 **Extension**:
 
 - An **Extension** is installed behavior, a native mini app, a background tool,
-  or an external companion such as Sim. Browser is instead an optional complete
-  app edition because Chromium must remain sealed inside the signed bundle.
+  or an app-owned capability such as the built-in Browser split. Chromium's
+  runtime stays sealed inside cmdy for sandboxing; its Extension is the normal
+  install, enable, disable, update, and remove boundary.
 - The **cmdy SDK** is the optional toolbox used to build an Extension.
 - A **Surface** is native UI an Extension asks cmdy to render.
 

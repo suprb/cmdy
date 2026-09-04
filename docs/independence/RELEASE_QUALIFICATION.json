@@ -8,14 +8,19 @@
         "sha256": "1bb64a39b90d16c71b647c470a5045583483928149afe399a2cab424afaed612"
       },
       {
+        "path": "scripts/package-browser-extension.sh",
+        "purpose": "browser-extension-package-script",
+        "sha256": "349e184e129abd4c7b15100fbdb52da3d73028c9ef2f8e160e7cbb7041937345"
+      },
+      {
         "path": "scripts/release-chromium-browser.sh",
         "purpose": "browser-release-script",
-        "sha256": "3799d84f4f1786bc735bfb5a2eb3ac31aed1fb7d30c7a1332914ebfbfc486e23"
+        "sha256": "3982747f91ddb02d239f1c0426776584864e324e705f2525a4e7f2db530c4157"
       },
       {
         "path": ".github/workflows/ci.yml",
         "purpose": "ci-workflow",
-        "sha256": "4d2fa2f3fa3b3df56f57f94439cff66a51d1ff4b1ebc746e134e7334abbacc40"
+        "sha256": "d88b01c453551bf5e41d05a4bfa76ef393ca25db1553d55dd6c169efbd881a3f"
       },
       {
         "path": "scripts/check-core-blackbox-parity.py",
@@ -30,12 +35,12 @@
       {
         "path": "scripts/package-resource-policy.sh",
         "purpose": "package-resource-policy",
-        "sha256": "3477236fce9f61192fcd04c203a817cde2c5ae2dfbd89e7500d31be2f8020bc5"
+        "sha256": "196817c28ea8eff2f12c3ad2fb7347022e3ee4f84b6883f4861d087f1aa7e5c8"
       },
       {
         "path": "package.sh",
         "purpose": "package-script",
-        "sha256": "b2fbb98987ffaebd5cdda2be94168503e4e95e89a9d8b18b53e2ca4b5d0e4b2c"
+        "sha256": "99919be1be28d60ee54ffc3d2d1b906b74e63cbd9bf5c0bec2e530326e1a5770"
       },
       {
         "path": "Tests/perf-gate.sh",
@@ -65,7 +70,7 @@
       {
         "path": "scripts/check-release-qualification.py",
         "purpose": "qualification-checker",
-        "sha256": "77ba0d3262b2609ff470039027b9b6981e1c66d8d1568bc1619db0b7094a1163"
+        "sha256": "9472a051228e801d3ea4d57a6f4ddcc2d5553b8927f0e916ae7acf56c6a3fe4a"
       },
       {
         "path": "Schemas/release-qualification-v1.schema.json",
@@ -100,17 +105,17 @@
       {
         "path": "release.sh",
         "purpose": "release-script",
-        "sha256": "80e7c2c38b3090163d3e27457f770bea3aaf52c18cf2f89e4cbcb8ed5d8ec06e"
+        "sha256": "c7dcc5d419c2d7f93b928575066c3f8273092d4cde09b612c9c34d18ce6e3110"
       },
       {
         "path": ".github/workflows/release.yml",
         "purpose": "release-workflow",
-        "sha256": "668e421432b13b6ee6d138d88ec7faa8408a7a63f0072fdb94b80ed546abdbcc"
+        "sha256": "25dcbf1fbeb7106f02af86dcfe23d0b06e2e41d97fa7d33ad94b915d58848879"
       },
       {
         "path": "test.sh",
         "purpose": "resource-stress-gate",
-        "sha256": "3038b7d2a57dfb8a608d0023846d7a5aab002e4b6cec1b20ce41033feb93e337"
+        "sha256": "43a38320c31925c8500ea7c2a4d8f9edda836c6ab622745883b79fa58a775cc2"
       },
       {
         "path": "Tests/zoo.sh",
@@ -160,59 +165,10 @@
   },
   "kind": "cmdy-release-qualification",
   "publication": {
-    "approval": {
-      "approvalReference": "Project owner requested the Browser install, theme, close-path, and banner fixes, publication, and merge to main in this session on 2026-09-03.",
-      "approvedPublicWording": "Engineering qualification and Browser install, theme, and close-path verification passed for the exact cmdy 1.0.2 source and evidence set. Project-owner approval; this is not an independent authorship or legal clean-room review.",
-      "decision": "approved",
-      "engineeringDigestSha256": "d44ec1d92a6dc29f08328af0a229d9f800aa186784d38f9c1812802f93d59b60",
-      "evidenceDigestSha256": "436906d35210efb6edb2eece8472d3c212900d5999319d0a094cc7c167c1a41b",
-      "reviewedAtUTC": "2026-09-03T16:58:23Z",
-      "reviewerAffiliation": "cmdy project owner",
-      "reviewerIndependentFromImplementation": false,
-      "reviewerKind": "human",
-      "reviewerName": "Andreas Pihlström"
-    },
-    "evidence": {
-      "core": {
-        "record": {
-          "path": "docs/independence/qualification/core-17-seed.json",
-          "sha256": "e8546c228880944f5975044d4999c4bc6637ea54bd7ef6a4629bc4db911418a3"
-        },
-        "sourceManifestSha256": "126167a2487c089bc66c31de3f1361c0b7bc2bc6d9bd23b7ffcbb2732b7faf48"
-      },
-      "operational": {
-        "record": {
-          "path": "docs/independence/qualification/operational-review.json",
-          "sha256": "20378aa27b6436dcb8fc61ca40a616cdda69f5796ac2558b7ec34d806b868852"
-        },
-        "sourceManifestSha256": "126167a2487c089bc66c31de3f1361c0b7bc2bc6d9bd23b7ffcbb2732b7faf48"
-      },
-      "renderer": {
-        "checkerSha256": "886a21d8601f7917bbab544ac285b5952d3f79a60203c56d25bb1632f7690ee7",
-        "comparison": {
-          "path": "docs/independence/qualification/renderer-comparison.json",
-          "sha256": "c6de090c7605fea74481beed8b68c4fdd9d27c736713798b5099f578c95ed239"
-        },
-        "environment": {
-          "path": "docs/independence/qualification/renderer-environment.json",
-          "sha256": "17d430cd7191f8872de0acb497ef7010c2913757e10574cb2e69b152218bfc39"
-        },
-        "sourceManifestSha256": "126167a2487c089bc66c31de3f1361c0b7bc2bc6d9bd23b7ffcbb2732b7faf48"
-      }
-    },
-    "source": {
-      "activeSourceManifest": {
-        "path": "docs/independence/qualification/active-terminal-sources.json",
-        "sha256": "126167a2487c089bc66c31de3f1361c0b7bc2bc6d9bd23b7ffcbb2732b7faf48"
-      },
-      "provenanceReport": {
-        "path": "docs/independence/qualification/working-tree-provenance.json",
-        "sha256": "b9ac3ee8bfe18c294ddf54c17ecab7f7856b1861294ab2c428de41a6bb08a2b6"
-      },
-      "sourceCommit": "6490631c120fde33381bd3cd5dd1ec2ee8162a1a",
-      "sourceTree": "b3ca140db6cf402294c77de4f11d4e47b3c93132"
-    },
-    "state": "approved"
+    "approval": null,
+    "evidence": null,
+    "source": null,
+    "state": "pending"
   },
   "schemaVersion": 1
 }

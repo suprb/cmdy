@@ -482,7 +482,7 @@
   font-size: 13px;
 }
 
-.browser-edition {
+.browser-extension {
   display: flex;
   padding-top: 18px !important;
   padding-bottom: 18px !important;
@@ -493,11 +493,11 @@
   gap: 32px;
 }
 
-.browser-edition h2 {
+.browser-extension h2 {
   font: 600 13px/1.35 var(--sans);
 }
 
-.browser-edition p {
+.browser-extension p {
   max-width: 760px;
   margin-top: 4px;
   color: var(--ink-3);
@@ -505,7 +505,7 @@
   line-height: 1.45;
 }
 
-.browser-edition > a {
+.browser-extension > a {
   flex: none;
   border-bottom: 1px solid currentColor;
   color: var(--ink);
@@ -797,7 +797,7 @@ html.dark .code-block {
     gap: 10px;
   }
 
-  .browser-edition {
+  .browser-extension {
     align-items: flex-start;
     flex-direction: column;
     gap: 12px;

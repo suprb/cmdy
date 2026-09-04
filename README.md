@@ -4,18 +4,16 @@
 own VT engine and every frame rendered through Metal. Its public platform has
 resident Extensions and one-shot Actions; Channels complete the loop by
 bringing work in from other applications and optionally sending the result back.
-Detox, Swarm, Sim, and Bridge are external first-party reference Extensions
-built on the same API available to everyone. Browser instead ships as an
-optional complete app edition because Chromium must live inside the signed
-macOS app bundle.
+Detox, Swarm, Sim, Bridge, and Browser are first-party reference Extensions.
+Browser activates Chromium in a real cmdy window split; its sandbox runtime is
+already sealed inside the one signed macOS app.
 
 ## Quick start
 
 Requires macOS 26+ on Apple silicon. Open the
-[latest release](https://github.com/suprb/cmdy/releases/latest), choose the lean
-or Browser-edition DMG, then drag `cmdy.app` to Applications. The Browser
-edition replaces the lean app while keeping the same settings, sessions, and
-extensions.
+[latest release](https://github.com/suprb/cmdy/releases/latest), download the
+cmdy DMG, then drag `cmdy.app` to Applications. Install Browser and any other
+optional capability from **View → Extensions…** (⌘⇧L).
 
 If you installed cmdy 1.0.0, download 1.0.1 or newer manually once: 1.0.0
 embedded the wrong GitHub owner, so that version cannot discover its own update.
@@ -287,16 +285,14 @@ included as an example of what the SDK can carry — remove or disable it like a
   tracks the whole colony from any app or Space. **Gather Agent Sessions…** lets
   you select agents—or take all of them—and moves their live panes into one new,
   automatically arranged terminal window without restarting a process
-- **Sim**: the iOS Simulator as a split, or streamed as a resizable live mirror —
-  an agent builds, runs, taps, and screenshots a real SwiftUI app in a loop, with
-  hot-reload, so you watch the app change as it's edited
-- **Browser (optional edition)**: a real Chromium window docked as a split and
-  agent-drivable over an MCP shim. The lean download stays small; a separately
-  signed and notarized Browser edition includes CEF in its sandbox-supported
-  app layout. Both editions use the same cmdy identity, settings, and sessions;
-  app updates preserve the installed edition instead of silently removing Browser.
-  On lean installs, Browser remains visible in Extensions and the toolbar so
-  either surface can download the Browser edition.
+- **Sim**: control iOS Simulator directly, or stream serve-sim as a resizable
+  live mirror in the same built-in Browser split—an agent builds, runs, taps,
+  and screenshots a real SwiftUI app in a loop while you watch it change
+- **Browser**: an installable, disableable, and removable Extension that opens
+  sandboxed Chromium as a real split inside the cmdy window. CEF and its signed
+  workers stay sealed in the notarized app; the Extension controls whether the
+  runtime loads. Install it from Extensions or the Browser toolbar, and remove
+  or reinstall it from the same place.
 
 **Marketplace** ([MARKETPLACE.md](MARKETPLACE.md)) — a public registry of shaders,
 themes, rigs (whole-look presets), and Extensions; browse and install from the palette
@@ -588,7 +584,7 @@ cmdy/
 │              capability-scoped Extension bus, sessions, themes, bundled fonts
 ├─ App/        the shell: windows/tabs/splits, menus, panes, engine surfaces
 ├─ Plugins/    CmdySDK + detox + bridge + swarm + sim (external Extensions),
-│              chromium/Browser edition source, and the parked appdock
+│              chromium host-component source, and the parked appdock
 ├─ site/       React/Vite source for the public home, docs, and Marketplace;
 │              generated Pages output lives in the ignored site/dist/
 └─ Tests/      parked differential oracle (Tests/ORACLE.md, DIVERGENCES.md) ·

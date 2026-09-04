@@ -120,6 +120,9 @@ jobs:
       - name: Build, notarize, staple, and verify
         env:
           PRODUCT_BUILD_NUMBER: ${{ github.run_number }}
+          PRODUCT_BROWSER_EDITION: 1
+          PRODUCT_BROWSER_UPDATE_VARIANT: 0
+          PRODUCT_BROWSER_DEFAULT_ENABLED: 0
           PRODUCT_NOTARY_KEY_FILE: ${{ runner.temp }}/${{ env.PRODUCT_SLUG }}-notary-key.p8
           PRODUCT_NOTARY_KEY_ID: ${{ secrets.CMDY_NOTARY_KEY_ID || secrets.TERMITE_NOTARY_KEY_ID }}
           PRODUCT_NOTARY_ISSUER_ID: ${{ secrets.CMDY_NOTARY_ISSUER_ID || secrets.TERMITE_NOTARY_ISSUER_ID }}
@@ -127,7 +130,7 @@ jobs:
           export PRODUCT_VERSION="$RELEASE_VERSION"
           ./release.sh
 
-      - name: Build, notarize, staple, and verify Browser edition
+      - name: Build legacy Browser-updater compatibility artifact
         env:
           PRODUCT_BUILD_NUMBER: ${{ github.run_number }}
           PRODUCT_NOTARY_KEY_FILE: ${{ runner.temp }}/${{ env.PRODUCT_SLUG }}-notary-key.p8
@@ -136,6 +139,9 @@ jobs:
         run: |
           export PRODUCT_VERSION="$RELEASE_VERSION"
           ./scripts/release-chromium-browser.sh
+
+      - name: Package Browser activation Extension
+        run: ./scripts/package-browser-extension.sh
 
       - name: Upload notarized artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -150,6 +156,8 @@ jobs:
             dist/browser/*.dmg
             dist/browser/*.sha256
             dist/browser/*.json
+            dist/browser-extension/*.cmdyext
+            dist/browser-extension/*.sha256
           if-no-files-found: error
 
       - name: Publish signed GitHub Release
@@ -160,6 +168,7 @@ jobs:
           if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
             gh release create "$release_tag" \
               dist/*.zip dist/*.dmg dist/*.sha256 dist/browser/* \
+              dist/browser-extension/* \
               dist/*.json \
               --verify-tag \
               --title "$PRODUCT_TITLE_NAME $RELEASE_VERSION" \
@@ -167,6 +176,7 @@ jobs:
           else
             gh release create "$release_tag" \
               dist/*.zip dist/*.dmg dist/*.sha256 dist/browser/* \
+              dist/browser-extension/* \
               dist/*.json \
               --target "$GITHUB_SHA" \
               --title "$PRODUCT_TITLE_NAME $RELEASE_VERSION" \

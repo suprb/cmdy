@@ -283,6 +283,7 @@ final class ChromiumPlugin: NSObject, NSApplicationDelegate {
 
         cmdy.registerCommand(id: "chromium.toggle", title: "Show/Hide", plugin: "Browser")
         cmdy.registerCommand(id: "chromium.open", title: "Open URL…", plugin: "Browser")
+        cmdy.registerCommand(id: "chromium.reload", title: "Reload", plugin: "Browser")
         cmdy.registerCommand(id: "chromium.devtools", title: "DevTools", plugin: "Browser")
         cmdy.registerCommand(id: "chromium.annotate", title: "Add UI Feedback", plugin: "Browser")
         cmdy.registerHook(id: "chromium.navigate-intent", boundary: .command, priority: 50)
@@ -346,13 +347,36 @@ final class ChromiumPlugin: NSObject, NSApplicationDelegate {
     }
 
     private func initCEF() -> Bool {
-        let exeDir = (Bundle.main.executablePath! as NSString).deletingLastPathComponent
-        let framework = exeDir + "/Frameworks/Chromium Embedded Framework.framework/Chromium Embedded Framework"
-        guard FileManager.default.fileExists(atPath: framework),
-              cef_bridge_load_library(framework) == 1 else { return false }
+        let executableDirectory = URL(fileURLWithPath: Bundle.main.executablePath!)
+            .deletingLastPathComponent()
+        // Marketplace builds are a self-contained, separately signed helper
+        // app. Source builds retain the historical flat executable layout.
+        // Keeping both layouts here lets Browser remain an ordinary removable
+        // Extension without weakening Chromium's macOS sandbox.
+        let bundledFrameworks = Bundle.main.privateFrameworksURL
+            ?? Bundle.main.bundleURL.appendingPathComponent(
+                "Contents/Frameworks", isDirectory: true)
+        let flatFrameworks = executableDirectory.appendingPathComponent(
+            "Frameworks", isDirectory: true)
+        let frameworks = FileManager.default.fileExists(
+            atPath: bundledFrameworks.appendingPathComponent(
+                "Chromium Embedded Framework.framework").path)
+            ? bundledFrameworks : flatFrameworks
+        let framework = frameworks.appendingPathComponent(
+            "Chromium Embedded Framework.framework/Chromium Embedded Framework")
+        guard FileManager.default.fileExists(atPath: framework.path),
+              cef_bridge_load_library(framework.path) == 1 else { return false }
+
+        let bundleName = Bundle.main.object(
+            forInfoDictionaryKey: "CFBundleName") as? String ?? "cmdy Browser"
+        let helperName = "\(bundleName) Helper"
+        let helper = frameworks.appendingPathComponent(
+            "\(helperName).app/Contents/MacOS/\(helperName)")
+        let helperPath: String? = FileManager.default.isExecutableFile(
+            atPath: helper.path) ? helper.path : nil
         // Chromium locks its profile dir — a second instance (a gate running
         // beside a live cmdy) needs its own via CMDY_CHROMIUM_CACHE.
-        guard cef_bridge_init(nil, cacheDir) == 1 else { return false }
+        guard cef_bridge_init(helperPath, cacheDir) == 1 else { return false }
         // External message pump: tick CEF on the main thread at ~60Hz.
         pump = Timer.scheduledTimer(withTimeInterval: 1.0 / 60.0, repeats: true) { _ in
             cef_bridge_do_message_loop_work()
@@ -837,6 +861,9 @@ final class ChromiumPlugin: NSObject, NSApplicationDelegate {
                 setVisible(!(active?.visible ?? false))
             case "chromium.open":
                 askForURL()
+            case "chromium.reload":
+                setVisible(true)
+                if let browser = active?.browser { cef_bridge_reload(browser) }
             case "chromium.devtools":
                 if let b = active?.browser { cef_bridge_open_devtools(b, nil) }
             case "chromium.annotate":

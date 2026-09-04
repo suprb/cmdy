@@ -4,7 +4,7 @@
 
 # These are the only SwiftPM resource bundles in the active application graph:
 # CmdyKit owns the bundled fonts and ProductIdentity owns the canonical identity
-# manifest. The lean and Browser editions require the same two bundles; Browser
+# manifest. Developer and Browser-capable packages require the same two bundles; Browser
 # adds its CEF and MCP resources explicitly in package.sh.
 CMDY_REQUIRED_SWIFTPM_RESOURCE_BUNDLES=(
     "Kit_CmdyKit.bundle"
@@ -28,7 +28,7 @@ cmdy_copy_required_swiftpm_resource_bundles() {
     case "$edition" in
         0|1) ;;
         *)
-            echo "Package edition must be 0 (lean) or 1 (Browser)." >&2
+            echo "Package Browser payload flag must be 0 or 1." >&2
             return 4
             ;;
     esac

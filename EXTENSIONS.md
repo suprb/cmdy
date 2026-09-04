@@ -464,19 +464,20 @@ Most cmdy examples are ordinary external extensions using the same public API:
 - **Detox**: commands and a live native editor panel.
 - **Swarm**: an always-current Agents section in the Tabs sidebar, plus hotkeys,
   agent-session UI, and selected/all live-agent workspaces.
-- **Browser**: a Chromium companion with a reserved window edge. Distribution
-  uses the optional signed/notarized Browser edition of cmdy so CEF stays in
-  the app layout required by its macOS sandbox; the v1 Marketplace binary is
-  permanently withheld.
-- **Sim**: Apple Simulator as an attached companion with agent tooling.
+- **Browser**: sandboxed Chromium rendered as a real split inside cmdy. Its
+  Marketplace `.cmdyext` package activates the CEF runtime sealed in the app.
+- **Sim**: Apple Simulator tooling plus a serve-sim mirror opened in that same
+  in-window Browser split.
 - **Bridge**: a product-scale integration and MCP runtime.
 
-The external Extensions can be enabled, disabled, replaced, or removed. None
-is compiled into the terminal core. Browser is present only in the separately
-downloaded Browser edition and can be removed by reinstalling the lean edition.
+Extensions can be enabled, disabled, replaced, or removed. Ordinary Extension
+entrypoints are not compiled into the terminal core. Browser is the narrow
+allow-listed exception: cmdy owns its embedded view host and keeps Chromium's
+runtime bytes sealed in the signed app for sandboxing, while removing its
+Extension closes every Browser split and prevents that runtime from loading.
 The source installer registers Bridge and Sim's neutral stdio MCP shims with
 installed Claude Code and Codex clients at user scope; an explicitly ad-hoc
-local Browser build registers its shim as well.
+Browser-capable local builds register its shim as well.
 
 ## Rules worth keeping
 

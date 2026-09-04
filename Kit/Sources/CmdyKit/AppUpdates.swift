@@ -403,9 +403,10 @@ public final class AppUpdateMonitor {
            !Self.releaseMatchesEdition(
             cached,
             prefersBrowserEdition: prefersBrowserEdition) {
-            // The lean and Browser editions deliberately share settings. Do
-            // not let a cached archive from the other edition replace this
-            // installation; force a fresh release lookup instead.
+            // The canonical app and legacy Browser-edition updater clients
+            // deliberately share settings. Do not let a cached archive for
+            // the other variant replace this installation; force a fresh
+            // release lookup instead.
             state.cachedRelease = nil
             state.lastCheck = 0
             saveState(state)

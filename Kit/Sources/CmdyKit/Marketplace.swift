@@ -189,6 +189,70 @@ public enum Marketplace {
         }
     }
 
+    /// A validated, shareable `.cmdyext` archive waiting for the user's
+    /// install confirmation. Keeping the inspected bytes with the metadata
+    /// means an HTTPS package is downloaded exactly once and cannot change
+    /// between the confirmation sheet and installation.
+    public struct ExtensionPackage: Sendable {
+        public let sourceURL: URL
+        public let manifest: ExtensionManifest
+        public let sha256: String
+        public let archiveByteCount: Int
+        fileprivate let archiveData: Data
+        fileprivate let entry: Entry
+
+        public var folderName: String { entry.folderName }
+    }
+
+    /// Native install links used by the public Marketplace and independent
+    /// Extension authors. Marketplace ids retain pinned registry hashes;
+    /// direct package links are restricted to HTTPS and still show the same
+    /// manifest/capability confirmation as a double-clicked `.cmdyext` file.
+    public enum ExtensionInstallRequest: Equatable, Sendable {
+        case marketplace(id: String)
+        case package(URL)
+    }
+
+    public static func extensionInstallRequest(
+        from url: URL
+    ) -> ExtensionInstallRequest? {
+        guard url.scheme?.caseInsensitiveCompare(
+                ProductIdentity.current.slug) == .orderedSame,
+              url.host?.caseInsensitiveCompare("extension") == .orderedSame,
+              url.path == "/install",
+              let components = URLComponents(
+                url: url, resolvingAgainstBaseURL: false) else { return nil }
+        let ids = components.queryItems?
+            .filter { $0.name == "id" }.compactMap(\.value) ?? []
+        let urls = components.queryItems?
+            .filter { $0.name == "url" }.compactMap(\.value) ?? []
+        if ids.count == 1, urls.isEmpty,
+           isSafeExtensionID(ids[0]) {
+            return .marketplace(id: ids[0])
+        }
+        if urls.count == 1, ids.isEmpty,
+           let packageURL = URL(string: urls[0]),
+           packageURL.scheme?.lowercased() == "https",
+           packageURL.host != nil,
+           packageURL.pathExtension.lowercased() == "cmdyext" {
+            return .package(packageURL)
+        }
+        return nil
+    }
+
+    private static func isSafeExtensionID(_ id: String) -> Bool {
+        guard id.utf8.count <= 255 else { return false }
+        let parts = id.split(separator: ".", omittingEmptySubsequences: false)
+        guard parts.count >= 2 else { return false }
+        return parts.allSatisfy { part in
+            guard let first = part.first, first.isASCII,
+                  first.isLetter || first.isNumber else { return false }
+            return part.allSatisfy {
+                $0.isASCII && ($0.isLetter || $0.isNumber || $0 == "-" || $0 == "_")
+            }
+        }
+    }
+
     public enum MarketplaceError: LocalizedError {
         case network(String)
         case badRegistry(String)
@@ -351,6 +415,11 @@ public enum Marketplace {
         let sem = DispatchSemaphore(value: 0)
         let task = URLSession.shared.downloadTask(with: url) { temporaryURL, resp, err in
             if let err { state.complete(.failure(err)) }
+            else if url.scheme?.lowercased() == "https",
+                    resp?.url?.scheme?.lowercased() != "https" {
+                state.complete(.failure(MarketplaceError.network(
+                    "refusing an insecure download redirect")))
+            }
             else if let http = resp as? HTTPURLResponse, http.statusCode != 200 {
                 state.complete(.failure(MarketplaceError.network(
                     "HTTP \(http.statusCode) for \(url.lastPathComponent)")))
@@ -434,6 +503,93 @@ public enum Marketplace {
 
     // MARK: - Extension install
 
+    /// Download/read and fully inspect a package before showing install
+    /// consent. A `.cmdyext` file is an ordinary ZIP containing exactly one
+    /// v1 Extension folder; the distinct suffix lets Finder hand it to cmdy.
+    public static func prepareExtensionPackage(
+        from sourceURL: URL,
+        progress: (String) -> Void = { _ in }
+    ) throws -> ExtensionPackage {
+        let scheme = sourceURL.scheme?.lowercased()
+        guard sourceURL.isFileURL || scheme == "https" else {
+            throw MarketplaceError.network(
+                "Extension packages must be local files or HTTPS URLs")
+        }
+        guard sourceURL.pathExtension.lowercased() == "cmdyext" else {
+            throw MarketplaceError.badArchive(
+                "shareable Extension packages must use the .cmdyext filename extension")
+        }
+        progress(sourceURL.isFileURL
+            ? "reading \(sourceURL.lastPathComponent)…"
+            : "downloading \(sourceURL.lastPathComponent)…")
+        let archive = try fetchData(sourceURL, maxBytes: 1024 * 1024 * 1024)
+        guard archive.count <= 1024 * 1024 * 1024 else {
+            throw MarketplaceError.badArchive("Extension package exceeds 1 GB")
+        }
+        let digest = SHA256.hash(data: archive)
+            .map { String(format: "%02x", $0) }.joined()
+
+        let staging = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "\(ProductIdentity.current.slug)-package-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(
+            at: staging, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: staging) }
+        let unpacked = try extractExtensionArchive(archive, into: staging)
+        let manifest: ExtensionManifest
+        do {
+            manifest = try ExtensionManifest.load(from: unpacked)
+        } catch {
+            throw MarketplaceError.badArchive(error.localizedDescription)
+        }
+        guard !manifest.isLegacy else {
+            throw MarketplaceError.badArchive(
+                "shareable packages require a v1 manifest with explicit capabilities")
+        }
+        try validateEntrypoint(manifest, inside: unpacked)
+
+        var json: [String: Any] = [
+            "kind": manifest.allows(.channels) ? "channel" : "plugin",
+            "id": manifest.id,
+            "name": manifest.name,
+            "description": manifest.description ?? "Shared cmdy Extension",
+            "author": "Shared package",
+            "version": manifest.version,
+            "url": sourceURL.absoluteString,
+            "sha256": digest,
+        ]
+        if let homepage = manifest.homepage { json["homepage"] = homepage }
+        if let guide = manifest.guide { json["guide"] = guide.jsonObject }
+        guard let entry = Entry(json) else {
+            throw MarketplaceError.badArchive("could not describe the Extension package")
+        }
+        progress("verified \(manifest.name) \(manifest.version) ✓")
+        return ExtensionPackage(
+            sourceURL: sourceURL,
+            manifest: manifest,
+            sha256: digest,
+            archiveByteCount: archive.count,
+            archiveData: archive,
+            entry: entry)
+    }
+
+    /// Install bytes that were already inspected for an install sheet or CLI
+    /// summary. The common Marketplace pipeline still re-validates every path,
+    /// manifest field, signature boundary, and digest before swapping files.
+    @discardableResult
+    public static func installExtensionPackage(
+        _ package: ExtensionPackage,
+        consented: Bool,
+        progress: (String) -> Void = { _ in }
+    ) throws -> URL {
+        try installPlugin(
+            package.entry,
+            archive: package.archiveData,
+            registry: nil,
+            consented: consented,
+            progress: progress)
+    }
+
     /// The pipeline: require pinned sha256 → download → verify → unpack →
     /// fresh inode → ad-hoc sign → (consented) de-quarantine → enable.
     /// Returns the installed directory.
@@ -444,6 +600,18 @@ public enum Marketplace {
     public static func installPlugin(_ entry: Entry, registry: String? = nil,
                                      consented: Bool,
                                      progress: (String) -> Void) throws -> URL {
+        try installPlugin(
+            entry,
+            archive: nil,
+            registry: registry,
+            consented: consented,
+            progress: progress)
+    }
+
+    @discardableResult
+    private static func installPlugin(_ entry: Entry, archive: Data?,
+                                      registry: String?, consented: Bool,
+                                      progress: (String) -> Void) throws -> URL {
         guard isExtensionKind(entry.kind) else {
             throw MarketplaceError.badRegistry(
                 "\(entry.id) is not an Extension or Channel connector")
@@ -470,8 +638,12 @@ public enum Marketplace {
             expectedPayloadSHA = nil
         }
 
-        progress("downloading \(entry.name) \(entry.version)…")
-        let zip = try fetchContent(entry, registry: registry)
+        if archive == nil {
+            progress("downloading \(entry.name) \(entry.version)…")
+        } else {
+            progress("verifying \(entry.name) \(entry.version)…")
+        }
+        let zip = try archive ?? fetchContent(entry, registry: registry)
         guard zip.count <= 1024 * 1024 * 1024 else {
             throw MarketplaceError.badArchive("Extension archive exceeds 1 GB")
         }
@@ -487,26 +659,8 @@ public enum Marketplace {
                 "\(ProductIdentity.current.slug)-mp-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: staging, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: staging) }
-        let zipURL = staging.appendingPathComponent("plugin.zip")
-        try zip.write(to: zipURL)
-        try validateArchivePaths(zipURL)
-        try run("/usr/bin/ditto", "-x", "-k", zipURL.path, staging.path)
-
-        // The zip contains exactly one folder with manifest.json at its root.
-        let candidates = try FileManager.default
-            .contentsOfDirectory(at: staging, includingPropertiesForKeys: nil)
-            .filter { FileManager.default.fileExists(
-                atPath: $0.appendingPathComponent("manifest.json").path) }
-        guard candidates.count == 1, let unpacked = candidates.first else {
-            throw MarketplaceError.badArchive(
-                candidates.isEmpty
-                    ? "no manifest.json in the archive"
-                    : "archive contains more than one Extension root")
-        }
-        try validateExtractedTree(
-            unpacked,
-            inside: staging,
-            allowDanglingSymlinks: entry.payload != nil)
+        let unpacked = try extractExtensionArchive(
+            zip, into: staging, allowDanglingSymlinks: entry.payload != nil)
         let manifestURL = unpacked.appendingPathComponent("manifest.json")
         guard let manifestSize = try? manifestURL.resourceValues(
             forKeys: [.fileSizeKey]).fileSize,
@@ -543,15 +697,7 @@ public enum Marketplace {
                     "manifest version \(parsedManifest.version) does not match registry version \(entry.version)")
             }
         }
-        let execName = parsedManifest.entrypoint
-        let execURL = unpacked.appendingPathComponent(execName).standardizedFileURL
-        let archiveRoot = unpacked.standardizedFileURL.resolvingSymlinksInPath().path + "/"
-        guard execURL.resolvingSymlinksInPath().path.hasPrefix(archiveRoot),
-              FileManager.default.fileExists(atPath: execURL.path),
-              FileManager.default.isExecutableFile(atPath: execURL.path) else {
-            throw MarketplaceError.badArchive(
-                "Extension entrypoint is missing, not executable, or leaves its archive")
-        }
+        let execURL = try validateEntrypoint(parsedManifest, inside: unpacked)
 
         // Payload (chromium's CEF): fetched separately, assembled next to the binary.
         if let payload = entry.payload {
@@ -584,7 +730,8 @@ public enum Marketplace {
         // Updates retain local operator state without ever placing it in the
         // downloaded archive or registry. In particular, Channel guided setup
         // lives in config.json and must survive a package replacement.
-        let dest = PluginManager.pluginsDirectory.appendingPathComponent(entry.folderName)
+        let dest = installedExtensionDirectory(id: entry.id)
+            ?? PluginManager.pluginsDirectory.appendingPathComponent(entry.folderName)
         manifest["enabled"] = true
         if FileManager.default.fileExists(atPath: dest.path) {
             try preserveLocalExtensionState(
@@ -598,7 +745,23 @@ public enum Marketplace {
         let receipt: [String: Any] = ["id": entry.id, "version": entry.version]
         try? JSONSerialization.data(withJSONObject: receipt)
             .write(to: unpacked.appendingPathComponent(".marketplace.json"))
-        try run("/usr/bin/codesign", "--force", "--sign", "-", execURL.path)
+        // A packaged helper app may already carry a Developer ID signature
+        // and notarization ticket. Re-signing only its inner executable would
+        // break the outer bundle seal (this is what made a distributable
+        // Browser Extension impossible). Preserve a valid nested app as one
+        // signed unit; author-built unsigned helper apps are sealed ad-hoc as
+        // a whole bundle after the same explicit native-code consent.
+        if let appBundle = enclosingAppBundle(for: execURL, inside: unpacked) {
+            if hasValidCodeSignature(appBundle) {
+                progress("signed helper verified ✓")
+            } else {
+                try run("/usr/bin/codesign", "--force", "--deep", "--sign", "-",
+                        appBundle.path)
+                progress("helper sealed locally ✓")
+            }
+        } else {
+            try run("/usr/bin/codesign", "--force", "--sign", "-", execURL.path)
+        }
         _ = try? run("/usr/bin/xattr", "-dr", "com.apple.quarantine", unpacked.path)
 
         // Fresh inode: overwriting a signed binary in place poisons the
@@ -622,6 +785,76 @@ public enum Marketplace {
         }
 
         return dest
+    }
+
+    private static func extractExtensionArchive(
+        _ archive: Data,
+        into staging: URL,
+        allowDanglingSymlinks: Bool = false
+    ) throws -> URL {
+        let zipURL = staging.appendingPathComponent("extension.cmdyext")
+        try archive.write(to: zipURL)
+        try validateArchivePaths(zipURL)
+        try run("/usr/bin/ditto", "-x", "-k", zipURL.path, staging.path)
+
+        // A package contains exactly one top-level Extension directory.
+        let candidates = try FileManager.default
+            .contentsOfDirectory(at: staging, includingPropertiesForKeys: nil)
+            .filter { FileManager.default.fileExists(
+                atPath: $0.appendingPathComponent("manifest.json").path) }
+        guard candidates.count == 1, let unpacked = candidates.first else {
+            throw MarketplaceError.badArchive(
+                candidates.isEmpty
+                    ? "no manifest.json in the package"
+                    : "package contains more than one Extension root")
+        }
+        try validateExtractedTree(
+            unpacked,
+            inside: staging,
+            allowDanglingSymlinks: allowDanglingSymlinks)
+        return unpacked
+    }
+
+    @discardableResult
+    private static func validateEntrypoint(
+        _ manifest: ExtensionManifest,
+        inside root: URL
+    ) throws -> URL {
+        let executable = root.appendingPathComponent(manifest.entrypoint)
+            .standardizedFileURL
+        guard let rootPath = canonicalExistingPath(root),
+              let executablePath = canonicalExistingPath(executable),
+              isPath(executablePath, inside: rootPath),
+              FileManager.default.fileExists(atPath: executable.path),
+              FileManager.default.isExecutableFile(atPath: executable.path) else {
+            throw MarketplaceError.badArchive(
+                "Extension entrypoint is missing, not executable, or leaves its package")
+        }
+        return executable
+    }
+
+    /// Return the nearest `.app` that owns an Extension entrypoint, bounded
+    /// by the extracted Extension root. An arbitrary `.app` string elsewhere
+    /// in the path can never escape the already validated archive tree.
+    static func enclosingAppBundle(for executable: URL, inside root: URL) -> URL? {
+        let boundary = root.standardizedFileURL.path
+        var candidate = executable.deletingLastPathComponent().standardizedFileURL
+        while isPath(candidate.path, inside: boundary), candidate.path != boundary {
+            if candidate.pathExtension.caseInsensitiveCompare("app") == .orderedSame {
+                return candidate
+            }
+            candidate.deleteLastPathComponent()
+        }
+        return nil
+    }
+
+    static func hasValidCodeSignature(_ bundle: URL) -> Bool {
+        guard let result = try? ProcessCapture.run(
+            URL(fileURLWithPath: "/usr/bin/codesign"),
+            arguments: ["--verify", "--deep", "--strict", bundle.path],
+            timeout: 120,
+            outputLimit: 1_048_576) else { return false }
+        return result.terminationStatus == 0 && !result.outputWasTruncated
     }
 
     /// Preserve only the two operator-owned pieces of Extension state during
@@ -692,13 +925,26 @@ public enum Marketplace {
             throw MarketplaceError.badArchive(
                 "archive contains more than 200,000 entries")
         }
+        var seenPaths = Set<String>()
         for rawEntry in entries {
             let entry = String(rawEntry).replacingOccurrences(of: "\\", with: "/")
-            let components = entry.split(separator: "/", omittingEmptySubsequences: false)
+            var pathComponents = Array(
+                entry.split(separator: "/", omittingEmptySubsequences: false))
+            if pathComponents.last?.isEmpty == true {
+                pathComponents.removeLast()
+            }
             guard !entry.hasPrefix("/"), !entry.hasPrefix("~"),
-                  !components.contains("..") else {
+                  !pathComponents.isEmpty,
+                  pathComponents.allSatisfy({ !$0.isEmpty && $0 != "." && $0 != ".." })
+            else {
                 throw MarketplaceError.badArchive(
                     "archive entry escapes the staging directory")
+            }
+            let canonicalPath = pathComponents.joined(separator: "/")
+                .precomposedStringWithCanonicalMapping.lowercased()
+            guard seenPaths.insert(canonicalPath).inserted else {
+                throw MarketplaceError.badArchive(
+                    "archive contains a duplicate path: \(canonicalPath)")
             }
         }
     }
@@ -822,6 +1068,20 @@ public enum Marketplace {
 
     // MARK: - Installed state
 
+    /// Locate by manifest identity rather than folder spelling. Local source
+    /// installs historically used the complete reverse-DNS id as their folder,
+    /// while Marketplace installs use its final component; package updates must
+    /// replace either form instead of creating a duplicate running identity.
+    public static func installedExtensionDirectory(id: String) -> URL? {
+        let directories = (try? FileManager.default.contentsOfDirectory(
+            at: PluginManager.pluginsDirectory,
+            includingPropertiesForKeys: [.isDirectoryKey],
+            options: [.skipsHiddenFiles])) ?? []
+        return directories.first {
+            (try? ExtensionManifest.load(from: $0).id) == id
+        }
+    }
+
     public enum State {
         case notInstalled
         case installed(String)          // version (content kinds: "✓")
@@ -841,10 +1101,9 @@ public enum Marketplace {
             let path = ConfigFile.directory.appendingPathComponent("themes/\(entry.stem).json").path
             return FileManager.default.fileExists(atPath: path) ? .installed("✓") : .notInstalled
         case "plugin", "channel":
-            let dir = PluginManager.pluginsDirectory.appendingPathComponent(entry.folderName)
-            let receipt = PluginManager.pluginsDirectory
-                .appendingPathComponent(entry.folderName)
-                .appendingPathComponent(".marketplace.json")
+            let dir = installedExtensionDirectory(id: entry.id)
+                ?? PluginManager.pluginsDirectory.appendingPathComponent(entry.folderName)
+            let receipt = dir.appendingPathComponent(".marketplace.json")
             let receiptVersion: String? = {
                 guard let data = try? BoundedFileReader.data(
                     at: receipt, maxBytes: 1024 * 1024),

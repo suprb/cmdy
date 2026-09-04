@@ -11,6 +11,33 @@ be called out here with a migration path before a versioned release.
 
 ## [Unreleased]
 
+## [1.0.3] - 2026-09-03
+
+### Added
+
+- Extensions and Channels are now shareable `.cmdyext` packages that install
+  by double-click, file picker, HTTPS URL, CLI, or one-click `cmdy://` link.
+- The Extension CLI now packs, installs, updates, disables, enables, and removes
+  packages; the Extensions window exposes the same complete lifecycle.
+
+### Changed
+
+- There is one canonical cmdy app. Browser is a normal installable and removable
+  Extension that activates sandboxed Chromium as a real split inside the cmdy
+  window; CEF and its signed workers remain sealed in the notarized app.
+- Sim's serve-sim mirror opens in the same built-in Browser split for the
+  originating cmdy window and never falls back to an external browser.
+- The public Marketplace offers one-click install plus direct `.cmdyext`
+  downloads, so Extension authors can distribute packages without a second
+  installer or app edition.
+
+### Security
+
+- Package extraction rejects traversal, symlinks, duplicate paths, oversized
+  archives, unsafe URLs, and mismatched hashes before install consent.
+- Only the canonical Browser manifest may activate cmdy's allow-listed embedded
+  Chromium host component.
+
 ## [1.0.2] - 2026-09-03
 
 ### Fixed

@@ -1,5 +1,6 @@
 import AppKit
 import ProductIdentity
+import UniformTypeIdentifiers
 
 /// The Extensions panel (⌘⇧L, or View ▸ Extensions…): inspect, enable,
 /// disable, install, and scaffold isolated extensions.
@@ -14,11 +15,15 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
     private let statusLabel = NSTextField(labelWithString: "")
     private lazy var installAllButton = NSButton(
         title: "Install All…", target: self, action: #selector(installAllPlugins))
+    private lazy var installPackageButton = NSButton(
+        title: "Install Extension…", target: self,
+        action: #selector(chooseExtensionPackage))
     private var rows: [Row] = []
     private var isInstalling = false
     private var isLoadingRegistry = false
     private var marketplaceEntries: [Marketplace.Entry] = []
     private var registryError: String?
+    private var requestedInstallID: String?
     private var runtimeObserver: NSObjectProtocol?
 
     private override init() {
@@ -41,9 +46,9 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
 
     private enum RowAction {
         case none(String)
-        case downloadBrowserEdition
         case download(Marketplace.Entry)
         case update(Marketplace.Entry, installed: String)
+        case remove
     }
 
     private struct Row {
@@ -69,14 +74,21 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
         NSApp.activate(ignoringOtherApps: true)
     }
 
+    /// Install a known Marketplace Extension from another native surface
+    /// (for example, the Browser toolbar). The Extensions window remains the
+    /// single progress and lifecycle UI; callers do not grow a second package
+    /// manager.
+    public func installMarketplaceExtension(id: String) {
+        requestedInstallID = id
+        show()
+        continueRequestedInstallIfPossible()
+    }
+
     // MARK: - Data
 
     private func reload() {
         rows.removeAll()
         let marketplacePlugins = marketplaceEntries.filter { $0.kind == "plugin" }
-        let browserDistribution = PluginManager.shared.hostComponentDistribution(
-            BrowserEdition.hostComponentIdentifier)
-        var hasExternalBrowser = false
         var matchedMarketplaceIDs = Set<String>()
         // Built-in plugins.
         for type in PluginManager.builtins {
@@ -103,14 +115,6 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
                 // Channel connectors share the process sandbox but have their
                 // own manager and must not be presented as Extensions.
                 guard !manifest.allows(.channels) else { continue }
-                let isBrowser = manifest.hostComponent
-                    == BrowserEdition.hostComponentIdentifier
-                if isBrowser {
-                    hasExternalBrowser = true
-                    // A Browser-edition app owns its sealed Chromium runtime.
-                    // Do not expose a stale legacy Extension copy as removable.
-                    if browserDistribution == .bundled { continue }
-                }
                 let name = manifest.name
                 let enabled = manifest.enabled
                 let runtime = PluginManager.shared.extensionRuntimeStatus(at: dir)
@@ -122,24 +126,19 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
                 if let marketplaceEntry { matchedMarketplaceIDs.insert(marketplaceEntry.id) }
                 let action: RowAction
                 var installedVersion = manifest.version
-                if isBrowser {
-                    // Legacy local Browser installs remain manageable, while
-                    // this action provides their supported signed-edition
-                    // upgrade path now that Browser is no longer in Marketplace.
-                    action = .downloadBrowserEdition
-                } else if let entry = marketplaceEntry {
+                if let entry = marketplaceEntry {
                     switch Marketplace.state(of: entry) {
                     case .notInstalled:
                         action = .download(entry)
                     case .installed(let version):
-                        action = .none("Up to date")
+                        action = .remove
                         installedVersion = version
                     case .updateAvailable(let installed):
                         action = .update(entry, installed: installed)
                         installedVersion = installed
                     }
                 } else {
-                    action = .none(manifest.isLegacy ? "Legacy" : "Local")
+                    action = .remove
                 }
                 let summary = marketplaceEntry?.description
                     ?? manifest.description
@@ -180,17 +179,6 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
                 action: .download(entry)
             ))
         }
-        switch BrowserEdition.rowState(
-            distribution: browserDistribution,
-            hasExternalInstall: hasExternalBrowser
-        ) {
-        case .included:
-            rows.append(browserEditionRow(installed: true))
-        case .notInstalled:
-            rows.append(browserEditionRow(installed: false))
-        case nil:
-            break
-        }
         rows.sort {
             if $0.kind == "built-in" && $1.kind != "built-in" { return true }
             if $0.kind != "built-in" && $1.kind == "built-in" { return false }
@@ -206,8 +194,8 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
         } else {
             let available = rows.filter {
                 switch $0.action {
-                case .download, .update, .downloadBrowserEdition: return true
-                case .none: return false
+                case .download, .update: return true
+                case .none, .remove: return false
                 }
             }.count
             let suffix = available > 0
@@ -215,61 +203,6 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
                 : " · all extensions are current"
             statusLabel.stringValue = "\(extCount) installed\(suffix)"
         }
-    }
-
-    private func browserEditionRow(installed: Bool) -> Row {
-        Row(
-            name: "Browser",
-            kind: "edition",
-            summary: installed
-                ? "Web browsing is included in this signed app edition."
-                : "Web browsing inside cmdy; available in the signed Browser edition.",
-            detail: installed
-                ? "Browser edition · installed"
-                : "Browser edition · not installed",
-            guide: BrowserEdition.guide,
-            enabled: installed,
-            dir: nil,
-            builtinId: nil,
-            sourceURL: nil,
-            marketplaceEntry: nil,
-            canToggle: false,
-            action: installed ? .none("Included") : .downloadBrowserEdition)
-    }
-
-    /// Assembled-app test seam for the exact native Extensions row.
-    public func browserEditionDiagnosticForTesting() -> (
-        count: Int, detail: String?, action: String?, canToggle: Bool?
-    ) {
-        _ = ensureWindow()
-        reload()
-        let browserRows = rows.filter {
-            $0.name.caseInsensitiveCompare("Browser") == .orderedSame
-        }
-        let row = browserRows.first
-        let action: String?
-        switch row?.action {
-        case .some(.downloadBrowserEdition): action = "Download Edition"
-        case .some(.none(let label)): action = label
-        case .some(.download): action = "Download"
-        case .some(.update): action = "Update"
-        case nil: action = nil
-        }
-        return (browserRows.count, row?.detail, action, row?.canToggle)
-    }
-
-    /// Activates the same row action as its visible native button.
-    @discardableResult
-    public func triggerBrowserEditionDownloadForTesting() -> Bool {
-        reload()
-        guard let index = rows.firstIndex(where: {
-            if case .downloadBrowserEdition = $0.action { return true }
-            return false
-        }) else { return false }
-        let sender = NSButton()
-        sender.tag = index
-        installRow(sender)
-        return true
     }
 
     private static func webURL(_ raw: String?) -> URL? {
@@ -312,15 +245,62 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
                     self?.isLoadingRegistry = false
                     MarketplaceUpdateMonitor.shared.refresh(with: entries)
                     self?.reload()
+                    self?.continueRequestedInstallIfPossible()
                 }
             } catch {
                 DispatchQueue.main.async {
                     self?.isLoadingRegistry = false
                     self?.registryError = error.localizedDescription
                     self?.reload()
+                    self?.continueRequestedInstallIfPossible()
                 }
             }
         }
+    }
+
+    private func continueRequestedInstallIfPossible() {
+        guard let id = requestedInstallID, !isLoadingRegistry, !isInstalling else {
+            return
+        }
+        guard registryError == nil,
+              let entry = marketplaceEntries.first(where: { $0.id == id }) else {
+            requestedInstallID = nil
+            let alert = NSAlert()
+            alert.alertStyle = .warning
+            alert.messageText = "Could not find the Extension"
+            alert.informativeText = registryError
+                ?? "The Marketplace has no installable entry for \(id)."
+            if let window { alert.beginSheetModal(for: window) }
+            else { alert.runModal() }
+            return
+        }
+        requestedInstallID = nil
+        reload()
+        guard let row = rows.first(where: {
+            $0.marketplaceEntry?.id == id
+                || $0.dir.flatMap { try? ExtensionManifest.load(from: $0).id } == id
+        }) else { return }
+
+        if let directory = row.dir,
+           case .installed = Marketplace.state(of: entry) {
+            do {
+                if !row.enabled {
+                    try PluginManager.shared.setPluginEnabled(true, at: directory)
+                } else if !PluginManager.shared.isPluginRunning(at: directory) {
+                    guard PluginManager.shared.launchPlugin(at: directory) else {
+                        throw PluginManager.PluginLifecycleError.launchFailed(entry.name)
+                    }
+                }
+                reload()
+                statusLabel.stringValue = "\(entry.name) is installed and running"
+            } catch {
+                let alert = NSAlert(error: error)
+                if let window { alert.beginSheetModal(for: window) }
+                else { alert.runModal() }
+            }
+            return
+        }
+        performRowInstall(entry, previousRow: row)
     }
 
     // MARK: - Window
@@ -405,7 +385,13 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
         installAllButton.controlSize = .small
         installAllButton.image = nil
         installAllButton.translatesAutoresizingMaskIntoConstraints = false
-        let stack = NSStackView(views: [installAllButton, createBtn, guideBtn, folderBtn])
+        installPackageButton.bezelStyle = .rounded
+        installPackageButton.controlSize = .small
+        installPackageButton.image = nil
+        installPackageButton.translatesAutoresizingMaskIntoConstraints = false
+        let stack = NSStackView(views: [
+            installAllButton, installPackageButton, createBtn, guideBtn, folderBtn,
+        ])
         stack.orientation = .horizontal
         stack.spacing = 8
         stack.translatesAutoresizingMaskIntoConstraints = false
@@ -440,10 +426,160 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
         NSWorkspace.shared.open(PluginManager.extensionsDirectory)
     }
 
+    @objc private func chooseExtensionPackage() {
+        guard !isInstalling, let window else { return }
+        let panel = NSOpenPanel()
+        panel.title = "Install a cmdy Extension"
+        panel.prompt = "Review"
+        panel.canChooseDirectories = false
+        panel.canChooseFiles = true
+        panel.allowsMultipleSelection = false
+        if let packageType = UTType(filenameExtension: "cmdyext") {
+            panel.allowedContentTypes = [packageType]
+        }
+        panel.beginSheetModal(for: window) { [weak self] response in
+            guard response == .OK, let url = panel.url else { return }
+            self?.installExtensionPackage(from: url)
+        }
+    }
+
+    /// Finder document opens and `cmdy://extension/install?url=…` links both
+    /// enter here, so shared packages receive exactly the same review and
+    /// lifecycle behavior as packages selected inside Extensions.
+    public func installExtensionPackage(from sourceURL: URL) {
+        show()
+        guard !isInstalling else { return }
+        isInstalling = true
+        installAllButton.isEnabled = false
+        installPackageButton.isEnabled = false
+        reload()
+        statusLabel.stringValue = sourceURL.isFileURL
+            ? "Inspecting \(sourceURL.lastPathComponent)…"
+            : "Downloading Extension package…"
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            do {
+                let package = try Marketplace.prepareExtensionPackage(
+                    from: sourceURL) { line in
+                    DispatchQueue.main.async {
+                        self?.statusLabel.stringValue = line
+                    }
+                }
+                DispatchQueue.main.async {
+                    self?.confirmPackageInstall(package)
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    self?.finishPackageInstall(package: nil, error: error)
+                }
+            }
+        }
+    }
+
+    private func confirmPackageInstall(_ package: Marketplace.ExtensionPackage) {
+        let manifest = package.manifest
+        let installed = Marketplace.installedExtensionDirectory(id: manifest.id) != nil
+        let verb = installed ? "Update" : "Install"
+        let capabilities = manifest.capabilities.sorted {
+            $0.rawValue < $1.rawValue
+        }.map { "• \($0.explanation)" }.joined(separator: "\n")
+        let source = package.sourceURL.isFileURL
+            ? package.sourceURL.lastPathComponent
+            : "\(package.sourceURL.host ?? "HTTPS")/\(package.sourceURL.lastPathComponent)"
+        let summary = manifest.guide?.plainText
+            ?? manifest.description
+            ?? "A shared cmdy Extension."
+
+        let alert = NSAlert()
+        alert.alertStyle = .warning
+        alert.messageText = "\(verb) \(manifest.name) \(manifest.version)?"
+        alert.informativeText = "\(summary)\n\nCapabilities:\n\(capabilities.isEmpty ? "• None" : capabilities)\n\nSource: \(source)\nExtensions run as your macOS user."
+        alert.addButton(withTitle: verb)
+        alert.addButton(withTitle: "Cancel")
+        let proceed = { [weak self] in self?.performPackageInstall(package) }
+        let cancel = { [weak self] in self?.cancelPackageInstall() }
+        if let window {
+            alert.beginSheetModal(for: window) { response in
+                response == .alertFirstButtonReturn ? proceed() : cancel()
+            }
+        } else if alert.runModal() == .alertFirstButtonReturn {
+            proceed()
+        } else {
+            cancel()
+        }
+    }
+
+    private func performPackageInstall(_ package: Marketplace.ExtensionPackage) {
+        let existing = Marketplace.installedExtensionDirectory(
+            id: package.manifest.id)
+        let wasEnabled = existing.flatMap {
+            try? ExtensionManifest.load(from: $0).enabled
+        } ?? true
+        if let existing { PluginManager.shared.stopPlugin(at: existing) }
+        statusLabel.stringValue = "Installing \(package.manifest.name)…"
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            do {
+                let directory = try Marketplace.installExtensionPackage(
+                    package, consented: true) { line in
+                    DispatchQueue.main.async {
+                        self?.statusLabel.stringValue = line
+                    }
+                }
+                DispatchQueue.main.sync {
+                    if wasEnabled {
+                        _ = PluginManager.shared.launchPlugin(at: directory)
+                    } else {
+                        try? PluginManager.shared.setPluginEnabled(
+                            false, at: directory)
+                    }
+                }
+                DispatchQueue.main.async {
+                    self?.finishPackageInstall(package: package, error: nil)
+                }
+            } catch {
+                DispatchQueue.main.sync {
+                    if let existing, wasEnabled {
+                        _ = PluginManager.shared.launchPlugin(at: existing)
+                    }
+                }
+                DispatchQueue.main.async {
+                    self?.finishPackageInstall(package: package, error: error)
+                }
+            }
+        }
+    }
+
+    private func cancelPackageInstall() {
+        isInstalling = false
+        installAllButton.isEnabled = true
+        installPackageButton.isEnabled = true
+        reload()
+    }
+
+    private func finishPackageInstall(
+        package: Marketplace.ExtensionPackage?, error: Error?
+    ) {
+        isInstalling = false
+        installAllButton.isEnabled = true
+        installPackageButton.isEnabled = true
+        reload()
+        let alert = NSAlert()
+        if let error {
+            alert.alertStyle = .warning
+            alert.messageText = "Could not install Extension"
+            alert.informativeText = error.localizedDescription
+        } else if let package {
+            alert.messageText = "\(package.manifest.name) is installed"
+            alert.informativeText = "Version \(package.manifest.version) is ready. You can disable or remove it here at any time."
+        }
+        if let window { alert.beginSheetModal(for: window) }
+        else { alert.runModal() }
+    }
+
     @objc private func installAllPlugins() {
         guard !isInstalling else { return }
         isInstalling = true
         installAllButton.isEnabled = false
+        installPackageButton.isEnabled = false
         statusLabel.stringValue = "Loading the extension registry…"
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             do {
@@ -463,6 +599,7 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
         guard !pending.isEmpty else {
             isInstalling = false
             installAllButton.isEnabled = true
+            installPackageButton.isEnabled = true
             reload()
             let alert = NSAlert()
             alert.messageText = "All marketplace extensions are installed"
@@ -494,7 +631,8 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             var failures: [String] = []
             for (index, entry) in plugins.enumerated() {
-                let dest = PluginManager.pluginsDirectory.appendingPathComponent(entry.folderName)
+                let dest = Marketplace.installedExtensionDirectory(id: entry.id)
+                    ?? PluginManager.pluginsDirectory.appendingPathComponent(entry.folderName)
                 DispatchQueue.main.sync {
                     self?.statusLabel.stringValue = "Installing \(entry.name) (\(index + 1)/\(plugins.count))…"
                     PluginManager.shared.stopPlugin(at: dest)
@@ -521,6 +659,7 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
     private func cancelInstallAll() {
         isInstalling = false
         installAllButton.isEnabled = true
+        installPackageButton.isEnabled = true
         reload()
     }
 
@@ -531,6 +670,7 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
     private func finishInstallAll(failures: [String]) {
         isInstalling = false
         installAllButton.isEnabled = true
+        installPackageButton.isEnabled = true
         reload()
         let alert = NSAlert()
         alert.messageText = failures.isEmpty ? "Extensions installed" : "Some extensions could not be installed"
@@ -612,10 +752,10 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
             primary = text
         case .download:
             primary = actionButton(title: "Download", row: index)
-        case .downloadBrowserEdition:
-            primary = actionButton(title: "Download Edition", row: index)
         case .update:
             primary = actionButton(title: "Update", row: index)
+        case .remove:
+            primary = actionButton(title: "Remove", row: index)
         }
 
         var views = [primary]
@@ -643,7 +783,7 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
     }
 
     private func overflowButton(for row: Row, index: Int) -> NSPopUpButton? {
-        guard row.sourceURL != nil || row.dir != nil else { return nil }
+        guard row.sourceURL != nil else { return nil }
         let button = NSPopUpButton(frame: .zero, pullsDown: true)
         button.controlSize = .small
         button.bezelStyle = .inline
@@ -655,14 +795,6 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
             source.target = self
             source.tag = index
             menu.addItem(source)
-        }
-        if row.dir != nil {
-            let remove = NSMenuItem(
-                title: "Remove Extension…", action: #selector(removeRowFromMenu(_:)), keyEquivalent: "")
-            remove.target = self
-            remove.tag = index
-            remove.isEnabled = !isInstalling
-            menu.addItem(remove)
         }
         button.menu = menu
         button.toolTip = "More actions for \(row.name)"
@@ -680,9 +812,7 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
         let row = rows[sender.tag]
         CmdyProductGuidePresenter.shared.show(
             title: row.name,
-            category: row.kind == "edition"
-                ? "Browser Edition"
-                : (row.kind == "available" ? "Available Extension" : "Extension"),
+            category: row.kind == "available" ? "Available Extension" : "Extension",
             summary: row.summary,
             guide: row.guide,
             relativeTo: window)
@@ -705,8 +835,8 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
         switch row.action {
         case .download(let candidate): entry = candidate; verb = "Download"
         case .update(let candidate, _): entry = candidate; verb = "Update"
-        case .downloadBrowserEdition:
-            BrowserEditionInstaller.presentDownloadPrompt(relativeTo: window)
+        case .remove:
+            confirmRowRemoval(row)
             return
         case .none: return
         }
@@ -726,9 +856,7 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
         }
     }
 
-    @objc private func removeRowFromMenu(_ sender: NSMenuItem) {
-        guard rows.indices.contains(sender.tag), !isInstalling else { return }
-        let row = rows[sender.tag]
+    private func confirmRowRemoval(_ row: Row) {
         guard row.builtinId == nil, let dir = row.dir else { return }
 
         let alert = NSAlert()
@@ -753,6 +881,7 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
         guard !isInstalling else { return }
         isInstalling = true
         installAllButton.isEnabled = false
+        installPackageButton.isEnabled = false
         PluginManager.shared.stopPlugin(at: dir)
         reload()
         statusLabel.stringValue = "Removing \(row.name)…"
@@ -762,6 +891,7 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
                 guard let self else { return }
                 self.isInstalling = false
                 self.installAllButton.isEnabled = true
+                self.installPackageButton.isEnabled = true
                 if case .failure = result, row.enabled {
                     _ = PluginManager.shared.launchPlugin(at: dir)
                 }
@@ -785,8 +915,10 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
         guard !isInstalling else { return }
         isInstalling = true
         installAllButton.isEnabled = false
+        installPackageButton.isEnabled = false
         reload()
-        let dest = PluginManager.pluginsDirectory.appendingPathComponent(entry.folderName)
+        let dest = Marketplace.installedExtensionDirectory(id: entry.id)
+            ?? PluginManager.pluginsDirectory.appendingPathComponent(entry.folderName)
         let wasInstalled = previousRow.dir != nil
         let shouldEnable = wasInstalled ? previousRow.enabled : true
         statusLabel.stringValue = "\(wasInstalled ? "Updating" : "Downloading") \(entry.name)…"
@@ -820,6 +952,7 @@ public final class PluginsWindow: NSObject, NSTableViewDataSource, NSTableViewDe
     private func finishRowInstall(entry: Marketplace.Entry, error: Error?) {
         isInstalling = false
         installAllButton.isEnabled = true
+        installPackageButton.isEnabled = true
         if error == nil { MarketplaceUpdateMonitor.shared.markInstalled(id: entry.id) }
         reload()
         let alert = NSAlert()

@@ -12,6 +12,8 @@ VERSION="$(product_env_value VERSION "$PROJECT_VERSION")"
 BUILD_NUMBER="$(product_env_value BUILD_NUMBER 1)"
 BROWSER_EDITION="${PRODUCT_BROWSER_EDITION:-0}"
 REQUIRE_CHROMIUM_HELPERS="${PRODUCT_REQUIRE_CHROMIUM_HELPERS:-$BROWSER_EDITION}"
+BROWSER_UPDATE_VARIANT="${PRODUCT_BROWSER_UPDATE_VARIANT:-0}"
+BROWSER_DEFAULT_ENABLED="${PRODUCT_BROWSER_DEFAULT_ENABLED:-0}"
 
 if ! [[ "$VERSION" =~ ^[0-9]+(\.[0-9]+){1,2}$ ]]; then
     echo "PRODUCT_VERSION must contain two or three numeric components (for example 1.2.0)" >&2
@@ -30,8 +32,15 @@ if [ "$BROWSER_EDITION" != "0" ] && [ "$BROWSER_EDITION" != "1" ]; then
     echo "PRODUCT_BROWSER_EDITION must be 0 or 1" >&2
     exit 2
 fi
+for value_name in BROWSER_UPDATE_VARIANT BROWSER_DEFAULT_ENABLED; do
+    value="${!value_name}"
+    if [ "$value" != "0" ] && [ "$value" != "1" ]; then
+        echo "PRODUCT_${value_name} must be 0 or 1" >&2
+        exit 2
+    fi
+done
 if [ "$BROWSER_EDITION" = "1" ] && [ "$REQUIRE_CHROMIUM_HELPERS" != "1" ]; then
-    echo "Browser edition requires Chromium helpers." >&2
+    echo "A Browser-capable package requires Chromium helpers." >&2
     exit 2
 fi
 
@@ -114,6 +123,36 @@ cat > "${APP}/Contents/Info.plist" <<PLIST
         <string>yaml</string><string>yml</string><string>json</string><string>sh</string>
       </array>
     </dict>
+    <dict>
+      <key>CFBundleTypeName</key><string>cmdy Extension Package</string>
+      <key>CFBundleTypeRole</key><string>Viewer</string>
+      <key>LSHandlerRank</key><string>Owner</string>
+      <key>LSItemContentTypes</key>
+      <array><string>$PRODUCT_BUNDLE_IDENTIFIER.extension-package</string></array>
+      <key>CFBundleTypeExtensions</key>
+      <array><string>cmdyext</string></array>
+    </dict>
+  </array>
+  <key>UTExportedTypeDeclarations</key>
+  <array>
+    <dict>
+      <key>UTTypeIdentifier</key><string>$PRODUCT_BUNDLE_IDENTIFIER.extension-package</string>
+      <key>UTTypeDescription</key><string>cmdy Extension Package</string>
+      <key>UTTypeConformsTo</key>
+      <array><string>public.zip-archive</string></array>
+      <key>UTTypeTagSpecification</key>
+      <dict>
+        <key>public.filename-extension</key><array><string>cmdyext</string></array>
+        <key>public.mime-type</key><string>application/vnd.cmdy.extension+zip</string>
+      </dict>
+    </dict>
+  </array>
+  <key>CFBundleURLTypes</key>
+  <array>
+    <dict>
+      <key>CFBundleURLName</key><string>$PRODUCT_BUNDLE_IDENTIFIER.extension-install</string>
+      <key>CFBundleURLSchemes</key><array><string>$PRODUCT_SLUG</string></array>
+    </dict>
   </array>
   <key>LSMinimumSystemVersion</key><string>26.0</string>
   <key>NSHighResolutionCapable</key><true/>
@@ -125,15 +164,23 @@ plutil -replace CFBundleShortVersionString -string "$VERSION" "${APP}/Contents/I
 plutil -replace CFBundleVersion -string "$BUILD_NUMBER" "${APP}/Contents/Info.plist"
 if [ "$BROWSER_EDITION" = "1" ]; then
     BROWSER_COMPONENT_VERSION="$(tr -d '[:space:]' < Plugins/chromium/VERSION)"
-    plutil -insert CMDYBrowserEdition -bool true "${APP}/Contents/Info.plist"
+    # This legacy key selects the updater asset family. It must remain false
+    # for the unified app even though that app physically contains CEF; only
+    # old Browser-edition clients use the compatibility family.
+    plutil -insert CMDYBrowserEdition -bool \
+        "$([ "$BROWSER_UPDATE_VARIANT" = "1" ] && echo true || echo false)" \
+        "${APP}/Contents/Info.plist"
+    plutil -insert CMDYBrowserEnabledByDefault -bool \
+        "$([ "$BROWSER_DEFAULT_ENABLED" = "1" ] && echo true || echo false)" \
+        "${APP}/Contents/Info.plist"
     plutil -insert CMDYBrowserVersion -string "$BROWSER_COMPONENT_VERSION" \
         "${APP}/Contents/Info.plist"
 fi
 
-# Chromium is distributed only in the optional Browser edition. Upstream CEF's
-# macOS sandbox requires the framework and all four subprocess bundles to live
-# in the standard Contents/Frameworks layout of the hosting app. The ordinary
-# cmdy package has none of them and stays lean.
+# Upstream CEF's macOS sandbox requires the framework and all four subprocess
+# bundles to live in cmdy.app's standard Contents/Frameworks layout. Release
+# builds therefore carry the sealed runtime; the removable Browser Extension
+# decides whether cmdy activates it.
 # Bash 3.2 treats an empty-array expansion as an unset variable under `set -u`.
 # Keep one sentinel so the normal Browser-free package path remains portable.
 CHROMIUM_HELPER_APPS=("")
@@ -198,11 +245,11 @@ EOF
         [ -f "$CEF_BRIDGE_ARCHIVE" ] \
             && [ -d "$CEF_FRAMEWORK" ] \
             && [ -f "$CHROMIUM_HOST_SOURCE" ] || {
-            echo "Browser edition CEF inputs are incomplete." >&2
+            echo "Browser-capable package CEF inputs are incomplete." >&2
             echo "Run ./scripts/bootstrap-chromium.sh and retry." >&2
             exit 5
         }
-        echo "Embedding the pinned CEF runtime for Browser edition..."
+        echo "Embedding the pinned CEF runtime for Browser activation..."
         ditto "$CEF_FRAMEWORK" \
             "${APP}/Contents/Frameworks/Chromium Embedded Framework.framework"
         clang++ -dynamiclib -std=c++20 -ObjC++ -fobjc-arc \
@@ -236,7 +283,7 @@ else
     echo "Skipping Chromium runtime (Browser is not part of this package)."
 fi
 
-# Scan only after both the lean resources and optional Browser payload are in
+# Scan only after both the base resources and optional Browser payload are in
 # place. A stale build artifact or future copy step must never put a retired
 # SwiftTerm/Termite-named path into a distributable app.
 cmdy_assert_packaged_product_identity \

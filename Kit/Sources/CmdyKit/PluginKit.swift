@@ -340,13 +340,6 @@ public final class PluginManager: PluginHost {
         (_ identifier: String, _ directory: URL, _ enabled: Bool) -> Bool = {
             _, _, _ in false
         }
-    /// Reports whether an app-owned host component is absent, locally loaded,
-    /// or sealed into the signed app. Management UI uses this only for
-    /// presentation; lifecycle changes still go through hostComponentLifecycle.
-    public var hostComponentDistribution:
-        (_ identifier: String) -> HostComponentDistribution = { _ in
-            .unavailable
-        }
     /// App-owned setup gate for agent launches requested by an Extension.
     /// The default preserves the protocol's standalone behavior; Cmdy's app
     /// installs a deterministic MCP/permission preflight before launching.
@@ -3471,6 +3464,22 @@ public final class PluginManager: PluginHost {
             grouped[c.plugin, default: []].append((c.title, c.run))
         }
         return order.map { ($0, grouped[$0]!.map { (title: $0.0, run: $0.1) }) }
+    }
+
+    /// Invoke one command by its stable Extension-owned identifier. Native
+    /// toolbar items use this instead of knowing which process implements a
+    /// capability such as Browser.
+    public func hasCommand(id: String) -> Bool {
+        commands.contains { $0.id == id }
+    }
+
+    @discardableResult
+    public func runCommand(id: String) -> Bool {
+        guard let command = commands.last(where: { $0.id == id }) else {
+            return false
+        }
+        command.run()
+        return true
     }
 
     func addRoute(_ method: String, _ path: String, _ handler: @escaping (PluginHTTPRequest) -> PluginHTTPResponse) {

@@ -117,7 +117,7 @@ enum AXKit {
     }
 
     /// Set a checkmark menu item to a desired state (e.g. the Simulator's
-    /// "Stay On Top" so its window floats above cmdy, like the browser
+    /// "Stay On Top" so the native Simulator window floats above cmdy
     /// sidecar). Path: menu-bar item `menuTitle` → its menu → item `itemTitle`.
     static func setMenuChecked(pid: pid_t, menuTitle: String, itemTitle: String, checked: Bool) {
         let app = AXUIElementCreateApplication(pid)

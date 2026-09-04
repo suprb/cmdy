@@ -2,32 +2,30 @@ import XCTest
 @testable import CmdyKit
 
 final class BrowserEditionTests: XCTestCase {
-    func testCanonicalDownloadUsesStableSignedBrowserEditionAlias() {
-        XCTAssertEqual(
-            BrowserEdition.downloadURL().absoluteString,
-            "https://github.com/suprb/cmdy/releases/latest/download/"
-                + "cmdy-browser-macOS-arm64.dmg")
+    func testOnlyCanonicalBrowserManifestCanActivateHostComponent() throws {
+        let browser = try ExtensionManifest(
+            id: BrowserEdition.marketplaceID,
+            name: "Browser",
+            version: "2.1.0",
+            entrypoint: "browser-component",
+            capabilities: [],
+            hostComponent: BrowserEdition.hostComponentIdentifier)
+        XCTAssertTrue(BrowserEdition.authorizesHostComponent(
+            BrowserEdition.hostComponentIdentifier, manifest: browser))
+
+        var impersonator = browser
+        impersonator.id = "dev.example.impersonator"
+        XCTAssertFalse(BrowserEdition.authorizesHostComponent(
+            BrowserEdition.hostComponentIdentifier, manifest: impersonator))
+        XCTAssertFalse(BrowserEdition.authorizesHostComponent(
+            "unknown-host-component", manifest: browser))
     }
 
-    func testBrowserRowStateCoversEveryDistributionAndLegacyCombination() {
-        for hasExternalInstall in [false, true] {
-            XCTAssertEqual(
-                BrowserEdition.rowState(
-                    distribution: .bundled,
-                    hasExternalInstall: hasExternalInstall),
-                .included)
-        }
-        for distribution in [
-            HostComponentDistribution.unavailable,
-            HostComponentDistribution.external,
-        ] {
-            XCTAssertEqual(
-                BrowserEdition.rowState(
-                    distribution: distribution, hasExternalInstall: false),
-                .notInstalled)
-            XCTAssertNil(BrowserEdition.rowState(
-                distribution: distribution, hasExternalInstall: true))
-        }
+    func testBrowserUsesStableMarketplaceExtensionIdentity() {
+        XCTAssertEqual(BrowserEdition.marketplaceID, "dev.termite.chromium")
+        XCTAssertTrue(BrowserEdition.guide.plainText.contains("real split inside"))
+        XCTAssertTrue(BrowserEdition.guide.plainText.contains("visible browser is built into"))
+        XCTAssertTrue(BrowserEdition.guide.plainText.contains("remove Browser"))
     }
 
     func testConfigTemplateDoesNotOfferRetiredBootBanner() {
