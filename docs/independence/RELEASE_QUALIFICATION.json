@@ -165,10 +165,59 @@
   },
   "kind": "cmdy-release-qualification",
   "publication": {
-    "approval": null,
-    "evidence": null,
-    "source": null,
-    "state": "pending"
+    "approval": {
+      "approvalReference": "Project owner requested downloadable, installable, removable, and shareable Extensions; embedded Chromium for Browser and serve-sim; site repair; publication; and all changes on main in this session on 2026-09-03.",
+      "approvedPublicWording": "Engineering qualification and embedded Browser and serve-sim, Extension lifecycle, theme, close-path, updater, and site verification passed for the exact cmdy 1.0.3 source and evidence set. Project-owner approval; this is not an independent authorship or legal clean-room review.",
+      "decision": "approved",
+      "engineeringDigestSha256": "321979a06bdacc727c7775a1be8564b737f02dd90341ea99c54b51b90ae144a3",
+      "evidenceDigestSha256": "1a8c02c4085fe6c6056995a718f1c6bd07595b7616c72d319deaac4c08360437",
+      "reviewedAtUTC": "2026-09-04T00:38:17Z",
+      "reviewerAffiliation": "cmdy project owner",
+      "reviewerIndependentFromImplementation": false,
+      "reviewerKind": "human",
+      "reviewerName": "Andreas Pihlström"
+    },
+    "evidence": {
+      "core": {
+        "record": {
+          "path": "docs/independence/qualification/core-17-seed.json",
+          "sha256": "7e687480a4687dfc18be83db201ac9cce2391fe1f45fa3403b800eac13017bc7"
+        },
+        "sourceManifestSha256": "001dbfa10ebfe957de719190b4f2e4e66a22ac2c571e03849181e9ea4070e928"
+      },
+      "operational": {
+        "record": {
+          "path": "docs/independence/qualification/operational-review.json",
+          "sha256": "bfa33f63e5f918d048ea7783d8b95fc40333357972a5a781a9fa8c4790ac8d2b"
+        },
+        "sourceManifestSha256": "001dbfa10ebfe957de719190b4f2e4e66a22ac2c571e03849181e9ea4070e928"
+      },
+      "renderer": {
+        "checkerSha256": "886a21d8601f7917bbab544ac285b5952d3f79a60203c56d25bb1632f7690ee7",
+        "comparison": {
+          "path": "docs/independence/qualification/renderer-comparison.json",
+          "sha256": "c6de090c7605fea74481beed8b68c4fdd9d27c736713798b5099f578c95ed239"
+        },
+        "environment": {
+          "path": "docs/independence/qualification/renderer-environment.json",
+          "sha256": "17d430cd7191f8872de0acb497ef7010c2913757e10574cb2e69b152218bfc39"
+        },
+        "sourceManifestSha256": "001dbfa10ebfe957de719190b4f2e4e66a22ac2c571e03849181e9ea4070e928"
+      }
+    },
+    "source": {
+      "activeSourceManifest": {
+        "path": "docs/independence/qualification/active-terminal-sources.json",
+        "sha256": "001dbfa10ebfe957de719190b4f2e4e66a22ac2c571e03849181e9ea4070e928"
+      },
+      "provenanceReport": {
+        "path": "docs/independence/qualification/working-tree-provenance.json",
+        "sha256": "7232d211e1cdd77402c59dd7dc1eab0beb660e4c5119b3e0c8346949266b78e7"
+      },
+      "sourceCommit": "9280bd1e84cb7e219a502899ec66628901b14e74",
+      "sourceTree": "a39f12bd859a26e464d6ef8720753c507d2e2755"
+    },
+    "state": "approved"
   },
   "schemaVersion": 1
 }
