@@ -56,8 +56,37 @@ rm -rf "$ICONSET"
 
 echo "Assembling ${APP} ..."
 rm -rf "${APP}"
-mkdir -p "${APP}/Contents/MacOS" "${APP}/Contents/Resources"
+COMPONENT_SWITCH_HELPER_NAME="$PRODUCT_TITLE_NAME Component Helper"
+COMPONENT_SWITCH_HELPER_APP="${APP}/Contents/Helpers/$COMPONENT_SWITCH_HELPER_NAME.app"
+COMPONENT_SWITCH_HELPER="${COMPONENT_SWITCH_HELPER_APP}/Contents/MacOS/$PRODUCT_SLUG-component-helper"
+mkdir -p "${APP}/Contents/MacOS" "${APP}/Contents/Resources" \
+    "${COMPONENT_SWITCH_HELPER_APP}/Contents/MacOS"
 cp "${BIN}" "${APP}/Contents/MacOS/$PRODUCT_EXECUTABLE"
+# The restart/swap process must remain outside the app bundle while that bundle
+# is atomically replaced. A copy of the app's signed main executable is not a
+# valid standalone program: its code signature binds Contents/Info.plist, so
+# macOS kills the detached copy in a real Developer-ID build. Package this
+# second copy as a complete, independently signed helper app so its bundle and
+# notarization identity survive the move to per-user Application Support.
+cp "${BIN}" "$COMPONENT_SWITCH_HELPER"
+chmod 755 "$COMPONENT_SWITCH_HELPER"
+cat > "${COMPONENT_SWITCH_HELPER_APP}/Contents/Info.plist" <<HELPER_PLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleName</key><string>$COMPONENT_SWITCH_HELPER_NAME</string>
+  <key>CFBundleDisplayName</key><string>$COMPONENT_SWITCH_HELPER_NAME</string>
+  <key>CFBundleIdentifier</key><string>$PRODUCT_CODE_SIGNING_IDENTIFIER_NAMESPACE.component-switch</string>
+  <key>CFBundleExecutable</key><string>$PRODUCT_SLUG-component-helper</string>
+  <key>CFBundlePackageType</key><string>APPL</string>
+  <key>CFBundleShortVersionString</key><string>$VERSION</string>
+  <key>CFBundleVersion</key><string>$BUILD_NUMBER</string>
+  <key>LSMinimumSystemVersion</key><string>26.0</string>
+  <key>LSUIElement</key><true/>
+</dict>
+</plist>
+HELPER_PLIST
 # The active SwiftPM resource bundles live in the conventional app Resources
 # directory. Copy only the manifest-audited allowlist: incremental build output
 # can retain bundles from retired targets. App code uses an app-aware locator;
@@ -389,6 +418,7 @@ if [ "$SIGN_ID" = "-" ]; then
             --entitlements Plugins/chromium/ChromiumHelper.entitlements \
             "$HDIR"
     done
+    codesign --force --sign - "$COMPONENT_SWITCH_HELPER_APP"
     codesign --force --sign - --identifier "$PRODUCT_BUNDLE_IDENTIFIER" \
         --entitlements Cmdy.entitlements "${APP}"
 else
@@ -420,17 +450,27 @@ else
             --entitlements Plugins/chromium/ChromiumHelper.entitlements \
             "$HDIR"
     done
+    codesign --force --sign "$SIGN_ID" --options runtime --timestamp \
+        "$COMPONENT_SWITCH_HELPER_APP"
     codesign --force --sign "$SIGN_ID" --identifier "$PRODUCT_BUNDLE_IDENTIFIER" \
         --options runtime --timestamp --entitlements Cmdy.entitlements "${APP}"
 fi
 codesign --verify --deep --strict --verbose=2 "${APP}"
-if [ "$REQUIRE_CHROMIUM_HELPERS" = "1" ]; then
+codesign --verify --deep --strict --verbose=2 "$COMPONENT_SWITCH_HELPER_APP"
+codesign --verify --strict --verbose=2 "$COMPONENT_SWITCH_HELPER"
+MAIN_TEAM=""
+if [ "$SIGN_ID" != "-" ]; then
     MAIN_TEAM="$(codesign -dv --verbose=4 "$APP" 2>&1 \
         | awk -F= '/^TeamIdentifier=/{print $2; exit}')"
-    if [ "$SIGN_ID" != "-" ] && ! [[ "$MAIN_TEAM" =~ ^[A-Z0-9]{10}$ ]]; then
-        echo "Could not read the Developer-ID team from the packaged app." >&2
+    COMPONENT_HELPER_TEAM="$(codesign -dv --verbose=4 "$COMPONENT_SWITCH_HELPER_APP" 2>&1 \
+        | awk -F= '/^TeamIdentifier=/{print $2; exit}')"
+    if ! [[ "$MAIN_TEAM" =~ ^[A-Z0-9]{10}$ ]] \
+       || [ "$COMPONENT_HELPER_TEAM" != "$MAIN_TEAM" ]; then
+        echo "The component-switch helper is not signed by the app's Apple Team." >&2
         exit 6
     fi
+fi
+if [ "$REQUIRE_CHROMIUM_HELPERS" = "1" ]; then
     for HDIR in "${CHROMIUM_HELPER_APPS[@]}"; do
         [ -n "$HDIR" ] || continue
         HNAME="$(basename "$HDIR" .app)"

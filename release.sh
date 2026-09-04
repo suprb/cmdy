@@ -231,6 +231,11 @@ if [ "$SKIP_NOTARIZE" = "1" ]; then
 else
     submit_and_require_accepted "$ARCHIVE" "App" "$ARCHIVE_NOTARY_RESULT"
     ARCHIVE_SUBMITTED_SHA256="$NOTARY_SUBMITTED_SHA256"
+    COMPONENT_SWITCH_HELPER_APP="$APP/Contents/Helpers/$PRODUCT_TITLE_NAME Component Helper.app"
+    xcrun stapler staple -v "$COMPONENT_SWITCH_HELPER_APP"
+    xcrun stapler validate -v "$COMPONENT_SWITCH_HELPER_APP"
+    codesign --verify --deep --strict --verbose=2 "$COMPONENT_SWITCH_HELPER_APP"
+    spctl --assess --type execute --verbose=2 "$COMPONENT_SWITCH_HELPER_APP"
     xcrun stapler staple -v "$APP"
     xcrun stapler validate -v "$APP"
     codesign --verify --deep --strict --verbose=2 "$APP"

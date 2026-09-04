@@ -451,18 +451,36 @@ public enum BrowserComponentInstaller {
         do {
             try FileManager.default.createDirectory(
                 at: helperDirectory, withIntermediateDirectories: true)
-            guard let runningExecutable = runningExecutableURL() else {
-                throw BrowserComponentSwitchError.appBundleNotFound
+            guard let packagedHelperBundle = packagedHelperBundleURL() else {
+                throw BrowserComponentSwitchError.helperLaunchFailed(
+                    "the signed component-switch helper is missing from this app")
             }
-            let helper = helperDirectory.appendingPathComponent("cmdy-component-helper")
-            try FileManager.default.copyItem(at: runningExecutable, to: helper)
-            try FileManager.default.setAttributes(
-                [.posixPermissions: 0o700], ofItemAtPath: helper.path)
-            guard try AppUpdateMonitor.sha256(of: runningExecutable)
+            let helperBundle = helperDirectory.appendingPathComponent(
+                "\(ProductIdentity.current.slug)-component-helper.app",
+                isDirectory: true)
+            try Marketplace.run(
+                "/usr/bin/ditto", packagedHelperBundle.path, helperBundle.path)
+            let helperExecutableName =
+                "\(ProductIdentity.current.slug)-component-helper"
+            let packagedHelper = packagedHelperBundle
+                .appendingPathComponent("Contents/MacOS")
+                .appendingPathComponent(helperExecutableName)
+            let helper = helperBundle
+                .appendingPathComponent("Contents/MacOS")
+                .appendingPathComponent(helperExecutableName)
+            guard let values = try? helper.resourceValues(
+                    forKeys: [.isRegularFileKey, .isSymbolicLinkKey]),
+                  values.isRegularFile == true,
+                  values.isSymbolicLink != true,
+                  FileManager.default.isExecutableFile(atPath: helper.path),
+                  try AppUpdateMonitor.sha256(of: packagedHelper)
                     == AppUpdateMonitor.sha256(of: helper) else {
                 throw BrowserComponentSwitchError.helperLaunchFailed(
-                    "the restart helper copy did not match the running executable")
+                    "the copied restart helper is missing or does not match the signed app")
             }
+            try Marketplace.run(
+                "/usr/bin/codesign", "--verify", "--deep", "--strict",
+                helperBundle.path)
             progress("ready to restart and \(variant == .browser ? "install" : "remove") Browser ✓")
             let prepared = PreparedSwitch(
                 variant: variant,
@@ -789,8 +807,8 @@ public enum BrowserComponentInstaller {
         if NSApp != nil { NSApp.terminate(nil) }
     }
 
-    /// Called before NSApplication is created. A copied, signed cmdy executable
-    /// runs this private mode after the old app has quit.
+    /// Called before NSApplication is created. The separately signed component
+    /// helper app runs this private mode after the old app has quit.
     public static func runHelperIfRequested(_ arguments: [String]) -> Int32? {
         guard arguments.count == 4, arguments[1] == helperArgument else { return nil }
         return runHelper(
@@ -2137,6 +2155,30 @@ public enum BrowserComponentInstaller {
         return URL(fileURLWithPath: String(cString: buffer))
             .resolvingSymlinksInPath()
             .standardizedFileURL
+    }
+
+    private static func packagedHelperBundleURL() -> URL? {
+        guard let app = currentAppBundleURL() else { return nil }
+        let helper = app.appendingPathComponent("Contents/Helpers", isDirectory: true)
+            .appendingPathComponent(
+                "\(ProductIdentity.current.titleName) Component Helper.app",
+                isDirectory: true)
+        let executable = helper
+            .appendingPathComponent("Contents/MacOS")
+            .appendingPathComponent(
+                "\(ProductIdentity.current.slug)-component-helper")
+        guard let values = try? helper.resourceValues(
+                forKeys: [.isDirectoryKey, .isSymbolicLinkKey]),
+              values.isDirectory == true,
+              values.isSymbolicLink != true,
+              let executableValues = try? executable.resourceValues(
+                forKeys: [.isRegularFileKey, .isSymbolicLinkKey]),
+              executableValues.isRegularFile == true,
+              executableValues.isSymbolicLink != true,
+              FileManager.default.isExecutableFile(atPath: executable.path) else {
+            return nil
+        }
+        return helper.resolvingSymlinksInPath().standardizedFileURL
     }
 
     private static func componentCacheDirectory() -> URL {

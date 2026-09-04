@@ -14,6 +14,12 @@ BROWSER_APP="$2"
 for app in "$LEAN_APP" "$BROWSER_APP"; do
     [ -d "$app" ] || { echo "Missing app: $app" >&2; exit 2; }
     codesign --verify --deep --strict "$app"
+    packaged_helper="$app/Contents/Helpers/cmdy Component Helper.app"
+    [ -d "$packaged_helper" ] || {
+        echo "Missing packaged component-switch helper: $app" >&2
+        exit 2
+    }
+    codesign --verify --deep --strict "$packaged_helper"
 done
 
 TEST_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/cmdy-component-swap.XXXXXX")"
@@ -101,7 +107,8 @@ run_switch() {
     local staged="$INSTALL_ROOT/.cmdy-component-stage-$uuid.app"
     local backup="$INSTALL_ROOT/.cmdy-component-backup-$uuid.app"
     local helper_dir="$TEST_ROOT/ComponentSwitch/$uuid"
-    local helper="$helper_dir/cmdy-component-helper"
+    local helper_app="$helper_dir/cmdy-component-helper.app"
+    local helper="$helper_app/Contents/MacOS/cmdy-component-helper"
     local transaction="$TEST_ROOT/$variant.json"
     local lock_dir="$COORDINATION_ROOT/.browser-component-switch.lock"
     local browser_version_json=null
@@ -168,8 +175,9 @@ JSON
 
     ditto "$candidate" "$staged"
     mkdir -p "$helper_dir"
-    cp "$DESTINATION/Contents/MacOS/cmdy" "$helper"
-    chmod 700 "$helper"
+    ditto "$DESTINATION/Contents/Helpers/cmdy Component Helper.app" "$helper_app"
+    codesign --verify --deep --strict "$helper_app"
+    codesign --verify --strict "$helper"
     mkdir "$lock_dir"
     cat > "$transaction" <<JSON
 {
