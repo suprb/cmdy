@@ -14,7 +14,7 @@
     },
     {
       "path": "App/AppDelegate.swift",
-      "sha256": "aeef55f9cd3314b00555d248360a4b4a579ba090316ef0764c3a0a6d174cdde9"
+      "sha256": "05fe91bd9ed2ef1092153431e88399ec89617a645914e009ce1ae56d7def31eb"
     },
     {
       "path": "App/AppUpdateWindow.swift",
@@ -106,7 +106,7 @@
     },
     {
       "path": "App/MarketplaceUI.swift",
-      "sha256": "72af06d8cceba9690a159b14860165366d53f67262b2eda0d0115c617a600a4f"
+      "sha256": "9fc849fe531ded8913464a708efb5039d91cd34cd4cdfd2ab25040acfcb19781"
     },
     {
       "path": "App/MenuUtilities.swift",
@@ -150,7 +150,7 @@
     },
     {
       "path": "App/TerminalWindowController.swift",
-      "sha256": "10e384e260f74684d08ed0995d7a3d2214aa19900e5f74c9c3426a06f08a2442"
+      "sha256": "ecb7a41e6a01e7f897f61d78b9c21e641e53e8118c8f1bff02bec17874284671"
     },
     {
       "path": "App/ToolbarCustomizationView.swift",
@@ -306,7 +306,7 @@
     },
     {
       "path": "Kit/Sources/CmdyKit/BrowserComponentInstaller.swift",
-      "sha256": "23192f0857cacc6150098837c736a57793e33c4b9a946073fde88d8bf289d8d4"
+      "sha256": "6ee5c3d591520c1276b3437fe91816246b79a8834d3daf7f4fe815f610c9799d"
     },
     {
       "path": "Kit/Sources/CmdyKit/BrowserEdition.swift",
@@ -374,7 +374,7 @@
     },
     {
       "path": "Kit/Sources/CmdyKit/Marketplace.swift",
-      "sha256": "c48a6d1ef66dd5717def9bd798d29ab3373c380a63f1e82a3617990565846eee"
+      "sha256": "0b421a51fa6ccccfb1596d854093f5fc5d46cc3020f362994faddccb04c00e9f"
     },
     {
       "path": "Kit/Sources/CmdyKit/MarketplaceUpdates.swift",
@@ -394,7 +394,7 @@
     },
     {
       "path": "Kit/Sources/CmdyKit/PluginsWindow.swift",
-      "sha256": "a1f5253afdb42c5466a7e657e9d8cdac937547e7cf7a70966328a14709887516"
+      "sha256": "0e468eb3295beea8bd5d7df6cc550ee0014a4ea279e1eb642e6aba07a8811f01"
     },
     {
       "path": "Kit/Sources/CmdyKit/Preferences.swift",
@@ -598,8 +598,8 @@
     {
       "active": "App/TerminalWindowController.swift",
       "activeLines": [
-        1453,
-        1463
+        1516,
+        1526
       ],
       "classificationId": "vendor-app-toolbar-list-structural-collision",
       "disposition": "non-substantive-structural-collision",
@@ -1244,8 +1244,8 @@
     {
       "active": "App/TerminalWindowController.swift",
       "activeLines": [
-        1453,
-        1463
+        1516,
+        1526
       ],
       "classificationId": "retired-app-toolbar-list-structural-collision",
       "disposition": "non-substantive-structural-collision",
@@ -3494,7 +3494,7 @@
       "sourceCount": 111
     }
   },
-  "reportSHA256": "13f4caa9a7363bb246e32aa7ef60697d13f8369e60064c295c4f78f5bcb50100",
+  "reportSHA256": "20ab742167930a1293a65dcab0b42bac6f3538d7df4bb5c3cf8650b6638df281",
   "schemaVersion": 1,
   "summary": {
     "activeSourceCount": 129,
