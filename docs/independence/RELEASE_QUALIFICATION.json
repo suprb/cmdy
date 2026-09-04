@@ -170,10 +170,59 @@
   },
   "kind": "cmdy-release-qualification",
   "publication": {
-    "approval": null,
-    "evidence": null,
-    "source": null,
-    "state": "pending"
+    "approval": {
+      "approvalReference": "Project owner requested that Browser be downloadable, installable, restart-safe, and uninstallable from Marketplace, with the app, registry, and site on main, and directed the release to run until finished in this session on 2026-09-04.",
+      "approvedPublicWording": "Engineering qualification and Browser download, signed app-switch, restart recovery, removal, updater, packaging, and site build checks passed for the exact cmdy 1.0.4 source and evidence set. Project-owner approval; this is not an independent authorship or legal clean-room review.",
+      "decision": "approved",
+      "engineeringDigestSha256": "381de6eba5e24f42dadea2b6514c0d8da6d871e081ecd9c4d291ccd2cb50c075",
+      "evidenceDigestSha256": "9223b7e130370fe5cbbf6fea6ecd80e67f4943c697c1139ee251bf2b4295b248",
+      "reviewedAtUTC": "2026-09-04T16:58:14Z",
+      "reviewerAffiliation": "cmdy project owner",
+      "reviewerIndependentFromImplementation": false,
+      "reviewerKind": "human",
+      "reviewerName": "Andreas Pihlström"
+    },
+    "evidence": {
+      "core": {
+        "record": {
+          "path": "docs/independence/qualification/core-17-seed.json",
+          "sha256": "a81b4b7eea161085d09f5555cebe00cbf5bab23be99337e1b9a719cd73cee59e"
+        },
+        "sourceManifestSha256": "fab4e8ed8392d8b183a5ad7155a863e13ea48b93b4e2c31c3c9f90967b6f6e60"
+      },
+      "operational": {
+        "record": {
+          "path": "docs/independence/qualification/operational-review.json",
+          "sha256": "3f3f161ed5b112cacc1788cfc684b6a00726b17d4f712a01e83c5dfef6cf0145"
+        },
+        "sourceManifestSha256": "fab4e8ed8392d8b183a5ad7155a863e13ea48b93b4e2c31c3c9f90967b6f6e60"
+      },
+      "renderer": {
+        "checkerSha256": "886a21d8601f7917bbab544ac285b5952d3f79a60203c56d25bb1632f7690ee7",
+        "comparison": {
+          "path": "docs/independence/qualification/renderer-comparison.json",
+          "sha256": "c6de090c7605fea74481beed8b68c4fdd9d27c736713798b5099f578c95ed239"
+        },
+        "environment": {
+          "path": "docs/independence/qualification/renderer-environment.json",
+          "sha256": "17d430cd7191f8872de0acb497ef7010c2913757e10574cb2e69b152218bfc39"
+        },
+        "sourceManifestSha256": "fab4e8ed8392d8b183a5ad7155a863e13ea48b93b4e2c31c3c9f90967b6f6e60"
+      }
+    },
+    "source": {
+      "activeSourceManifest": {
+        "path": "docs/independence/qualification/active-terminal-sources.json",
+        "sha256": "fab4e8ed8392d8b183a5ad7155a863e13ea48b93b4e2c31c3c9f90967b6f6e60"
+      },
+      "provenanceReport": {
+        "path": "docs/independence/qualification/working-tree-provenance.json",
+        "sha256": "e3fa81e590fbb5eaccd141b8866e75d81e22efdaa713e2099ac6a0ec8ae43a05"
+      },
+      "sourceCommit": "c020e226828223e395e70b35aad5cce2fcc223da",
+      "sourceTree": "10dad53da1bb06a064006cc55ee38b721c733c61"
+    },
+    "state": "approved"
   },
   "schemaVersion": 1
 }
