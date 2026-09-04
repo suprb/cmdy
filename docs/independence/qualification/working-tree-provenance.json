@@ -306,7 +306,7 @@
     },
     {
       "path": "Kit/Sources/CmdyKit/BrowserComponentInstaller.swift",
-      "sha256": "10d88bbfcffc0315ca2b119d7adcf03d926db9481551d1a315d8c4d6bff1c127"
+      "sha256": "23192f0857cacc6150098837c736a57793e33c4b9a946073fde88d8bf289d8d4"
     },
     {
       "path": "Kit/Sources/CmdyKit/BrowserEdition.swift",
@@ -3494,7 +3494,7 @@
       "sourceCount": 111
     }
   },
-  "reportSHA256": "bf6dede171e0bfab35589a841f96fdb10df5b2f24eeaeb81094e7803731e5ed1",
+  "reportSHA256": "13f4caa9a7363bb246e32aa7ef60697d13f8369e60064c295c4f78f5bcb50100",
   "schemaVersion": 1,
   "summary": {
     "activeSourceCount": 129,

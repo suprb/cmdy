@@ -11,6 +11,14 @@ be called out here with a migration path before a versioned release.
 
 ## [Unreleased]
 
+## [1.0.5] - 2026-09-04
+
+### Fixed
+
+- Browser installation now recognizes the hardened-runtime flag in Apple's
+  real Developer ID `codesign` output, so a valid notarized Browser app is no
+  longer falsely rejected during the restart-safe app swap.
+
 ## [1.0.4] - 2026-09-04
 
 ### Added
