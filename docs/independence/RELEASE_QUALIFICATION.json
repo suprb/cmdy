@@ -171,12 +171,12 @@
   "kind": "cmdy-release-qualification",
   "publication": {
     "approval": {
-      "approvalReference": "Project owner reported that Browser installation crashed with unclear download state on a work computer, requested a usable embedded Browser divider, and directed the fixes and release to run until finished on 2026-09-04.",
+      "approvalReference": "Project owner reported that Browser installation crashed with unclear download state on a work computer, requested a usable embedded Browser divider, and directed the fixes and release to run until finished; after packaged CI exposed a synthetic divider-smoke mismatch, the release source was corrected and requalified on 2026-09-04.",
       "approvedPublicWording": "Engineering qualification and Browser download progress, consent-preserving install routing, signed app-switch confirmation, rollback and relaunch recovery, removal, updater, packaging, divider interaction, and site build checks passed for the exact cmdy 1.0.6 source and evidence set. Project-owner approval; this is not an independent authorship or legal clean-room review.",
       "decision": "approved",
       "engineeringDigestSha256": "77f366b51bf0e5b9cd2f3a79146f3ec2e608ac1c7a19e3804fa79d7a81e0f221",
-      "evidenceDigestSha256": "bcb3cfc0a75f5f8c87421226a0b394ff88379cc9fb2b9ad53a49e1976f7f72d6",
-      "reviewedAtUTC": "2026-09-04T22:56:03Z",
+      "evidenceDigestSha256": "6709dfe1fc1e78e8c8ccba7f4042475e19459f7b512e32e7b635d63da01f7285",
+      "reviewedAtUTC": "2026-09-04T23:05:59Z",
       "reviewerAffiliation": "cmdy project owner",
       "reviewerIndependentFromImplementation": false,
       "reviewerKind": "human",
@@ -186,16 +186,16 @@
       "core": {
         "record": {
           "path": "docs/independence/qualification/core-17-seed.json",
-          "sha256": "0980f4c910b40b83c6a580151b353b7a8a008536d7b3a7622a5da5c78564d029"
+          "sha256": "a0c1289f1b952955036ec2f47114bd14bdf00188cd4f41060b992d4ad13ce5ba"
         },
-        "sourceManifestSha256": "793d774a07e85744f68b4e8a6724c43d4ed94daa9ae43f4cc22951fa29401899"
+        "sourceManifestSha256": "0978a96b91c16b2a09175933d75bc2d866a2688950e4e9508d6fa48c1e90cbb1"
       },
       "operational": {
         "record": {
           "path": "docs/independence/qualification/operational-review.json",
-          "sha256": "ea8592aba508265162aedf4f5079ed7c5f9c7d40107a854a7c84a16fa33e176b"
+          "sha256": "266010147c7dc758502a74407105ed083e2e63c47a2783009ca6f07f37f5cf68"
         },
-        "sourceManifestSha256": "793d774a07e85744f68b4e8a6724c43d4ed94daa9ae43f4cc22951fa29401899"
+        "sourceManifestSha256": "0978a96b91c16b2a09175933d75bc2d866a2688950e4e9508d6fa48c1e90cbb1"
       },
       "renderer": {
         "checkerSha256": "886a21d8601f7917bbab544ac285b5952d3f79a60203c56d25bb1632f7690ee7",
@@ -207,20 +207,20 @@
           "path": "docs/independence/qualification/renderer-environment.json",
           "sha256": "17d430cd7191f8872de0acb497ef7010c2913757e10574cb2e69b152218bfc39"
         },
-        "sourceManifestSha256": "793d774a07e85744f68b4e8a6724c43d4ed94daa9ae43f4cc22951fa29401899"
+        "sourceManifestSha256": "0978a96b91c16b2a09175933d75bc2d866a2688950e4e9508d6fa48c1e90cbb1"
       }
     },
     "source": {
       "activeSourceManifest": {
         "path": "docs/independence/qualification/active-terminal-sources.json",
-        "sha256": "793d774a07e85744f68b4e8a6724c43d4ed94daa9ae43f4cc22951fa29401899"
+        "sha256": "0978a96b91c16b2a09175933d75bc2d866a2688950e4e9508d6fa48c1e90cbb1"
       },
       "provenanceReport": {
         "path": "docs/independence/qualification/working-tree-provenance.json",
-        "sha256": "a993db5785f76c03adb91eec895ab5f058647fff4509ff5bae6d2448ebd8a477"
+        "sha256": "e701f6fce3bb4a3ffd9cba141f0512b8dbff5aa970de724506aae107a3f27d25"
       },
-      "sourceCommit": "e1e5d69ca94a80e47b8220bdfc780a87cd6245a3",
-      "sourceTree": "ef37be88ca30e5af22c57cd14653a5c00438522c"
+      "sourceCommit": "7902c28542fdb1aef3c282f645183334134f5ad7",
+      "sourceTree": "d5ea6d903e7e58efe155501328d318fdbf9e5243"
     },
     "state": "approved"
   },

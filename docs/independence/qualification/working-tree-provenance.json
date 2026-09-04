@@ -150,7 +150,7 @@
     },
     {
       "path": "App/TerminalWindowController.swift",
-      "sha256": "ecb7a41e6a01e7f897f61d78b9c21e641e53e8118c8f1bff02bec17874284671"
+      "sha256": "a7adaea1076a5a01d4cd9f60d50c92900826f0a37ac03fb8c1b3365b7df4783b"
     },
     {
       "path": "App/ToolbarCustomizationView.swift",
@@ -598,8 +598,8 @@
     {
       "active": "App/TerminalWindowController.swift",
       "activeLines": [
-        1516,
-        1526
+        1519,
+        1529
       ],
       "classificationId": "vendor-app-toolbar-list-structural-collision",
       "disposition": "non-substantive-structural-collision",
@@ -1244,8 +1244,8 @@
     {
       "active": "App/TerminalWindowController.swift",
       "activeLines": [
-        1516,
-        1526
+        1519,
+        1529
       ],
       "classificationId": "retired-app-toolbar-list-structural-collision",
       "disposition": "non-substantive-structural-collision",
@@ -3494,7 +3494,7 @@
       "sourceCount": 111
     }
   },
-  "reportSHA256": "20ab742167930a1293a65dcab0b42bac6f3538d7df4bb5c3cf8650b6638df281",
+  "reportSHA256": "1b57fb8ec68fc568960ca48de1803e9b4bda550acc30d3ca607da09c039d9561",
   "schemaVersion": 1,
   "summary": {
     "activeSourceCount": 129,
