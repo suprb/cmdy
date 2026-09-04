@@ -52,8 +52,10 @@ public final class AppUpdateMonitor {
         // Test harnesses and direct CLI launches do not always associate the
         // process with its surrounding .app bundle. Fall back to the adjacent
         // Contents/Info.plist so those launches receive the same update state.
-        guard let executable = ProcessInfo.processInfo.arguments.first else { return nil }
-        let infoURL = URL(fileURLWithPath: executable).standardizedFileURL
+        guard let executable = BrowserComponentInstaller.runningExecutableURL() else {
+            return nil
+        }
+        let infoURL = executable
             .deletingLastPathComponent()
             // Contents/MacOS/cmdy -> Contents/Info.plist
             .deletingLastPathComponent()
@@ -206,9 +208,14 @@ public final class AppUpdateMonitor {
         return installed.lexicographicallyPrecedes(candidate)
     }
 
+    nonisolated static func isNumericVersion(_ value: String) -> Bool {
+        versionComponents(value) != nil
+    }
+
     nonisolated static func decodeRelease(
         _ data: Data,
-        prefersBrowserEdition: Bool = false
+        prefersBrowserEdition: Bool = false,
+        requiredBrowserComponentVersion: String? = nil
     ) throws -> AppReleaseUpdate? {
         let payload = try JSONDecoder().decode(GitHubRelease.self, from: data)
         guard !payload.draft, !payload.prerelease,
@@ -220,7 +227,8 @@ public final class AppUpdateMonitor {
             return isReleaseArchiveName(
                 candidate.name,
                 version: version,
-                browserEdition: prefersBrowserEdition)
+                browserEdition: prefersBrowserEdition,
+                requiredBrowserComponentVersion: requiredBrowserComponentVersion)
                 && safeAssetName(candidate.name)
                 && isOfficialAssetURL(candidate.browserDownloadURL)
         }
@@ -245,7 +253,8 @@ public final class AppUpdateMonitor {
     nonisolated static func isReleaseArchiveName(
         _ rawName: String,
         version: String,
-        browserEdition: Bool
+        browserEdition: Bool,
+        requiredBrowserComponentVersion: String? = nil
     ) -> Bool {
         let name = rawName.lowercased()
         let prefix = ProductIdentity.current.releaseAssetPrefix.lowercased()
@@ -268,10 +277,15 @@ public final class AppUpdateMonitor {
                 body.index(body.startIndex, offsetBy: "browser-".count)
                     ..< platformRange.lowerBound]
             let architecture = String(body[platformRange.upperBound...])
+            let matchesRequiredVersion = requiredBrowserComponentVersion.map {
+                String(browserVersion) == $0
+                    || isVersion(String(browserVersion), newerThan: $0)
+            } ?? true
             return browserVersion.split(separator: ".").count == 3
                 && browserVersion.split(separator: ".").allSatisfy {
                     !$0.isEmpty && $0.allSatisfy(\.isNumber)
                 }
+                && matchesRequiredVersion
                 && supportedArchitectures.contains(architecture)
         }
 
@@ -367,21 +381,41 @@ public final class AppUpdateMonitor {
     }
 
     private var browserEditionInstalled: Bool {
+        let activationInstalled = BrowserEdition.isActivationInstalled
         if let value = Bundle.main.object(
             forInfoDictionaryKey: "CMDYBrowserEdition") as? Bool {
-            return value
+            return Self.prefersBrowserEdition(
+                bundleMarker: value,
+                browserActivationInstalled: activationInstalled)
         }
 
-        guard let executable = ProcessInfo.processInfo.arguments.first else { return false }
-        let infoURL = URL(fileURLWithPath: executable).standardizedFileURL
+        guard let executable = BrowserComponentInstaller.runningExecutableURL() else {
+            return activationInstalled
+        }
+        let infoURL = executable
             .deletingLastPathComponent()
             .deletingLastPathComponent()
             .appendingPathComponent("Info.plist")
         guard let data = try? Data(contentsOf: infoURL),
               let plist = try? PropertyListSerialization.propertyList(
                 from: data, options: [], format: nil),
-              let dictionary = plist as? [String: Any] else { return false }
-        return dictionary["CMDYBrowserEdition"] as? Bool ?? false
+              let dictionary = plist as? [String: Any] else {
+            return activationInstalled
+        }
+        return Self.prefersBrowserEdition(
+            bundleMarker: dictionary["CMDYBrowserEdition"] as? Bool ?? false,
+            browserActivationInstalled: activationInstalled)
+    }
+
+    /// 1.0.3's canonical artifact contained CEF but deliberately carried a
+    /// false edition marker. Preserve Browser for those users when its normal
+    /// Marketplace activation is installed, while new lean installs continue
+    /// to follow the lean update stream.
+    nonisolated static func prefersBrowserEdition(
+        bundleMarker: Bool,
+        browserActivationInstalled: Bool
+    ) -> Bool {
+        bundleMarker || browserActivationInstalled
     }
 
     nonisolated private static func releaseMatchesEdition(

@@ -12,7 +12,6 @@ VERSION="$(product_env_value VERSION "$PROJECT_VERSION")"
 BUILD_NUMBER="$(product_env_value BUILD_NUMBER 1)"
 BROWSER_EDITION="${PRODUCT_BROWSER_EDITION:-0}"
 REQUIRE_CHROMIUM_HELPERS="${PRODUCT_REQUIRE_CHROMIUM_HELPERS:-$BROWSER_EDITION}"
-BROWSER_UPDATE_VARIANT="${PRODUCT_BROWSER_UPDATE_VARIANT:-0}"
 BROWSER_DEFAULT_ENABLED="${PRODUCT_BROWSER_DEFAULT_ENABLED:-0}"
 
 if ! [[ "$VERSION" =~ ^[0-9]+(\.[0-9]+){1,2}$ ]]; then
@@ -32,15 +31,15 @@ if [ "$BROWSER_EDITION" != "0" ] && [ "$BROWSER_EDITION" != "1" ]; then
     echo "PRODUCT_BROWSER_EDITION must be 0 or 1" >&2
     exit 2
 fi
-for value_name in BROWSER_UPDATE_VARIANT BROWSER_DEFAULT_ENABLED; do
+for value_name in BROWSER_DEFAULT_ENABLED; do
     value="${!value_name}"
     if [ "$value" != "0" ] && [ "$value" != "1" ]; then
         echo "PRODUCT_${value_name} must be 0 or 1" >&2
         exit 2
     fi
 done
-if [ "$BROWSER_EDITION" = "1" ] && [ "$REQUIRE_CHROMIUM_HELPERS" != "1" ]; then
-    echo "A Browser-capable package requires Chromium helpers." >&2
+if [ "$BROWSER_EDITION" != "$REQUIRE_CHROMIUM_HELPERS" ]; then
+    echo "Browser edition and Chromium-helper packaging must match exactly." >&2
     exit 2
 fi
 
@@ -57,8 +56,37 @@ rm -rf "$ICONSET"
 
 echo "Assembling ${APP} ..."
 rm -rf "${APP}"
-mkdir -p "${APP}/Contents/MacOS" "${APP}/Contents/Resources"
+COMPONENT_SWITCH_HELPER_NAME="$PRODUCT_TITLE_NAME Component Helper"
+COMPONENT_SWITCH_HELPER_APP="${APP}/Contents/Helpers/$COMPONENT_SWITCH_HELPER_NAME.app"
+COMPONENT_SWITCH_HELPER="${COMPONENT_SWITCH_HELPER_APP}/Contents/MacOS/$PRODUCT_SLUG-component-helper"
+mkdir -p "${APP}/Contents/MacOS" "${APP}/Contents/Resources" \
+    "${COMPONENT_SWITCH_HELPER_APP}/Contents/MacOS"
 cp "${BIN}" "${APP}/Contents/MacOS/$PRODUCT_EXECUTABLE"
+# The restart/swap process must remain outside the app bundle while that bundle
+# is atomically replaced. A copy of the app's signed main executable is not a
+# valid standalone program: its code signature binds Contents/Info.plist, so
+# macOS kills the detached copy in a real Developer-ID build. Package this
+# second copy as a complete, independently signed helper app so its bundle and
+# notarization identity survive the move to per-user Application Support.
+cp "${BIN}" "$COMPONENT_SWITCH_HELPER"
+chmod 755 "$COMPONENT_SWITCH_HELPER"
+cat > "${COMPONENT_SWITCH_HELPER_APP}/Contents/Info.plist" <<HELPER_PLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleName</key><string>$COMPONENT_SWITCH_HELPER_NAME</string>
+  <key>CFBundleDisplayName</key><string>$COMPONENT_SWITCH_HELPER_NAME</string>
+  <key>CFBundleIdentifier</key><string>$PRODUCT_CODE_SIGNING_IDENTIFIER_NAMESPACE.component-switch</string>
+  <key>CFBundleExecutable</key><string>$PRODUCT_SLUG-component-helper</string>
+  <key>CFBundlePackageType</key><string>APPL</string>
+  <key>CFBundleShortVersionString</key><string>$VERSION</string>
+  <key>CFBundleVersion</key><string>$BUILD_NUMBER</string>
+  <key>LSMinimumSystemVersion</key><string>26.0</string>
+  <key>LSUIElement</key><true/>
+</dict>
+</plist>
+HELPER_PLIST
 # The active SwiftPM resource bundles live in the conventional app Resources
 # directory. Copy only the manifest-audited allowlist: incremental build output
 # can retain bundles from retired targets. App code uses an app-aware locator;
@@ -164,12 +192,10 @@ plutil -replace CFBundleShortVersionString -string "$VERSION" "${APP}/Contents/I
 plutil -replace CFBundleVersion -string "$BUILD_NUMBER" "${APP}/Contents/Info.plist"
 if [ "$BROWSER_EDITION" = "1" ]; then
     BROWSER_COMPONENT_VERSION="$(tr -d '[:space:]' < Plugins/chromium/VERSION)"
-    # This legacy key selects the updater asset family. It must remain false
-    # for the unified app even though that app physically contains CEF; only
-    # old Browser-edition clients use the compatibility family.
-    plutil -insert CMDYBrowserEdition -bool \
-        "$([ "$BROWSER_UPDATE_VARIANT" = "1" ] && echo true || echo false)" \
-        "${APP}/Contents/Info.plist"
+    # This marker is the fail-closed selector for edition-preserving updates
+    # and Marketplace component swaps. Every CEF-bearing package is Browser;
+    # the canonical lean package never carries the marker or payload.
+    plutil -insert CMDYBrowserEdition -bool true "${APP}/Contents/Info.plist"
     plutil -insert CMDYBrowserEnabledByDefault -bool \
         "$([ "$BROWSER_DEFAULT_ENABLED" = "1" ] && echo true || echo false)" \
         "${APP}/Contents/Info.plist"
@@ -178,9 +204,9 @@ if [ "$BROWSER_EDITION" = "1" ]; then
 fi
 
 # Upstream CEF's macOS sandbox requires the framework and all four subprocess
-# bundles to live in cmdy.app's standard Contents/Frameworks layout. Release
-# builds therefore carry the sealed runtime; the removable Browser Extension
-# decides whether cmdy activates it.
+# bundles to live in cmdy.app's standard Contents/Frameworks layout. Only the
+# Browser release variant carries that sealed runtime; its removable Extension
+# activation decides whether cmdy starts it.
 # Bash 3.2 treats an empty-array expansion as an unset variable under `set -u`.
 # Keep one sentinel so the normal Browser-free package path remains portable.
 CHROMIUM_HELPER_APPS=("")
@@ -245,7 +271,7 @@ EOF
         [ -f "$CEF_BRIDGE_ARCHIVE" ] \
             && [ -d "$CEF_FRAMEWORK" ] \
             && [ -f "$CHROMIUM_HOST_SOURCE" ] || {
-            echo "Browser-capable package CEF inputs are incomplete." >&2
+            echo "Browser package CEF inputs are incomplete." >&2
             echo "Run ./scripts/bootstrap-chromium.sh and retry." >&2
             exit 5
         }
@@ -281,6 +307,51 @@ else
         exit 5
     fi
     echo "Skipping Chromium runtime (Browser is not part of this package)."
+fi
+
+# Edition layout is a release invariant, not just a build option. A future
+# workflow typo must fail here instead of silently publishing Chromium in the
+# canonical download (or publishing a Browser archive without its runtime).
+BROWSER_FRAMEWORK_BINARY="${APP}/Contents/Frameworks/Chromium Embedded Framework.framework/Chromium Embedded Framework"
+BROWSER_HOST_BINARY="${APP}/Contents/Frameworks/libCmdyChromiumHost.dylib"
+BROWSER_MCP_INDEX="${APP}/Contents/Resources/BrowserMCP/index.js"
+BROWSER_HELPER_COUNT=0
+if [ -d "${APP}/Contents/Frameworks" ]; then
+    BROWSER_HELPER_COUNT="$(find "${APP}/Contents/Frameworks" -maxdepth 1 -type d \
+        -name "$PRODUCT_TITLE_NAME Chromium Helper*.app" \
+        | wc -l | tr -d '[:space:]')"
+fi
+if [ "$BROWSER_EDITION" = "1" ]; then
+    [ "$(plutil -extract CMDYBrowserEdition raw "${APP}/Contents/Info.plist")" = "true" ] \
+        || { echo "Browser package marker is missing." >&2; exit 5; }
+    [ "$(plutil -extract CMDYBrowserVersion raw "${APP}/Contents/Info.plist")" \
+        = "$(tr -d '[:space:]' < Plugins/chromium/VERSION)" ] \
+        || { echo "Browser package component version is wrong." >&2; exit 5; }
+    [ -f "$BROWSER_FRAMEWORK_BINARY" ] \
+        && [ "$(stat -f %z "$BROWSER_FRAMEWORK_BINARY")" -ge $((50 * 1024 * 1024)) ] \
+        || { echo "Browser package CEF framework is missing or incomplete." >&2; exit 5; }
+    [ -f "$BROWSER_HOST_BINARY" ] \
+        && [ "$(stat -f %z "$BROWSER_HOST_BINARY")" -ge $((64 * 1024)) ] \
+        || { echo "Browser package host library is missing or incomplete." >&2; exit 5; }
+    [ -f "$BROWSER_MCP_INDEX" ] \
+        && [ "$(stat -f %z "$BROWSER_MCP_INDEX")" -ge 1024 ] \
+        || { echo "Browser package MCP adapter is missing or incomplete." >&2; exit 5; }
+    [ "$BROWSER_HELPER_COUNT" = "4" ] \
+        || { echo "Browser package must contain exactly four Chromium helpers." >&2; exit 5; }
+else
+    if plutil -extract CMDYBrowserEdition raw "${APP}/Contents/Info.plist" \
+        >/dev/null 2>&1 \
+        || plutil -extract CMDYBrowserVersion raw "${APP}/Contents/Info.plist" \
+            >/dev/null 2>&1 \
+        || plutil -extract CMDYBrowserEnabledByDefault raw "${APP}/Contents/Info.plist" \
+            >/dev/null 2>&1 \
+        || [ -e "$BROWSER_FRAMEWORK_BINARY" ] \
+        || [ -e "$BROWSER_HOST_BINARY" ] \
+        || [ -e "${APP}/Contents/Resources/BrowserMCP" ] \
+        || [ "$BROWSER_HELPER_COUNT" != "0" ]; then
+        echo "Lean package unexpectedly contains Browser marker or Chromium payload." >&2
+        exit 5
+    fi
 fi
 
 # Scan only after both the base resources and optional Browser payload are in
@@ -347,6 +418,7 @@ if [ "$SIGN_ID" = "-" ]; then
             --entitlements Plugins/chromium/ChromiumHelper.entitlements \
             "$HDIR"
     done
+    codesign --force --sign - "$COMPONENT_SWITCH_HELPER_APP"
     codesign --force --sign - --identifier "$PRODUCT_BUNDLE_IDENTIFIER" \
         --entitlements Cmdy.entitlements "${APP}"
 else
@@ -378,17 +450,27 @@ else
             --entitlements Plugins/chromium/ChromiumHelper.entitlements \
             "$HDIR"
     done
+    codesign --force --sign "$SIGN_ID" --options runtime --timestamp \
+        "$COMPONENT_SWITCH_HELPER_APP"
     codesign --force --sign "$SIGN_ID" --identifier "$PRODUCT_BUNDLE_IDENTIFIER" \
         --options runtime --timestamp --entitlements Cmdy.entitlements "${APP}"
 fi
 codesign --verify --deep --strict --verbose=2 "${APP}"
-if [ "$REQUIRE_CHROMIUM_HELPERS" = "1" ]; then
+codesign --verify --deep --strict --verbose=2 "$COMPONENT_SWITCH_HELPER_APP"
+codesign --verify --strict --verbose=2 "$COMPONENT_SWITCH_HELPER"
+MAIN_TEAM=""
+if [ "$SIGN_ID" != "-" ]; then
     MAIN_TEAM="$(codesign -dv --verbose=4 "$APP" 2>&1 \
         | awk -F= '/^TeamIdentifier=/{print $2; exit}')"
-    if [ "$SIGN_ID" != "-" ] && ! [[ "$MAIN_TEAM" =~ ^[A-Z0-9]{10}$ ]]; then
-        echo "Could not read the Developer-ID team from the packaged app." >&2
+    COMPONENT_HELPER_TEAM="$(codesign -dv --verbose=4 "$COMPONENT_SWITCH_HELPER_APP" 2>&1 \
+        | awk -F= '/^TeamIdentifier=/{print $2; exit}')"
+    if ! [[ "$MAIN_TEAM" =~ ^[A-Z0-9]{10}$ ]] \
+       || [ "$COMPONENT_HELPER_TEAM" != "$MAIN_TEAM" ]; then
+        echo "The component-switch helper is not signed by the app's Apple Team." >&2
         exit 6
     fi
+fi
+if [ "$REQUIRE_CHROMIUM_HELPERS" = "1" ]; then
     for HDIR in "${CHROMIUM_HELPER_APPS[@]}"; do
         [ -n "$HDIR" ] || continue
         HNAME="$(basename "$HDIR" .app)"

@@ -65,7 +65,7 @@ const featureGroups: FeatureGroup[] = [
           { name: "Detox", description: "optional live-coding modular synth inside the terminal" }
         ]
       },
-      { name: "Browser", description: "installable sandboxed Chromium in a real split inside the cmdy window" },
+      { name: "Browser", description: "downloadable sandboxed Chromium in a real split inside the cmdy window" },
       { name: "Actions", description: "one-shot scripts, commands and multi-pane workflows" },
       {
         name: "Channels",

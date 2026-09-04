@@ -57,8 +57,9 @@ One git repo, `cmdy-registry`:
 - **Extensions and Channel connectors are hash-pinned `.cmdyext` packages**,
   either checked into `dist/` or referenced by an HTTPS release URL, plus a
   minimum SDK version and architecture. Missing or malformed native-code
-  digests fail before any download. Browser's package is small because CEF must
-  stay sealed in cmdy.app for Chromium's macOS sandbox.
+  digests fail before any download. Browser's activation package is small; its
+  install then downloads the matching signed, notarized app variant because CEF
+  must stay sealed inside cmdy.app for Chromium's macOS sandbox.
 - CI validates every PR: schema, license present, `xcrun metal -c` compiles
   each shader, themes parse, Extension URLs and hashes resolve. A `channel`
   entry must request the `channels` capability. Merged = published.
@@ -101,8 +102,8 @@ One git repo, `cmdy-registry`:
 - The founding content is ours: the built-in calm shader set exported as
   forkable sources, the bundled themes, and signed first-party Extensions.
   Browser is the host-component example: its `.cmdyext` installs and removes
-  like every other Extension while the sandboxed CEF runtime stays inside the
-  one notarized app.
+  like every other Extension. Install swaps the lean app for the verified
+  CEF-bearing variant; removal swaps back and reclaims Chromium storage.
 
 ## Trust, in tiers
 
@@ -166,8 +167,10 @@ reviewed package files and pinned hashes used by both the app and website.
   Browser is a Marketplace Extension backed by a small activation package.
   Current upstream CEF cannot safely load its framework from an external
   Extension under the macOS renderer/GPU sandbox, so the framework and helpers
-  stay sealed in the canonical cmdy app and the Extension only controls their
-  lifecycle.
+  stay sealed in a separately downloadable Browser variant of cmdy.app. The
+  canonical download is lean; installation verifies the release checksum,
+  Developer ID, Apple Team, and Gatekeeper assessment before a transactional
+  restart. Removal performs the inverse swap and rolls back on launch failure.
 - **In-app**: palette / View ▸ Browse the Marketplace… — sections per kind,
   live shader/theme try-on (previews are real installs, reverted and deleted
   on esc), remembered section positions, rig safe-preview, Extension consent +
@@ -196,6 +199,7 @@ registry and falls back to its checked-in last-known snapshot for browsing.
 Extension and Channel rows include one-click install, the CLI command, and a
 direct hash-pinned `.cmdyext` download for double-click installation or sharing.
 Every path enters the same verified, consented in-app installer. Browser uses
-that exact flow; only its sandbox runtime is pre-sealed in cmdy.app.
+that exact flow, then downloads the signed Browser app variant containing its
+sandbox runtime.
 Pending: the patches kind, which needs a Detox library format.
 Capability-scoped tokens and route ACLs are complete.

@@ -54,7 +54,7 @@ try {
     assert.ok(markup.includes('class="site-footer"'), `${page}: missing shared footer`);
     const appDownloadCount = markup.split(`href="${appDownloadURL}"`).length - 1;
     const browserInstallCount = markup.split(`href="${browserInstallURL}"`).length - 1;
-    assert.ok(appDownloadCount >= 1, `${page}: shared Download must point directly to the unified DMG`);
+    assert.ok(appDownloadCount >= 1, `${page}: shared Download must point directly to the lean DMG`);
     if (page === "home") {
       assert.ok(markup.includes('class="hero"'), "home: missing static editorial hero");
       assert.equal((markup.match(/class="hero-vid"/g) ?? []).length, 3, "home: expected one lead recording and two secondary recordings");
@@ -76,7 +76,7 @@ try {
       }
       assert.ok(!markup.includes('class="hacker-backdrop"'), "home: cinematic backdrop should be unmounted");
       assert.ok(!markup.includes('class="signal-video"'), "home: video shader should be unmounted");
-      assert.equal(appDownloadCount, 2, "home: both Download buttons must point directly to the unified DMG");
+      assert.equal(appDownloadCount, 2, "home: both Download buttons must point directly to the lean DMG");
       assert.equal(browserInstallCount, 0, "home: Browser activation must not replace the app download");
       assert.equal((markup.match(/class="feature-item"/g) ?? []).length, 26, "home: feature inventory must contain all 26 primary rows");
       assert.equal((markup.match(/class="feature-examples"/g) ?? []).length, 2, "home: Extensions and Channels must each list examples");
@@ -86,7 +86,7 @@ try {
       for (const removed of ["Everything in cmdy.", "Terminal</h3>", "Windows + Workflow", "Intelligence</h3>", "Platform</h3>", "Your terminal. More capable.", 'class="closing-cta"']) {
         assert.ok(!markup.includes(removed), `home: removed feature chrome returned: ${removed}`);
       }
-      const narrative = ["Metal terminal", "Sessions + workspaces", "Keybinding import", "Automatic window grid", "Command intelligence", "Extensions", "Detox", "installable sandboxed Chromium", "Actions", "Channels", "Slack", "Apple Reminders", "Marketplace", "Updates", "Open source"];
+      const narrative = ["Metal terminal", "Sessions + workspaces", "Keybinding import", "Automatic window grid", "Command intelligence", "Extensions", "Detox", "downloadable sandboxed Chromium", "Actions", "Channels", "Slack", "Apple Reminders", "Marketplace", "Updates", "Open source"];
       for (let index = 1; index < narrative.length; index += 1) {
         assert.ok(renderedText.indexOf(narrative[index - 1]) < renderedText.indexOf(narrative[index]), `home: narrative order is wrong near ${narrative[index]}`);
       }
@@ -101,7 +101,7 @@ try {
       assert.match(link[0], /\brel="[^"]*noreferrer[^"]*"/, `${page}: new-window link is missing noreferrer`);
     }
     if (page === "docs") {
-      assert.equal(appDownloadCount, 2, "docs: shell and install actions must point directly to the unified DMG");
+      assert.equal(appDownloadCount, 2, "docs: shell and install actions must point directly to the lean DMG");
       assert.equal(browserInstallCount, 1, "docs: Browser must use the one-click Extension install URL");
       for (const id of ["platform", "actions", "extensions", "surfaces", "channels", "config", "proof"]) {
         assert.ok(ids.includes(id), `docs: missing ${id} section`);
@@ -124,7 +124,7 @@ try {
       assert.ok(markup.includes("Install in cmdy"), "marketplace: Extensions must have one-click install links");
       assert.ok(markup.includes("Download package"), "marketplace: Extension packages must be directly downloadable");
       assert.ok(markup.includes(`href="${browserInstallURL}"`), "marketplace: Browser must use the one-click Extension install URL");
-      assert.equal(appDownloadCount, 1, "marketplace: shared Download must point directly to the unified DMG");
+      assert.equal(appDownloadCount, 1, "marketplace: shared Download must point directly to the lean DMG");
       assert.ok(browserInstallCount >= 2, "marketplace: Browser header and row must both install the Extension");
       for (const removed of ["market-visual", "market-card", "market-grid", "registry-summary", "marketplace-hero", "market-trust", "What it actually does"]) {
         assert.ok(!markup.includes(removed), `marketplace: removed visual chrome returned: ${removed}`);

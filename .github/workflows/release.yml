@@ -120,8 +120,7 @@ jobs:
       - name: Build, notarize, staple, and verify
         env:
           PRODUCT_BUILD_NUMBER: ${{ github.run_number }}
-          PRODUCT_BROWSER_EDITION: 1
-          PRODUCT_BROWSER_UPDATE_VARIANT: 0
+          PRODUCT_BROWSER_EDITION: 0
           PRODUCT_BROWSER_DEFAULT_ENABLED: 0
           PRODUCT_NOTARY_KEY_FILE: ${{ runner.temp }}/${{ env.PRODUCT_SLUG }}-notary-key.p8
           PRODUCT_NOTARY_KEY_ID: ${{ secrets.CMDY_NOTARY_KEY_ID || secrets.TERMITE_NOTARY_KEY_ID }}
@@ -130,7 +129,7 @@ jobs:
           export PRODUCT_VERSION="$RELEASE_VERSION"
           ./release.sh
 
-      - name: Build legacy Browser-updater compatibility artifact
+      - name: Build installable Browser component app
         env:
           PRODUCT_BUILD_NUMBER: ${{ github.run_number }}
           PRODUCT_NOTARY_KEY_FILE: ${{ runner.temp }}/${{ env.PRODUCT_SLUG }}-notary-key.p8
@@ -139,6 +138,24 @@ jobs:
         run: |
           export PRODUCT_VERSION="$RELEASE_VERSION"
           ./scripts/release-chromium-browser.sh
+
+      - name: Exercise notarized Browser install and removal
+        run: |
+          source scripts/product-identity.sh
+          browser_version="$(tr -d '[:space:]' < Plugins/chromium/VERSION)"
+          architecture="$(lipo -archs "$PRODUCT_APP_BUNDLE/Contents/MacOS/$PRODUCT_EXECUTABLE" | tr ' ' '-')"
+          lean_archive="dist/$PRODUCT_RELEASE_PREFIX-$RELEASE_VERSION-macOS-$architecture.zip"
+          browser_archive="dist/browser/$PRODUCT_RELEASE_PREFIX-$RELEASE_VERSION-browser-$browser_version-macOS-$architecture.zip"
+          test -f "$lean_archive"
+          test -f "$browser_archive"
+          smoke_root="$(mktemp -d "$RUNNER_TEMP/cmdy-notarized-swap.XXXXXX")"
+          trap 'rm -rf -- "$smoke_root"' EXIT
+          mkdir -p "$smoke_root/lean" "$smoke_root/browser"
+          ditto -x -k "$lean_archive" "$smoke_root/lean"
+          ditto -x -k "$browser_archive" "$smoke_root/browser"
+          ./scripts/test-browser-component-swap.sh \
+            "$smoke_root/lean/$PRODUCT_APP_BUNDLE" \
+            "$smoke_root/browser/$PRODUCT_APP_BUNDLE"
 
       - name: Package Browser activation Extension
         run: ./scripts/package-browser-extension.sh

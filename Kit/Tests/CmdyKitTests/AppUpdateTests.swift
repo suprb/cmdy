@@ -91,6 +91,18 @@ final class AppUpdateTests: XCTestCase {
         XCTAssertFalse(AppUpdateMonitor.isVersion("nightly", newerThan: "1.2.0"))
     }
 
+    func testInstalledBrowserActivationPreservesBrowserUpdateStream() {
+        XCTAssertTrue(AppUpdateMonitor.prefersBrowserEdition(
+            bundleMarker: true,
+            browserActivationInstalled: false))
+        XCTAssertTrue(AppUpdateMonitor.prefersBrowserEdition(
+            bundleMarker: false,
+            browserActivationInstalled: true))
+        XCTAssertFalse(AppUpdateMonitor.prefersBrowserEdition(
+            bundleMarker: false,
+            browserActivationInstalled: false))
+    }
+
     func testLatestReleaseSelectsTheNotarizedMacOSArchive() throws {
         let data = Data(#"""
         {
@@ -172,6 +184,23 @@ final class AppUpdateTests: XCTestCase {
             browser.checksumURL?.lastPathComponent,
             "cmdy-browser.zip.sha256")
         XCTAssertTrue(browser.canDownloadAutomatically)
+
+        let exactBrowser = try XCTUnwrap(AppUpdateMonitor.decodeRelease(
+            data,
+            prefersBrowserEdition: true,
+            requiredBrowserComponentVersion: "2.1.0"))
+        XCTAssertEqual(exactBrowser.assetName, browser.assetName)
+        let unavailableBrowser = try XCTUnwrap(AppUpdateMonitor.decodeRelease(
+            data,
+            prefersBrowserEdition: true,
+            requiredBrowserComponentVersion: "2.2.0"))
+        XCTAssertNil(unavailableBrowser.assetURL)
+        XCTAssertFalse(unavailableBrowser.canDownloadAutomatically)
+        let forwardCompatibleBrowser = try XCTUnwrap(AppUpdateMonitor.decodeRelease(
+            data,
+            prefersBrowserEdition: true,
+            requiredBrowserComponentVersion: "2.0.0"))
+        XCTAssertEqual(forwardCompatibleBrowser.assetName, browser.assetName)
 
         let lean = try XCTUnwrap(AppUpdateMonitor.decodeRelease(
             data, prefersBrowserEdition: false))

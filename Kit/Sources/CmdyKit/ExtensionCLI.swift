@@ -186,7 +186,11 @@ public enum ExtensionCLI {
             if existing != nil, let connection {
                 let stopped = request(
                     connection, method: "POST", path: "/v1/extensions/state",
-                    body: ["id": package.manifest.id, "enabled": false])
+                    body: [
+                        "id": package.manifest.id,
+                        "enabled": false,
+                        "persist": false,
+                    ])
                 guard stopped.status == 200 else {
                     die(stopped.json["error"] as? String
                         ?? "could not stop the installed Extension")
@@ -206,7 +210,13 @@ public enum ExtensionCLI {
                 throw error
             }
             print("installed \(package.manifest.name) to \(destination.path)")
-            if let connection, wasEnabled {
+            if BrowserComponentInstaller.relaunchWasScheduled {
+                print(BrowserComponentInstaller.scheduledDescription
+                    ?? "Restarting cmdy to finish installing Browser")
+                MainActor.assumeIsolated {
+                    BrowserComponentInstaller.requestRelaunchIfScheduled()
+                }
+            } else if let connection, wasEnabled {
                 let response = request(
                     connection, method: "POST", path: "/v1/extensions/state",
                     body: ["id": package.manifest.id, "enabled": true])
@@ -341,20 +351,51 @@ public enum ExtensionCLI {
             die("no installed \(identity.titleName) Extension '\(id)'")
         }
         let manifest = try? ExtensionManifest.load(from: directory)
-        if let connection = liveConnection(), let manifest {
+        let wasEnabled = manifest?.enabled ?? false
+        let connection = liveConnection()
+        if let connection, let manifest {
             let response = request(
                 connection, method: "POST", path: "/v1/extensions/state",
-                body: ["id": manifest.id, "enabled": false])
+                body: [
+                    "id": manifest.id,
+                    "enabled": false,
+                    "persist": false,
+                ])
             guard response.status == 200 else {
                 die(response.json["error"] as? String
                     ?? "could not stop the Extension")
             }
         }
         do {
-            try FileManager.default.removeItem(at: directory)
-            print("removed \(manifest?.name ?? id)")
+            let relaunching: Bool
+            if let manifest,
+               BrowserEdition.authorizesHostComponent(
+                BrowserEdition.hostComponentIdentifier, manifest: manifest) {
+                relaunching = try BrowserComponentInstaller.removeBrowserActivation(
+                    at: directory
+                ) { print("  \($0)") }
+            } else {
+                try FileManager.default.removeItem(at: directory)
+                relaunching = false
+            }
+            if relaunching {
+                print(BrowserComponentInstaller.scheduledDescription
+                    ?? "Restarting cmdy to finish removing Browser")
+                MainActor.assumeIsolated {
+                    BrowserComponentInstaller.requestRelaunchIfScheduled()
+                }
+            } else {
+                print("removed \(manifest?.name ?? id)")
+            }
             exit(0)
-        } catch { die(error.localizedDescription) }
+        } catch {
+            if wasEnabled, let connection, let manifest {
+                _ = request(
+                    connection, method: "POST", path: "/v1/extensions/state",
+                    body: ["id": manifest.id, "enabled": true])
+            }
+            die(error.localizedDescription)
+        }
     }
 
     private static func installedDirectory(id: String) -> URL? {

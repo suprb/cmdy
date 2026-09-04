@@ -85,11 +85,10 @@ fi
 
 export PRODUCT_VERSION="$VERSION"
 export PRODUCT_BUILD_NUMBER="$BUILD_NUMBER"
-# The public product is one Browser-capable app. Chromium stays inert until its
-# normal Extension activation record is installed. The explicit variables let
-# the legacy updater-compatibility wrapper opt into its old asset family.
-export PRODUCT_BROWSER_EDITION="${PRODUCT_BROWSER_EDITION:-1}"
-export PRODUCT_BROWSER_UPDATE_VARIANT="${PRODUCT_BROWSER_UPDATE_VARIANT:-0}"
+# The canonical public download is lean. Browser is a Marketplace component
+# backed by a second notarized variant of this same app; installing/removing it
+# performs a verified restart-and-swap between the two release archives.
+export PRODUCT_BROWSER_EDITION="${PRODUCT_BROWSER_EDITION:-0}"
 export PRODUCT_BROWSER_DEFAULT_ENABLED="${PRODUCT_BROWSER_DEFAULT_ENABLED:-0}"
 ./package.sh
 
@@ -232,6 +231,11 @@ if [ "$SKIP_NOTARIZE" = "1" ]; then
 else
     submit_and_require_accepted "$ARCHIVE" "App" "$ARCHIVE_NOTARY_RESULT"
     ARCHIVE_SUBMITTED_SHA256="$NOTARY_SUBMITTED_SHA256"
+    COMPONENT_SWITCH_HELPER_APP="$APP/Contents/Helpers/$PRODUCT_TITLE_NAME Component Helper.app"
+    xcrun stapler staple -v "$COMPONENT_SWITCH_HELPER_APP"
+    xcrun stapler validate -v "$COMPONENT_SWITCH_HELPER_APP"
+    codesign --verify --deep --strict --verbose=2 "$COMPONENT_SWITCH_HELPER_APP"
+    spctl --assess --type execute --verbose=2 "$COMPONENT_SWITCH_HELPER_APP"
     xcrun stapler staple -v "$APP"
     xcrun stapler validate -v "$APP"
     codesign --verify --deep --strict --verbose=2 "$APP"

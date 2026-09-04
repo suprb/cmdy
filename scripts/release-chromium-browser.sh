@@ -1,12 +1,10 @@
 #!/usr/bin/env bash
-# Build cmdy's Browser-enabled compatibility artifact as a complete
-# signed/notarized app.
+# Build cmdy's installable Browser component as a complete signed/notarized app.
 #
 # CEF's macOS sandbox requires its framework and helper apps to live inside the
-# hosting app's standard Contents/Frameworks directory. Current releases bundle
-# CEF in the canonical app and use a removable Extension activation record. This
-# artifact remains only so older Browser-edition installations can follow their
-# edition-preserving updater path into the unified release.
+# hosting app's standard Contents/Frameworks directory. The Marketplace swaps
+# from the lean app to this notarized variant when Browser is installed, and
+# swaps back to the lean archive when Browser is removed.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -32,7 +30,6 @@ fi
 ./scripts/check-chromium-build.sh
 
 export PRODUCT_BROWSER_EDITION=1
-export PRODUCT_BROWSER_UPDATE_VARIANT=1
 export PRODUCT_BROWSER_DEFAULT_ENABLED=1
 export PRODUCT_RELEASE_VARIANT="browser-$BROWSER_VERSION"
 export PRODUCT_RELEASE_ALIAS_VARIANT="browser"
@@ -43,7 +40,7 @@ CEF_VERSION="$(tr -d '[:space:]' < "$CEF_VERSION_FILE")"
 APP_TEAM="$(codesign -dv --verbose=4 "$PRODUCT_APP_BUNDLE" 2>&1 \
     | awk -F= '/^TeamIdentifier=/{print $2; exit}')"
 if ! [[ "$APP_TEAM" =~ ^[A-Z0-9]{10}$ ]]; then
-    echo "Could not derive a valid Apple Team identifier from Browser compatibility artifact." >&2
+    echo "Could not derive a valid Apple Team identifier from Browser component artifact." >&2
     exit 3
 fi
 
@@ -80,8 +77,8 @@ cat > "$METADATA" <<JSON
 }
 JSON
 
-printf 'Browser compatibility ZIP: %s\n' "$ARCHIVE"
-printf 'Browser compatibility DMG: %s\n' "$DMG"
+printf 'Browser component ZIP: %s\n' "$ARCHIVE"
+printf 'Browser component DMG: %s\n' "$DMG"
 printf 'Browser metadata:    %s\n' "$METADATA"
 printf 'Apple Team:          %s\n' "$APP_TEAM"
 printf 'Sandbox policy:      enabled (no no-sandbox or library-validation bypass)\n'

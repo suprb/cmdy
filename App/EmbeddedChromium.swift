@@ -117,6 +117,34 @@ final class EmbeddedChromiumRuntime {
 
     var isAvailable: Bool { enabled && extensionDirectory != nil }
 
+    /// A component swap is committed only after the freshly launched app has
+    /// loaded the Browser host library, resolved its CEF bridge, and completed
+    /// CEF initialization. Normal launches remain lazy.
+    func verifyReadyForComponentCommit() -> Bool {
+        precondition(Thread.isMainThread)
+        let wasEnabled = enabled
+        let previousDirectory = extensionDirectory
+        if extensionDirectory == nil {
+            let bundled = bundledRuntimeLayout()
+            guard isComplete(bundled) else { return false }
+            extensionDirectory = Bundle.main.bundleURL
+        }
+        var ready = false
+        do {
+            try ensureInitialized()
+            ready = initialized && functions != nil
+        } catch {
+            NSLog("embedded chromium component verification: %@",
+                  error.localizedDescription)
+        }
+        // CefShutdown is process-final: CEF explicitly forbids calling any CEF
+        // function afterward. Keep a successfully probed runtime initialized
+        // (but disabled and without a Browser view/API) so enabling Browser
+        // later in this same process remains supported.
+        if !wasEnabled { extensionDirectory = previousDirectory }
+        return ready
+    }
+
     private init() {}
 
     private var cacheDirectory: URL {

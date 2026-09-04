@@ -1755,6 +1755,7 @@ public final class PluginManager: PluginHost {
                   let enabled = req.json?["enabled"] as? Bool else {
                 return .badRequest("need {id, enabled}")
             }
+            let persist = req.json?["persist"] as? Bool ?? true
             let directories = (try? FileManager.default.contentsOfDirectory(
                 at: Self.extensionsDirectory, includingPropertiesForKeys: [.isDirectoryKey],
                 options: [.skipsHiddenFiles])) ?? []
@@ -1762,9 +1763,14 @@ public final class PluginManager: PluginHost {
                 (try? ExtensionManifest.load(from: $0).id) == id
             }) else { return .notFound("no installed Extension '\(id)'") }
             do {
-                try self.setPluginEnabled(enabled, at: directory)
+                if persist {
+                    try self.setPluginEnabled(enabled, at: directory)
+                } else {
+                    try self.setPluginRunningTransiently(enabled, at: directory)
+                }
                 return .ok(["ok": true, "enabled": enabled,
-                            "running": self.isPluginRunning(at: directory)])
+                            "running": self.isPluginRunning(at: directory),
+                            "persisted": persist])
             } catch { return .badRequest(error.localizedDescription) }
         }
 
@@ -1823,8 +1829,18 @@ public final class PluginManager: PluginHost {
                         let dir = try Marketplace.installPlugin(entry, registry: registry, consented: true) {
                             report("progress", $0)
                         }
-                        DispatchQueue.main.sync { _ = self?.launchPlugin(at: dir) }
-                        report("installed", "running")
+                        if BrowserComponentInstaller.relaunchWasScheduled {
+                            report(
+                                "installed",
+                                BrowserComponentInstaller.scheduledDescription
+                                    ?? "restarting to finish the Browser change")
+                            DispatchQueue.main.async {
+                                BrowserComponentInstaller.requestRelaunchIfScheduled()
+                            }
+                        } else {
+                            DispatchQueue.main.sync { _ = self?.launchPlugin(at: dir) }
+                            report("installed", "running")
+                        }
                     default:
                         report("failed", "cannot install kind '\(entry.kind)'")
                     }
@@ -3212,6 +3228,24 @@ public final class PluginManager: PluginHost {
             stopPlugin(at: dir)
             notifyExtensionRuntimeChanged(at: dir)
         }
+    }
+
+    /// Stop or start an Extension for an atomic package replacement without
+    /// changing its persisted enabled preference. CLI install/remove uses this
+    /// so Browser rollback restores exactly the user's prior manifest state.
+    public func setPluginRunningTransiently(_ running: Bool, at dir: URL) throws {
+        precondition(Thread.isMainThread, "plugin processes are main-thread owned")
+        let manifest = try ExtensionManifest.load(from: dir)
+        if running {
+            if !isPluginRunning(at: dir), !launchPlugin(at: dir) {
+                throw PluginLifecycleError.launchFailed(manifest.name)
+            }
+            return
+        }
+        clearExtensionFailure(at: dir)
+        pendingProcessLaunches[dir.standardizedFileURL] = nil
+        stopPlugin(at: dir)
+        notifyExtensionRuntimeChanged(at: dir)
     }
 
     public func isPluginRunning(at dir: URL) -> Bool {

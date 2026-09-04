@@ -642,9 +642,57 @@ class ReleaseQualificationTests(unittest.TestCase):
         packaged_identity.unlink()
         packaged_identity.write_bytes(identity.read_bytes())
 
+        # A Browser publication is a complete sealed app variant, not a small
+        # activation package mislabeled as the runtime. Conversely, the lean
+        # publication must reject every Browser marker or payload remnant.
+        info_path = app / "Contents/Info.plist"
+        browser_info = plistlib.loads(info_path.read_bytes())
+        browser_info["CMDYBrowserEdition"] = True
+        browser_info["CMDYBrowserVersion"] = "2.0.0"
+        browser_info["CMDYBrowserEnabledByDefault"] = True
+        info_path.write_bytes(plistlib.dumps(browser_info))
+        frameworks = app / "Contents/Frameworks"
+        cef_binary = (
+            frameworks
+            / "Chromium Embedded Framework.framework/Chromium Embedded Framework")
+        cef_binary.parent.mkdir(parents=True)
+        with cef_binary.open("wb") as handle:
+            handle.truncate(50 * 1024 * 1024)
+        browser_host = frameworks / "libCmdyChromiumHost.dylib"
+        with browser_host.open("wb") as handle:
+            handle.truncate(64 * 1024)
         browser_identity = app / "Contents/Resources/BrowserMCP/product-identity.json"
         browser_identity.parent.mkdir(parents=True, exist_ok=True)
         browser_identity.write_bytes(identity.read_bytes())
+        browser_index = browser_identity.parent / "index.js"
+        browser_index.write_bytes(b"x" * 1024)
+        for suffix in ("", " (Renderer)", " (GPU)", " (Plugin)"):
+            name = f"cmdy Chromium Helper{suffix}"
+            helper = frameworks / f"{name}.app"
+            executable = helper / "Contents/MacOS" / name
+            executable.parent.mkdir(parents=True)
+            with executable.open("wb") as handle:
+                handle.truncate(64 * 1024)
+            (helper / "Contents/Info.plist").write_bytes(plistlib.dumps({
+                "CFBundleExecutable": name,
+            }))
+
+        with self.assertRaisesRegex(
+                qualification.QualificationError, "lean artifact contains"):
+            qualification.verify_artifacts(
+                {"sourceCommit": "a" * 40}, self.fixture.record_path,
+                self.fixture.root, app=app, archive=archive,
+                archive_checksum=archive_checksum,
+                archive_receipt=archive_receipt,
+                archive_submitted_sha256=digest_bytes(b"submitted archive"),
+                dmg=dmg, dmg_checksum=dmg_checksum,
+                dmg_receipt=dmg_receipt,
+                dmg_submitted_sha256=digest_bytes(b"submitted dmg"),
+                version="1.2.3", build="42", variant="lean", output=output,
+                assessor=lambda _app, _dmg: {
+                    "teamIdentifier": "ABCDEFGHIJ", "cdHash": "abc123",
+                })
+
         qualification.verify_artifacts(
             {"sourceCommit": "a" * 40}, self.fixture.record_path,
             self.fixture.root, app=app, archive=archive,

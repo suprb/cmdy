@@ -196,4 +196,6 @@ if ! [[ "$extension_digest" =~ ^sha256:[0-9a-f]{64}$ ]]; then
     exit 5
 fi
 echo "Browser activation: ${extension_digest#sha256:}"
-echo "Verified unified app, Browser activation, and updater compatibility assets."
+echo "Verified lean app, Browser activation, and installable Browser app assets."
+echo "GitHub assets are published; the release is not complete until cmdy-registry"
+echo "and the website snapshot are updated and ./scripts/check-public-release.sh passes."

@@ -1010,6 +1010,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 print("UIUPDATE ready")
             }
         }
+        let exitAfterComponentSmoke = BrowserComponentInstaller.confirmRelaunchIfRequested(
+            CommandLine.arguments,
+            browserRuntimeReady: {
+                EmbeddedChromiumRuntime.shared.verifyReadyForComponentCommit()
+            })
+        if let recoveryMessage =
+            BrowserComponentInstaller.recoverInterruptedSwitchAfterLaunch(
+                browserRuntimeReady: {
+                    EmbeddedChromiumRuntime.shared.verifyReadyForComponentCommit()
+                }) {
+            let alert = NSAlert()
+            alert.alertStyle = .critical
+            alert.messageText = "Browser recovery required"
+            alert.informativeText = recoveryMessage
+            alert.addButton(withTitle: "OK")
+            if let window = controllers.first?.window {
+                alert.beginSheetModal(for: window)
+            } else {
+                alert.runModal()
+            }
+        }
+        if exitAfterComponentSmoke {
+            exit(0)
+        }
     }
 
     /// Real-window native-scroll profiler for dense restored scrollback. This

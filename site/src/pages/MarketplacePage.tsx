@@ -352,7 +352,7 @@ export function MarketplacePage() {
       <section className="browser-extension page-shell" aria-labelledby="browser-extension-title">
         <div>
           <h2 id="browser-extension-title">Browser is an Extension</h2>
-          <p>Install or remove it like any other Extension. Chromium opens as a real split inside cmdy, and serve-sim uses that same in-window Browser. Its sandbox runtime is already sealed inside the notarized app.</p>
+          <p>Install or remove it like any other Extension. Install downloads and verifies the notarized Browser build, then restarts cmdy; Remove restores the lean build and reclaims Chromium storage. Chromium and serve-sim stay inside the same real in-window Browser split.</p>
         </div>
         <a className="case" href={browserInstallURL}>Install Browser in cmdy</a>
       </section>

@@ -5,15 +5,17 @@ own VT engine and every frame rendered through Metal. Its public platform has
 resident Extensions and one-shot Actions; Channels complete the loop by
 bringing work in from other applications and optionally sending the result back.
 Detox, Swarm, Sim, Bridge, and Browser are first-party reference Extensions.
-Browser activates Chromium in a real cmdy window split; its sandbox runtime is
-already sealed inside the one signed macOS app.
+Browser downloads Chromium only when you install it, then opens as a real cmdy
+window split. Removing Browser swaps back to the lean app and reclaims those
+runtime bytes.
 
 ## Quick start
 
 Requires macOS 26+ on Apple silicon. Open the
 [latest release](https://github.com/suprb/cmdy/releases/latest), download the
-cmdy DMG, then drag `cmdy.app` to Applications. Install Browser and any other
-optional capability from **View → Extensions…** (⌘⇧L).
+lean cmdy DMG, then drag `cmdy.app` to Applications. Install Browser and any
+other optional capability from **View → Extensions…** (⌘⇧L). Browser verifies
+and installs its notarized Chromium-bearing app variant, then restarts cmdy.
 
 If you installed cmdy 1.0.0, download 1.0.1 or newer manually once: 1.0.0
 embedded the wrong GitHub owner, so that version cannot discover its own update.
@@ -289,10 +291,11 @@ included as an example of what the SDK can carry — remove or disable it like a
   live mirror in the same built-in Browser split—an agent builds, runs, taps,
   and screenshots a real SwiftUI app in a loop while you watch it change
 - **Browser**: an installable, disableable, and removable Extension that opens
-  sandboxed Chromium as a real split inside the cmdy window. CEF and its signed
-  workers stay sealed in the notarized app; the Extension controls whether the
-  runtime loads. Install it from Extensions or the Browser toolbar, and remove
-  or reinstall it from the same place.
+  sandboxed Chromium as a real split inside the cmdy window. The lean download
+  contains no CEF. Installing Browser downloads and verifies the notarized
+  Browser app variant; removing it restarts into the lean variant and deletes
+  Chromium code. Install, disable, remove, or reinstall it from Extensions or
+  the Browser toolbar.
 
 **Marketplace** ([MARKETPLACE.md](MARKETPLACE.md)) — a public registry of shaders,
 themes, rigs (whole-look presets), and Extensions; browse and install from the palette
@@ -384,15 +387,17 @@ passes. **cmdy → Check for Updates…** shows download, retry, and ready state
 reveals the verified ZIP in Finder. cmdy never executes the archive, replaces
 the running app, or relaunches without the user.
 
-Publish a committed version through the signed and notarized GitHub Actions
-path with one command:
+Publish a committed version's signed and notarized GitHub assets with:
 
 ```sh
 ./publish-release.sh 1.2.0
 ```
 
 The command requires a public release repository, dispatches the workflow,
-watches it finish, and prints the new GitHub Release URL. See
+watches it finish, and verifies the new GitHub Release assets. A Browser
+release is complete only after its activation URL and checksum are landed in
+`cmdy-registry`, the website snapshot is refreshed, and
+`./scripts/check-public-release.sh` passes against all three live surfaces. See
 [Releasing cmdy for macOS](RELEASING.md) for certificate and notary setup.
 
 ### Product identity and future renames
@@ -624,7 +629,7 @@ Landed: the dedicated CmdyCore VT engine, Metal rendering, the capability-scoped
 HTTP/SSE Extension Protocol, deterministic decision hooks, project trust, live
 development, native Surface Protocol, programmable Actions, the Channels SDK and
 durable Work Inbox/Outbox, marketplace, four external first-party reference
-Extensions plus the Browser app edition,
+Extensions plus the downloadable Browser component,
 live pane composition, command blocks, splits, palette, live config, themes,
 ghost text, agent mode, session restore, and a defended performance gate.
 
