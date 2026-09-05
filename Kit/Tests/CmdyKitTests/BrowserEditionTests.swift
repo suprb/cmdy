@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 import XCTest
 @testable import CmdyKit
@@ -117,6 +118,104 @@ final class BrowserEditionTests: XCTestCase {
                 expectedBytes: nil))
         XCTAssertTrue(unknownSize.contains("Downloading Browser —"))
         XCTAssertFalse(unknownSize.contains("%"))
+    }
+
+    func testBrowserComponentUsesPinnedReleaseAssetsWithoutLatestAPI() throws {
+        let browser = try BrowserComponentInstaller.pinnedRelease(
+            for: .browser,
+            appVersion: "1.0.7",
+            requiredBrowserVersion: "2.2.0",
+            architecture: "arm64")
+        XCTAssertEqual(browser.version, "1.0.7")
+        XCTAssertEqual(
+            browser.assetName,
+            "cmdy-browser-macOS-arm64.zip")
+        XCTAssertEqual(
+            browser.assetURL?.absoluteString,
+            "https://github.com/suprb/cmdy/releases/download/v1.0.7/cmdy-browser-macOS-arm64.zip")
+        XCTAssertEqual(
+            browser.checksumURL?.absoluteString,
+            "https://github.com/suprb/cmdy/releases/download/v1.0.7/cmdy-browser-macOS-arm64.zip.sha256")
+        XCTAssertFalse(browser.assetURL?.absoluteString.contains("api.github.com") ?? true)
+        XCTAssertFalse(browser.assetURL?.absoluteString.contains("/latest") ?? true)
+
+        let lean = try BrowserComponentInstaller.pinnedRelease(
+            for: .lean,
+            appVersion: "v1.0.7",
+            architecture: "arm64")
+        XCTAssertEqual(lean.assetName, "cmdy-macOS-arm64.zip")
+        XCTAssertEqual(
+            lean.assetURL?.absoluteString,
+            "https://github.com/suprb/cmdy/releases/download/v1.0.7/cmdy-macOS-arm64.zip")
+    }
+
+    func testPinnedBrowserReleaseTreatsMarketplaceVersionAsMinimum() throws {
+        let browser = try BrowserComponentInstaller.pinnedRelease(
+            for: .browser,
+            appVersion: "1.0.8",
+            requiredBrowserVersion: "2.2.0",
+            architecture: "arm64")
+        XCTAssertEqual(browser.assetName, "cmdy-browser-macOS-arm64.zip")
+        XCTAssertFalse(browser.assetName?.contains("2.2.0") ?? true)
+    }
+
+    func testProductionComponentDownloadRequestsPinnedAliasesForInstallAndRemoval() throws {
+        let archive = Data("verified component archive fixture".utf8)
+        let digest = SHA256.hash(data: archive)
+            .map { String(format: "%02x", $0) }.joined()
+
+        for variant in [BrowserComponentVariant.browser, .lean] {
+            let assetName = variant == .browser
+                ? "cmdy-browser-macOS-arm64.zip"
+                : "cmdy-macOS-arm64.zip"
+            let releaseRoot = "https://github.com/suprb/cmdy/releases/download/v1.0.7"
+            let expectedURLs = [
+                "\(releaseRoot)/\(assetName).sha256",
+                "\(releaseRoot)/\(assetName)",
+            ]
+            var requestedURLs: [String] = []
+            let download = try BrowserComponentInstaller.downloadPinnedRelease(
+                variant: variant,
+                appVersion: "1.0.7",
+                requiredBrowserVersion: variant == .browser ? "2.1.0" : nil,
+                architecture: "arm64",
+                fetch: { url, _, _, _ in
+                    let value = url.absoluteString
+                    XCTAssertFalse(value.contains("api.github.com"))
+                    XCTAssertFalse(value.contains("/latest"))
+                    requestedURLs.append(value)
+                    if url.pathExtension == "sha256" {
+                        return Data("\(digest)  \(assetName)\n".utf8)
+                    }
+                    return archive
+                })
+            XCTAssertEqual(requestedURLs, expectedURLs)
+            XCTAssertEqual(download.archive, archive)
+            XCTAssertEqual(download.release.version, "1.0.7")
+        }
+    }
+
+    func testPinnedBrowserReleaseRejectsInvalidInputs() {
+        XCTAssertThrowsError(try BrowserComponentInstaller.pinnedRelease(
+            for: .browser,
+            appVersion: "latest",
+            requiredBrowserVersion: "2.2.0",
+            architecture: "arm64"))
+        XCTAssertThrowsError(try BrowserComponentInstaller.pinnedRelease(
+            for: .browser,
+            appVersion: "1.0.6",
+            requiredBrowserVersion: "2.2",
+            architecture: "arm64"))
+        XCTAssertThrowsError(try BrowserComponentInstaller.pinnedRelease(
+            for: .browser,
+            appVersion: "1.0.6",
+            requiredBrowserVersion: "2.2.0",
+            architecture: "unknown"))
+        XCTAssertThrowsError(try BrowserComponentInstaller.pinnedRelease(
+            for: .browser,
+            appVersion: "1.0.6",
+            requiredBrowserVersion: "2.2.0",
+            architecture: "x86_64"))
     }
 
     func testExtensionWindowExtractsDownloadPercentage() {
@@ -241,21 +340,21 @@ final class BrowserEditionTests: XCTestCase {
             containsRuntimePayload: true))
     }
 
-    func testCandidateValidationAcceptsSignedLeanUpgradeAndRejectsPayloadLeak() throws {
+    func testCandidateValidationRequiresExactReleaseAndRejectsPayloadLeak() throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(
             "cmdy-component-candidate-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: root) }
 
         let current = try makeSignedTestApp(
-            at: root.appendingPathComponent("Current.app"), version: "1.0.3")
+            at: root.appendingPathComponent("Current.app"), version: "1.0.4")
         let candidate = try makeSignedTestApp(
             at: root.appendingPathComponent("Candidate.app"), version: "1.0.4")
         let inspection = try BrowserComponentInstaller.validateCandidate(
             candidate,
             replacing: current,
             expectedVariant: .lean,
-            minimumVersion: "1.0.3")
+            expectedVersion: "1.0.4")
         XCTAssertEqual(inspection.version, "1.0.4")
         XCTAssertFalse(inspection.browserEdition)
         XCTAssertFalse(inspection.containsBrowserPayload)
@@ -268,7 +367,15 @@ final class BrowserEditionTests: XCTestCase {
             leaked,
             replacing: current,
             expectedVariant: .lean,
-            minimumVersion: "1.0.3"))
+            expectedVersion: "1.0.4"))
+
+        let mismatched = try makeSignedTestApp(
+            at: root.appendingPathComponent("Mismatched.app"), version: "1.0.5")
+        XCTAssertThrowsError(try BrowserComponentInstaller.validateCandidate(
+            mismatched,
+            replacing: current,
+            expectedVariant: .lean,
+            expectedVersion: "1.0.4"))
 
         let newerBuild = try makeSignedTestApp(
             at: root.appendingPathComponent("NewerBuild.app"),
@@ -282,7 +389,7 @@ final class BrowserEditionTests: XCTestCase {
             olderBuild,
             replacing: newerBuild,
             expectedVariant: .lean,
-            minimumVersion: "1.0.4"))
+            expectedVersion: "1.0.4"))
     }
 
     func testInterruptedPostExchangeRecoveryRestoresOriginalBeforeCleanup() throws {

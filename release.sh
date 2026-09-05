@@ -289,15 +289,24 @@ else
     echo "DMG receipt:      $DMG_NOTARY_RESULT"
     echo "Qualification:    $QUALIFICATION_RECORD"
 
-    # Stable aliases let the public website link directly to the latest signed
-    # installer without hard-coding a release or Browser component version.
+    # Stable-named aliases inside an immutable release let the public website
+    # and component installer download without hard-coding a release asset or
+    # Browser component version. The tag still pins the exact app version.
     ALIAS_VARIANT_SUFFIX="${RELEASE_ALIAS_VARIANT:+-$RELEASE_ALIAS_VARIANT}"
+    ALIAS_ARCHIVE="$DIST_DIR/$PRODUCT_RELEASE_PREFIX$ALIAS_VARIANT_SUFFIX-macOS-$ARCHITECTURES.zip"
     ALIAS_DMG="$DIST_DIR/$PRODUCT_RELEASE_PREFIX$ALIAS_VARIANT_SUFFIX-macOS-$ARCHITECTURES.dmg"
+    cp "$ARCHIVE" "$ALIAS_ARCHIVE"
     cp "$DMG" "$ALIAS_DMG"
+    cmp -s "$ARCHIVE" "$ALIAS_ARCHIVE" || {
+        echo "Stable ZIP alias differs from the qualified artifact." >&2
+        exit 5
+    }
     cmp -s "$DMG" "$ALIAS_DMG" || {
         echo "Stable DMG alias differs from the qualified artifact." >&2
         exit 5
     }
+    shasum -a 256 "$ALIAS_ARCHIVE" > "$ALIAS_ARCHIVE.sha256"
     shasum -a 256 "$ALIAS_DMG" > "$ALIAS_DMG.sha256"
+    echo "Stable ZIP alias: $ALIAS_ARCHIVE"
     echo "Stable DMG alias: $ALIAS_DMG"
 fi
