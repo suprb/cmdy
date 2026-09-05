@@ -11,6 +11,17 @@ be called out here with a migration path before a versioned release.
 
 ## [Unreleased]
 
+## [1.0.7] - 2026-09-05
+
+### Fixed
+
+- Browser installation and removal now resolve stable-named ZIPs under the
+  matching immutable app release instead of calling GitHub's unauthenticated,
+  rate-limited latest-release API, preventing `HTTP 403 for latest` on managed
+  networks while preserving compatibility with stale Marketplace caches.
+- Manual release-workflow dispatches now default to a prerelease candidate, so
+  a notarized work-Mac build can be accepted before it is promoted to latest.
+
 ## [1.0.6] - 2026-09-04
 
 ### Fixed

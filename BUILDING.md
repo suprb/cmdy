@@ -257,11 +257,15 @@ Marketplace. It contains no CEF payload; installing it makes the lean app fetch
 the signed Browser variant containing the framework and helpers.
 
 The complete Browser app is published under `dist/browser/`. Marketplace
-installation resolves that archive from the latest stable GitHub Release,
-verifies its SHA-256, complete code signature, Developer ID Team, version,
-Gatekeeper assessment, and exact Browser layout, then replaces the lean app and
-restarts. Browser removal performs the same checks on the lean archive, swaps
-back, and deletes the old Browser app only after startup confirmation.
+installation resolves a stable-named ZIP alias inside the immutable GitHub
+Release matching the installed cmdy version. It does not call GitHub's
+rate-limited latest-release API, and a stale Marketplace entry remains valid
+when a release carries a newer compatible Browser component. It verifies the
+archive's SHA-256, complete code signature, Developer ID Team, exact app
+version, minimum Browser version, Gatekeeper assessment, and Browser layout,
+then replaces the lean app and restarts. Browser removal resolves the matching
+lean ZIP alias, performs the same checks, swaps back, and deletes the old
+Browser app only after startup confirmation.
 
 Build, sign, notarize, staple, and verify it with the same credentials:
 
@@ -279,10 +283,11 @@ SKIP_NOTARIZE=1 ./scripts/release-chromium-browser.sh
 The Browser release produces a ZIP, DMG, their SHA-256 files, and a metadata
 JSON under `dist/browser/`. Artifact names contain both the cmdy app version and
 the independently tracked Browser version; local rehearsals also end in
-`-rehearsal`. The canonical release creates the website's stable lean DMG alias;
-the Browser release creates a stable manual-download alias. The Marketplace
-installer and updater use versioned ZIPs, not these DMG aliases. Both aliases
-are byte-for-byte copies of qualified stapled DMGs. The script:
+`-rehearsal`. Canonical releases additionally create stable-named ZIP and DMG
+aliases for both lean and Browser artifacts. Component switching uses the ZIP
+alias under the installed app's immutable release tag; the website uses the DMG
+alias under GitHub's latest-release redirect. Every alias is a byte-for-byte
+copy of its qualified artifact. The script:
 
 1. Verifies and builds the pinned CEF source inputs.
 2. Packages the Browser app with CEF, the host library, and four helpers.
@@ -330,8 +335,12 @@ package, but CEF itself must never move outside the host app because the current
 upstream sandbox rejects that layout.
 
 Lean cmdy selects the canonical ZIP for app updates and Browser cmdy selects the
-`-browser-` ZIP. The same selector powers component installation and removal;
-the cached update record is invalidated when the installed variant changes.
+`-browser-` ZIP. Component installation and removal instead use stable-named
+ZIP aliases under the exact release tag for the app already on disk, so those
+user-requested operations do not depend on update discovery, an unauthenticated
+API quota, or the Marketplace cache containing the newest compatible Browser
+version. The cached update record is invalidated when the installed variant
+changes.
 
 ## GitHub Actions and secrets
 

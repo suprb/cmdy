@@ -11,9 +11,22 @@ Once the release commit is pushed, run:
 The command refuses dirty or unpushed source, a private repository, or any
 release target that differs from the repository embedded in product identity,
 then dispatches `.github/workflows/release.yml`, watches the notarized build,
-and verifies the published GitHub Release assets. Use `--no-watch` to dispatch
-and return immediately, or `--dry-run` to inspect the resolved version,
-repository, branch, and commit without contacting GitHub.
+explicitly requests a stable release, and verifies the published GitHub Release
+assets. Use `--no-watch` to dispatch and return immediately, or `--dry-run` to
+inspect the resolved version, repository, branch, and commit without contacting
+GitHub.
+
+For target-machine acceptance before a stable release, manually dispatch
+`release.yml` with `prerelease=true`. Manual dispatches default to this safer
+candidate mode: the workflow signs, notarizes, staples, and publishes the exact
+artifacts under `v<version>`, but GitHub does not expose that release as latest
+and normal update checks ignore it. After the candidate passes install,
+Browser install/remove/reinstall, and launch checks on the target Mac, promote
+those same immutable artifacts instead of rebuilding them:
+
+```sh
+gh release edit v1.2.0 --repo suprb/cmdy --prerelease=false --latest
+```
 
 GitHub assets are the first publication phase. Pin the released Browser
 activation URL and SHA-256 in `cmdy-registry`, merge that change, refresh
@@ -38,8 +51,9 @@ The workflow temporarily accepts the legacy `TERMITE_` secret names so an
 existing private repository can migrate without a broken release window.
 
 Manual workflow dispatches and `v*` tag pushes both build, notarize, staple,
-checksum, and publish the ZIP and DMG. A release is not made public until every
-verification step passes.
+checksum, and publish the ZIP and DMG. Manual dispatch defaults to a prerelease;
+tag pushes and `publish-release.sh` remain stable publication paths. A release
+is not published until every verification step passes.
 
 The release workflow also requires the fail-closed publication record described
 in [`docs/independence/RELEASE_QUALIFICATION.md`](docs/independence/RELEASE_QUALIFICATION.md).
@@ -67,12 +81,15 @@ ZIP, submits it to Apple, requires an `Accepted` result, staples the ticket to
 the app, and validates the app with Gatekeeper. It then creates a signed
 drag-to-Applications DMG using a sparse APFS image, notarizes and staples the
 DMG, validates that with Gatekeeper, and writes SHA-256 checksums for both
-artifacts in `dist/`. The canonical run also emits `cmdy-macOS-arm64.dmg` and
-its `.sha256`; this is the lean public download and contains no Chromium. The
-Browser release emits `cmdy-browser-macOS-arm64.dmg` and its `.sha256` as a
-stable manual download. Marketplace installation and Browser-edition updates
-select the versioned Browser ZIP and checksum from the release API. Rehearsal
-builds never create stable aliases.
+artifacts in `dist/`. The canonical run also emits stable-named
+`cmdy-macOS-arm64.zip` and `.dmg` aliases with checksums; the DMG is the lean
+public download and contains no Chromium. The Browser release emits matching
+`cmdy-browser-macOS-arm64.zip` and `.dmg` aliases. Marketplace component
+switching pins these ZIP names under the installed app's immutable release tag,
+so it needs no GitHub release API call and can accept a newer compatible Browser
+component than a cached Marketplace manifest requests. Browser-edition app
+updates still select the versioned Browser ZIP through normal update discovery.
+Rehearsal builds never create stable aliases.
 It also retains each raw Apple JSON receipt beside the release artifacts, each
 submission identifier and pre-staple submitted hash, then writes a
 `*.publication.json` record for the final stapled package. The submitted and

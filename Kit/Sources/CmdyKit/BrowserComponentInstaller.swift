@@ -206,7 +206,6 @@ public enum BrowserComponentInstaller {
     }
 
     private static let pendingState = PendingState()
-    private static let maximumReleaseBytes = 1_048_576
     private static let maximumArchiveBytes = 1024 * 1024 * 1024
     private static let helperWaitSeconds: TimeInterval = 60
     private static let confirmationWaitSeconds: TimeInterval = 90
@@ -289,6 +288,147 @@ public enum BrowserComponentInstaller {
             return "Downloading \(buildName) — \(percent)% (\(received) of \(expected))…"
         }
         return "Downloading \(buildName) — \(received)…"
+    }
+
+    /// Resolve the app variant that matches the app already installed.
+    ///
+    /// Component switching must not depend on GitHub's unauthenticated
+    /// `/releases/latest` API. That endpoint is rate-limited per public IP and
+    /// is commonly blocked on managed networks. Every cmdy release publishes
+    /// both layouts and stable-named ZIP aliases inside every immutable release,
+    /// so the installed app version is sufficient to construct pinned download
+    /// URLs. The Browser package version remains a minimum compatibility gate
+    /// when the downloaded app is inspected. The archive is still authenticated
+    /// below by its published SHA-256, Developer ID signature, Team ID, hardened
+    /// runtime, and bundle layout.
+    static func pinnedRelease(
+        for variant: BrowserComponentVariant,
+        appVersion rawAppVersion: String,
+        requiredBrowserVersion: String? = nil,
+        architecture: String
+    ) throws -> AppReleaseUpdate {
+        let appVersion = rawAppVersion.lowercased().hasPrefix("v")
+            ? String(rawAppVersion.dropFirst()) : rawAppVersion
+        guard AppUpdateMonitor.isNumericVersion(appVersion) else {
+            throw BrowserComponentSwitchError.releaseUnavailable(
+                "the installed app version is invalid")
+        }
+        let supportedArchitectures = ["arm64"]
+        guard supportedArchitectures.contains(architecture) else {
+            throw BrowserComponentSwitchError.releaseUnavailable(
+                "this Mac architecture is not supported")
+        }
+
+        let prefix = ProductIdentity.current.releaseAssetPrefix
+        let assetName: String
+        switch variant {
+        case .browser:
+            guard let requiredBrowserVersion,
+                  requiredBrowserVersion.split(separator: ".").count == 3,
+                  AppUpdateMonitor.isNumericVersion(requiredBrowserVersion) else {
+                throw BrowserComponentSwitchError.releaseUnavailable(
+                    "the Browser component version is missing or invalid")
+            }
+            assetName = "\(prefix)-browser-macOS-\(architecture).zip"
+        case .lean:
+            assetName = "\(prefix)-macOS-\(architecture).zip"
+        }
+        guard AppUpdateMonitor.safeAssetName(assetName) else {
+            throw BrowserComponentSwitchError.releaseUnavailable(
+                "the signed app download name is invalid")
+        }
+
+        let repository = ProductIdentity.current.githubRepository
+        let root = "https://github.com/\(repository)/releases"
+        guard let releaseURL = URL(string: "\(root)/tag/v\(appVersion)"),
+              let assetURL = URL(
+                string: "\(root)/download/v\(appVersion)/\(assetName)"),
+              let checksumURL = URL(
+                string: "\(root)/download/v\(appVersion)/\(assetName).sha256") else {
+            throw BrowserComponentSwitchError.releaseUnavailable(
+                "the signed app download URL is invalid")
+        }
+        return AppReleaseUpdate(
+            version: appVersion,
+            name: "\(ProductIdentity.current.titleName) \(appVersion)",
+            releaseURL: releaseURL,
+            assetURL: assetURL,
+            assetName: assetName,
+            checksumURL: checksumURL,
+            notes: "")
+    }
+
+    private static var releaseArchitecture: String? {
+        #if arch(arm64)
+        return "arm64"
+        #else
+        return nil
+        #endif
+    }
+
+    struct PinnedReleaseDownload {
+        let release: AppReleaseUpdate
+        let archive: Data
+    }
+
+    typealias PinnedReleaseFetcher = (
+        URL,
+        Int,
+        TimeInterval,
+        (Marketplace.DownloadProgress) -> Void
+    ) throws -> Data
+
+    /// Fetch the checksum and app archive from the same deterministic release
+    /// plan used by the production switch path. Keeping this seam injectable
+    /// lets regression tests fail if component switching ever contacts update
+    /// discovery or the GitHub API again.
+    static func downloadPinnedRelease(
+        variant: BrowserComponentVariant,
+        appVersion: String,
+        requiredBrowserVersion: String? = nil,
+        architecture: String,
+        progress: @escaping (String) -> Void = { _ in },
+        fetch: PinnedReleaseFetcher
+    ) throws -> PinnedReleaseDownload {
+        let release = try pinnedRelease(
+            for: variant,
+            appVersion: appVersion,
+            requiredBrowserVersion: requiredBrowserVersion,
+            architecture: architecture)
+        guard let assetURL = release.assetURL,
+              let assetName = release.assetName,
+              let checksumURL = release.checksumURL,
+              release.canDownloadAutomatically else {
+            throw BrowserComponentSwitchError.releaseUnavailable(
+                "the matching release does not contain the required app variant")
+        }
+
+        let checksumData = try fetch(checksumURL, 8 * 1024, 30, { _ in })
+        guard let expectedChecksum = AppUpdateMonitor.expectedChecksum(
+            from: checksumData, assetName: assetName) else {
+            throw BrowserComponentSwitchError.releaseUnavailable(
+                "the release checksum is missing or does not name \(assetName)")
+        }
+
+        progress(variant == .browser
+            ? "Downloading Chromium and the signed Browser build…"
+            : "Downloading the signed lean build…")
+        let archive = try fetch(
+            assetURL,
+            maximumArchiveBytes,
+            600,
+            { downloadProgress in
+                progress(downloadProgressDescription(
+                    variant: variant, progress: downloadProgress))
+            })
+        let actualChecksum = SHA256.hash(data: archive)
+            .map { String(format: "%02x", $0) }.joined()
+        guard actualChecksum == expectedChecksum else {
+            throw BrowserComponentSwitchError.invalidArchive(
+                "SHA-256 mismatch; no downloaded code was installed")
+        }
+        progress("download checksum verified ✓")
+        return PinnedReleaseDownload(release: release, archive: archive)
     }
 
     /// Download, hash, extract, inspect, and stage the requested complete app.
@@ -383,53 +523,36 @@ public enum BrowserComponentInstaller {
             throw BrowserComponentSwitchError.appIsNotReplaceable(
                 "move cmdy.app to Applications or another folder you can write to")
         }
-        progress("finding the signed \(variant == .browser ? "Browser" : "lean") build…")
-        let releaseData = try Marketplace.fetchData(
-            ProductIdentity.current.latestReleaseAPIURL,
-            maxBytes: maximumReleaseBytes,
-            timeout: 30)
-        guard let release = try AppUpdateMonitor.decodeRelease(
-            releaseData,
-            prefersBrowserEdition: variant == .browser,
-            requiredBrowserComponentVersion: requiredBrowserVersion),
-              let assetURL = release.assetURL,
-              let assetName = release.assetName,
-              let checksumURL = release.checksumURL,
-              release.canDownloadAutomatically else {
+        progress("locating the signed \(variant == .browser ? "Browser" : "lean") build…")
+        guard let architecture = releaseArchitecture else {
             throw BrowserComponentSwitchError.releaseUnavailable(
-                "the latest release does not contain the required app variant")
+                "this Mac architecture is not supported")
+        }
+        let download = try withoutActuallyEscaping(progress) { progress in
+            try downloadPinnedRelease(
+                variant: variant,
+                appVersion: current.version,
+                requiredBrowserVersion: requiredBrowserVersion,
+                architecture: architecture,
+                progress: progress,
+                fetch: { url, maxBytes, timeout, downloadProgress in
+                    try Marketplace.fetchData(
+                        url,
+                        maxBytes: maxBytes,
+                        timeout: timeout,
+                        downloadProgress: downloadProgress)
+                })
+        }
+        let release = download.release
+        guard let assetName = release.assetName else {
+            throw BrowserComponentSwitchError.releaseUnavailable(
+                "the matching release does not name the required app variant")
         }
         guard versionIsSameOrNewer(release.version, than: current.version) else {
             throw BrowserComponentSwitchError.releaseUnavailable(
                 "release \(release.version) is older than installed version \(current.version)")
         }
-
-        let checksumData = try Marketplace.fetchData(
-            checksumURL, maxBytes: 8 * 1024, timeout: 30)
-        guard let expectedChecksum = AppUpdateMonitor.expectedChecksum(
-            from: checksumData, assetName: assetName) else {
-            throw BrowserComponentSwitchError.releaseUnavailable(
-                "the release checksum is missing or does not name \(assetName)")
-        }
-
-        progress(variant == .browser
-            ? "Downloading Chromium and the signed Browser build…"
-            : "Downloading the signed lean build…")
-        let archive = try Marketplace.fetchData(
-            assetURL,
-            maxBytes: maximumArchiveBytes,
-            timeout: 600,
-            downloadProgress: {
-                progress(downloadProgressDescription(
-                    variant: variant, progress: $0))
-            })
-        let actualChecksum = SHA256.hash(data: archive)
-            .map { String(format: "%02x", $0) }.joined()
-        guard actualChecksum == expectedChecksum else {
-            throw BrowserComponentSwitchError.invalidArchive(
-                "SHA-256 mismatch; no downloaded code was installed")
-        }
-        progress("download checksum verified ✓")
+        let archive = download.archive
 
         let temporary = FileManager.default.temporaryDirectory
             .appendingPathComponent(
@@ -458,7 +581,7 @@ public enum BrowserComponentInstaller {
             candidate,
             replacing: currentApp,
             expectedVariant: variant,
-            minimumVersion: current.version,
+            expectedVersion: release.version,
             requiredBrowserVersion: requiredBrowserVersion)
         progress("Developer ID, Team ID, and app layout verified ✓")
 
@@ -470,7 +593,7 @@ public enum BrowserComponentInstaller {
                 stagedApp,
                 replacing: currentApp,
                 expectedVariant: variant,
-                minimumVersion: current.version,
+                expectedVersion: release.version,
                 requiredBrowserVersion: requiredBrowserVersion)
         } catch {
             try? FileManager.default.removeItem(at: stagedApp)
@@ -1129,7 +1252,7 @@ public enum BrowserComponentInstaller {
                 staged,
                 replacing: destination,
                 expectedVariant: transaction.variant,
-                minimumVersion: current.version,
+                expectedVersion: transaction.candidateVersion,
                 requiredBrowserVersion: transaction.browserComponentVersion)
             // Exchange the two same-volume bundle names in one filesystem
             // operation. There is never a crash or power-loss window where
@@ -1143,7 +1266,7 @@ public enum BrowserComponentInstaller {
                 destination,
                 replacing: backup,
                 expectedVariant: transaction.variant,
-                minimumVersion: current.version,
+                expectedVersion: transaction.candidateVersion,
                 requiredBrowserVersion: transaction.browserComponentVersion)
             guard stopApplicationsAndWaitForQuiescence(transaction) else {
                 throw BrowserComponentSwitchError.helperLaunchFailed(
@@ -2121,7 +2244,7 @@ public enum BrowserComponentInstaller {
         _ candidate: URL,
         replacing currentApp: URL,
         expectedVariant: BrowserComponentVariant,
-        minimumVersion: String,
+        expectedVersion: String,
         requiredBrowserVersion: String? = nil
     ) throws -> BundleInspection {
         let current = try inspectBundle(at: currentApp)
@@ -2131,11 +2254,9 @@ public enum BrowserComponentInstaller {
             throw BrowserComponentSwitchError.invalidApplication(
                 "bundle identifier or executable does not match the installed app")
         }
-        guard candidateInfo.version == minimumVersion
-                || AppUpdateMonitor.isVersion(
-                    candidateInfo.version, newerThan: minimumVersion) else {
+        guard candidateInfo.version == expectedVersion else {
             throw BrowserComponentSwitchError.invalidApplication(
-                "version \(candidateInfo.version) would downgrade \(minimumVersion)")
+                "version \(candidateInfo.version) does not match release \(expectedVersion)")
         }
         if candidateInfo.version == current.version,
            candidateInfo.build != current.build,
