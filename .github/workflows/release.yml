@@ -11,6 +11,11 @@ on:
         description: Release version (for example 1.2.0)
         required: true
         type: string
+      prerelease:
+        description: Publish as a prerelease candidate instead of latest
+        required: true
+        default: true
+        type: boolean
 
 permissions:
   contents: read
@@ -180,10 +185,16 @@ jobs:
       - name: Publish signed GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
+          RELEASE_PRERELEASE: ${{ inputs.prerelease }}
         run: |
           release_tag="v$RELEASE_VERSION"
+          release_options=()
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ] \
+              && [ "$RELEASE_PRERELEASE" = "true" ]; then
+            release_options+=(--prerelease)
+          fi
           if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
-            gh release create "$release_tag" \
+            gh release create "$release_tag" "${release_options[@]}" \
               dist/*.zip dist/*.dmg dist/*.sha256 dist/browser/* \
               dist/browser-extension/* \
               dist/*.json \
@@ -191,7 +202,7 @@ jobs:
               --title "$PRODUCT_TITLE_NAME $RELEASE_VERSION" \
               --generate-notes
           else
-            gh release create "$release_tag" \
+            gh release create "$release_tag" "${release_options[@]}" \
               dist/*.zip dist/*.dmg dist/*.sha256 dist/browser/* \
               dist/browser-extension/* \
               dist/*.json \

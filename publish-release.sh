@@ -112,7 +112,8 @@ previous_run_id="$(gh run list --repo "$REPOSITORY" --workflow release.yml \
     | head -n 1)"
 
 echo "Dispatching notarized release workflow…"
-gh workflow run release.yml --repo "$REPOSITORY" --ref "$BRANCH" -f version="$VERSION"
+gh workflow run release.yml --repo "$REPOSITORY" --ref "$BRANCH" \
+    -f version="$VERSION" -f prerelease=false
 if [ "$WATCH" = "0" ]; then
     echo "Workflow dispatched. Watch it with:"
     echo "  gh run list --repo $REPOSITORY --workflow release.yml"
@@ -145,6 +146,8 @@ expected_assets=(
     "$PRODUCT_RELEASE_PREFIX-$VERSION-macOS-arm64.zip.sha256"
     "$PRODUCT_RELEASE_PREFIX-$VERSION-macOS-arm64.dmg"
     "$PRODUCT_RELEASE_PREFIX-$VERSION-macOS-arm64.dmg.sha256"
+    "$PRODUCT_RELEASE_PREFIX-macOS-arm64.zip"
+    "$PRODUCT_RELEASE_PREFIX-macOS-arm64.zip.sha256"
     "$PRODUCT_RELEASE_PREFIX-macOS-arm64.dmg"
     "$PRODUCT_RELEASE_PREFIX-macOS-arm64.dmg.sha256"
     "$PRODUCT_RELEASE_PREFIX-$VERSION-macOS-arm64.archive-notary.json"
@@ -154,6 +157,8 @@ expected_assets=(
     "$PRODUCT_RELEASE_PREFIX-$VERSION-browser-$browser_version-macOS-arm64.zip.sha256"
     "$PRODUCT_RELEASE_PREFIX-$VERSION-browser-$browser_version-macOS-arm64.dmg"
     "$PRODUCT_RELEASE_PREFIX-$VERSION-browser-$browser_version-macOS-arm64.dmg.sha256"
+    "$PRODUCT_RELEASE_PREFIX-browser-macOS-arm64.zip"
+    "$PRODUCT_RELEASE_PREFIX-browser-macOS-arm64.zip.sha256"
     "$PRODUCT_RELEASE_PREFIX-browser-macOS-arm64.dmg"
     "$PRODUCT_RELEASE_PREFIX-browser-macOS-arm64.dmg.sha256"
     "$PRODUCT_RELEASE_PREFIX-$VERSION-browser-$browser_version-macOS-arm64.archive-notary.json"
@@ -169,11 +174,19 @@ for expected_asset in "${expected_assets[@]}"; do
         exit 5
     fi
 done
+canonical_zip="$PRODUCT_RELEASE_PREFIX-$VERSION-macOS-arm64.zip"
+canonical_zip_alias="$PRODUCT_RELEASE_PREFIX-macOS-arm64.zip"
 canonical_dmg="$PRODUCT_RELEASE_PREFIX-$VERSION-macOS-arm64.dmg"
-canonical_alias="$PRODUCT_RELEASE_PREFIX-macOS-arm64.dmg"
+canonical_dmg_alias="$PRODUCT_RELEASE_PREFIX-macOS-arm64.dmg"
+browser_zip="$PRODUCT_RELEASE_PREFIX-$VERSION-browser-$browser_version-macOS-arm64.zip"
+browser_zip_alias="$PRODUCT_RELEASE_PREFIX-browser-macOS-arm64.zip"
 browser_dmg="$PRODUCT_RELEASE_PREFIX-$VERSION-browser-$browser_version-macOS-arm64.dmg"
-browser_alias="$PRODUCT_RELEASE_PREFIX-browser-macOS-arm64.dmg"
-for artifact_pair in "$canonical_dmg:$canonical_alias" "$browser_dmg:$browser_alias"; do
+browser_dmg_alias="$PRODUCT_RELEASE_PREFIX-browser-macOS-arm64.dmg"
+for artifact_pair in \
+    "$canonical_zip:$canonical_zip_alias" \
+    "$canonical_dmg:$canonical_dmg_alias" \
+    "$browser_zip:$browser_zip_alias" \
+    "$browser_dmg:$browser_dmg_alias"; do
     versioned_name="${artifact_pair%%:*}"
     alias_name="${artifact_pair#*:}"
     versioned_digest="$(jq -r --arg name "$versioned_name" \
@@ -182,7 +195,7 @@ for artifact_pair in "$canonical_dmg:$canonical_alias" "$browser_dmg:$browser_al
         '.assets[] | select(.name == $name) | .digest' <<< "$release_assets")"
     if ! [[ "$versioned_digest" =~ ^sha256:[0-9a-f]{64}$ ]] \
        || [ "$alias_digest" != "$versioned_digest" ]; then
-        echo "Stable release alias does not match its versioned DMG: $alias_name" >&2
+        echo "Stable release alias does not match its versioned artifact: $alias_name" >&2
         exit 5
     fi
 done
