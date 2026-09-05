@@ -110,7 +110,7 @@
       {
         "path": "release.sh",
         "purpose": "release-script",
-        "sha256": "3a723c2df39d914314f164d55e77ed9539ef903ee2863acff157a64cd9ede083"
+        "sha256": "8a8107af1e9d02f46ceb59c47b6b1a0e842a6281e7e79206bb921d2b80a2fb15"
       },
       {
         "path": ".github/workflows/release.yml",
@@ -171,12 +171,12 @@
   "kind": "cmdy-release-qualification",
   "publication": {
     "approval": {
-      "approvalReference": "Project owner reported that Browser installation crashed with unclear download state on a work computer, requested a usable embedded Browser divider, and directed the fixes and release to run until finished; clean packaged CI then passed the full Browser lifecycle, off-hairline divider hit target, visible operation progress, and lean-to-Browser-to-lean app swap before the exact release source was requalified on 2026-09-04.",
-      "approvedPublicWording": "Engineering qualification and Browser download progress, consent-preserving install routing, signed app-switch confirmation, rollback and relaunch recovery, removal, updater, packaging, divider interaction, and site build checks passed for the exact cmdy 1.0.6 source and evidence set. Project-owner approval; this is not an independent authorship or legal clean-room review.",
+      "approvalReference": "Project owner reported HTTP 403 for latest while installing Browser on the managed work computer and had already directed Browser download, install, and removal work to run until finished; the API-free routing, release aliases, exact-version checks, and local suites passed before the exact source was requalified on 2026-09-05.",
+      "approvedPublicWording": "Engineering qualification and API-free Browser download routing, consent-preserving install flow, checksum and signed app-switch verification, rollback and relaunch recovery, removal, updater, packaging, and local test checks passed for the exact cmdy 1.0.7 source and evidence set. CI and managed-work-Mac acceptance remain required before stable publication. Project-owner approval; this is not an independent authorship or legal clean-room review.",
       "decision": "approved",
-      "engineeringDigestSha256": "77f366b51bf0e5b9cd2f3a79146f3ec2e608ac1c7a19e3804fa79d7a81e0f221",
-      "evidenceDigestSha256": "5b214b92f539da6a26c7690146c1d665c1dd824b890d77dd64c12c5a6e16c219",
-      "reviewedAtUTC": "2026-09-04T23:33:01Z",
+      "engineeringDigestSha256": "43b4b53b8e077d6202773f9f384e4884c36bc904945991ae968a6eeb7a2868d1",
+      "evidenceDigestSha256": "1d54d265a96e4cfd97bfa0710e268ec54f18ca803b3f1e84e9b825e5e2e4f61b",
+      "reviewedAtUTC": "2026-09-05T18:10:32Z",
       "reviewerAffiliation": "cmdy project owner",
       "reviewerIndependentFromImplementation": false,
       "reviewerKind": "human",
@@ -186,16 +186,16 @@
       "core": {
         "record": {
           "path": "docs/independence/qualification/core-17-seed.json",
-          "sha256": "b9a5addf4709dc525736a159647337721dbed72c4f9fccaf35d796a033e5bbdf"
+          "sha256": "db64fd93529a3e5081f5c7410d2154550b8eac6ac0d8a0bbed42e799479de0c9"
         },
-        "sourceManifestSha256": "b8c3b53ca49a015fc76e5075ba2b1d7fdcdf2a8dcbf5395ecc4c387887a0645a"
+        "sourceManifestSha256": "2008479701202acc627d57ed7a11b640ace509f1656293c1ed96f49f9291bebe"
       },
       "operational": {
         "record": {
           "path": "docs/independence/qualification/operational-review.json",
-          "sha256": "fcbd4400940fc1dc08917bbff04e1493647c89780df1fceee1001baec5706bcd"
+          "sha256": "f2b7838ec9f58038bcf4ab1672fc06526f491aa453c16a658eb0839244d6e167"
         },
-        "sourceManifestSha256": "b8c3b53ca49a015fc76e5075ba2b1d7fdcdf2a8dcbf5395ecc4c387887a0645a"
+        "sourceManifestSha256": "2008479701202acc627d57ed7a11b640ace509f1656293c1ed96f49f9291bebe"
       },
       "renderer": {
         "checkerSha256": "886a21d8601f7917bbab544ac285b5952d3f79a60203c56d25bb1632f7690ee7",
@@ -207,20 +207,20 @@
           "path": "docs/independence/qualification/renderer-environment.json",
           "sha256": "17d430cd7191f8872de0acb497ef7010c2913757e10574cb2e69b152218bfc39"
         },
-        "sourceManifestSha256": "b8c3b53ca49a015fc76e5075ba2b1d7fdcdf2a8dcbf5395ecc4c387887a0645a"
+        "sourceManifestSha256": "2008479701202acc627d57ed7a11b640ace509f1656293c1ed96f49f9291bebe"
       }
     },
     "source": {
       "activeSourceManifest": {
         "path": "docs/independence/qualification/active-terminal-sources.json",
-        "sha256": "b8c3b53ca49a015fc76e5075ba2b1d7fdcdf2a8dcbf5395ecc4c387887a0645a"
+        "sha256": "2008479701202acc627d57ed7a11b640ace509f1656293c1ed96f49f9291bebe"
       },
       "provenanceReport": {
         "path": "docs/independence/qualification/working-tree-provenance.json",
-        "sha256": "a64ecc5ad62a02fa36959bebefe04f09af2f30e43e95c15b59c064f8ab02efaa"
+        "sha256": "d3d117a3ad46a2e3709bbc93e7f61083572f02d41ee2205f41d1910fbac8cd6e"
       },
-      "sourceCommit": "fdb50e4c69320b6237b983a3a25739f8b3239fa8",
-      "sourceTree": "706798d9c608d813ab9845a23ed57223ac420454"
+      "sourceCommit": "0829bc9c8af0216c1d7bb7d8cba3225f8ee060b5",
+      "sourceTree": "2d377031fc8b7dddf3115334be57ae92c76923f1"
     },
     "state": "approved"
   },
