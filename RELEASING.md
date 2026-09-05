@@ -67,12 +67,15 @@ ZIP, submits it to Apple, requires an `Accepted` result, staples the ticket to
 the app, and validates the app with Gatekeeper. It then creates a signed
 drag-to-Applications DMG using a sparse APFS image, notarizes and staples the
 DMG, validates that with Gatekeeper, and writes SHA-256 checksums for both
-artifacts in `dist/`. The canonical run also emits `cmdy-macOS-arm64.dmg` and
-its `.sha256`; this is the lean public download and contains no Chromium. The
-Browser release emits `cmdy-browser-macOS-arm64.dmg` and its `.sha256` as a
-stable manual download. Marketplace installation and Browser-edition updates
-select the versioned Browser ZIP and checksum from the release API. Rehearsal
-builds never create stable aliases.
+artifacts in `dist/`. The canonical run also emits stable-named
+`cmdy-macOS-arm64.zip` and `.dmg` aliases with checksums; the DMG is the lean
+public download and contains no Chromium. The Browser release emits matching
+`cmdy-browser-macOS-arm64.zip` and `.dmg` aliases. Marketplace component
+switching pins these ZIP names under the installed app's immutable release tag,
+so it needs no GitHub release API call and can accept a newer compatible Browser
+component than a cached Marketplace manifest requests. Browser-edition app
+updates still select the versioned Browser ZIP through normal update discovery.
+Rehearsal builds never create stable aliases.
 It also retains each raw Apple JSON receipt beside the release artifacts, each
 submission identifier and pre-staple submitted hash, then writes a
 `*.publication.json` record for the final stapled package. The submitted and
