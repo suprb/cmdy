@@ -115,7 +115,7 @@
       {
         "path": ".github/workflows/release.yml",
         "purpose": "release-workflow",
-        "sha256": "36915f266295959ce99fb063eb6420baa77fab3ef81e2ac0f17a74ce444849e7"
+        "sha256": "5af5b1ea85e825b09533131334bdbd95d24a6d6ec986723ca2a3b5f5965b5dd1"
       },
       {
         "path": "test.sh",
@@ -171,12 +171,12 @@
   "kind": "cmdy-release-qualification",
   "publication": {
     "approval": {
-      "approvalReference": "Project owner reported HTTP 403 for latest while installing Browser on the managed work computer and had already directed Browser download, install, and removal work to run until finished; the API-free routing, release aliases, exact-version checks, and local suites passed before the exact source was requalified on 2026-09-05.",
-      "approvedPublicWording": "Engineering qualification and API-free Browser download routing, consent-preserving install flow, checksum and signed app-switch verification, rollback and relaunch recovery, removal, updater, packaging, and local test checks passed for the exact cmdy 1.0.7 source and evidence set. CI and managed-work-Mac acceptance remain required before stable publication. Project-owner approval; this is not an independent authorship or legal clean-room review.",
+      "approvalReference": "Project owner reported HTTP 403 for latest while installing Browser on the managed work computer and had already directed Browser download, install, and removal work to run until finished; the API-free routing, release aliases, exact-version checks, local suites, and prerelease-first target-machine acceptance workflow passed review before the exact source was requalified on 2026-09-05.",
+      "approvedPublicWording": "Engineering qualification and API-free Browser download routing, consent-preserving install flow, checksum and signed app-switch verification, rollback and relaunch recovery, removal, updater, packaging, local test checks, and prerelease-first target-machine acceptance controls passed for the exact cmdy 1.0.7 source and evidence set. CI and managed-work-Mac acceptance remain required before stable publication. Project-owner approval; this is not an independent authorship or legal clean-room review.",
       "decision": "approved",
-      "engineeringDigestSha256": "43b4b53b8e077d6202773f9f384e4884c36bc904945991ae968a6eeb7a2868d1",
-      "evidenceDigestSha256": "1d54d265a96e4cfd97bfa0710e268ec54f18ca803b3f1e84e9b825e5e2e4f61b",
-      "reviewedAtUTC": "2026-09-05T18:10:32Z",
+      "engineeringDigestSha256": "936078c1abfbb147e148ca0cfca8dc3618cf7aa4bcacc599d2e21ba0abda01fe",
+      "evidenceDigestSha256": "7b24caccdaa49fad34eac97295481f8abc566339940e56452154ab984e44469d",
+      "reviewedAtUTC": "2026-09-05T18:48:35Z",
       "reviewerAffiliation": "cmdy project owner",
       "reviewerIndependentFromImplementation": false,
       "reviewerKind": "human",
@@ -219,8 +219,8 @@
         "path": "docs/independence/qualification/working-tree-provenance.json",
         "sha256": "d3d117a3ad46a2e3709bbc93e7f61083572f02d41ee2205f41d1910fbac8cd6e"
       },
-      "sourceCommit": "0829bc9c8af0216c1d7bb7d8cba3225f8ee060b5",
-      "sourceTree": "2d377031fc8b7dddf3115334be57ae92c76923f1"
+      "sourceCommit": "f15261b6ac61ec16f9f31107696f8b56506d0426",
+      "sourceTree": "778956870dc0c015fc6f45a92fa452811fde5e8c"
     },
     "state": "approved"
   },
