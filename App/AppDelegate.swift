@@ -683,6 +683,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                     }
                 }
             }
+        } else if CommandLine.arguments.contains("--ui-test-separator-alignment") {
+            runSeparatorAlignmentCheck()
         } else if CommandLine.arguments.contains("--ui-test-dense-scroll-profile") {
             runDenseScrollPerformanceProfile()
         } else if CommandLine.arguments.contains("--ui-test-dense-selection-profile") {
@@ -1142,6 +1144,103 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
     }
 
+    /// Real-window check that command separators stay on their prompt rows
+    /// while failed commands, engine-inserted error help, and new prompts
+    /// scroll the live screen. Run with an isolated CMDY_CONFIG_DIR.
+    private func runSeparatorAlignmentCheck() {
+        Preferences.shared.workspaceNavigatorVisible = false
+        Preferences.shared.workspaceInspectorVisible = false
+        Preferences.shared.ghostText = false
+        Preferences.shared.sounds = false
+        Preferences.shared.automaticErrorHelp = true
+        newWindow(nil)
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { [weak self] in
+            guard let controller = self?.controllers.first,
+                  let pane = controller.focusedPane ?? controller.panes.first,
+                  let surface = pane.surface as? CmdyTerminalSurface,
+                  let window = controller.window else { exit(1) }
+            window.setFrame(NSRect(x: 120, y: 120, width: 854, height: 570), display: true)
+            window.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+
+            let commandCount = 24
+            var commandIndex = 0
+            var worstError: CGFloat = 0
+            var worstTopDrift = 0
+            let resizeWidths: [CGFloat] = [620, 980, 700, 1100, 854]
+            var resizeIndex = 0
+            var hiddenPhaseDone = false
+            @MainActor func feedNextCommand() {
+                let name = ["asdsd", "d", "a", "das"][commandIndex % 4] + "\(commandIndex)"
+                surface.feed(text: "\u{1b}]133;A\u{07}% " + name
+                    + "\u{1b}]133;B\u{07}\r\n\u{1b}]133;C\u{07}"
+                    + "zsh: command not found: " + name + "\r\n"
+                    + "\u{1b}]133;D;127\u{07}")
+                commandIndex += 1
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                    MainActor.assumeIsolated { checkAndContinue() }
+                }
+            }
+            @MainActor func checkAndContinue() {
+                    let error = pane.blockOverlayForTesting.separatorMisalignmentForTesting()
+                    let drift = abs(surface.engine.currentTopRow - surface.displayedTopRowForTesting)
+                    worstError = max(worstError, error)
+                    worstTopDrift = max(worstTopDrift, drift)
+                    if commandIndex < commandCount {
+                        feedNextCommand()
+                    } else if !hiddenPhaseDone {
+                        // Output that arrives while the window is hidden must
+                        // still leave the separators aligned once it returns.
+                        hiddenPhaseDone = true
+                        window.orderOut(nil)
+                        for extra in 0..<6 {
+                            let name = "hidden\(extra)"
+                            surface.feed(text: "\u{1b}]133;A\u{07}% " + name
+                                + "\u{1b}]133;B\u{07}\r\n\u{1b}]133;C\u{07}"
+                                + "zsh: command not found: " + name + "\r\n"
+                                + "\u{1b}]133;D;127\u{07}")
+                        }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                            MainActor.assumeIsolated {
+                                window.makeKeyAndOrderFront(nil)
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                                    MainActor.assumeIsolated { checkAndContinue() }
+                                }
+                            }
+                        }
+                    } else if resizeIndex < resizeWidths.count {
+                        // Resizing rewraps the long error-help lines and moves
+                        // every prompt row; separators must follow the reflow.
+                        let frame = window.frame
+                        window.setFrame(NSRect(x: frame.minX, y: frame.minY,
+                                               width: resizeWidths[resizeIndex],
+                                               height: frame.height), display: true)
+                        resizeIndex += 1
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                            MainActor.assumeIsolated { checkAndContinue() }
+                        }
+                    } else {
+                        let helpRows = (0..<surface.engine.bufferLineCount).filter {
+                            surface.engine.scrollbackLineText(row: $0)?
+                                .contains("could not find") == true
+                        }.count
+                        let ok = worstError < 0.5 && worstTopDrift == 0
+                            && pane.blockStore.blocks.count >= commandCount
+                        print(String(format:
+                            "UISEPARATORALIGNMENT commands=%d resizes=%d blocks=%d rows=%d "
+                            + "liveTop=%d helpRows=%d worstErrorPt=%.2f worstTopDrift=%d ok=%@",
+                            commandCount, resizeIndex, pane.blockStore.blocks.count,
+                            surface.engine.rows, surface.engine.liveScreenTopRow, helpRows,
+                            Double(worstError), worstTopDrift, ok ? "true" : "false"))
+                        fflush(stdout)
+                        exit(ok ? 0 : 1)
+                    }
+            }
+            feedNextCommand()
+        }
+    }
+
     /// Real-window native-scroll profiler for dense restored scrollback. This
     /// deliberately measures the same pixel-wheel path as a trackpad instead
     /// of the row-at-a-time plugin API used by the fleet performance gate.
@@ -1311,6 +1410,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                             semanticRowsPresent = !pane.blockStore.blocks.isEmpty
                                 && !surface.failedBlockRows.isEmpty
                         }
+                        // Command separators are cached layers; after the
+                        // burst they must sit exactly on their prompt rows.
+                        let separatorError = pane.blockOverlayForTesting
+                            .separatorMisalignmentForTesting()
+                        let separatorsAligned = separatorError < 0.5
                         let eventsComplete = handlerDurations.count == eventCount
                         let returnedToStart = surface.engine.currentTopRow == startTopRow
                         let fixtureStable = surface.engine.liveScreenTopRow == startLiveTop
@@ -1329,6 +1433,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                             && reused > rebuilt
                             && cadenceRatio >= 0.75
                             && returnedToStart
+                            && separatorsAligned
                         print(String(format:
                             "UIDENSESCROLL variant=%@ pixels=%d blocks=%d failed=%d "
                             + "grid=%dx%d screenHz=%d lowPower=%@ "
@@ -1338,7 +1443,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                             + "handlerMaxMs=%.3f timerP95Ms=%.3f timerMaxMs=%.3f "
                             + "rebuilt=%d reused=%d captures=%d projections=%d yDisp=%d "
                             + "startYDisp=%d startHistory=%d observedEvents=%d "
-                            + "semantic=%@ stable=%@ returned=%@ ok=%@",
+                            + "semantic=%@ stable=%@ returned=%@ "
+                            + "separatorErrorPt=%.2f ok=%@",
                             variant.rawValue, eventPixels,
                             pane.blockStore.blocks.count,
                             surface.failedBlockRows.count,
@@ -1359,6 +1465,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                             semanticRowsPresent ? "true" : "false",
                             fixtureStable ? "true" : "false",
                             returnedToStart ? "true" : "false",
+                            Double(separatorError),
                             ok ? "true" : "false"))
                         fflush(stdout)
                         if !CommandLine.arguments.contains(

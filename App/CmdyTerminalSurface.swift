@@ -235,6 +235,8 @@ final class CmdyTerminalSurface: NSView,
         didSet { if oldValue != failedBlockBackgroundColor { appearanceChanged() } }
     }
     private(set) var visualScrollOffset: CGFloat = 0
+    /// The top row of the snapshot the renderer is drawing.
+    var displayedTopRowForTesting: Int { renderSnapshot.grid.displayTopRow }
     var onVisualScrollChanged: (() -> Void)?
     var activityKeypressTime: Double = 0 {
         didSet { publishInputActivity() }

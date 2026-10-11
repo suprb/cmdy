@@ -71,6 +71,33 @@ final class BlockOverlayView: NSView {
         separatorLayers.filter { !$0.isHidden }.count
     }
 
+    /// Largest vertical distance, in points, between a visible separator and
+    /// the top of its prompt row under the surface's current scroll state.
+    /// Infinity when the visible separator count is wrong. Reads cached layers
+    /// only; it never refreshes them.
+    func separatorMisalignmentForTesting() -> CGFloat {
+        guard let store, let surface else { return 0 }
+        let term = surface.engine
+        let cellHeight = surface.cellSize.height
+        let top = term.currentTopRow
+        let rows = term.rows
+        let origin = contentTopInset + surface.visualScrollOffset
+        var expected: [CGFloat] = []
+        for block in store.blocks {
+            let screenRow = block.promptRow - top
+            guard screenRow >= -1, screenRow <= rows else { continue }
+            expected.append(origin + CGFloat(screenRow) * cellHeight)
+        }
+        expected.sort()
+        let translation = separatorContainerLayer.affineTransform().ty
+        let actual = separatorLayers
+            .filter { !$0.isHidden }
+            .map { $0.frame.minY + translation }
+            .sorted()
+        guard expected.count == actual.count else { return .infinity }
+        return zip(expected, actual).map { abs($0 - $1) }.max() ?? 0
+    }
+
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
         wantsLayer = true

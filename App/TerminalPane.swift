@@ -303,6 +303,7 @@ final class TerminalPane: DropView, InlinePanelHost, ExtensionSurfaceHost,
     let blockStore = BlockStore()
     var extensionControlBarTargetID: String { paneId }
     private let blockOverlay = BlockOverlayView()
+    var blockOverlayForTesting: BlockOverlayView { blockOverlay }
     private let scrollIndicator = TerminalScroller(frame: .zero)
     private let splitAffordance = PaneSplitAffordanceView(frame: .zero)
     private var surfaceBottomConstraint: NSLayoutConstraint?
