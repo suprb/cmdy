@@ -523,6 +523,13 @@ fi
 RESOURCE_SMOKE_DIR="$(mktemp -d "${TMPDIR:-/tmp}/$PRODUCT_SLUG-resource-smoke.XXXXXX")"
 cleanup_resource_smoke() {
     if [ -n "$RESOURCE_SMOKE_DIR" ] && [ "$RESOURCE_SMOKE_DIR" != "/" ]; then
+        # A Chromium helper can outlive the app by a few hundred milliseconds
+        # and still flush profile files, so retry briefly before failing.
+        local attempt
+        for attempt in 1 2 3 4 5 6 7 8 9 10; do
+            rm -rf "$RESOURCE_SMOKE_DIR" 2>/dev/null && return 0
+            sleep 0.5
+        done
         rm -rf "$RESOURCE_SMOKE_DIR"
     fi
 }
