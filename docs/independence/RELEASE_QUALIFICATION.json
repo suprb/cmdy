@@ -45,7 +45,7 @@
       {
         "path": "package.sh",
         "purpose": "package-script",
-        "sha256": "7756186287070e7ab9d51c5369be2d8d23ee1b5b18a84211bfd1c29f02877a48"
+        "sha256": "54fe13bc3f7ebe387ae55fe2475c13931d460a2d32922b69573a3dbf7066ad59"
       },
       {
         "path": "Tests/perf-gate.sh",
@@ -174,8 +174,8 @@
       "approvalReference": "Project owner replied 'yes to all' on 2026-10-11 to the three pending 1.0.8 decisions: the v2 renderer reference corpus for the line-modes seam fix, the visual review of the 14-station zoo contact sheet, and owner approval of the release with the non-independent review notice.",
       "approvedPublicWording": "Engineering qualification passed for the exact cmdy 1.0.8 source and evidence set: Core parity across 17 seeds and 53,992 cases, 40/40 exact renderer pixel parity against the owner-approved reference corpus v2, performance gates in normal and maximized windows, a three-run resource plateau with no zombie processes, and an owner-reviewed 14-station TUI zoo. Project-owner approval; this is not an independent authorship or legal clean-room review.",
       "decision": "approved",
-      "engineeringDigestSha256": "b275ca97501d89d37f7c10189ceac883f0ece15cc38e39183403fbd740e0e333",
-      "evidenceDigestSha256": "834439f8f9e6877946ad2dfa2d58efc7220544434492bcd3c99390b2ea7213e8",
+      "engineeringDigestSha256": "f1a18ed12069efb5efc2268f4db4f46653b9aa7c0b0481a1b71f73a84df2399f",
+      "evidenceDigestSha256": "eee27df55264cb6a127219000a05e66714a00046caebe4cdf214f3fbf79ee651",
       "reviewedAtUTC": "2026-10-11T22:19:20Z",
       "reviewerAffiliation": "cmdy project owner",
       "reviewerIndependentFromImplementation": false,
@@ -186,16 +186,16 @@
       "core": {
         "record": {
           "path": "docs/independence/qualification/core-17-seed.json",
-          "sha256": "77a342e81125a795a811b5c1fad5d908e25bdfd2073061c610f78aa70e0da32d"
+          "sha256": "c91291b27de7d933f8c29aa9911f1a354ccc56a5cc54da83aba1dd7cdce87b84"
         },
-        "sourceManifestSha256": "42c7cd637a5c8546e755ed7775cb47abd95063468ab55499b4778bcd80a88572"
+        "sourceManifestSha256": "523423b311797a1284d2eb132e3a9fd6abd20e99fd26a0af89b266130976d002"
       },
       "operational": {
         "record": {
           "path": "docs/independence/qualification/operational-review.json",
-          "sha256": "abcd1dc375455c0d1543c5e64602d70c4791fb0dad7b4080e202f8447bb76134"
+          "sha256": "69acd7ba613fd847d1cc220b7df025588193d4ffe798ba908a25753b19cee9d2"
         },
-        "sourceManifestSha256": "42c7cd637a5c8546e755ed7775cb47abd95063468ab55499b4778bcd80a88572"
+        "sourceManifestSha256": "523423b311797a1284d2eb132e3a9fd6abd20e99fd26a0af89b266130976d002"
       },
       "renderer": {
         "checkerSha256": "af729dfd1e17143879fda24a35b5312d735b9e10907b65c9f85d7bb0428c7b49",
@@ -207,20 +207,20 @@
           "path": "docs/independence/qualification/renderer-environment.json",
           "sha256": "f4e302d26c7c3e64023d8561f59ecade3980dbbd286502ed5579f512e7ffd9b4"
         },
-        "sourceManifestSha256": "42c7cd637a5c8546e755ed7775cb47abd95063468ab55499b4778bcd80a88572"
+        "sourceManifestSha256": "523423b311797a1284d2eb132e3a9fd6abd20e99fd26a0af89b266130976d002"
       }
     },
     "source": {
       "activeSourceManifest": {
         "path": "docs/independence/qualification/active-terminal-sources.json",
-        "sha256": "42c7cd637a5c8546e755ed7775cb47abd95063468ab55499b4778bcd80a88572"
+        "sha256": "523423b311797a1284d2eb132e3a9fd6abd20e99fd26a0af89b266130976d002"
       },
       "provenanceReport": {
         "path": "docs/independence/qualification/working-tree-provenance.json",
-        "sha256": "f2d8aae1363ed07e80dc2e56979337855f97c680c16cbceb6b307c2cbd4f5644"
+        "sha256": "2fbf1bb9a24696c9055445e65e0b447e438ecb8d2b5ccb79ab459424d68a0da9"
       },
-      "sourceCommit": "57bd4af2d7ced3faaa5c368514da7b5331e431e9",
-      "sourceTree": "7e82aa8a6d6fe97f7fc707dada1162903de6a136"
+      "sourceCommit": "32472b8b467558f83ae90e543d17307f4d5a91a9",
+      "sourceTree": "686dad81dcf01b445e5b9200fe95c48163c8fdf2"
     },
     "state": "approved"
   },

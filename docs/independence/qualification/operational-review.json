@@ -36,12 +36,12 @@
   },
   "review": {
     "decision": "approved",
-    "reference": "cmdy 1.0.8 owner approval ('yes to all'); contact-sheet-sha256:036734780fc5f1d4e5f8cb90676133fd66c94e2a75cdbf5bc5eb266bb3a17b96",
+    "reference": "cmdy 1.0.8 owner approval ('yes to all'); contact-sheet-sha256:036734780fc5f1d4e5f8cb90676133fd66c94e2a75cdbf5bc5eb266bb3a17b96; rebound 2026-10-11 to the package.sh cleanup fix (app binary and evidence unchanged)",
     "reviewedAtUTC": "2026-10-11T22:19:20Z",
     "reviewerName": "Andreas Pihlström"
   },
   "schemaVersion": 1,
-  "sourceManifestSha256": "42c7cd637a5c8546e755ed7775cb47abd95063468ab55499b4778bcd80a88572",
+  "sourceManifestSha256": "523423b311797a1284d2eb132e3a9fd6abd20e99fd26a0af89b266130976d002",
   "zoo": {
     "captureCount": 14,
     "captureManifest": {
