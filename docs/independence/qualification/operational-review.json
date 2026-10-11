@@ -5,52 +5,52 @@
       "exceptions": [],
       "log": {
         "path": "docs/independence/qualification/performance-normal.log",
-        "sha256": "719f8fa064d7663e73f5528f5d6002e0c09b71b859e6ab8d5797a183f5a17eaf"
+        "sha256": "b8349834a1d2d882b8ce01aa46dde82bd9997cb3b1af5c3afc5e13066bad0aae"
       },
       "mode": "normal",
       "passed": true,
-      "scriptSha256": "31bf6649420557b5f7d1ef55e51cab89d0b28ed3d5c6fe32e85b60050db43827"
+      "scriptSha256": "50aba296b02bfe9470673249d4ed1d3c62f95345ae75809d0b2784993afe1262"
     },
     {
       "exceptions": [],
       "log": {
         "path": "docs/independence/qualification/performance-maximized.log",
-        "sha256": "41341fce9a94ff244bde4f4134e91fd44b54d54a73ccb0fa533f99f1a7d262e3"
+        "sha256": "f7fcf859c2825c75e65f64c56ca818befe867153bcc59601a7d3d308fab6fcba"
       },
       "mode": "maximized",
       "passed": true,
-      "scriptSha256": "31bf6649420557b5f7d1ef55e51cab89d0b28ed3d5c6fe32e85b60050db43827"
+      "scriptSha256": "50aba296b02bfe9470673249d4ed1d3c62f95345ae75809d0b2784993afe1262"
     }
   ],
   "resourcePlateau": {
     "exceptions": [],
     "log": {
       "path": "docs/independence/qualification/resource-plateau.log",
-      "sha256": "ec1be21912af1277daacc2389cb7920c01105724cc1c89a34135169b844bda4c"
+      "sha256": "6880fd2dd7863b0607246ed4a17b289d38d82719712d1f46da458d856fd0f7fd"
     },
     "monotonicGrowth": false,
     "passed": true,
     "runs": 3,
-    "scriptSha256": "43a38320c31925c8500ea7c2a4d8f9edda836c6ab622745883b79fa58a775cc2",
+    "scriptSha256": "fac26205a44b8843a1271fc368a604a947c35d1fe76ff1c2e7ade95ba632781a",
     "zombieCount": 0
   },
   "review": {
-    "decision": "approved",
-    "reference": "cmdy 1.0 visual approval; contact-sheet-sha256:7fd8a3252b69b7e2ebc1ec53f5509b0624cd49e5bfdf0810d87bc1dbcbe13d7d",
-    "reviewedAtUTC": "2026-08-31T19:12:41Z",
-    "reviewerName": "Andreas Pihlström"
+    "decision": "pending",
+    "reference": "awaiting project-owner review of the 1.0.8 evidence",
+    "reviewedAtUTC": "",
+    "reviewerName": ""
   },
   "schemaVersion": 1,
-  "sourceManifestSha256": "2008479701202acc627d57ed7a11b640ace509f1656293c1ed96f49f9291bebe",
+  "sourceManifestSha256": "42c7cd637a5c8546e755ed7775cb47abd95063468ab55499b4778bcd80a88572",
   "zoo": {
     "captureCount": 14,
     "captureManifest": {
       "path": "docs/independence/qualification/zoo-capture-manifest.json",
-      "sha256": "63d2d4232c2522cdd2ce5d0c8ce5302da9dcaa7d36b047a1cf744d42fd6ee750"
+      "sha256": "e4c76d2a553283fd1d9de319c836ba02d7ed8eee0bf50ff356222b30e2a11060"
     },
     "exceptions": [],
     "passed": true,
-    "scriptSha256": "d5195ceeeb072a40305d5f4ae5a84268581d36653ab456e4840dc2405cb99f21",
+    "scriptSha256": "4a9f9d67c46556f38eeb0df5689315b89da35a957b1bab0adaf574301bf75d2b",
     "visualReview": {
       "path": "docs/independence/qualification/zoo-visual-review.json",
       "sha256": "4eac1abde8a08cfbba1affebc185600199ef286ac5418c0326206592deac487f"

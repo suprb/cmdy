@@ -5,7 +5,7 @@
       {
         "path": "scripts/check-active-source-manifest.py",
         "purpose": "active-source-checker",
-        "sha256": "1bb64a39b90d16c71b647c470a5045583483928149afe399a2cab424afaed612"
+        "sha256": "fd0713bf9f077a2eda44fee5bb343ce1bce9aa612f24928fafcb5ae031bcdd18"
       },
       {
         "path": "scripts/package-browser-extension.sh",
@@ -25,7 +25,7 @@
       {
         "path": ".github/workflows/ci.yml",
         "purpose": "ci-workflow",
-        "sha256": "6e528776587e9609119e5f16047601c809146f549eb65d10536ae457cad6d6bf"
+        "sha256": "0b3296a801839c1a3e717ea54e9b3480a5683aa2250802f8f80ab8fd4b0e7153"
       },
       {
         "path": "scripts/check-core-blackbox-parity.py",
@@ -35,7 +35,7 @@
       {
         "path": "scripts/check-independent-api.sh",
         "purpose": "independent-api-checker",
-        "sha256": "0ee0910e61f6db27cfe966ca9c9191096ee5cee23b1a6cd9dad601214f7d8694"
+        "sha256": "86f9704d421ce467ffe2e65691e86c53816dc48df0260836f9da0d5da27d3d3f"
       },
       {
         "path": "scripts/package-resource-policy.sh",
@@ -45,12 +45,12 @@
       {
         "path": "package.sh",
         "purpose": "package-script",
-        "sha256": "d38d8188a6d5b36765523b9623bb72e2402c9ed6f3d4294f69555541df4859a1"
+        "sha256": "7756186287070e7ab9d51c5369be2d8d23ee1b5b18a84211bfd1c29f02877a48"
       },
       {
         "path": "Tests/perf-gate.sh",
         "purpose": "performance-gate",
-        "sha256": "31bf6649420557b5f7d1ef55e51cab89d0b28ed3d5c6fe32e85b60050db43827"
+        "sha256": "50aba296b02bfe9470673249d4ed1d3c62f95345ae75809d0b2784993afe1262"
       },
       {
         "path": "Identity/Sources/ProductIdentity/Resources/product-identity.json",
@@ -65,17 +65,17 @@
       {
         "path": "docs/independence/WORKING_TREE_PROVENANCE_ALLOWLIST.json",
         "purpose": "provenance-allowlist",
-        "sha256": "cd6f1c5e0762b88c1415129cfd152c18ea7eae68f87eccaf5d5e928880df3b84"
+        "sha256": "60f410377c96c70f96c86edd4a70126122dd51c6e15e2d9ea6670c8ccc867668"
       },
       {
         "path": "scripts/check-working-tree-provenance.py",
         "purpose": "provenance-checker",
-        "sha256": "b3a4a0ee6298424791e47b8760702f7ad0d8a704af92086c4add91da2fda5941"
+        "sha256": "590d7d586bc51b5e144472eadbda1d0b6e6dbb58c432283469e3f8fff67f5838"
       },
       {
         "path": "scripts/check-release-qualification.py",
         "purpose": "qualification-checker",
-        "sha256": "9fe014872b46ea8f03454bb7d2300b267564410d1e2e5241a8f39531c34e8565"
+        "sha256": "66512f2d202d1397f876657bad186bdb3ba25c363a551e93145bb48be87537d9"
       },
       {
         "path": "Schemas/release-qualification-v1.schema.json",
@@ -100,12 +100,12 @@
       {
         "path": "Tests/RendererPixelOracle/RendererPixelFixture.swift",
         "purpose": "renderer-fixture",
-        "sha256": "c4e34ecc1b04953d0d5773d46de5aaf20025a55cc63113df60eed7d5b161e057"
+        "sha256": "aad4c214230f0106246bb54c58479dfa492cfc3f03093934511ab6d84a81cc8f"
       },
       {
         "path": "scripts/check-renderer-pixel-parity.py",
         "purpose": "renderer-parity-checker",
-        "sha256": "886a21d8601f7917bbab544ac285b5952d3f79a60203c56d25bb1632f7690ee7"
+        "sha256": "d1778c09ffac63edf8fe20934c9633fc09538a90d6d72da11a7e9914d596f0bb"
       },
       {
         "path": "release.sh",
@@ -120,12 +120,12 @@
       {
         "path": "test.sh",
         "purpose": "resource-stress-gate",
-        "sha256": "43a38320c31925c8500ea7c2a4d8f9edda836c6ab622745883b79fa58a775cc2"
+        "sha256": "fac26205a44b8843a1271fc368a604a947c35d1fe76ff1c2e7ade95ba632781a"
       },
       {
         "path": "Tests/zoo.sh",
         "purpose": "tui-zoo-gate",
-        "sha256": "d5195ceeeb072a40305d5f4ae5a84268581d36653ab456e4840dc2405cb99f21"
+        "sha256": "4a9f9d67c46556f38eeb0df5689315b89da35a957b1bab0adaf574301bf75d2b"
       },
       {
         "path": "scripts/check-zoo-review.py",
@@ -160,7 +160,7 @@
     },
     "rendererCorpus": {
       "archiveSha256": "5507d54ebe8e453edc9f38d3dbf84ac01ef132ae8370a3a7de39a1624d46188a",
-      "candidateFixtureSha256": "c4e34ecc1b04953d0d5773d46de5aaf20025a55cc63113df60eed7d5b161e057",
+      "candidateFixtureSha256": "aad4c214230f0106246bb54c58479dfa492cfc3f03093934511ab6d84a81cc8f",
       "fixtureCount": 40,
       "fixtureIndexSha256": "e52c987c52e495dc7bb7a14ccf8d9ef6b0abd4e8fed6d60facd469a2af6f9d5d",
       "lockSha256": "a448c37b7e114505f4e8569ed9389c608698cb9bf50b7c0219daff4fd10ccd2f",
@@ -170,59 +170,48 @@
   },
   "kind": "cmdy-release-qualification",
   "publication": {
-    "approval": {
-      "approvalReference": "Project owner reported HTTP 403 for latest while installing Browser on the managed work computer and had already directed Browser download, install, and removal work to run until finished; the API-free routing, release aliases, exact-version checks, local suites, and prerelease-first target-machine acceptance workflow passed review before the exact source was requalified on 2026-09-05.",
-      "approvedPublicWording": "Engineering qualification and API-free Browser download routing, consent-preserving install flow, checksum and signed app-switch verification, rollback and relaunch recovery, removal, updater, packaging, local test checks, and prerelease-first target-machine acceptance controls passed for the exact cmdy 1.0.7 source and evidence set. CI and managed-work-Mac acceptance remain required before stable publication. Project-owner approval; this is not an independent authorship or legal clean-room review.",
-      "decision": "approved",
-      "engineeringDigestSha256": "936078c1abfbb147e148ca0cfca8dc3618cf7aa4bcacc599d2e21ba0abda01fe",
-      "evidenceDigestSha256": "7b24caccdaa49fad34eac97295481f8abc566339940e56452154ab984e44469d",
-      "reviewedAtUTC": "2026-09-05T18:48:35Z",
-      "reviewerAffiliation": "cmdy project owner",
-      "reviewerIndependentFromImplementation": false,
-      "reviewerKind": "human",
-      "reviewerName": "Andreas Pihlström"
-    },
+    "approval": null,
     "evidence": {
       "core": {
         "record": {
           "path": "docs/independence/qualification/core-17-seed.json",
-          "sha256": "db64fd93529a3e5081f5c7410d2154550b8eac6ac0d8a0bbed42e799479de0c9"
+          "sha256": "77a342e81125a795a811b5c1fad5d908e25bdfd2073061c610f78aa70e0da32d"
         },
-        "sourceManifestSha256": "2008479701202acc627d57ed7a11b640ace509f1656293c1ed96f49f9291bebe"
+        "sourceManifestSha256": "42c7cd637a5c8546e755ed7775cb47abd95063468ab55499b4778bcd80a88572"
       },
       "operational": {
         "record": {
           "path": "docs/independence/qualification/operational-review.json",
-          "sha256": "f2b7838ec9f58038bcf4ab1672fc06526f491aa453c16a658eb0839244d6e167"
+          "sha256": "702c78163a367a8e5ba4b898e42560c5a4182e44326c3fe9e108428c4bcf2f76"
         },
-        "sourceManifestSha256": "2008479701202acc627d57ed7a11b640ace509f1656293c1ed96f49f9291bebe"
+        "sourceManifestSha256": "42c7cd637a5c8546e755ed7775cb47abd95063468ab55499b4778bcd80a88572"
       },
       "renderer": {
-        "checkerSha256": "886a21d8601f7917bbab544ac285b5952d3f79a60203c56d25bb1632f7690ee7",
+        "checkerSha256": "d1778c09ffac63edf8fe20934c9633fc09538a90d6d72da11a7e9914d596f0bb",
         "comparison": {
           "path": "docs/independence/qualification/renderer-comparison.json",
-          "sha256": "c6de090c7605fea74481beed8b68c4fdd9d27c736713798b5099f578c95ed239"
+          "sha256": "8624d3e5534c9edc65756af3432ec00ca5e464b73154c89ad86b2b12048f0668"
         },
         "environment": {
           "path": "docs/independence/qualification/renderer-environment.json",
-          "sha256": "17d430cd7191f8872de0acb497ef7010c2913757e10574cb2e69b152218bfc39"
+          "sha256": "0f98f37572faefc3ddc852161cfae177206817027d17e91cb44703202d4e6997"
         },
-        "sourceManifestSha256": "2008479701202acc627d57ed7a11b640ace509f1656293c1ed96f49f9291bebe"
+        "sourceManifestSha256": "42c7cd637a5c8546e755ed7775cb47abd95063468ab55499b4778bcd80a88572"
       }
     },
     "source": {
       "activeSourceManifest": {
         "path": "docs/independence/qualification/active-terminal-sources.json",
-        "sha256": "2008479701202acc627d57ed7a11b640ace509f1656293c1ed96f49f9291bebe"
+        "sha256": "42c7cd637a5c8546e755ed7775cb47abd95063468ab55499b4778bcd80a88572"
       },
       "provenanceReport": {
         "path": "docs/independence/qualification/working-tree-provenance.json",
-        "sha256": "d3d117a3ad46a2e3709bbc93e7f61083572f02d41ee2205f41d1910fbac8cd6e"
+        "sha256": "f2d8aae1363ed07e80dc2e56979337855f97c680c16cbceb6b307c2cbd4f5644"
       },
-      "sourceCommit": "f15261b6ac61ec16f9f31107696f8b56506d0426",
-      "sourceTree": "778956870dc0c015fc6f45a92fa452811fde5e8c"
+      "sourceCommit": "19d66b6338360b23719bd3ff645a77cb1a934be2",
+      "sourceTree": "2568d5f3da580689cfb023ef8960fc3c13d10f56"
     },
-    "state": "approved"
+    "state": "pending"
   },
   "schemaVersion": 1
 }

@@ -10,6 +10,12 @@
           ]
         },
         {
+          "path": "Core/Sources/CmdyCoreZig",
+          "suffixes": [
+            ".swift"
+          ]
+        },
+        {
           "path": "Core/Sources/CmdyPTY",
           "suffixes": [
             ".swift"
@@ -29,7 +35,50 @@
           ]
         },
         {
+          "path": "Core/Sources/CmdyCZig",
+          "suffixes": [
+            ".swift"
+          ]
+        },
+        {
+          "path": "Core/Sources/CmdyNative",
+          "suffixes": [
+            ".c",
+            ".h",
+            ".modulemap"
+          ]
+        },
+        {
+          "path": "Core/Zig",
+          "suffixes": [
+            ".zig",
+            ".zon",
+            ".metal"
+          ]
+        },
+        {
+          "path": "Core/Platform",
+          "suffixes": [
+            ".m",
+            ".c",
+            ".h"
+          ]
+        },
+        {
+          "path": "Core/Plugins/VerifyNativeEngine",
+          "suffixes": [
+            ".swift"
+          ]
+        },
+        {
           "path": "Renderer/Sources/CmdyGPU",
+          "suffixes": [
+            ".swift",
+            ".metal"
+          ]
+        },
+        {
+          "path": "Renderer/Sources/CmdyGPUZig",
           "suffixes": [
             ".swift",
             ".metal"
@@ -61,9 +110,20 @@
         }
       ],
       "appSourceRule": "all-recursive-swift",
+      "generatedNativeStamp": {
+        "modes": [
+          "Debug",
+          "ReleaseSafe",
+          "ReleaseFast"
+        ],
+        "path": "Core/Sources/CmdyNative/include/cmdy_engine_build.h",
+        "receipt": "Core/.zig-build/manifest.json",
+        "rule": "optional-derived-header-excluded-after-exact-receipt-validation"
+      },
       "importScanRoots": [
         "App",
         "Core/Sources",
+        "Core/Plugins",
         "Renderer/Sources",
         "Kit/Sources",
         "Identity/Sources",
@@ -71,6 +131,14 @@
         "Plugins/chromium/Support/Sources"
       ],
       "modeRule": "git-regular-100644-or-100755",
+      "nativeBuildInputs": [
+        "build.sh",
+        "scripts/bootstrap-zig.sh",
+        "Core/Tools/ZigEngine/build.py",
+        "Core/Tools/ZigEngine/source_inputs.py",
+        "Core/Tools/ZigEngine/apple_toolchain.py",
+        "Core/Tools/ZigEngine/verify.py"
+      ],
       "packageGraphInputs": [
         "Package.swift",
         "Core/Package.swift",
@@ -79,7 +147,15 @@
         "Identity/Package.swift",
         "Plugins/CmdySDK/Package.swift",
         "Plugins/chromium/Support/Package.swift",
-        "Identity/Sources/ProductIdentity/Resources/product-identity.json"
+        "Identity/Sources/ProductIdentity/Resources/product-identity.json",
+        "App/Resources/Cmdy.sdef",
+        "package.sh",
+        "build.sh",
+        "scripts/bootstrap-zig.sh",
+        "Core/Tools/ZigEngine/build.py",
+        "Core/Tools/ZigEngine/source_inputs.py",
+        "Core/Tools/ZigEngine/apple_toolchain.py",
+        "Core/Tools/ZigEngine/verify.py"
       ],
       "packageManifests": [
         "Package.swift",
@@ -90,7 +166,7 @@
         "Plugins/CmdySDK/Package.swift",
         "Plugins/chromium/Support/Package.swift"
       ],
-      "policyId": "cmdy-active-terminal-source-policy-v2",
+      "policyId": "cmdy-active-terminal-source-policy-v5",
       "requiredAppSources": [
         "App/CmdyCoreAdapter.swift",
         "App/CmdySnapshotShaper.swift",
@@ -125,8 +201,12 @@
         "Kit/Tests/TermiteKitTests",
         "Plugins/TermiteSDK"
       ],
+      "sourceDataRoots": [
+        "Core/Zig/testdata"
+      ],
       "sourceParents": [
         "Core/Sources",
+        "Core/Plugins",
         "Renderer/Sources",
         "Kit/Sources",
         "Identity/Sources",
@@ -157,23 +237,25 @@
         ".modulemap",
         ".s",
         ".swift",
-        ".tcc"
+        ".tcc",
+        ".zig",
+        ".zon"
       ],
       "symlinkRule": "reject-in-governed-source-trees"
     },
-    "descriptorSHA256": "fd7bc6c8448fda41a66a5a0190eea139b02fe084ec2a122e940e7bca4ccf1665",
+    "descriptorSHA256": "c84473c8b3d48d5d8d6f3d838c0ae6670d7a4b4b86d251697209d36cceb6c952",
     "implementationPath": "scripts/check-active-source-manifest.py",
-    "implementationSHA256": "1bb64a39b90d16c71b647c470a5045583483928149afe399a2cab424afaed612"
+    "implementationSHA256": "fd0713bf9f077a2eda44fee5bb343ce1bce9aa612f24928fafcb5ae031bcdd18"
   },
   "reviewState": "unreviewed",
   "schemaVersion": 2,
-  "sourceCount": 129,
+  "sourceCount": 335,
   "sources": [
     {
       "mode": "100644",
       "path": "App/AIKit.swift",
-      "sha256": "185bbea1b4e81f3a95f9433260dd09495965e3c05349f2eed836310d2e23de00",
-      "size": 7615
+      "sha256": "16670e52ad06da48887058566c93f87c5f3efb101d5b998d335228146f3d595a",
+      "size": 7546
     },
     {
       "mode": "100644",
@@ -189,15 +271,27 @@
     },
     {
       "mode": "100644",
+      "path": "App/AgentResume.swift",
+      "sha256": "c0953f79ba92c9a9142fc0e1ef60031759c11ac06d061315473065d9b9620e65",
+      "size": 8271
+    },
+    {
+      "mode": "100644",
       "path": "App/AppDelegate.swift",
-      "sha256": "b37a169d1ba0cbc8de8dbb6858f6afcc32b352568e310a7bb5931079ed0ec014",
-      "size": 283020
+      "sha256": "7f8bcfbd024fb4654a073264d6fffd5c3692d1c1c8802fe314f47a8e6eb39a57",
+      "size": 282723
     },
     {
       "mode": "100644",
       "path": "App/AppUpdateWindow.swift",
       "sha256": "2510960dd22f5736451ff3c60fc73bcdaf4cc5927215c4faab19623f8c8277e0",
       "size": 9027
+    },
+    {
+      "mode": "100644",
+      "path": "App/ApplicationSettings.swift",
+      "sha256": "478e02313eb99433e60e3145a41323487ac1788c1020a7377ae5f4c367ae9b24",
+      "size": 1853
     },
     {
       "mode": "100644",
@@ -208,8 +302,8 @@
     {
       "mode": "100644",
       "path": "App/BlockOverlayView.swift",
-      "sha256": "62f9b120845ab96214dc75898da7bdc3823c30d6bfb5db1f19fcb82af6cdbdb2",
-      "size": 15554
+      "sha256": "267e62b0f4d8e451094cde8378f3b1cdfc5cf4da9793e47e68067a47ae8a6065",
+      "size": 17192
     },
     {
       "mode": "100644",
@@ -244,26 +338,92 @@
     {
       "mode": "100644",
       "path": "App/CmdyEditor.swift",
-      "sha256": "893e4a44be075d2336c7eca4c96f65ccf4352fd4335ff60be54d360f04bae5b9",
-      "size": 35719
+      "sha256": "b90c453b744a389f4c897379f1a45b3661409891874252484753da090f7990b5",
+      "size": 35789
+    },
+    {
+      "mode": "100644",
+      "path": "App/CmdyModelRenderSink.swift",
+      "sha256": "4a71da553d692896a967b05368c84b6e1de8e5157356917025063d384d85b4a0",
+      "size": 1905
+    },
+    {
+      "mode": "100644",
+      "path": "App/CmdyPasteAutomation.swift",
+      "sha256": "4469d7d07ac7454f2f173c8ae064d14db031e2be1dcdfe99f2e4ec2cec96f90a",
+      "size": 3507
+    },
+    {
+      "mode": "100644",
+      "path": "App/CmdyPasteAutomationBridge.swift",
+      "sha256": "81d5ae38280c1f2a951b12b9d1418b7673fc887f143e79b85c893600b8459533",
+      "size": 1144
+    },
+    {
+      "mode": "100644",
+      "path": "App/CmdyPerformanceTrace.swift",
+      "sha256": "989d817a466f41c011a8035eed5dd01e95065e703c84bac6770ee8b5e367cf8a",
+      "size": 3561
+    },
+    {
+      "mode": "100644",
+      "path": "App/CmdyRendererCaptureProfile.swift",
+      "sha256": "5bad2bb57bab1583647c0de642ae0f10fa08742a18d68e89f3d778586a894206",
+      "size": 6073
+    },
+    {
+      "mode": "100644",
+      "path": "App/CmdyRendererStyleHarness.swift",
+      "sha256": "532d7751dd0b00a171cfbefb26645937a13a35672949de4d029dd04af743a6bf",
+      "size": 10270
+    },
+    {
+      "mode": "100644",
+      "path": "App/CmdyRendererWindowHarness.swift",
+      "sha256": "74108ce56d453e5564dfd6e8fb2fb1f2babbff1bd3251b92d2a82661341bd66f",
+      "size": 24127
+    },
+    {
+      "mode": "100644",
+      "path": "App/CmdyShaperPendingRunHarness.swift",
+      "sha256": "85cf4f73de8b765ba459910f72e23019913107da9befa2dcaef99ea59d07fb89",
+      "size": 4651
+    },
+    {
+      "mode": "100644",
+      "path": "App/CmdyShaperProceduralColorHarness.swift",
+      "sha256": "66e928fd5aa890a482f9e3ebc3a15ea0ccac7fa04566f004247e2460502737f8",
+      "size": 9584
+    },
+    {
+      "mode": "100644",
+      "path": "App/CmdySnapshotRevisionHarness.swift",
+      "sha256": "a6a43cc5cdeb9b70981e13a9f9268eb5e5138cc5c3dc5bcc7865f2e4a6252b95",
+      "size": 12688
     },
     {
       "mode": "100644",
       "path": "App/CmdySnapshotShaper.swift",
-      "sha256": "9f05853fb1dc697da19ceed42fa94839bfe44654134cad95166eb3edda6d6f8f",
-      "size": 20886
+      "sha256": "2d4b7ef5ff5feade4bd33f7cfcace6f44bde6d89c2ba29d50e375d0a6c02430f",
+      "size": 15906
     },
     {
       "mode": "100644",
       "path": "App/CmdySurfaceContractHarness.swift",
-      "sha256": "5158539dc01712333948be71828379d420f8fa3d8f9406168fa2f9ca6c0512f0",
-      "size": 19836
+      "sha256": "b7643d32ba1cb410bc5ba0f316342e707ce095f85eb06d24d633ffae0a789470",
+      "size": 21848
     },
     {
       "mode": "100644",
       "path": "App/CmdyTerminalSurface.swift",
-      "sha256": "6a9dfbe2e0172ceee4975310c0e3e41a58e4b064c76dbd52f9abc21654e78cd7",
-      "size": 65995
+      "sha256": "a8fb2f2e89de8d0fdf2f9b7fc7cfa5884c6780c987ab9c2787d93f7bb68362e8",
+      "size": 91821
+    },
+    {
+      "mode": "100644",
+      "path": "App/CommandCatalog.swift",
+      "sha256": "3f50ce13b6b116b06aba1fb62ae81bafb140275a89bde92d2e8125e741560e6a",
+      "size": 19146
     },
     {
       "mode": "100644",
@@ -274,8 +434,8 @@
     {
       "mode": "100644",
       "path": "App/DropView.swift",
-      "sha256": "546b4eceb4f8b59ec5ad15eb6c8e4afa00e2dec032ab96082cac9441da8d7eb4",
-      "size": 1328
+      "sha256": "dd7e745ba59d16d225f8192eac8d784fdea96749ddd485580190913e95fc6253",
+      "size": 3085
     },
     {
       "mode": "100644",
@@ -286,20 +446,26 @@
     {
       "mode": "100644",
       "path": "App/EngineFactory.swift",
-      "sha256": "d41a4789c00243c6a3e79415bac32f11ea96eeb7de9bbb4f6d55ee332e9b84ef",
-      "size": 471
+      "sha256": "25ffb02b78b65562f44eb44780f1a5a291ac89f243cad1202302ab103c67f6b9",
+      "size": 688
     },
     {
       "mode": "100644",
       "path": "App/ErrorAssistant.swift",
-      "sha256": "9afbae9113088fddf45e70c147c7099a9e941f9533ebe524ae5abb83ec73e95b",
-      "size": 27944
+      "sha256": "bd0ca2feba6a87e7732aeb7b4f70f89e1cdf638e951fb3d3a6daa44b9a8a4c46",
+      "size": 26702
     },
     {
       "mode": "100644",
       "path": "App/FindBar.swift",
-      "sha256": "a76fba88936f520524de68b42803d9ac6bcca391987d9a256637d633f6d28257",
-      "size": 7357
+      "sha256": "0aed9d53eec88e54904d99f429d05997d2eb889713c97ead9b583bc177f29fad",
+      "size": 7623
+    },
+    {
+      "mode": "100644",
+      "path": "App/HistoryMaintenanceScheduler.swift",
+      "sha256": "39c3dab3bb2e6e1c804f022a280fcad63e6d4a0c1390330ca3844f0c76bf2c12",
+      "size": 3624
     },
     {
       "mode": "100644",
@@ -312,6 +478,18 @@
       "path": "App/IconGenerator.swift",
       "sha256": "3e7edd7e870ec8df0e987bcc88498345092d77af2fbdb37bd36a0c26ed14c5bb",
       "size": 3781
+    },
+    {
+      "mode": "100644",
+      "path": "App/InitialShellLaunches.swift",
+      "sha256": "d1ac3547ead44ba3af4892d53a85052a22272bb00aeab0910f5ebd7a75b23115",
+      "size": 1215
+    },
+    {
+      "mode": "100644",
+      "path": "App/InitialShellPrelaunch.swift",
+      "sha256": "d6f7fa5a6ec55c4ca77b893f3ca5091a5079b9dd992a60c7659fcb587777b55e",
+      "size": 2920
     },
     {
       "mode": "100644",
@@ -334,14 +512,14 @@
     {
       "mode": "100644",
       "path": "App/MenuUtilities.swift",
-      "sha256": "8b8b6fa664fc8369e13790ffd0ce65c7c4e810b316d8ce2255c82e7c4776e96f",
-      "size": 9017
+      "sha256": "bb1b9c097d186b4c3b68be736cc4c532ba5f20a72c22cfabd2c050800616a0bd",
+      "size": 9886
     },
     {
       "mode": "100644",
       "path": "App/NamedWorkspacesUI.swift",
-      "sha256": "e12df2e9634fbd5b2058921868d44dab0f3ba2a834cab061f3549b41db8a140a",
-      "size": 11854
+      "sha256": "27fc0a0c0bbb198fd232f81658909e10b10309ccae8c14f4bee665083420af31",
+      "size": 12217
     },
     {
       "mode": "100644",
@@ -358,20 +536,56 @@
     {
       "mode": "100644",
       "path": "App/SelfTest.swift",
-      "sha256": "d142caf4dc158523bba61bfedd616ed7be856fcc4f2328e540181ba2c4f4c1cf",
-      "size": 57478
+      "sha256": "fec977dc90f99f8f556953eb579b7f3f4d7ce8a94eaeb04f597c789e51c503d1",
+      "size": 71143
+    },
+    {
+      "mode": "100644",
+      "path": "App/SessionLifecycle.swift",
+      "sha256": "bdfa63da2252b9adae4bb8c0b2737358cbe8fc8bbdd7839e0d80cc4375919a60",
+      "size": 11007
+    },
+    {
+      "mode": "100644",
+      "path": "App/SessionLifecycleDiagnostics.swift",
+      "sha256": "d4c1604146e7fd8679fae8932084f11bf766f7365d87c2d0edb4a7c7fef05f53",
+      "size": 7799
+    },
+    {
+      "mode": "100644",
+      "path": "App/SettingsUI.swift",
+      "sha256": "5662218bc46bf91dc40b4ec8a0873422400ca5fd52deb9a4c4d066a56af1ba99",
+      "size": 16089
     },
     {
       "mode": "100644",
       "path": "App/ShellIntegration.swift",
-      "sha256": "f1600364ba84cba93be06723fed9bcfc1d922d99c6b93c3bbc9913325ec89a28",
-      "size": 5923
+      "sha256": "7cba3b36fe4613f4e97680fed5a14d4303878648e9fb852ea497270ab54fcb9d",
+      "size": 6188
+    },
+    {
+      "mode": "100644",
+      "path": "App/SnapshotPublicationMailbox.swift",
+      "sha256": "3b7523667e53d87b8ed123bc357fbf6509b1e0e9436f335016acb86b34105d26",
+      "size": 5166
+    },
+    {
+      "mode": "100644",
+      "path": "App/SnapshotPublicationScheduler.swift",
+      "sha256": "74e9a696819f0a29cb8bc42400ebd109091e3ee1d034bd4884e19e30ffd411ef",
+      "size": 5575
+    },
+    {
+      "mode": "100644",
+      "path": "App/StaleShellDirectoryCleanup.swift",
+      "sha256": "1fed54f61a250d834096cd7c6fdbfade5d6f3157ceabae928982587971761c8c",
+      "size": 880
     },
     {
       "mode": "100644",
       "path": "App/StandardKeybindings.swift",
-      "sha256": "3441f678f97f7a656a86fd470e4943e6d5d6e9058c82d04d6d7f9a8b68b203ed",
-      "size": 19300
+      "sha256": "2ea886db9175817733e23b2780f7e3ee5ad2b0c969f495f98a44ddc816f99bc7",
+      "size": 20909
     },
     {
       "mode": "100644",
@@ -382,20 +596,44 @@
     {
       "mode": "100644",
       "path": "App/TerminalModel.swift",
-      "sha256": "212bec21a10577ce855ea7cbbf781da6de53f953f68ae629c7b83497aa78f403",
-      "size": 17379
+      "sha256": "5ecaa423bbaf347288aa88e08103f6795340314a0b1afeea68579fec159b2f6d",
+      "size": 30921
     },
     {
       "mode": "100644",
       "path": "App/TerminalPane.swift",
-      "sha256": "29c03e5a7f66293545ebd10f12faacc62d0a5cf94c9c5704048e9d7ab3ec977f",
-      "size": 86026
+      "sha256": "fc2d6070d1878ae6c699a11985e2594e9ae2a25ed452f9614dbae35748262791",
+      "size": 91171
+    },
+    {
+      "mode": "100644",
+      "path": "App/TerminalScreenExport.swift",
+      "sha256": "41969262df1fbae7dada5de48ddd583bcafe99bef1fd49df7a668a2f69fdf213",
+      "size": 800
+    },
+    {
+      "mode": "100644",
+      "path": "App/TerminalScrollbackExport.swift",
+      "sha256": "f6fcebad379ea64211522661f5c6951ae660f4be09b134602681e216eece843e",
+      "size": 553
+    },
+    {
+      "mode": "100644",
+      "path": "App/TerminalScroller.swift",
+      "sha256": "193bb8205d51045e6746202fc1ee690bbdcbee86e934e10a5947fb0f58ed86db",
+      "size": 1334
+    },
+    {
+      "mode": "100644",
+      "path": "App/TerminalTextFile.swift",
+      "sha256": "26f51290fa7b646c22885068c2e47865164067c4bb760a4b3fd82a7cb02c4b85",
+      "size": 3394
     },
     {
       "mode": "100644",
       "path": "App/TerminalWindowController.swift",
-      "sha256": "2262e860fbd945a4ee334fcaeea5ed1309afc62e0dcbbd060a8a39542c1bd870",
-      "size": 268756
+      "sha256": "236baaf119b2c2b71ed2c0b55d918a9f81918395efb8c5d5695b1922417e7ea5",
+      "size": 276757
     },
     {
       "mode": "100644",
@@ -412,8 +650,8 @@
     {
       "mode": "100644",
       "path": "App/WindowDock.swift",
-      "sha256": "db1023697f45b6532b5c3f01ebfdf80661c56be614f90cfbe9e3ca0ed0ae7fe8",
-      "size": 38810
+      "sha256": "cf61a2bb7351c820f8556ce6a9a285790f561cec4a867eec074f28dc8e3c8e45",
+      "size": 39774
     },
     {
       "mode": "100644",
@@ -424,8 +662,8 @@
     {
       "mode": "100644",
       "path": "App/WorkspaceContext.swift",
-      "sha256": "a7937697e975eff414b9a3f5411336acbbfdb73bb9de27f5a8df0d2983bf0097",
-      "size": 8925
+      "sha256": "c3c21cc4858e3f753c8b913bf9d4eda951d26f3abe4b24f523fb6312217ec13b",
+      "size": 8864
     },
     {
       "mode": "100644",
@@ -436,14 +674,62 @@
     {
       "mode": "100644",
       "path": "App/main.swift",
-      "sha256": "e36867d5af0db9c821007a28a1e3298b2997d7a62bb37c732c2aad6645bc21ea",
-      "size": 64656
+      "sha256": "0b567ce9d74a66b218b9e95ad98b323704c69ecfdcfce0c89eee563e4b09a319",
+      "size": 72476
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Platform/platform_gpu.h",
+      "sha256": "39fc8a56ecec6ae97bb49b8c3daae6125fd50efbac4d0a172b742e3dbc13805e",
+      "size": 5585
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Platform/platform_gpu.m",
+      "sha256": "fca286400a6dbb2c7305cb4bd96665e33616245056e0809583da7f15cedcd070",
+      "size": 15665
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Platform/platform_shape.h",
+      "sha256": "3c9317378e7be18ba048294c3459dc98900601b30ec35624df3d2c9c222e82ac",
+      "size": 580
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Platform/platform_shape.m",
+      "sha256": "ae4c8adf9622aa675333ecd1c4d44199a8f9b690536636c1ec78b47673dd8266",
+      "size": 1185
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Platform/platform_text.h",
+      "sha256": "daa3cf71416cc8beb12140c5b5f9e7562faeffd96ad2ba1e9c865d1eb6adb7cc",
+      "size": 1267
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Platform/platform_text.m",
+      "sha256": "95e7f73c5b8d1407950b7c58c696a9d3b64a93650a095123bfc35c22d69e6716",
+      "size": 3341
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Plugins/VerifyNativeEngine/plugin.swift",
+      "sha256": "e342197cf8d644966ad3846ad0006c51507264c1e3db04cf66249799644127f7",
+      "size": 2525
     },
     {
       "mode": "100644",
       "path": "Core/Sources/CmdyC/lib_cmdy.swift",
       "sha256": "59d0b1db2710414145746ca04ce3397be497dfb3387cc5b023bf8bc793e6dd3b",
       "size": 6638
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyCZig/lib_cmdy.swift",
+      "sha256": "ca2582d005d024e823b6dd9d4204671cd31d0e300437d8a9265a9ed25ff9d7a3",
+      "size": 102
     },
     {
       "mode": "100644",
@@ -460,14 +746,14 @@
     {
       "mode": "100644",
       "path": "Core/Sources/CmdyCore/CmdyTerminal.swift",
-      "sha256": "6ea35b0cc10c4435e97374a0ceb25f37f70b684cd724c16bae5aee2d400b8af6",
-      "size": 182617
+      "sha256": "4730a04eb143a86f780d8be0ce5537ae6ac3fc8f181fa9c3a978f04d61b8e24b",
+      "size": 199053
     },
     {
       "mode": "100644",
       "path": "Core/Sources/CmdyCore/CmdyUnicodeWidthPolicy.swift",
-      "sha256": "b34d5db198484fe76c9461c2cb9a886bb3fc4459108573228691187093412479",
-      "size": 1999
+      "sha256": "d09e954e0d105ff72d6fd6d864e3c9b3c210df9041c83ac34ec59e3609f68ad0",
+      "size": 2179
     },
     {
       "mode": "100644",
@@ -478,8 +764,8 @@
     {
       "mode": "100644",
       "path": "Core/Sources/CmdyCore/Generated/UnicodeWidthTables.swift",
-      "sha256": "130c70f355d036b66fb9ed67d64e700230f1b8965297d1169d2eb9d28d82cdf8",
-      "size": 29440
+      "sha256": "8646e4f7076ae8d14a83da358616a71d227c7fe859ef8c95b92f54ac08c31e9b",
+      "size": 63274
     },
     {
       "mode": "100644",
@@ -490,8 +776,14 @@
     {
       "mode": "100644",
       "path": "Core/Sources/CmdyCore/Line.swift",
-      "sha256": "67e5aaf846dc95e9aab66aaf040857ecbe5c3470339c6174b5a4e76545a32155",
-      "size": 16986
+      "sha256": "1a0c8f9bfbb1f80b30220790dac6493fd75d792f8dde55a5536c5e01f96d0ef4",
+      "size": 22691
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyCore/PrintableASCIIScan.swift",
+      "sha256": "e99b8fdd853da67fe4227b4e4f34fbb4a4ed353100eb334a3261da392993ea22",
+      "size": 1187
     },
     {
       "mode": "100644",
@@ -502,8 +794,8 @@
     {
       "mode": "100644",
       "path": "Core/Sources/CmdyCore/ScreenBuffer.swift",
-      "sha256": "00a8d0f426f88edaa657b14a5ebd52f5cc10e7b9a98f6ef838c81e6689ab494f",
-      "size": 17024
+      "sha256": "8e442940364236f539b28be252fc182b8c6379d896277a5dadd17568ac11f2b8",
+      "size": 20030
     },
     {
       "mode": "100644",
@@ -514,8 +806,8 @@
     {
       "mode": "100644",
       "path": "Core/Sources/CmdyCore/TerminalDispatch.swift",
-      "sha256": "adc4dccb5438689db6b7fff9a07c6d2613395fe29657f08d2fbc97cfbe2b31e5",
-      "size": 52793
+      "sha256": "74e50d68cd856ed7a6ff56ee13e751b7dc35941d3a8534ec4d796e212cecf2e0",
+      "size": 52811
     },
     {
       "mode": "100644",
@@ -526,8 +818,8 @@
     {
       "mode": "100644",
       "path": "Core/Sources/CmdyCore/TerminalModes.swift",
-      "sha256": "c821bcc1ffeadb76503d05151508d5dc10265cb2ab003651fbf6081ff9131690",
-      "size": 8772
+      "sha256": "38714daf0a535e4e91426e408138a93a5e56a36cff937f215a3652536cb7c6b4",
+      "size": 8782
     },
     {
       "mode": "100644",
@@ -562,14 +854,266 @@
     {
       "mode": "100644",
       "path": "Core/Sources/CmdyCore/VTParser.swift",
-      "sha256": "ef6de5a1b7edd2318b5c62640cd00c9048612305cc4ca1ef4a0f57368248753a",
-      "size": 26237
+      "sha256": "641503330034ec23f92edbc79dafc69939f9f222ec216e71584c565c2021d35f",
+      "size": 38417
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyCoreZig/Blocks.swift",
+      "sha256": "e68bd0540552d0217be7e2e5307e45f95a0118880238f79b8a8c64572f373da2",
+      "size": 7740
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyCoreZig/Cell.swift",
+      "sha256": "b5c972474e01a1d8ac8e7bf740e9765da661a29bb622319900bce221346a2a1a",
+      "size": 4537
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyCoreZig/CmdyTerminal.swift",
+      "sha256": "7b96d2c536b5cbfdd7483438f213b04412d5b918458b80ec3bf7d54c1834ef42",
+      "size": 24311
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyCoreZig/CmdyUnicodeWidthPolicy.swift",
+      "sha256": "291ad3be9f22927881990dca554781cb630079db73db128608561d5263296ac9",
+      "size": 699
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyCoreZig/CoreTerminalSnapshotViewport.swift",
+      "sha256": "88cf6b2244db05f2709ffa5283c80627a92d9ae9e54ab578e2b6a4fa20ca481b",
+      "size": 1173
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyCoreZig/EngineOperations.swift",
+      "sha256": "590565e712234f0fc23cc4efc426a52c833c66cbc10ebd160aa9c551e1a88826",
+      "size": 5066
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyCoreZig/KittyGraphicsStore.swift",
+      "sha256": "137cf180ede1d6b8c615fae5d8420b2c6179c3a846fa2cea896a06d26fbdcbf0",
+      "size": 7352
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyCoreZig/KittyUnicodePlaceholder.swift",
+      "sha256": "6deb33446ff8152990b9c7ad7c11ca1b4d6ef2df8c5e95a8a90f215bc127f4c5",
+      "size": 1506
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyCoreZig/Line.swift",
+      "sha256": "76f30c474db7ac6271c369f1fd89529f0bb37c74f75ddb869dfafc9a8c896d48",
+      "size": 14160
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyCoreZig/LineImage.swift",
+      "sha256": "9c586a9984f6f95b54efb35c8503622e3b3b860192ec071bdd0b28595ec5281a",
+      "size": 6523
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyCoreZig/NativeOwner.swift",
+      "sha256": "dcce8dddc98b47d26afb0668b30dca0bc9991cb5658654410d97c2572917c5a3",
+      "size": 743
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyCoreZig/OrdinaryPrinting.swift",
+      "sha256": "803da08f0802cb6ae448a235ce06d0607fd84b9a911e324ab4c066fbe9a034fe",
+      "size": 1615
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyCoreZig/Replay.swift",
+      "sha256": "349d772382dc22ada13fb3bb146da6fdffaa932a673c999d384e99999b515718",
+      "size": 5280
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyCoreZig/ScreenBuffer.swift",
+      "sha256": "8d3fe699fb92af98337bf073b0de6139a97e383ec303adab9165028d44ff83e5",
+      "size": 8930
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyCoreZig/SixelDecoder.swift",
+      "sha256": "4d3c2c14d72ef918b163a5045a9375eca78ac801511e18f95f0c692db3ed3c69",
+      "size": 1213
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyCoreZig/SnapshotValues.swift",
+      "sha256": "81068668b23bd9ca90a97305156e8f6531b1a2224e747f5f1e9eb26a95e40969",
+      "size": 11801
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyCoreZig/TerminalGraphics.swift",
+      "sha256": "3db1c8f2dd08f5309b7ae48ade9292cc22eae6a552d78ed2ba3e8395d93a3efb",
+      "size": 430
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyCoreZig/TerminalSearch.swift",
+      "sha256": "0f61b02a62f1e4380f9696e0581e0e27e6e324d4e56fd1d73304000434257f62",
+      "size": 3406
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyCoreZig/TerminalSupport.swift",
+      "sha256": "caa1ed8dd52111cc3e4ffd201cd421b23b4f070bfecefe022118cff203c028a1",
+      "size": 823
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyCoreZig/UnicodeMetadata.swift",
+      "sha256": "8e7b6769b92b6bc5ea6d19f0bf29398a86d3f42290324982997d813f72c378c2",
+      "size": 2307
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyCoreZig/VTParser.swift",
+      "sha256": "6d01f04f69d94234db7d0e219950160982cf49527bb50a95873fcffc479d7db6",
+      "size": 9263
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyNative/bridge.c",
+      "sha256": "d938959ee08ba45fc954d453b8c820d1a58acad5a87596e85198b12a5e162b24",
+      "size": 835
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyNative/include/cmdy_blocks.h",
+      "sha256": "10dc1401065b23cdce742b5cd0fdf6e58eb08ce4b090e73f8af954671d65962b",
+      "size": 2095
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyNative/include/cmdy_buffer.h",
+      "sha256": "70fad86412deed4c8546a9f70a47faa2b2a80098a400e7c8c04318b31522d698",
+      "size": 8465
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyNative/include/cmdy_images.h",
+      "sha256": "80db3d3f7e73ba777adbc981622b9f5b17647fa1c745cc3aa5eee7a971de2a85",
+      "size": 5671
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyNative/include/cmdy_legacy.h",
+      "sha256": "545edd30914fc9b3498d9f6a24c9827dbe931633ac8db39360ecd99c9034cfd4",
+      "size": 882
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyNative/include/cmdy_native.h",
+      "sha256": "996b79acad2bc5a8c82a6f140590da6242022526c51817b0ba26875bd7224844",
+      "size": 5673
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyNative/include/cmdy_operations.h",
+      "sha256": "7d7c7bf230644c7085f81051eeab56936b0796f6746ac2d5f17a17165465f3ad",
+      "size": 826
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyNative/include/cmdy_ordinary_printing.h",
+      "sha256": "5d5886498a1d370531ff73e9eaed58c94830ac6694815c612fbba6a7407995bf",
+      "size": 603
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyNative/include/cmdy_parser.h",
+      "sha256": "c5a7fdb423c9f9f9c835a3521d32effdaaba3ae2530cc73758ae7514b778b776",
+      "size": 3083
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyNative/include/cmdy_render_contract.h",
+      "sha256": "56d5e7c5ee56349f5eeb65418410ea73b0ada18bb9341df54474bd49a26ebbcf",
+      "size": 873
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyNative/include/cmdy_render_cursor_cache.h",
+      "sha256": "f436e32da28b4bb49e69bedfeb263b95d13f76fae05f107cca4e41ba0256408b",
+      "size": 3206
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyNative/include/cmdy_render_frame_input.h",
+      "sha256": "0f6afc0ab78bcd05ed947624314f24db1552458f5d8c9531cac5ed85b3a2a169",
+      "size": 11236
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyNative/include/cmdy_render_gpu.h",
+      "sha256": "b3d2a0d7ec3188bbb296deb6d012ddfae94b0f0fc79a0b59dabf04c1c556d430",
+      "size": 8927
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyNative/include/cmdy_render_image_bridge.h",
+      "sha256": "8673a13b436496f41af32fafb3393a07c0ccd79b3add1a8b67209a318e861133",
+      "size": 759
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyNative/include/cmdy_render_input.h",
+      "sha256": "8b7f9d86e8305919071ae8e70d95a29faa0688e21aa37708672d3028a83467ef",
+      "size": 4950
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyNative/include/cmdy_render_schedule.h",
+      "sha256": "c6add8899c81efde823e053669c6572bbd9836c5966eddf3ba67dd564defc457",
+      "size": 9232
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyNative/include/cmdy_render_session.h",
+      "sha256": "a67e7a6dd66bc24d6b11319f581472ae8c38ad5b4595a47ab16b18a6fb85202d",
+      "size": 13224
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyNative/include/cmdy_render_shape.h",
+      "sha256": "42defdc659ca01f1903ee58baaec7717347a5f8666189b0c1fe1bc032f0c67cb",
+      "size": 3220
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyNative/include/cmdy_render_text.h",
+      "sha256": "8fc8753a1fd886d12d7b38f80cfeefe21bd1c3c8dd95ff3aee7a364f2db787e0",
+      "size": 9176
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyNative/include/cmdy_render_trace.h",
+      "sha256": "a2ceb89356708d4b1c7184d36f4b49b35bd9b10f6aa758701215df69beb43d46",
+      "size": 1079
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Sources/CmdyNative/include/cmdy_render_worker.h",
+      "sha256": "8053cf472630a3eaa5010142e51018e4bc586e1f897e66b0295bc6bcb6f5ac0d",
+      "size": 3645
     },
     {
       "mode": "100644",
       "path": "Core/Sources/CmdyPTY/LocalProcess.swift",
-      "sha256": "b91890b2f4d6201092573ea3f1d545f6c4613214e20ed1d0faf3cdb527ee82b8",
-      "size": 26764
+      "sha256": "12dfd2e4a9180133bc78635fbeb3d4e479e1c612ed6d44bc7d10e65b4a961ed0",
+      "size": 30206
     },
     {
       "mode": "100644",
@@ -591,6 +1135,600 @@
     },
     {
       "mode": "100644",
+      "path": "Core/Zig/abi.zig",
+      "sha256": "8880fdb9a1ccda7918f17319ae80acd1f38f0962dae96e943b7be3f6c64fcb2d",
+      "size": 965
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/ascii_batch_tests.zig",
+      "sha256": "4ecb3b63d49f0b2fd897c1e9075223d6232c8a06cdc46c71ccbc0896edecb539",
+      "size": 18279
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/blocks.zig",
+      "sha256": "ebb8f33cc0a24cef51f4d1fd71c1b70f8493e013a530bbd410d68520f992b942",
+      "size": 6395
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/blocks_abi.zig",
+      "sha256": "238be98e52f70f6674e262517d18d89d0262f595c5d7d66b66ef077e5323c38f",
+      "size": 7742
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/buffer.zig",
+      "sha256": "5ec4485763ec3268010df7692515727b61c890d413146197fad814b3ca8de818",
+      "size": 24362
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/buffer_abi.zig",
+      "sha256": "cf4ce838c9b018789e33c0ad8e55186fe7539326f2a19afef97ba527dabc183c",
+      "size": 25076
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/buffer_snapshot.zig",
+      "sha256": "b22589e928627896b3e96c7ff143c47441ce8f09c6501048596b630c7124ad4e",
+      "size": 2252
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/buffer_snapshot_tests.zig",
+      "sha256": "d4a2f5cb153afe1ab2e12998eac6469437b54f0ebcb083b20a3825a0f224a980",
+      "size": 5693
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/buffer_tests.zig",
+      "sha256": "8cd902eca247393d0a8320fcf38ffd55a99dd76fe3a66497276660f6485746e1",
+      "size": 26709
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/cell_text.zig",
+      "sha256": "370a70354787491eb6d2d2d6df06df82e8fd611cd12672bae8420cd4d7953c7f",
+      "size": 7760
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/cell_text_tests.zig",
+      "sha256": "c97d7f1539937f231fa7ba2c3ebe9870c418cdc15c25dd2bcd2bd5bc72d2b6bc",
+      "size": 4800
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/character_sets.zig",
+      "sha256": "40c92a9475eab8add46522ce75c73c346ea57eb80fd4ac30c64fa8e6a5334bc5",
+      "size": 725
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/cluster_append_tests.zig",
+      "sha256": "256c51c55913fd940580d535a3354b92803ac8c34db4a2e4beda7de06ce5c32b",
+      "size": 7264
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/clusters.zig",
+      "sha256": "ae5fed6912b314904532053e131054dc904258b68a2b01bfb332276bc15543d3",
+      "size": 3926
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/dispatch.zig",
+      "sha256": "55a2bb21602d3ecc7f178d8786afb54ef1bece47b5dc695297cfd74961e7e400",
+      "size": 48695
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/emoji.zig",
+      "sha256": "10afbe0f38c5e192df7ddb570220ba376ba0219e8987bccb54daa68bd1ba1605",
+      "size": 4404
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/grapheme_properties.zig",
+      "sha256": "2eddb598a91834cf102963362b6e0a289c90dc8e57e5d39f9e7ed82131aca39b",
+      "size": 38672
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/graphics.zig",
+      "sha256": "e4a356b7a2a64797aa6221e689763e067ad72a97ba32989d304e2851a7e9b987",
+      "size": 44290
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/image_abi.zig",
+      "sha256": "3e8605e58adb6d78022673e891207bce9bfb416f12718c35b5cc345945052729",
+      "size": 15798
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/legacy_abi.zig",
+      "sha256": "a79437d8e4d110178b28090d222adb1ecd74f91af4e149a7dd7e4afb567bc14b",
+      "size": 3958
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/line.zig",
+      "sha256": "9ad6f083129b8b83cef7877a44f2ad87a699431cdd4ee90844d2e897a6885c98",
+      "size": 15655
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/line_motion.zig",
+      "sha256": "d56af6cd52bdd924ef5c65caee6f04c30f6d81ce4081673e0cdf23054eb14ed4",
+      "size": 46858
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/modes.zig",
+      "sha256": "2d16d16902b6fb3ca8b1165e13890051744a0acd2e0d7eb5fa0d5849d178cf6c",
+      "size": 6622
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/ordinary_printing.zig",
+      "sha256": "3d9e73318aebdf2ee70e2f577f236298189579461e7a064c88fc3974a512987d",
+      "size": 17643
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/ordinary_printing_abi.zig",
+      "sha256": "0cd5caf2fa67c3b4760a09854dadf7ca5dd54b5905bebaa2e80be86a588d0ff6",
+      "size": 3140
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/osc.zig",
+      "sha256": "319ff60af363fc05276694a6b94058e59681dc7e055cb69085616cf72df1f0b6",
+      "size": 6739
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/parser.zig",
+      "sha256": "f6b4d2637ff706f2b24ce232ec955d1610f635955fb6e1b745f41bdba0f133b2",
+      "size": 29920
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/parser_abi.zig",
+      "sha256": "24953e09fab55e63e0ca318b4a4c5b4f3643085e615cf1c7d84ef138cf18b887",
+      "size": 19452
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/parser_tests.zig",
+      "sha256": "f98247511027fc017e3d70690531377d67ae7ece970a090ed6a97bc7c0b20957",
+      "size": 24720
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/placeholder.zig",
+      "sha256": "1eaabc60a647b4d6bb0b835f734e2dba673e14983ce49fb07a4a599771381b18",
+      "size": 8238
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/printing.zig",
+      "sha256": "08ba28b4b73f6d4f4d728c2187d3a5305c39802087a91996a632fbbbeccb9309",
+      "size": 56354
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/protocols_tests.zig",
+      "sha256": "2a6f58e0b6281397868a04c06a1821ce9b90e80d443b57c6ef18ed38a778e644",
+      "size": 35989
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/reflow.zig",
+      "sha256": "7b78225637a791589f60da89da0f5bfc886028e4fb231535b8a7a8484b0a2843",
+      "size": 16801
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/render_cache.zig",
+      "sha256": "c3f7e0b37acfbf1814a7c43bb24296e226ce34e78b53acc01ed062213a98eea3",
+      "size": 30150
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/render_cache_glyph.zig",
+      "sha256": "6448076b29ba4b5b4fb0008ee45dd7660e7e1f307edc7f6c78924ecc1c89ac8c",
+      "size": 8408
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/render_cache_glyph_tests.zig",
+      "sha256": "9a4602c1c7901f9a6fee80f9dc763f1797755e64fa9f61602cf97f89e1439942",
+      "size": 10297
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/render_cache_image.zig",
+      "sha256": "d6e94bb1eb2f8db0da66542ad4264a7366dd57f6709a2f31fa34f4a1df4e0dad",
+      "size": 15295
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/render_contract.zig",
+      "sha256": "25886471b5f75616f1eed88528b4e62e5164d69de67e1a4979ed17d311987c9e",
+      "size": 2472
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/render_coverage_storage.zig",
+      "sha256": "cbff7b1f7feac2263da1d8a3af1016e07c051641bdb2f5aa7de8ed4f7c970726",
+      "size": 1687
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/render_cursor_cache.zig",
+      "sha256": "24b1ebc34cbff0d498e480d6c523ca633c054945d3666da0487eeccdefe8fb9f",
+      "size": 15806
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/render_cursor_handoff.zig",
+      "sha256": "789dccb5fc21c8ad096e31447c16f04762387583b0a9dea5a8793a75ef993a11",
+      "size": 9981
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/render_delivery_policy.zig",
+      "sha256": "49633190d0bc7ac8a48ea88c11dbd4b353e2fc9aa155a89215d63e11961e0f5f",
+      "size": 8404
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/render_font.zig",
+      "sha256": "11346e2664b0766b786071a8d91973f70e324389282d63b741b6a10a4dc5e0bb",
+      "size": 13043
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/render_frame_input.zig",
+      "sha256": "2ff79c9d5802153f01d97da927a50fba8935f2d0f008078cdcfe4767e7d51b9c",
+      "size": 23814
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/render_frame_input_tests.zig",
+      "sha256": "ea51c96fcb2154dd61d25cda493e62b47f7968b2abf16d8e881263ae2fe92774",
+      "size": 38191
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/render_geometry.zig",
+      "sha256": "713b39ba6686deadd807d93337cc3336470a6e1104b94da7b315dbedb48b8529",
+      "size": 13732
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/render_gpu.zig",
+      "sha256": "4e0f70bb681c3831015e465d1d458a5c0c28e5da3c18e25dd6a2653361e4fea8",
+      "size": 27162
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/render_gpu_frame.zig",
+      "sha256": "a2aa83956f07a9b895446be491d0ceb304df3171d8d4a05908647b2b021293da",
+      "size": 29935
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/render_gpu_target.zig",
+      "sha256": "8707ff301a25c7643d4f3edbde6a01c0d3c4f14196506ea0d2caa2feee30c6c1",
+      "size": 1958
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/render_graphics_input.zig",
+      "sha256": "4f4e21c8897bef63408ca775ce405c8b5f6811e9a184207aadce49437dba35b8",
+      "size": 5191
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/render_graphics_input_tests.zig",
+      "sha256": "0400b08480a203ee2d38f623469a0c725be684876ce8d4c0c07e0a950a30a434",
+      "size": 6134
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/render_image_bridge.zig",
+      "sha256": "2f9b343ad259385103983caba1a2a5e184e3de2199f2d2bf46ec52f896158eba",
+      "size": 4799
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/render_input.zig",
+      "sha256": "a252b5595c34159f59c9bd88ccf0ee79dc64be8ca6012212454436cd052bcd70",
+      "size": 31915
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/render_input_tests.zig",
+      "sha256": "550e12e048bb98e509b2001e56baabfd8354450a6c3c9ae2558f57d8fc922565",
+      "size": 10999
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/render_model_input.zig",
+      "sha256": "2b49dc5ace456367fbb962b55bd5cf772976c7db33fca05dcef9eb11d0753cda",
+      "size": 4396
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/render_priority.zig",
+      "sha256": "171e6b4922ba0234f71b2f3a9645ffcf8e8b7457cfef03071cf3b39752456a00",
+      "size": 1243
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/render_procedural.zig",
+      "sha256": "87c68b81967f1d72d5b9add8bca6e28b1d418a03281c10d28a5cdeae60052528",
+      "size": 32436
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/render_publication_tests.zig",
+      "sha256": "0ab12d9f8cd61c69bcc3fb1dc9b619bb2907df9afaf00cb11780a22b9a588f05",
+      "size": 293
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/render_schedule.zig",
+      "sha256": "c1ad70701ba7f7bd379bcdd3f6e075fe0d36cbe9e13ecbbf0db5956352684201",
+      "size": 52625
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/render_schedule_abi.zig",
+      "sha256": "71423b8b765cd26232d03f8446e6c56820589eabc9ecaa6b9ae3a6904aaccc6f",
+      "size": 10417
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/render_session.zig",
+      "sha256": "d5dc75f6de8d38650296f8ba9485f5e937c0f0cd9e5ddd2b470fb1805fa74570",
+      "size": 62866
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/render_session_deadlines.zig",
+      "sha256": "5bab9d43040885feb1eb90697d373701f65f2f1c10b7845342a16c1e237cd85c",
+      "size": 23830
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/render_shader.zig",
+      "sha256": "a0a70578a836cc56ee9a88a9942e865c6631c6090fb5d9c9ff9b8cf218acdaf5",
+      "size": 6968
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/render_shader_core.metal",
+      "sha256": "44ab415047b35c51f347fcf0af31c694576f87f247617eea59a2b861bc32662b",
+      "size": 3396
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/render_shader_effects.metal",
+      "sha256": "71cf7a58e330cbff3e8207fb3cf5d9c5918240438e4e04d3fc704f7aaffb3c85",
+      "size": 60121
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/render_shader_preamble.metal",
+      "sha256": "c18eb154b8e0b9af90318b4f8555b6a192aaf353bc61efdfac4d677e849f4ac2",
+      "size": 848
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/render_shader_wrapper.metal",
+      "sha256": "3b12e5780c6d4ed74617149f2df109e4e63b8653cdf85fb7cc7e5355159f8bb9",
+      "size": 1355
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/render_shaper.zig",
+      "sha256": "df24c4b8bf5cbe953c98d511ae92602598b2b6c063211deedd4c64177145c31d",
+      "size": 29893
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/render_text.zig",
+      "sha256": "be28e0dd896f53ccb54aed80ff623153f353eb7cbdfed1792f2035134b18d383",
+      "size": 43722
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/render_text_cache_tests.zig",
+      "sha256": "10296fd11bf56bbd9a000ea0ebca38aeb5325fa5c8414e3ac19a639cff26d4aa",
+      "size": 11998
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/render_text_platform.zig",
+      "sha256": "46e6202b5cdb0ebc1c2482f35e5758ed8b813e311eb385dd36f2d7030052ae59",
+      "size": 63
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/render_text_storage.zig",
+      "sha256": "d2f88d32c54bfedbd0f2c6f3e0e2c9efe0c9cc8a0e26743024f37898a28cf787",
+      "size": 13077
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/render_trace.zig",
+      "sha256": "c28f9c050d0c2cd486a27bb8cfb6e31e37e09cd65d813cfc507200b357b32f49",
+      "size": 9364
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/render_viewport.zig",
+      "sha256": "f4a10a46f49572b0ec796d5347df0550b0e2d624e0cf01351fec1d4888e91576",
+      "size": 4448
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/render_viewport_admission.zig",
+      "sha256": "0d3bca572153810a5098ecc096d3503ad8effcaf2e96fe69d3293d5cf7c05441",
+      "size": 3008
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/render_viewport_tests.zig",
+      "sha256": "4ba8aa67be4ec955c98abbdd10cbd235885eb7a2bbbe97fe6e490db2574c31e1",
+      "size": 13141
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/render_worker.zig",
+      "sha256": "87788e43521d8ea5e54a6fc42a1d08f3bae38232196c841a5c6991a9609e2ed6",
+      "size": 25970
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/render_worker_capacity_tests.zig",
+      "sha256": "6eba816650a9b8ec61470e78a04ee17ff4b24ba398cb957e83b013f836a67fc4",
+      "size": 8498
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/render_worker_completion_tests.zig",
+      "sha256": "82ebad6a6c08d71a4d601b068602fb3e7fdf315205171d2d6f7815100e6d0f0b",
+      "size": 12870
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/render_worker_deadline_tests.zig",
+      "sha256": "5da1dd92fa0e71c2fc817bde3af8f3adab717fdb0dcb1cb1688b1b92097b7fc6",
+      "size": 7744
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/render_worker_model_tests.zig",
+      "sha256": "6e8aa1b9c495459c88c9725fa03db07f4d63249f995936e7684b2fd88302cff7",
+      "size": 3448
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/render_worker_owned_completion_tests.zig",
+      "sha256": "2bad664e5a143692f63a517ba28ec1190ece6a41539c09aea2fe8317d266e368",
+      "size": 8726
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/render_worker_publication_tests.zig",
+      "sha256": "22c3ab47b249356f4f5d3fe1dab01b80521a9eae97467242ad4afe223fed26d8",
+      "size": 7674
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/render_worker_tests.zig",
+      "sha256": "77545630db3dad9fb3b35ed091b25be11e46540071921dabee5d0a2a05dae16d",
+      "size": 12036
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/row.zig",
+      "sha256": "3b9ac5677056818f474d0d28bcb6aec6f89f00ea72cae4fa4880425eac6198e7",
+      "size": 162044
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/row_backing_pool.zig",
+      "sha256": "a112836e1c263ce149f4d75aa083645e5a40600c1ccc7b29193c0cf4ed2bff84",
+      "size": 16636
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/sgr.zig",
+      "sha256": "dc2b31f211c77f9d92a22e7bbc7e88edf38dc7e01d76c7d8d46a9d9f0c6e50fe",
+      "size": 4437
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/sixel.zig",
+      "sha256": "22e715c4890d515ae8b34dd83e17facc4244b03a44f8ef5ac277ec6d40d9ba71",
+      "size": 8816
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/terminal.zig",
+      "sha256": "eb36efbc0beab4e74ddbbc92eee7c2ecce02100d6a88c050a0ae984a5e1f45b6",
+      "size": 13633
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/terminal_abi.zig",
+      "sha256": "27cd574d10a9c0dee05ff9425310db80089329a7ff0d3477eec8476d2dcc6a65",
+      "size": 13106
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/terminal_geometry.zig",
+      "sha256": "2e126c1d75df37432ed7dc90f0fcc384b83e6ea974fae2ccdd69ad3b8728757f",
+      "size": 7900
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/terminal_operations_abi.zig",
+      "sha256": "1cbfbdd6ee29b124bd05d6f7e103423d4d2a72d32bd40309d90957745f4bf3f9",
+      "size": 4752
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/terminal_protocols.zig",
+      "sha256": "a31924abf44782c346f3635255700f4a3631faabd7234f8d2fb2115983844776",
+      "size": 32557
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/terminal_protocols_abi.zig",
+      "sha256": "88e509b8d5f1ea449643120d3d451bea31f4aad04e543a638ed55fc906208ac4",
+      "size": 884
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/terminal_support.zig",
+      "sha256": "0ff60097744c810f3720f1fade9a3fa48bd20805a74650868f522b2455d877db",
+      "size": 1551
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/testdata/grapheme_break_tests.bin",
+      "sha256": "b8cd1d7c5f9c232ff2ba55d6cff393538c1bc3e39f5e2b5666720b8fe2893709",
+      "size": 13282
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/tests.zig",
+      "sha256": "3131a24673e9c75778e6b37562ba7267865cdf01863e0f5d542dfed3f471c59c",
+      "size": 553
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/unicode.zig",
+      "sha256": "14b63753cc2e4023c5ecc1822b5f326eec15d6906626478ee23bc9cedf274260",
+      "size": 48209
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Zig/unicode_properties.zig",
+      "sha256": "27579a3605406e6b72d601a204e326a1e504020c579ecc77c797c61644602ed7",
+      "size": 5025
+    },
+    {
+      "mode": "100644",
       "path": "Identity/Sources/ProductIdentity/ProductIdentity.swift",
       "sha256": "c92e8854d2f1661caeb0ac21273e4f05e3a23e7fc89fde1c44cf8c696c97c680",
       "size": 9313
@@ -609,9 +1747,15 @@
     },
     {
       "mode": "100644",
+      "path": "Kit/Sources/CmdyKit/AssistantCredentials.swift",
+      "sha256": "448ae20ef725b613e1dba57bb990bf4c9bae42f65d257772fbf2b093d0365476",
+      "size": 7562
+    },
+    {
+      "mode": "100644",
       "path": "Kit/Sources/CmdyKit/Blocks.swift",
-      "sha256": "bf66d6c3f03815bdb9e586a94c7e22815ed7132575eff3f9b83cabc9022a737f",
-      "size": 5544
+      "sha256": "d5f7e774408283b3069f93195fcd677ce58204f4fe2705e8bd7f56b1e349e1ae",
+      "size": 5653
     },
     {
       "mode": "100644",
@@ -670,14 +1814,20 @@
     {
       "mode": "100644",
       "path": "Kit/Sources/CmdyKit/CommandPalette.swift",
-      "sha256": "c2761f03b6978ffcf81511f24f7b9a5f464f0eb40c8dcacf76e4695336074dfe",
-      "size": 2623
+      "sha256": "94f91faf83e341a97218791dc1f29c83a0da5ecab39880a5762fe3661ec42c62",
+      "size": 7868
     },
     {
       "mode": "100644",
       "path": "Kit/Sources/CmdyKit/ConfigFile.swift",
-      "sha256": "e425bd239b7a5b801ca0017fdb0bf75e513cae42fee738d314c88647fffe9bdd",
-      "size": 24512
+      "sha256": "9fe1f5ffeb515a55f646952d7a80a415577939594f08ee4b49ef253d622f404d",
+      "size": 29699
+    },
+    {
+      "mode": "100644",
+      "path": "Kit/Sources/CmdyKit/ConfigValidation.swift",
+      "sha256": "72b498f07bd43f5a1e0bc80592c88d69222240e7c1d90fc4bb3c443b2931b806",
+      "size": 5692
     },
     {
       "mode": "100644",
@@ -700,8 +1850,8 @@
     {
       "mode": "100644",
       "path": "Kit/Sources/CmdyKit/FontLoader.swift",
-      "sha256": "41b341812302f7d6996b664ea8f8974d798f843850452042ad09e69a3acf748d",
-      "size": 1451
+      "sha256": "ae529605ffb0d3c5f1acd5313051c348133b45feb6150f741745dfd6d6ba6aee",
+      "size": 5764
     },
     {
       "mode": "100644",
@@ -712,14 +1862,14 @@
     {
       "mode": "100644",
       "path": "Kit/Sources/CmdyKit/InlinePanel.swift",
-      "sha256": "ef86c7343de7f0c6d7c95da53162a7bdc49d7ce3dbc47c0b0fb889d969434c7d",
-      "size": 54113
+      "sha256": "02c9ea36676320e8270170abc7b8f9ff6bf04b954c91dd11ee5c4f7a79b04cf9",
+      "size": 54987
     },
     {
       "mode": "100644",
       "path": "Kit/Sources/CmdyKit/KeybindingImport.swift",
-      "sha256": "a2cfb149fb27418334bf83bc64f79cb945fb22324ff02846541c193b9fc34b87",
-      "size": 52594
+      "sha256": "dcaa677b981b22d44014e6d2221cf17e86e603080874a41f2c144ddbc2ca4e1e",
+      "size": 52749
     },
     {
       "mode": "100644",
@@ -754,8 +1904,8 @@
     {
       "mode": "100644",
       "path": "Kit/Sources/CmdyKit/PluginKit.swift",
-      "sha256": "91005542f54074cf60fff0aedf0bde82b56d1f8512061054bc42793e8ca2f177",
-      "size": 181872
+      "sha256": "1f77a85b3567ba53aec22bc47820e585f475e37385a892fa549d29613d82106b",
+      "size": 182156
     },
     {
       "mode": "100644",
@@ -766,8 +1916,8 @@
     {
       "mode": "100644",
       "path": "Kit/Sources/CmdyKit/Preferences.swift",
-      "sha256": "b6698acd44ff73a78db59a4578e2ba6d6c3b0272596f3ce26a75c0e22c02ba83",
-      "size": 25291
+      "sha256": "43ab8ddcfb1e1a7e7227b73b357081ff1f7ea015b86698a8a84d9a13df9dd13d",
+      "size": 28149
     },
     {
       "mode": "100644",
@@ -777,9 +1927,21 @@
     },
     {
       "mode": "100644",
+      "path": "Kit/Sources/CmdyKit/SessionCheckpointWriter.swift",
+      "sha256": "1bb88316a4232cc3fde0d0774c4c99a21bb7e4ff314dd2dde02897901cfff988",
+      "size": 3627
+    },
+    {
+      "mode": "100644",
+      "path": "Kit/Sources/CmdyKit/SessionClosePolicy.swift",
+      "sha256": "4b3620cc3da6be4a935418a63ac0100f2aaa0c799e6e859903eebb15a48327c3",
+      "size": 7928
+    },
+    {
+      "mode": "100644",
       "path": "Kit/Sources/CmdyKit/SessionStore.swift",
-      "sha256": "fed0ddf9e468160d35fdc65ee67bfce8d7910c668256114c80e5c95dfece1654",
-      "size": 4649
+      "sha256": "70124e15c9895cd96adec4666278ef852e274d8694fdc329ca19195667f526d8",
+      "size": 10570
     },
     {
       "mode": "100644",
@@ -796,8 +1958,8 @@
     {
       "mode": "100644",
       "path": "Kit/Sources/CmdyKit/TerminalCoreProtocols.swift",
-      "sha256": "85d6c44ab0e62d0a7150f6c47c180bcf2b196a7c5ed7a7c4fa48096b16b17b14",
-      "size": 14958
+      "sha256": "dcb5bbacb01ad54f4cc1cbe01334bbf5991c40bed79d9dd8f4782fcba1e425df",
+      "size": 16233
     },
     {
       "mode": "100644",
@@ -831,9 +1993,15 @@
     },
     {
       "mode": "100644",
+      "path": "Kit/Sources/CmdyKit/WorkspaceResume.swift",
+      "sha256": "9a87e262ff8af81b12973df29beb1ae76d3d5f24207da90b843aba57625c0eaf",
+      "size": 3968
+    },
+    {
+      "mode": "100644",
       "path": "Kit/Sources/CmdyKit/WorkspaceStore.swift",
-      "sha256": "c2e3617095b9f3258748db0a5aaf2ad22123bf8af8aa740b9e10d52d6e3996b6",
-      "size": 20093
+      "sha256": "ee0973639ef90a3f2bbab284f941f740ec464dd93e40bfc3b4e198c9b4829b4e",
+      "size": 22510
     },
     {
       "mode": "100644",
@@ -915,6 +2083,12 @@
     },
     {
       "mode": "100644",
+      "path": "Renderer/Sources/CmdyGPU/InteractiveDrawRequests.swift",
+      "sha256": "9c4dd42f340260226b6589417e474ab8680a99a7c45b2a76d5f7421c1e553851",
+      "size": 1487
+    },
+    {
+      "mode": "100644",
       "path": "Renderer/Sources/CmdyGPU/MetalCore.swift",
       "sha256": "746039dbe6033829cdbfa851042247d6f8543dea684ae6232cddce615437b3a7",
       "size": 12036
@@ -922,8 +2096,8 @@
     {
       "mode": "100644",
       "path": "Renderer/Sources/CmdyGPU/MetalTerminalRenderer.swift",
-      "sha256": "d862b9ca810cd80f72ceabb19d767f8f16134c38d9f51be614fd47059bf3e3f1",
-      "size": 89632
+      "sha256": "d59b75453b46c939c611d35b23fae1b7d6428014d2febb59934b0839384a4540",
+      "size": 109924
     },
     {
       "mode": "100644",
@@ -939,18 +2113,192 @@
     },
     {
       "mode": "100644",
+      "path": "Renderer/Sources/CmdyGPU/RendererPerformanceTrace.swift",
+      "sha256": "1090ece04ca9b238e87ffec41f707134d5aeba4f1225198825217315b2f49658",
+      "size": 3155
+    },
+    {
+      "mode": "100644",
       "path": "Renderer/Sources/CmdyGPU/RowRasterCache.swift",
-      "sha256": "0fd070bd287684ada8b0c47f0b8800ccd52c4217a2f2443afe4025f031f3a114",
-      "size": 46112
+      "sha256": "2278fd13de6b54f875d394c0ba9cc2fcadad8a70cb7cf4d9cb9ed9fdb43467cd",
+      "size": 50771
+    },
+    {
+      "mode": "100644",
+      "path": "Renderer/Sources/CmdyGPU/RowTextureResidency.swift",
+      "sha256": "abe565572c9553ba9988ace8fc3907107acb995793a6b805cb626bfef82d7e58",
+      "size": 1986
+    },
+    {
+      "mode": "100644",
+      "path": "Renderer/Sources/CmdyGPU/SnapshotRowRevision.swift",
+      "sha256": "ae799a90619d6d0f4e96a5b471fd9bda8156c604388b5304276b6f39fcba899f",
+      "size": 1163
+    },
+    {
+      "mode": "100644",
+      "path": "Renderer/Sources/CmdyGPUZig/BuiltInEffectShaders.swift",
+      "sha256": "6919851e18e51a181817dbb7e1dc3e7d56c2a02b90ee0dc0e6b3246806ec9179",
+      "size": 7916
+    },
+    {
+      "mode": "100644",
+      "path": "Renderer/Sources/CmdyGPUZig/CapturedFrameInput.swift",
+      "sha256": "96b60d732d59ea565495295da65adf1390d1783fa9a3fc6f6cbe3d0d14d1ff64",
+      "size": 9301
+    },
+    {
+      "mode": "100644",
+      "path": "Renderer/Sources/CmdyGPUZig/CapturedRenderTarget.swift",
+      "sha256": "2ea83fd360602c2df0981651718a7c5861eadcce03c9e193826969b28a82e4cc",
+      "size": 1865
+    },
+    {
+      "mode": "100644",
+      "path": "Renderer/Sources/CmdyGPUZig/CapturedRowInput.swift",
+      "sha256": "e68c7689ab0a3bfe2fce6b713e2536b06066f9f4058fce50186719e618abb422",
+      "size": 7181
+    },
+    {
+      "mode": "100644",
+      "path": "Renderer/Sources/CmdyGPUZig/CompatibilityUtilities.swift",
+      "sha256": "ea820d807a42735cfdffac2da836c95eed836cc5f51c79a09657ea2819bc842d",
+      "size": 8853
+    },
+    {
+      "mode": "100644",
+      "path": "Renderer/Sources/CmdyGPUZig/CursorCacheLayer.swift",
+      "sha256": "f4510d8bbad4d053f2b44d8001863fa0e1bdef5e76d329b25066f27b829e3080",
+      "size": 28598
+    },
+    {
+      "mode": "100644",
+      "path": "Renderer/Sources/CmdyGPUZig/GeometryAndScheduling.swift",
+      "sha256": "3af9ae3838cb3ed52dc8a8dce6af9a006cc2f4740e2ad9162db835028a28bed2",
+      "size": 10708
+    },
+    {
+      "mode": "100644",
+      "path": "Renderer/Sources/CmdyGPUZig/InteractiveDrawRequests.swift",
+      "sha256": "fdb1fa865773117c3f98626d40e8164ff8ee01d9573cde00e29f7dd20d8f91f6",
+      "size": 1120
+    },
+    {
+      "mode": "100644",
+      "path": "Renderer/Sources/CmdyGPUZig/MainRunLoopDelivery.swift",
+      "sha256": "4b33e1d8572d447e57e44278286f9ebb2939085affbe99aeaedd1d60b526bc9c",
+      "size": 1949
+    },
+    {
+      "mode": "100644",
+      "path": "Renderer/Sources/CmdyGPUZig/MetalCore.swift",
+      "sha256": "82b3254cf4dcf7a56ade862becfa9169035c8258735b1a832e113f2ea59966ab",
+      "size": 1696
+    },
+    {
+      "mode": "100644",
+      "path": "Renderer/Sources/CmdyGPUZig/MetalTerminalRenderer.swift",
+      "sha256": "00535c9de3bdefd5684c43d2b25efbcf3664ba0163707189be5965eb791e9c9d",
+      "size": 24476
+    },
+    {
+      "mode": "100644",
+      "path": "Renderer/Sources/CmdyGPUZig/ProceduralGlyphs.swift",
+      "sha256": "2402473cfc7f9cb355fd3b068591f98ae4c257f0d08da651ee67e35e98c5c73e",
+      "size": 5508
+    },
+    {
+      "mode": "100644",
+      "path": "Renderer/Sources/CmdyGPUZig/ProducerFrameCapture.swift",
+      "sha256": "c10aa73fa203ea363bf86d7740bd6f564845e7bd838c1e6345651f53e946f76d",
+      "size": 36644
+    },
+    {
+      "mode": "100644",
+      "path": "Renderer/Sources/CmdyGPUZig/RenderContract.swift",
+      "sha256": "6d12a5f6accc6dcb4d3992eafd5595fe44ee277983439405b1023dddda7a10c2",
+      "size": 13884
+    },
+    {
+      "mode": "100644",
+      "path": "Renderer/Sources/CmdyGPUZig/RenderUpdateMailbox.swift",
+      "sha256": "b5c413ac14e61057b8758d1dff116e26294b1684867997bbfa65196333cd80fb",
+      "size": 7243
+    },
+    {
+      "mode": "100644",
+      "path": "Renderer/Sources/CmdyGPUZig/RenderWorkerSession.swift",
+      "sha256": "1f2c22e9c103d5b9733dece1fbb298f69a8f31e8a1c1061a025b613016d706c0",
+      "size": 13984
+    },
+    {
+      "mode": "100644",
+      "path": "Renderer/Sources/CmdyGPUZig/RendererPerformanceTrace.swift",
+      "sha256": "aabf95782116f5f9310adebcd1f9804a1420bdb281b9697a3f6420aef613cbc9",
+      "size": 1305
+    },
+    {
+      "mode": "100644",
+      "path": "Renderer/Sources/CmdyGPUZig/RendererScheduler.swift",
+      "sha256": "055b77500133b24f594243cf9a346b623de6bb7052da9945180401bba19a3228",
+      "size": 25017
+    },
+    {
+      "mode": "100644",
+      "path": "Renderer/Sources/CmdyGPUZig/RowRasterCache.swift",
+      "sha256": "cfd2f41638e4463769b949dd8ff8633ff7f45314b45d0e446f120e9f202d170b",
+      "size": 24852
+    },
+    {
+      "mode": "100644",
+      "path": "Renderer/Sources/CmdyGPUZig/RowTextureResidency.swift",
+      "sha256": "a1d8764aa6a8d8a3df1ac74151e8ef486ae6b31f5a3d04ecfb036cee6d8c00a5",
+      "size": 167
+    },
+    {
+      "mode": "100644",
+      "path": "Renderer/Sources/CmdyGPUZig/SnapshotRowRevision.swift",
+      "sha256": "42b26002325828c2c1e808c6400a80a71f602c41a8255a589bc6a75a1a3bc9ce",
+      "size": 632
     }
   ],
-  "trustFileCount": 8,
+  "trustFileCount": 16,
   "trustFiles": [
     {
       "mode": "100644",
+      "path": "App/Resources/Cmdy.sdef",
+      "sha256": "579d3793339fd34ead635d3962ff09f9c69d7c682c34944f2c3d1ca3c35fd0c2",
+      "size": 1524
+    },
+    {
+      "mode": "100644",
       "path": "Core/Package.swift",
-      "sha256": "8de0ffbe87548a2a8b833c9712657164d3ad8aa1efba40bda35d3f56f313d48c",
-      "size": 1614
+      "sha256": "c9898ee7bc202ab2f8b63279ccf56f6663f4ffe368ff708d74162770d0c15dd6",
+      "size": 3852
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Tools/ZigEngine/apple_toolchain.py",
+      "sha256": "23d7d5b137388d3210143135fe02fa5825af330b144a445e7d3941f214a1234b",
+      "size": 1425
+    },
+    {
+      "mode": "100755",
+      "path": "Core/Tools/ZigEngine/build.py",
+      "sha256": "0c0d2514ad25e3dcb6b122a0f96a517ec6ba89caa703b72734959be880b10b19",
+      "size": 10651
+    },
+    {
+      "mode": "100644",
+      "path": "Core/Tools/ZigEngine/source_inputs.py",
+      "sha256": "ba3aea8b5b678a69892ede580a600990665a51f3255280d69e6667d73c20ede2",
+      "size": 848
+    },
+    {
+      "mode": "100755",
+      "path": "Core/Tools/ZigEngine/verify.py",
+      "sha256": "aacdb15851823489688d9f1d9ceae7d754dfed32401d4c6fb55f6d7dcced942a",
+      "size": 5388
     },
     {
       "mode": "100644",
@@ -973,8 +2321,8 @@
     {
       "mode": "100644",
       "path": "Package.swift",
-      "sha256": "5f80a4c8ec138551a5169e416423520f13ed76caab183e5649abf9340fc47fd6",
-      "size": 2282
+      "sha256": "664e996b8d684d1b7269efd988f2ecfec0c03fb82cff0ca15b1bb84a0c2b4d7d",
+      "size": 2540
     },
     {
       "mode": "100644",
@@ -991,8 +2339,26 @@
     {
       "mode": "100644",
       "path": "Renderer/Package.swift",
-      "sha256": "a7960cec040e572a0d855c549c6c264d0a5d69233ab0aeafe02818a6885ae61c",
-      "size": 641
+      "sha256": "0869c71d12d25b9acf92963a1e81901d6140153e727443f36724a0ba749c2388",
+      "size": 1438
+    },
+    {
+      "mode": "100755",
+      "path": "build.sh",
+      "sha256": "7946627f87239a9af3325f6b3312bae2d2e7975a58549da7d597380a81e0cf5e",
+      "size": 4244
+    },
+    {
+      "mode": "100755",
+      "path": "package.sh",
+      "sha256": "7756186287070e7ab9d51c5369be2d8d23ee1b5b18a84211bfd1c29f02877a48",
+      "size": 27211
+    },
+    {
+      "mode": "100755",
+      "path": "scripts/bootstrap-zig.sh",
+      "sha256": "83803616634ca9ef9fd17d5058eb31210af63cc0fe0373ab26c0baef8ce4a7a7",
+      "size": 1612
     }
   ]
 }

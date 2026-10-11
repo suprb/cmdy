@@ -1,6 +1,6 @@
 {
   "candidateFixtureIndexSha256": "e52c987c52e495dc7bb7a14ccf8d9ef6b0abd4e8fed6d60facd469a2af6f9d5d",
-  "candidateManifestSha256": "f7d99c651ca553f3e9b66e398fca3e2c8166b96de5c13670f6b1c4969c5e0a91",
+  "candidateManifestSha256": "d9e80796d3d3e49e30a00b287897c7ba90a6d0c465b4f730c0bed8f6c763313e",
   "comparisons": [
     {
       "candidatePNGSha256": "18299c742270693d0eda7f948eccf9d64fd389dbf842041cb3e1f49fd2181180",
@@ -278,16 +278,21 @@
       "width": 312
     },
     {
-      "candidatePNGSha256": "74d5e381b51b20ea19a1e2437fd0a2f37e0c635f32636706cdb93c1ebf0913bb",
+      "candidatePNGSha256": "4224ceb418438cf021bbe2c790492d4e84cede301aa8583c4216ff64b0de2497",
       "candidatePublicInputSha256": "1109fd7ca726e766622737004743c30f2649985123aade3a4958d8c188256ef1",
-      "candidateRawRGBASha256": "0028d095dcf3d108873e5a59cea074e73823eab9d57ad042fe0fcd61cf06e7bc",
-      "differingChannels": 0,
-      "differingPixelBoundingBox": null,
-      "differingPixels": 0,
+      "candidateRawRGBASha256": "e56d940eb00acf90195def367ab86fc2847f1739f404465db99302fd07206968",
+      "differingChannels": 2017,
+      "differingPixelBoundingBox": {
+        "height": 81,
+        "width": 256,
+        "x": 8,
+        "y": 69
+      },
+      "differingPixels": 698,
       "exactDeltaRGBA": "diff/s1__line-modes.delta.rgba",
-      "exactDeltaRGBASha256": "0ff0c069b65b96872689f490f0bdb741459a0098a0a8304b7165cc590682f72a",
+      "exactDeltaRGBASha256": "0060194755b1bba24945469a21b8f7b3df5b4eaa84f4cf5512008bc08116aa21",
       "height": 216,
-      "maximumChannelDelta": 0,
+      "maximumChannelDelta": 101,
       "name": "line-modes",
       "publicInputMismatchCount": 0,
       "publicInputMismatches": [],
@@ -296,10 +301,10 @@
       "referencePublicInputSha256": "1109fd7ca726e766622737004743c30f2649985123aade3a4958d8c188256ef1",
       "referenceRawRGBASha256": "0028d095dcf3d108873e5a59cea074e73823eab9d57ad042fe0fcd61cf06e7bc",
       "scale": 1,
-      "totalAbsoluteChannelDelta": 0,
+      "totalAbsoluteChannelDelta": 38557,
       "totalPixels": 67392,
       "visualDiffPNG": "diff/s1__line-modes.diff.png",
-      "visualDiffPNGSha256": "9755c9566938bd479fff2fa02804c8ec24730e682180c9cbc34fd4052819b61a",
+      "visualDiffPNGSha256": "5ed433b71b79939c3a6e224d17aa63602c710bbc253add763f19d90423af300a",
       "width": 312
     },
     {
@@ -778,16 +783,21 @@
       "width": 624
     },
     {
-      "candidatePNGSha256": "dd9d22e6feb1392189b2f2331e778bba3a38f899a623e56b532462a3adb6486e",
+      "candidatePNGSha256": "3465b4a090d99bcd7fc71621e9d7fd472a7eb0892d2c5cd85dcf8cb90e15c9f9",
       "candidatePublicInputSha256": "3247fd3c70043f5dd7ae9e3458d1ce13c10dceb6f6eff9f285dd71c72084fd06",
-      "candidateRawRGBASha256": "d183a3380aba60dfa35d2f8af5d03a40ed4ee8383e71a67a988d0948cf324a78",
-      "differingChannels": 0,
-      "differingPixelBoundingBox": null,
-      "differingPixels": 0,
+      "candidateRawRGBASha256": "ebc6523667bcce57e0e0f8ff274875d5c71a6a335fc8f5ee28111cb56691803e",
+      "differingChannels": 2719,
+      "differingPixelBoundingBox": {
+        "height": 159,
+        "width": 481,
+        "x": 47,
+        "y": 139
+      },
+      "differingPixels": 928,
       "exactDeltaRGBA": "diff/s2__line-modes.delta.rgba",
-      "exactDeltaRGBASha256": "b47a93accd0d426d0f2c936cbaf80c8d95431bfa377698eb3a808aa1796a86cc",
+      "exactDeltaRGBASha256": "8cecd3da6192c41b655e194d781fdd51e8d5f8e4f0b0d96fc2ba768fa5083c10",
       "height": 432,
-      "maximumChannelDelta": 0,
+      "maximumChannelDelta": 78,
       "name": "line-modes",
       "publicInputMismatchCount": 0,
       "publicInputMismatches": [],
@@ -796,10 +806,10 @@
       "referencePublicInputSha256": "3247fd3c70043f5dd7ae9e3458d1ce13c10dceb6f6eff9f285dd71c72084fd06",
       "referenceRawRGBASha256": "d183a3380aba60dfa35d2f8af5d03a40ed4ee8383e71a67a988d0948cf324a78",
       "scale": 2,
-      "totalAbsoluteChannelDelta": 0,
+      "totalAbsoluteChannelDelta": 53260,
       "totalPixels": 269568,
       "visualDiffPNG": "diff/s2__line-modes.diff.png",
-      "visualDiffPNGSha256": "5980b0c110ba9fd2cf9891185da00e0351f1dad1c278f61f7aed565e755315d9",
+      "visualDiffPNGSha256": "3e493aa30606c856a4e3cb15351b05667ed83780355094569f10628911632567",
       "width": 624
     },
     {
@@ -1005,16 +1015,16 @@
   ],
   "contract": "docs/independence/CMDYGPU_CONTRACT.md#13",
   "exceptions": [],
-  "failedFixtureCount": 0,
+  "failedFixtureCount": 2,
   "fixtureCount": 40,
   "fixtureIndexesByteIdentical": true,
-  "passed": true,
-  "pixelFailedFixtureCount": 0,
+  "passed": false,
+  "pixelFailedFixtureCount": 2,
   "publicInputFailedFixtureCount": 0,
   "referenceFixtureIndexSha256": "e52c987c52e495dc7bb7a14ccf8d9ef6b0abd4e8fed6d60facd469a2af6f9d5d",
   "referenceManifestLocked": true,
   "referenceManifestSha256": "868ffcb241e050c570278e5d6aa7fef2adfb6b15b938bee13e8917b7bd42d7b6",
   "rule": "byte-identical public inputs and zero differing pixels; no implicit tolerance or exceptions",
   "schemaVersion": 2,
-  "totalDifferingPixels": 0
+  "totalDifferingPixels": 1626
 }

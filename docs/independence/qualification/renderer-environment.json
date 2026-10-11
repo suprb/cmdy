@@ -1,26 +1,33 @@
 {
   "candidate": {
     "kind": "build",
-    "moduleSha256": "52341204aaeec91d8cdab2aff0dcfbdc7e5539f32700d50df27a8a953743bcdc",
-    "objectSetSha256": "4a0e18bf30c5d93ef94bcbf61b76f927ca023b3cc9bca179ab4030e72e7f93de",
-    "releaseBuild": "arm64-apple-macosx/release"
+    "moduleSha256": "9806c4c9762a419140fc9f82f56b317ee357542d2d44a2100d39b2b169b6bea2",
+    "native": {
+      "archiveSha256": "2085b332460b5dc2983168e7bfea2d2d447cfda58f0d7adbf6a72060380f05f9",
+      "bridgeObjectSetSha256": "0770123b2ad0da2217d82b334d1e29823169d51e2389e54734597b895d830ce3",
+      "optimize": "ReleaseFast",
+      "receiptSha256": "01ef44c070107b60ea5676ed16af9e138bbf7f72ff7bfaf614178741f78a50ff",
+      "sourceKey": "11ae645a7fceb962c226b738d7ebb0f597bf5c959921a736a7f95bb71d5acb8c"
+    },
+    "objectSetSha256": "a6c06970230bf91772e0607984c99f7986dba3ddf3d303b039f6dc6454574684",
+    "releaseBuild": "/Users/suprb/_projects/cmdy/Renderer/.build/arm64-apple-macosx/release"
   },
-  "fixtureSourceSha256": "c4e34ecc1b04953d0d5773d46de5aaf20025a55cc63113df60eed7d5b161e057",
+  "fixtureSourceSha256": "aad4c214230f0106246bb54c58479dfa492cfc3f03093934511ab6d84a81cc8f",
   "macOS": "26.3.1",
   "machine": "arm64",
   "reference": {
-    "archive": "Tests/RendererPixelOracle/ReferenceCorpus/reference-corpus-v1.tar.gz",
+    "archive": "/Users/suprb/_projects/cmdy/Tests/RendererPixelOracle/ReferenceCorpus/reference-corpus-v1.tar.gz",
     "archiveBytes": 845304,
     "archiveSha256": "5507d54ebe8e453edc9f38d3dbf84ac01ef132ae8370a3a7de39a1624d46188a",
     "corpusID": "cmdygpu-historical-reference-v1",
     "fixtureIndexSha256": "e52c987c52e495dc7bb7a14ccf8d9ef6b0abd4e8fed6d60facd469a2af6f9d5d",
     "kind": "locked-captures",
-    "lock": "Tests/RendererPixelOracle/ReferenceCorpus/reference-corpus-v1.lock.json",
+    "lock": "/Users/suprb/_projects/cmdy/Tests/RendererPixelOracle/ReferenceCorpus/reference-corpus-v1.lock.json",
     "lockSha256": "a448c37b7e114505f4e8569ed9389c608698cb9bf50b7c0219daff4fd10ccd2f",
     "manifestSha256": "868ffcb241e050c570278e5d6aa7fef2adfb6b15b938bee13e8917b7bd42d7b6",
     "payloadSetSha256": "27a487287108a004a78bb0cd524064ef60758a17de1ae9d3467e08bc99bfb6ff",
     "uncompressedTarSha256": "784aef587ac7bdafb171388b4100cb07b5dce8e1957858f37c1b29ea3ad40a4e",
-    "validatorVector": "Tests/RendererPixelOracle/ReferenceCorpus/reference-corpus-v1.validator-vector.json",
+    "validatorVector": "/Users/suprb/_projects/cmdy/Tests/RendererPixelOracle/ReferenceCorpus/reference-corpus-v1.validator-vector.json",
     "validatorVectorSha256": "9c987783edd7ede5cba9d2f4ea455667cd47ad55c620ebee26d27b70b6cc76fb"
   },
   "schemaVersion": 2,
