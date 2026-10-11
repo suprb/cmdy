@@ -258,10 +258,11 @@ CLAUDE_STATUS="skipped"
 if command -v claude >/dev/null; then
   run_cmd "claude"
   shot "12-claude-code" 8
-  type_text $'\033\033'
-  sleep 1
-  run_cmd "exit"
-  sleep 1
+  # Two Ctrl-C presses quit Claude Code; double Escape now opens its rewind menu.
+  type_text $'\003'
+  sleep 0.5
+  type_text $'\003'
+  sleep 2
   CLAUDE_STATUS="present"
 else
   echo "  ▸ 12-claude-code skipped (command unavailable)"
