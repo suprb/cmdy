@@ -130,6 +130,15 @@ pixel failures, zero public-input failures, zero differing pixels, and no
 exceptions; its `comparison.json` SHA-256 is
 `c6de090c7605fea74481beed8b68c4fdd9d27c736713798b5099f578c95ed239`.
 
+For cmdy 1.0.8 the corpus moved to `reference-corpus-v2` (archive
+`b0a5b8d7033cf9ee727ee5dcbd1ae542ad676aef9766797a354bd1e4df0937f4`, manifest
+`a231ed660beb174389c357be3f9a1d6a883f0050a807723087bff72a59e3f4b2`). The
+renderer stopped drawing cell-boundary seams through double-width and
+double-height glyphs, which changed 1,626 pixels across the two `line-modes`
+captures. After owner review those four payloads were replaced; every other
+payload and every public input is unchanged, and v1 is kept in
+`ReferenceCorpus/v1/`.
+
 This establishes behavioral parity for the documented fixture matrix. It does
 not by itself establish source authorship or legal clean-room status. An
 independent human provenance review bound to the exact committed source remains

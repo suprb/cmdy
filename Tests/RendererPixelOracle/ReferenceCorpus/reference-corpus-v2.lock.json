@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "corpusID": "cmdygpu-reference-v2",
+  "baselineCommit": "19d66b6338360b23719bd3ff645a77cb1a934be2",
+  "archive": "reference-corpus-v2.tar.gz",
+  "archiveSha256": "b0a5b8d7033cf9ee727ee5dcbd1ae542ad676aef9766797a354bd1e4df0937f4",
+  "archiveBytes": 845235,
+  "uncompressedTarSha256": "804a9746f07cf6f31e684b028752a7b3a38ae05bac71d6c0ed24ba8bd3932567",
+  "payloadSetSha256": "ed90a577a988972a4bd9f0a159615cbea88d2e8e3bf3d9586e1b43e866b09bc4",
+  "archiveEntryCount": 82,
+  "archiveOrdering": "ascending ASCII member name",
+  "archiveRegularFileMode": "0644",
+  "archiveUID": 0,
+  "archiveGID": 0,
+  "archiveMTime": 0,
+  "gzipMTime": 0,
+  "gzipOriginalFilename": "",
+  "fixtureCount": 40,
+  "scaleFactors": [
+    1,
+    2
+  ],
+  "pixelFormat": "rgba8-unorm",
+  "coordinateOrigin": "top-left",
+  "fixtureSourceSha256": "aad4c214230f0106246bb54c58479dfa492cfc3f03093934511ab6d84a81cc8f",
+  "fixtureIndexSha256": "e52c987c52e495dc7bb7a14ccf8d9ef6b0abd4e8fed6d60facd469a2af6f9d5d",
+  "referenceManifestSha256": "a231ed660beb174389c357be3f9a1d6a883f0050a807723087bff72a59e3f4b2",
+  "derivedFrom": {
+    "corpusID": "cmdygpu-historical-reference-v1",
+    "lock": "v1/reference-corpus-v1.lock.json",
+    "lockSha256": "a448c37b7e114505f4e8569ed9389c608698cb9bf50b7c0219daff4fd10ccd2f",
+    "referenceManifestSha256": "868ffcb241e050c570278e5d6aa7fef2adfb6b15b938bee13e8917b7bd42d7b6"
+  },
+  "replacedMembers": [
+    "s1__line-modes.png",
+    "s1__line-modes.rgba",
+    "s2__line-modes.png",
+    "s2__line-modes.rgba"
+  ],
+  "replacementReason": "cmdy 1.0.8 draws double-width and double-height glyphs without cell-boundary seams; the 38 other captures and every public input are byte-identical to v1",
+  "exceptions": [],
+  "humanReviewStatus": "approved",
+  "humanReview": {
+    "reviewerName": "Andreas Pihlström",
+    "reviewerAffiliation": "cmdy project owner",
+    "reviewerIndependentFromImplementation": false,
+    "reviewedAtUTC": "2026-10-11T22:19:20Z",
+    "reference": "owner reply 'yes to all' approving the v2 locked corpus for the line-modes seam fix"
+  }
+}

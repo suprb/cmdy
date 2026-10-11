@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Strict CmdyGPU reference/candidate pixel-parity gate.
 
-The canonical mode validates a locked historical capture corpus, compiles the
+The canonical mode validates a locked reference capture corpus, compiles the
 public fixture only against the candidate, and makes exact pixel diffs. A
 forensic build-vs-build mode remains available for reconstructing references,
 but its independently scheduled animation clocks are not the release oracle.
@@ -34,24 +34,40 @@ FIXTURE_SOURCE = REPOSITORY / "Tests/RendererPixelOracle/RendererPixelFixture.sw
 DEFAULT_REFERENCE_CAPTURES = (
     REPOSITORY / "Tests/RendererPixelOracle/ReferenceCorpus"
 )
-REFERENCE_CORPUS_ID = "cmdygpu-historical-reference-v1"
-REFERENCE_BASELINE_COMMIT = "584624985809f6000a82d3b3b97e43ef885af572"
+REFERENCE_CORPUS_ID = "cmdygpu-reference-v2"
+REFERENCE_BASELINE_COMMIT = "19d66b6338360b23719bd3ff645a77cb1a934be2"
 REFERENCE_FIXTURE_SOURCE_SHA256 = (
-    "27470b869272d2ce6e68a228ad29fe7f89757171441586c2975525b6f6e9d6a0"
+    "aad4c214230f0106246bb54c58479dfa492cfc3f03093934511ab6d84a81cc8f"
 )
 REFERENCE_FIXTURE_INDEX_SHA256 = (
     "e52c987c52e495dc7bb7a14ccf8d9ef6b0abd4e8fed6d60facd469a2af6f9d5d"
 )
 REFERENCE_MANIFEST_SHA256 = (
-    "868ffcb241e050c570278e5d6aa7fef2adfb6b15b938bee13e8917b7bd42d7b6"
+    "a231ed660beb174389c357be3f9a1d6a883f0050a807723087bff72a59e3f4b2"
 )
 REFERENCE_CORPUS_LOCK_SHA256 = (
-    "a448c37b7e114505f4e8569ed9389c608698cb9bf50b7c0219daff4fd10ccd2f"
+    "75dcb4529961e5428849f32ce561bf4fe8833a9e62446fda20f42b5e7bcc55f4"
 )
 REFERENCE_VALIDATOR_VECTOR_SHA256 = (
-    "9c987783edd7ede5cba9d2f4ea455667cd47ad55c620ebee26d27b70b6cc76fb"
+    "037c2b806d768ca6876eb2d177af7adab72fde71842f28c03b745037df71060e"
 )
 REFERENCE_ARCHIVE_ENTRY_COUNT = 82
+# v2 is v1 (cmdygpu-historical-reference-v1, kept under ReferenceCorpus/v1)
+# with only the two line-modes captures replaced after owner review: 1.0.8
+# draws double-width/height glyphs without cell-boundary seams. Every other
+# payload and every public input is byte-identical to v1.
+REFERENCE_DERIVED_FROM = {
+    "corpusID": "cmdygpu-historical-reference-v1",
+    "lock": "v1/reference-corpus-v1.lock.json",
+    "lockSha256": "a448c37b7e114505f4e8569ed9389c608698cb9bf50b7c0219daff4fd10ccd2f",
+    "referenceManifestSha256": (
+        "868ffcb241e050c570278e5d6aa7fef2adfb6b15b938bee13e8917b7bd42d7b6"
+    ),
+}
+REFERENCE_REPLACED_MEMBERS = (
+    "s1__line-modes.png", "s1__line-modes.rgba",
+    "s2__line-modes.png", "s2__line-modes.rgba",
+)
 MAX_REFERENCE_ARCHIVE_BYTES = 128 * 1024 * 1024
 MAX_REFERENCE_MEMBER_BYTES = 16 * 1024 * 1024
 WIDTH_POINTS = 312
@@ -338,7 +354,9 @@ def locate_reference_captures(path: Path) -> ReferenceCaptures:
         "fixtureSourceSha256": REFERENCE_FIXTURE_SOURCE_SHA256,
         "fixtureIndexSha256": REFERENCE_FIXTURE_INDEX_SHA256,
         "referenceManifestSha256": REFERENCE_MANIFEST_SHA256,
-        "referencePixelsMatchedHistoricalManifest": True,
+        "derivedFrom": REFERENCE_DERIVED_FROM,
+        "replacedMembers": list(REFERENCE_REPLACED_MEMBERS),
+        "humanReviewStatus": "approved",
         "exceptions": [],
     }
     for field, expected in exact_fields.items():
@@ -1632,7 +1650,7 @@ def self_test() -> None:
         assert png_dimensions(path.read_bytes()) == (2, 1)
         reference = locate_reference_captures(DEFAULT_REFERENCE_CAPTURES)
         assert reference.archive_sha256 == (
-            "5507d54ebe8e453edc9f38d3dbf84ac01ef132ae8370a3a7de39a1624d46188a"
+            "b0a5b8d7033cf9ee727ee5dcbd1ae542ad676aef9766797a354bd1e4df0937f4"
         )
         payloads = read_reference_archive(reference)
         assert len(payloads) == REFERENCE_ARCHIVE_ENTRY_COUNT
@@ -1680,7 +1698,7 @@ def parse_arguments() -> argparse.Namespace:
         "--reference-captures",
         type=Path,
         help=(
-            "locked historical capture-corpus directory, lock, or archive "
+            "locked reference capture-corpus directory, lock, or archive "
             "(default: vendored ReferenceCorpus; canonical release mode)"
         ),
     )

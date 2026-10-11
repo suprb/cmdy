@@ -13,8 +13,13 @@ statically links only the candidate module and object set. It validates the
 vendored corpus lock and validator vector, canonical gzip/tar bytes and
 metadata, complete 40-fixture inventory, manifest and index hashes, and every
 referenced raw RGBA, PNG, and canonical public-input hash before comparison.
-The historical manifest hash is fixed at
-`868ffcb241e050c570278e5d6aa7fef2adfb6b15b938bee13e8917b7bd42d7b6`.
+The release corpus is `reference-corpus-v2` with manifest hash
+`a231ed660beb174389c357be3f9a1d6a883f0050a807723087bff72a59e3f4b2`.
+It is the historical v1 corpus (kept in `ReferenceCorpus/v1/`, manifest
+`868ffcb241e050c570278e5d6aa7fef2adfb6b15b938bee13e8917b7bd42d7b6`) with only
+the four `line-modes` payloads replaced after owner review: cmdy 1.0.8 draws
+double-width and double-height glyphs without cell-boundary seams. The other
+36 payloads, the fixture index and every public input are byte-identical to v1.
 Any missing, additional, reordered, linked, noncanonical, or altered corpus
 payload fails closed.
 

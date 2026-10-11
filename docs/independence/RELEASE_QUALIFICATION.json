@@ -83,19 +83,19 @@
         "sha256": "ec5d10ef02298bdad207341fa1c26e50a9e70ec01628a77421fa4fc3b9caba1f"
       },
       {
-        "path": "Tests/RendererPixelOracle/ReferenceCorpus/reference-corpus-v1.tar.gz",
+        "path": "Tests/RendererPixelOracle/ReferenceCorpus/reference-corpus-v2.tar.gz",
         "purpose": "renderer-corpus-archive",
-        "sha256": "5507d54ebe8e453edc9f38d3dbf84ac01ef132ae8370a3a7de39a1624d46188a"
+        "sha256": "b0a5b8d7033cf9ee727ee5dcbd1ae542ad676aef9766797a354bd1e4df0937f4"
       },
       {
-        "path": "Tests/RendererPixelOracle/ReferenceCorpus/reference-corpus-v1.lock.json",
+        "path": "Tests/RendererPixelOracle/ReferenceCorpus/reference-corpus-v2.lock.json",
         "purpose": "renderer-corpus-lock",
-        "sha256": "a448c37b7e114505f4e8569ed9389c608698cb9bf50b7c0219daff4fd10ccd2f"
+        "sha256": "75dcb4529961e5428849f32ce561bf4fe8833a9e62446fda20f42b5e7bcc55f4"
       },
       {
-        "path": "Tests/RendererPixelOracle/ReferenceCorpus/reference-corpus-v1.validator-vector.json",
+        "path": "Tests/RendererPixelOracle/ReferenceCorpus/reference-corpus-v2.validator-vector.json",
         "purpose": "renderer-corpus-validator-vector",
-        "sha256": "9c987783edd7ede5cba9d2f4ea455667cd47ad55c620ebee26d27b70b6cc76fb"
+        "sha256": "037c2b806d768ca6876eb2d177af7adab72fde71842f28c03b745037df71060e"
       },
       {
         "path": "Tests/RendererPixelOracle/RendererPixelFixture.swift",
@@ -105,7 +105,7 @@
       {
         "path": "scripts/check-renderer-pixel-parity.py",
         "purpose": "renderer-parity-checker",
-        "sha256": "d1778c09ffac63edf8fe20934c9633fc09538a90d6d72da11a7e9914d596f0bb"
+        "sha256": "af729dfd1e17143879fda24a35b5312d735b9e10907b65c9f85d7bb0428c7b49"
       },
       {
         "path": "release.sh",
@@ -159,13 +159,13 @@
       "totalCases": 53992
     },
     "rendererCorpus": {
-      "archiveSha256": "5507d54ebe8e453edc9f38d3dbf84ac01ef132ae8370a3a7de39a1624d46188a",
+      "archiveSha256": "b0a5b8d7033cf9ee727ee5dcbd1ae542ad676aef9766797a354bd1e4df0937f4",
       "candidateFixtureSha256": "aad4c214230f0106246bb54c58479dfa492cfc3f03093934511ab6d84a81cc8f",
       "fixtureCount": 40,
       "fixtureIndexSha256": "e52c987c52e495dc7bb7a14ccf8d9ef6b0abd4e8fed6d60facd469a2af6f9d5d",
-      "lockSha256": "a448c37b7e114505f4e8569ed9389c608698cb9bf50b7c0219daff4fd10ccd2f",
-      "referenceManifestSha256": "868ffcb241e050c570278e5d6aa7fef2adfb6b15b938bee13e8917b7bd42d7b6",
-      "validatorVectorSha256": "9c987783edd7ede5cba9d2f4ea455667cd47ad55c620ebee26d27b70b6cc76fb"
+      "lockSha256": "75dcb4529961e5428849f32ce561bf4fe8833a9e62446fda20f42b5e7bcc55f4",
+      "referenceManifestSha256": "a231ed660beb174389c357be3f9a1d6a883f0050a807723087bff72a59e3f4b2",
+      "validatorVectorSha256": "037c2b806d768ca6876eb2d177af7adab72fde71842f28c03b745037df71060e"
     }
   },
   "kind": "cmdy-release-qualification",
