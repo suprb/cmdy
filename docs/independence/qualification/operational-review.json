@@ -35,10 +35,10 @@
     "zombieCount": 0
   },
   "review": {
-    "decision": "pending",
-    "reference": "awaiting project-owner review of the 1.0.8 evidence",
-    "reviewedAtUTC": "",
-    "reviewerName": ""
+    "decision": "approved",
+    "reference": "cmdy 1.0.8 owner approval ('yes to all'); contact-sheet-sha256:036734780fc5f1d4e5f8cb90676133fd66c94e2a75cdbf5bc5eb266bb3a17b96",
+    "reviewedAtUTC": "2026-10-11T22:19:20Z",
+    "reviewerName": "Andreas Pihlström"
   },
   "schemaVersion": 1,
   "sourceManifestSha256": "42c7cd637a5c8546e755ed7775cb47abd95063468ab55499b4778bcd80a88572",
@@ -53,7 +53,7 @@
     "scriptSha256": "4a9f9d67c46556f38eeb0df5689315b89da35a957b1bab0adaf574301bf75d2b",
     "visualReview": {
       "path": "docs/independence/qualification/zoo-visual-review.json",
-      "sha256": "4eac1abde8a08cfbba1affebc185600199ef286ac5418c0326206592deac487f"
+      "sha256": "3957916f3e9c08495c493dc4f27f492075ac8053dbf2b691435a8ad9768a013d"
     }
   }
 }

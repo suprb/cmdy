@@ -170,7 +170,18 @@
   },
   "kind": "cmdy-release-qualification",
   "publication": {
-    "approval": null,
+    "approval": {
+      "approvalReference": "Project owner replied 'yes to all' on 2026-10-11 to the three pending 1.0.8 decisions: the v2 renderer reference corpus for the line-modes seam fix, the visual review of the 14-station zoo contact sheet, and owner approval of the release with the non-independent review notice.",
+      "approvedPublicWording": "Engineering qualification passed for the exact cmdy 1.0.8 source and evidence set: Core parity across 17 seeds and 53,992 cases, 40/40 exact renderer pixel parity against the owner-approved reference corpus v2, performance gates in normal and maximized windows, a three-run resource plateau with no zombie processes, and an owner-reviewed 14-station TUI zoo. Project-owner approval; this is not an independent authorship or legal clean-room review.",
+      "decision": "approved",
+      "engineeringDigestSha256": "63e6bc90cccba7def8214f02a1ea289415821b90f37f0f4170381d6bed05f602",
+      "evidenceDigestSha256": "85c20baab15fda77cf764f96796eee7e394f0540315e2e686f2e6b2d5b5ba12d",
+      "reviewedAtUTC": "2026-10-11T22:19:20Z",
+      "reviewerAffiliation": "cmdy project owner",
+      "reviewerIndependentFromImplementation": false,
+      "reviewerKind": "human",
+      "reviewerName": "Andreas Pihlström"
+    },
     "evidence": {
       "core": {
         "record": {
@@ -182,19 +193,19 @@
       "operational": {
         "record": {
           "path": "docs/independence/qualification/operational-review.json",
-          "sha256": "702c78163a367a8e5ba4b898e42560c5a4182e44326c3fe9e108428c4bcf2f76"
+          "sha256": "abcd1dc375455c0d1543c5e64602d70c4791fb0dad7b4080e202f8447bb76134"
         },
         "sourceManifestSha256": "42c7cd637a5c8546e755ed7775cb47abd95063468ab55499b4778bcd80a88572"
       },
       "renderer": {
-        "checkerSha256": "d1778c09ffac63edf8fe20934c9633fc09538a90d6d72da11a7e9914d596f0bb",
+        "checkerSha256": "af729dfd1e17143879fda24a35b5312d735b9e10907b65c9f85d7bb0428c7b49",
         "comparison": {
           "path": "docs/independence/qualification/renderer-comparison.json",
-          "sha256": "8624d3e5534c9edc65756af3432ec00ca5e464b73154c89ad86b2b12048f0668"
+          "sha256": "b44f828a74dbb43c99ce97d9c4f22427c163c7356f344492393e6c16e1735142"
         },
         "environment": {
           "path": "docs/independence/qualification/renderer-environment.json",
-          "sha256": "0f98f37572faefc3ddc852161cfae177206817027d17e91cb44703202d4e6997"
+          "sha256": "f4e302d26c7c3e64023d8561f59ecade3980dbbd286502ed5579f512e7ffd9b4"
         },
         "sourceManifestSha256": "42c7cd637a5c8546e755ed7775cb47abd95063468ab55499b4778bcd80a88572"
       }
@@ -208,10 +219,10 @@
         "path": "docs/independence/qualification/working-tree-provenance.json",
         "sha256": "f2d8aae1363ed07e80dc2e56979337855f97c680c16cbceb6b307c2cbd4f5644"
       },
-      "sourceCommit": "19d66b6338360b23719bd3ff645a77cb1a934be2",
-      "sourceTree": "2568d5f3da580689cfb023ef8960fc3c13d10f56"
+      "sourceCommit": "703a36337f337ca59d7f41aea5452791b2e7773a",
+      "sourceTree": "c2e4ac528521d3051df03c4885d9e961c23103ed"
     },
-    "state": "pending"
+    "state": "approved"
   },
   "schemaVersion": 1
 }

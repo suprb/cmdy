@@ -10,25 +10,25 @@
       "sourceKey": "11ae645a7fceb962c226b738d7ebb0f597bf5c959921a736a7f95bb71d5acb8c"
     },
     "objectSetSha256": "a6c06970230bf91772e0607984c99f7986dba3ddf3d303b039f6dc6454574684",
-    "releaseBuild": "/Users/suprb/_projects/cmdy/Renderer/.build/arm64-apple-macosx/release"
+    "releaseBuild": "Renderer/.build/arm64-apple-macosx/release"
   },
   "fixtureSourceSha256": "aad4c214230f0106246bb54c58479dfa492cfc3f03093934511ab6d84a81cc8f",
   "macOS": "26.3.1",
   "machine": "arm64",
   "reference": {
-    "archive": "/Users/suprb/_projects/cmdy/Tests/RendererPixelOracle/ReferenceCorpus/reference-corpus-v1.tar.gz",
-    "archiveBytes": 845304,
-    "archiveSha256": "5507d54ebe8e453edc9f38d3dbf84ac01ef132ae8370a3a7de39a1624d46188a",
-    "corpusID": "cmdygpu-historical-reference-v1",
+    "archive": "Tests/RendererPixelOracle/ReferenceCorpus/reference-corpus-v2.tar.gz",
+    "archiveBytes": 845235,
+    "archiveSha256": "b0a5b8d7033cf9ee727ee5dcbd1ae542ad676aef9766797a354bd1e4df0937f4",
+    "corpusID": "cmdygpu-reference-v2",
     "fixtureIndexSha256": "e52c987c52e495dc7bb7a14ccf8d9ef6b0abd4e8fed6d60facd469a2af6f9d5d",
     "kind": "locked-captures",
-    "lock": "/Users/suprb/_projects/cmdy/Tests/RendererPixelOracle/ReferenceCorpus/reference-corpus-v1.lock.json",
-    "lockSha256": "a448c37b7e114505f4e8569ed9389c608698cb9bf50b7c0219daff4fd10ccd2f",
-    "manifestSha256": "868ffcb241e050c570278e5d6aa7fef2adfb6b15b938bee13e8917b7bd42d7b6",
-    "payloadSetSha256": "27a487287108a004a78bb0cd524064ef60758a17de1ae9d3467e08bc99bfb6ff",
-    "uncompressedTarSha256": "784aef587ac7bdafb171388b4100cb07b5dce8e1957858f37c1b29ea3ad40a4e",
-    "validatorVector": "/Users/suprb/_projects/cmdy/Tests/RendererPixelOracle/ReferenceCorpus/reference-corpus-v1.validator-vector.json",
-    "validatorVectorSha256": "9c987783edd7ede5cba9d2f4ea455667cd47ad55c620ebee26d27b70b6cc76fb"
+    "lock": "Tests/RendererPixelOracle/ReferenceCorpus/reference-corpus-v2.lock.json",
+    "lockSha256": "75dcb4529961e5428849f32ce561bf4fe8833a9e62446fda20f42b5e7bcc55f4",
+    "manifestSha256": "a231ed660beb174389c357be3f9a1d6a883f0050a807723087bff72a59e3f4b2",
+    "payloadSetSha256": "ed90a577a988972a4bd9f0a159615cbea88d2e8e3bf3d9586e1b43e866b09bc4",
+    "uncompressedTarSha256": "804a9746f07cf6f31e684b028752a7b3a38ae05bac71d6c0ed24ba8bd3932567",
+    "validatorVector": "Tests/RendererPixelOracle/ReferenceCorpus/reference-corpus-v2.validator-vector.json",
+    "validatorVectorSha256": "037c2b806d768ca6876eb2d177af7adab72fde71842f28c03b745037df71060e"
   },
   "schemaVersion": 2,
   "swiftCompiler": "swift-driver version: 1.127.15 Apple Swift version 6.2.4 (swiftlang-6.2.4.1.4 clang-1700.6.4.2)\nTarget: arm64-apple-macosx26.0",
