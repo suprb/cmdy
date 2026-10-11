@@ -1,5 +1,5 @@
 import AppKit
-import CmdyGPU
+@_spi(CmdyApp) import CmdyGPU
 import CoreGraphics
 import CoreText
 import Foundation
@@ -210,9 +210,13 @@ private final class FixtureSource: MetalRenderSource {
     var activityTypingRate: Float { 0 }
 }
 
+/// Fixture images carry the same encoded RGBA payload that production images
+/// hand to the worker renderer, plus a fixed identity per image.
 @MainActor
-private final class FixtureImage: RenderableCellImage {
+private final class FixtureImage: EncodedRenderableCellImage {
     let image: NSImage
+    let renderIdentity: UUID
+    let encodedPayload: KittyImagePayload
     let pixelWidth: Int
     let pixelHeight: Int
     let col: Int
@@ -223,6 +227,8 @@ private final class FixtureImage: RenderableCellImage {
     let kittyPixelOffsetY: Int
 
     init(image: NSImage,
+         identity: UUID,
+         payload: KittyImagePayload,
          pixelWidth: Int,
          pixelHeight: Int,
          col: Int,
@@ -230,6 +236,8 @@ private final class FixtureImage: RenderableCellImage {
          pixelOffsetX: Int,
          pixelOffsetY: Int) {
         self.image = image
+        renderIdentity = identity
+        encodedPayload = payload
         self.pixelWidth = pixelWidth
         self.pixelHeight = pixelHeight
         self.col = col
@@ -870,6 +878,13 @@ private func lineModesFixture(font: NSFont) -> FixtureDefinition {
 private func rgbaImage(width: Int, height: Int,
                        first: (UInt8, UInt8, UInt8),
                        second: (UInt8, UInt8, UInt8)) throws -> NSImage {
+    try rgbaImage(bytes: rgbaBytes(width: width, height: height, first: first, second: second),
+                  width: width, height: height)
+}
+
+private func rgbaBytes(width: Int, height: Int,
+                       first: (UInt8, UInt8, UInt8),
+                       second: (UInt8, UInt8, UInt8)) -> [UInt8] {
     var bytes = [UInt8]()
     bytes.reserveCapacity(width * height * 4)
     for y in 0..<height {
@@ -881,6 +896,10 @@ private func rgbaImage(width: Int, height: Int,
             bytes.append(255)
         }
     }
+    return bytes
+}
+
+private func rgbaImage(bytes: [UInt8], width: Int, height: Int) throws -> NSImage {
     guard let provider = CGDataProvider(data: Data(bytes) as CFData),
           let image = CGImage(
             width: width,
@@ -917,19 +936,25 @@ private func checkerBytes(width: Int, height: Int) -> [UInt8] {
 
 @MainActor
 private func imagesFixture(font: NSFont) throws -> FixtureDefinition {
+    let underBytes = rgbaBytes(width: 8, height: 8, first: (230, 40, 40), second: (45, 45, 190))
     let under = FixtureImage(
-        image: try rgbaImage(width: 8, height: 8,
-                             first: (230, 40, 40), second: (45, 45, 190)),
+        image: try rgbaImage(bytes: underBytes, width: 8, height: 8),
+        identity: UUID(uuidString: "00000000-0000-4000-8000-0000000000a1")!,
+        payload: .rgba(bytes: underBytes, width: 8, height: 8),
         pixelWidth: 84, pixelHeight: 20, col: 0, zIndex: -2,
         pixelOffsetX: 0, pixelOffsetY: 2)
+    let zeroBytes = rgbaBytes(width: 8, height: 8, first: (35, 220, 85), second: (10, 75, 45))
     let zero = FixtureImage(
-        image: try rgbaImage(width: 8, height: 8,
-                             first: (35, 220, 85), second: (10, 75, 45)),
+        image: try rgbaImage(bytes: zeroBytes, width: 8, height: 8),
+        identity: UUID(uuidString: "00000000-0000-4000-8000-0000000000a2")!,
+        payload: .rgba(bytes: zeroBytes, width: 8, height: 8),
         pixelWidth: 84, pixelHeight: 20, col: 0, zIndex: 0,
         pixelOffsetX: 0, pixelOffsetY: 2)
+    let overBytes = rgbaBytes(width: 8, height: 8, first: (245, 195, 35), second: (150, 45, 185))
     let over = FixtureImage(
-        image: try rgbaImage(width: 8, height: 8,
-                             first: (245, 195, 35), second: (150, 45, 185)),
+        image: try rgbaImage(bytes: overBytes, width: 8, height: 8),
+        identity: UUID(uuidString: "00000000-0000-4000-8000-0000000000a3")!,
+        payload: .rgba(bytes: overBytes, width: 8, height: 8),
         pixelWidth: 84, pixelHeight: 20, col: 0, zIndex: 3,
         pixelOffsetX: 0, pixelOffsetY: 2)
     let kittyId: UInt32 = 91
@@ -1074,23 +1099,6 @@ private func aligned(_ value: Int, to alignment: Int) -> Int {
     ((value + alignment - 1) / alignment) * alignment
 }
 
-private final class PresentationFlag: @unchecked Sendable {
-    private let lock = NSLock()
-    private var presented = false
-
-    func markPresented() {
-        lock.lock()
-        presented = true
-        lock.unlock()
-    }
-
-    var value: Bool {
-        lock.lock()
-        defer { lock.unlock() }
-        return presented
-    }
-}
-
 // GitHub's hosted arm64 runner exposes a 1x virtual display even when the
 // selected Xcode matches the 2x machine used for the locked corpus.  The
 // renderer receives its scale from FixtureSource, not NSWindow, but AppKit's
@@ -1101,10 +1109,16 @@ private final class FixtureWindow: NSWindow {
     override var backingScaleFactor: CGFloat { 2 }
 }
 
-private func readDrawablePixels(_ drawable: any CAMetalDrawable,
-                                device: MTLDevice) throws -> [UInt8] {
+private final class CompletionCounter: @unchecked Sendable {
+    private let lock = NSLock()
+    private var count = 0
+    var value: Int { lock.withLock { count } }
+    func increment() { lock.withLock { count += 1 } }
+}
+
+private func readTexturePixels(_ texture: MTLTexture,
+                               device: MTLDevice) throws -> [UInt8] {
     try autoreleasepool {
-        let texture = drawable.texture
         guard texture.pixelFormat == .bgra8Unorm
                 || texture.pixelFormat == .bgra8Unorm_srgb else {
             throw FixtureError.render(
@@ -1184,44 +1198,39 @@ private func captureFrame(view: MTKView,
                           renderer: MetalTerminalRenderer,
                           device: MTLDevice,
                           prepare: (() -> Void)? = nil) async throws -> [UInt8] {
-    // A retained drawable must be paired with the exact command buffer that
-    // rendered it.  Hosted virtual displays can omit CAMetalDrawable's
-    // presentation callback, so first drain any older completion callbacks,
-    // submit exactly one draw, and accept either that drawable callback or the
-    // renderer's command-buffer completion counter.  This prevents a late
-    // completion from an earlier frame from authorizing stale texture bytes.
+    // The renderer draws on its worker into a target it captures itself, so
+    // the view's drawable is never the frame. Route exactly this capture into
+    // a fresh texture the size of the drawable, submit one draw, and read the
+    // texture only after the renderer reports that frame complete.
     try await waitForRendererIdle()
     prepare?()
-    let drawableDeadline = Date(timeIntervalSinceNow: 4)
-    var capturedDrawable: (any CAMetalDrawable)?
-    while capturedDrawable == nil, Date() < drawableDeadline {
-        capturedDrawable = view.currentDrawable
-        if capturedDrawable == nil {
-            try await Task.sleep(for: .milliseconds(10))
-        }
+    let size = view.drawableSize
+    let descriptor = MTLTextureDescriptor.texture2DDescriptor(
+        pixelFormat: view.colorPixelFormat,
+        width: Int(size.width), height: Int(size.height), mipmapped: false)
+    descriptor.usage = [.renderTarget, .shaderRead]
+    descriptor.storageMode = .private
+    guard descriptor.width > 0, descriptor.height > 0,
+          let texture = device.makeTexture(descriptor: descriptor) else {
+        throw FixtureError.render("fixture could not allocate a render target")
     }
-    guard let capturedDrawable else {
-        throw FixtureError.render("fixture view did not provide a drawable")
-    }
+    let completed = CompletionCounter()
+    renderer.useOffscreenTargetForTesting(texture) { completed.increment() }
+    defer { renderer.useOffscreenTargetForTesting(nil, onFrameCompleted: nil) }
 
-    let before = MetalTerminalRenderer.framesPresented
-    let presented = PresentationFlag()
-    capturedDrawable.addPresentedHandler { _ in presented.markPresented() }
     view.delegate = renderer
     view.draw()
-    view.delegate = nil
-
     let completionDeadline = Date(timeIntervalSinceNow: 4)
-    while !presented.value,
-          MetalTerminalRenderer.framesPresented <= before,
-          Date() < completionDeadline {
+    while completed.value == 0, Date() < completionDeadline {
         try await Task.sleep(for: .milliseconds(2))
     }
-    guard presented.value || MetalTerminalRenderer.framesPresented > before else {
-        throw FixtureError.render("renderer did not complete the captured frame")
+    view.delegate = nil
+    guard completed.value > 0 else {
+        throw FixtureError.render(
+            "renderer did not complete the captured frame"
+            + (renderer.lastFailure.map { ": \($0)" } ?? ""))
     }
-
-    return try readDrawablePixels(capturedDrawable, device: device)
+    return try readTexturePixels(texture, device: device)
 }
 
 private func caretColorScore(_ rgba: [UInt8]) -> Int {

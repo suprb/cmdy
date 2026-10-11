@@ -52,6 +52,29 @@ public final class MetalTerminalRenderer: NSObject, MTKViewDelegate {
             scheduler.observeFrames(onFrameCompletedForTesting != nil)
         }
     }
+    /// Headless pixel qualification: render subsequent frames into `texture`
+    /// through the normal capture and submission path instead of the view's
+    /// drawable, and report each completed frame. Pass nil to restore drawables.
+    @_spi(CmdyApp)
+    public func useOffscreenTargetForTesting(_ texture: MTLTexture?,
+                                             onFrameCompleted: (() -> Void)?) {
+        guard let texture else {
+            targetProviderForTesting = nil
+            onFrameCompletedForTesting = nil
+            return
+        }
+        targetProviderForTesting = { identity in
+            let pass = MTLRenderPassDescriptor()
+            pass.colorAttachments[0].texture = texture
+            pass.colorAttachments[0].loadAction = .clear
+            pass.colorAttachments[0].storeAction = .store
+            let target = try CapturedRenderTarget.capture(
+                identity: identity, drawable: nil, pass: pass).get()
+            pass.colorAttachments[0].texture = nil
+            return (target, CGSize(width: texture.width, height: texture.height))
+        }
+        onFrameCompletedForTesting = onFrameCompleted
+    }
     @_spi(CmdyApp)
     public var onDrawablePresentedForTesting: ((DrawablePresentationObservation) -> Void)? {
         didSet { sourceDidChange() }
