@@ -6,10 +6,11 @@ import CmdyKit
 /// actions return the event to the PTY when Cmdy has nothing to act on.
 final class StandardKeybindings {
     enum Action {
-        case openConfig, reloadConfig
+        case openSettings, openConfig, reloadConfig
         case copy, cut, paste, selectAll, pasteSelection
         case increaseFont, decreaseFont, resetFont
         case writeScreen(TerminalWindowController.ScreenFileAction)
+        case writeScrollbackPaste
         case adjustSelection(TerminalSelectionAdjustment)
         case previousTab, nextTab, tab(Int), lastTab
         case fullscreen, splitZoom, palette
@@ -30,9 +31,11 @@ final class StandardKeybindings {
     private var importedMappings:
         [CMDYKeybindingShortcut: CMDYKeybindingCommand] = [:]
 
-    init(delegate: AppDelegate) {
+    init(delegate: AppDelegate,
+         importedMappings: [CMDYKeybindingShortcut: CMDYKeybindingCommand]? = nil) {
         self.delegate = delegate
-        reloadImportedMappings()
+        if let importedMappings { self.importedMappings = importedMappings }
+        else { reloadImportedMappings() }
         monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             guard self?.handle(event) == true else { return event }
             return nil
@@ -41,6 +44,9 @@ final class StandardKeybindings {
 
     @discardableResult
     func handle(_ event: NSEvent) -> Bool {
+        if ((event.window ?? NSApp.keyWindow)?.firstResponder as? NSTextInputClient)?.hasMarkedText() == true {
+            return false
+        }
         if let command = Self.importedCommand(
             for: event, mappings: importedMappings),
            let action = Self.action(for: command) {
@@ -105,7 +111,9 @@ final class StandardKeybindings {
         for event: NSEvent,
         mappings: [CMDYKeybindingShortcut: CMDYKeybindingCommand]
     ) -> CMDYKeybindingCommand? {
-        importShortcut(event).flatMap { mappings[$0] }
+        // Avoid normalizing keys when no imported shortcut can match.
+        guard !mappings.isEmpty else { return nil }
+        return importShortcut(event).flatMap { mappings[$0] }
     }
 
     private static func action(
@@ -178,6 +186,7 @@ final class StandardKeybindings {
             case .writeScreenCopy: return .writeScreen(.copy)
             case .writeScreenPaste: return .writeScreen(.paste)
             case .writeScreenOpen: return .writeScreen(.open)
+            case .writeScrollbackPaste: return .writeScrollbackPaste
             }
         }
     }
@@ -241,7 +250,7 @@ final class StandardKeybindings {
         }
 
         switch (c, m) {
-        case (",", [.command]): return .openConfig
+        case (",", [.command]): return .openSettings
         case (",", [.command, .shift]): return .reloadConfig
         case ("c", [.command]): return .copy
         case ("x", [.command]): return .cut
@@ -287,16 +296,33 @@ final class StandardKeybindings {
         }
     }
 
+    static func terminalController(eventWindow: NSWindow?, keyWindow: NSWindow?) -> TerminalWindowController? {
+        // A native sheet or unrelated window can own an event while a terminal
+        // keeps its last first responder. Only a windowless event may use the
+        // current key window; never fall back to the last terminal controller.
+        (eventWindow ?? keyWindow)?.windowController as? TerminalWindowController
+    }
+
     private func perform(_ action: Action, event: NSEvent) -> Bool {
         guard let delegate else { return false }
-        let eventController = event.window?.windowController as? TerminalWindowController
-        let controller = eventController
-            ?? delegate.currentController
+        let targetWindow = event.window ?? NSApp.keyWindow
+        // Settings owns its keyboard even while a terminal retains its last
+        // first responder. Never send its editing/close shortcuts to that pane.
+        if let window = targetWindow,
+           window.windowController is CmdySettingsWindowController {
+            switch action {
+            case .closeSurface, .closeTab, .closeWindow:
+                window.performClose(nil)
+                return true
+            default: return false
+            }
+        }
+        let eventController = Self.terminalController(eventWindow: event.window, keyWindow: NSApp.keyWindow)
 
         // A text document is a first-class surface. Consume normal editing
         // commands here so the fallback terminal controller can never receive
         // them while an editor window or attached editor owns the keyboard.
-        if let editor = CmdyEditorManager.shared.editor(in: event.window) {
+        if let editor = CmdyEditorManager.shared.editor(in: targetWindow) {
             switch action {
             case .copy: editor.textView.copy(nil)
             case .cut: editor.textView.cut(nil)
@@ -326,10 +352,11 @@ final class StandardKeybindings {
         default: break
         }
 
-        guard let controller, let pane = controller.focusedPane, pane.isTerminalFocused else {
+        guard let controller = eventController, let pane = controller.focusedPane, pane.isTerminalFocused else {
             return false
         }
         switch action {
+        case .openSettings: delegate.openSettings(nil)
         case .openConfig: delegate.openConfig(nil)
         case .reloadConfig: delegate.reloadConfig(nil)
         case .copy:
@@ -342,13 +369,13 @@ final class StandardKeybindings {
             return pane.surface.view.tryToPerform(#selector(NSText.paste(_:)), with: nil)
         case .selectAll: pane.surface.selectAllContent()
         case .pasteSelection:
-            let text = pane.surface.selectedText()
-            guard !text.isEmpty else { return false }
-            pane.surface.send(txt: text)
+            return pane.surface.view.tryToPerform(
+                #selector(CmdyTerminalSurface.pasteSelection(_:)), with: nil)
         case .increaseFont: delegate.increaseFontSize(nil)
         case .decreaseFont: delegate.decreaseFontSize(nil)
         case .resetFont: delegate.resetFontSize(nil)
         case .writeScreen(let operation): return controller.writeScreenFile(operation)
+        case .writeScrollbackPaste: return controller.writeScrollbackFile()
         case .adjustSelection(let adjustment): return pane.surface.adjustSelection(adjustment)
         case .previousTab: return controller.selectTab(offset: -1)
         case .nextTab: return controller.selectTab(offset: 1)

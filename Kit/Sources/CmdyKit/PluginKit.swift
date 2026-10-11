@@ -245,10 +245,9 @@ public final class PluginManager: PluginHost {
     private var activatingPlugin: String = "Plugin"
 
     /// The set of plugins compiled into this build. Adding a plugin = one line.
-    /// Nothing is compiled in anymore — Bridge and Codio ship as external
-    /// plugins built on the public SDK (Plugins/ in the repo, installed to
-    /// ~/.config/cmdy/plugins/ by plugins.sh). Built-in slots remain for
-    /// anything that truly needs in-process access.
+    /// Nothing is compiled in anymore — first-party Extensions ship
+    /// separately and are built on the public SDK (Plugins/CmdySDK). Built-in
+    /// slots remain for anything that truly needs in-process access.
     nonisolated(unsafe) static let builtins: [CmdyPlugin.Type] = []
 
     private struct ExternalProcess {
@@ -369,6 +368,7 @@ public final class PluginManager: PluginHost {
     }
     /// Renderer frame counter for the perf gate (set by the app).
     public var frameStatsProvider: () -> [String: Any] = { [:] }
+    public var cursorStatsProvider: () -> [String: Any] = { [:] }
     /// Applies a plugin-reserved right inset to one terminal window, or every
     /// window when `windowNumber` is nil, and returns its pane-area geometry
     /// {top, bottom, side} (set by AppDelegate).
@@ -2666,6 +2666,11 @@ public final class PluginManager: PluginHost {
             if let denied = self.require(.debug, for: request) { return denied }
             return .ok(self.frameStatsProvider())
         }
+        server.route("GET", "/v1/debug/cursorstats") { [weak self] request in
+            guard let self else { return .badRequest("shutting down") }
+            if let denied = self.require(.debug, for: request) { return denied }
+            return .ok(self.cursorStatsProvider())
+        }
         server.route("POST", "/v1/debug/hittest") { [weak self] req in
             guard let self else { return .badRequest("shutting down") }
             if let denied = self.require(.debug, for: req) { return denied }
@@ -3622,7 +3627,7 @@ public final class PluginManager: PluginHost {
         + executable (fresh-copy the binary on reinstall — never overwrite in place).
 
         Learn: Author Guide (EXTENSIONS.md) — protocol docs, examples, and the
-        reference implementations: Plugins/detox (read first), Plugins/bridge,
+        reference examples: Examples/Extensions (read first) and
         Plugins/CmdySDK (the Swift client library).
         """
     }

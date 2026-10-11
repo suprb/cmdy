@@ -130,7 +130,7 @@ final class CleanRoomLineAndBackspaceTests: XCTestCase {
         XCTAssertEqual(normal.buffer.x, 0)
 
         let margins = CmdyTerminal(cols: 6, rows: 4)
-        margins.marginMode = true
+        margins.setMarginMode(true)
         margins.buffer.marginLeft = 2
         margins.buffer.marginRight = 4
         margins.buffer.x = 2
@@ -164,7 +164,7 @@ final class CleanRoomLineAndBackspaceTests: XCTestCase {
     func testReverseBackspaceUsesMarginsAndPreservesDepartedWrappedFlag() {
         let terminal = CmdyTerminal(cols: 6, rows: 4)
         terminal.reverseWraparound = true
-        terminal.marginMode = true
+        terminal.setMarginMode(true)
         terminal.buffer.marginLeft = 2
         terminal.buffer.marginRight = 4
         terminal.buffer.x = 1

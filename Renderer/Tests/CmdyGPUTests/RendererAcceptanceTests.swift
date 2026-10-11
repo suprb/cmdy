@@ -478,7 +478,7 @@ final class RendererAcceptanceTests: XCTestCase {
 
     func testOrdinaryImageDecodeIsAsynchronousAndDeduplicated() async throws {
         let device = try XCTUnwrap(MTLCreateSystemDefaultDevice())
-        let renderer = try MetalTerminalRenderer(
+        let renderer = try NativeRendererCacheHarness(
             view: MTKView(frame: .zero, device: device),
             source: MemoryRenderSource())
         let image = AcceptanceImage(image: try makeImage())

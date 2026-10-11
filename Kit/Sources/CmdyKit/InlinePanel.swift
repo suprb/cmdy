@@ -256,15 +256,19 @@ public final class InlinePanel: NSView {
     }
 
     private func previewSelection() {
-        guard mode == .list || mode == .tabs, prefsSnapshot != nil, selected < filtered.count else { return }
+        guard mode == .list || mode == .tabs, prefsSnapshot != nil else { return }
+        // A palette previews one result at a time. Search can pass through a
+        // theme, font, or shader before landing on an unrelated toggle, so
+        // restore both Preferences and host appearance before every new pick.
+        // No matches also ends the previous preview. The Config Mixer keeps
+        // its deliberate accumulation across tabs.
+        if mode == .list { applySnapshot() }
+        guard filtered.indices.contains(selected) else { return }
         if let preview = filtered[selected].preview {
             Preferences.shared.isPreviewing = true
             preview()
             Preferences.shared.isPreviewing = false
-        } else if mode == .list {
-            applySnapshot()   // browsed onto a plain action — show the saved look
         }
-        // .tabs: never restore while mixing — the blend accumulates.
     }
 
     // MARK: - Configuration
@@ -395,6 +399,14 @@ public final class InlinePanel: NSView {
         }
         let path = navStack.dropFirst().map(\.title)
         return path.isEmpty ? "root" : path.joined(separator: " › ")
+    }
+
+    private func settingLevel(for item: PaletteItem) -> String {
+        item.ancestors.isEmpty ? navigationLevel : item.ancestors.joined(separator: " › ")
+    }
+
+    private func contextualItem(_ item: PaletteItem) -> PaletteItem {
+        item.inContext(navStack.dropFirst().map(\.title))
     }
 
     private func memorySlot(level: String? = nil) -> String? {
@@ -843,17 +855,19 @@ public final class InlinePanel: NSView {
                            width: max(0, bounds.width - padX * 2),
                            height: lineFrame.height).fill()
                 }
-                text(item.title, x: padX, y: y,
+                text(item.displayTitle, x: padX, y: y,
                      color: isSel ? accent : fg,
                      maxWidth: titleWidth)
                 var sub = item.subtitle
-                if mode == .list, let kept = keptListTitles[navigationLevel] {
+                if mode == .list, let kept = keptListTitles[settingLevel(for: item)] {
                     if kept == item.title { sub = "✓ kept" }
                     else if item.subtitle == "current" { sub = "" }
                 }
                 if mode == .tabs, pinnedTitles[activeTab] == item.title {
                     sub = "✓ kept"
                 }
+                let context = item.ancestors.dropLast().joined(separator: " › ")
+                sub = [context, sub].filter { !$0.isEmpty }.joined(separator: " · ")
                 let subtitleRight = item.children != nil
                     ? arrowX - max(6, padX * 0.6)
                     : bounds.width - padX
@@ -975,7 +989,10 @@ public final class InlinePanel: NSView {
         if !hint.isEmpty {
             let footerY = y
             hline(footerY)
-            text(hint, x: padX, y: footerY + 1 + padY,
+            let displayedHint = mode == .list && filtered.indices.contains(selected)
+                && filtered[selected].kind == .shellCommand
+                ? "⏎ runs this shell command immediately · esc back" : hint
+            text(displayedHint, x: padX, y: footerY + 1 + padY,
                  color: busy ? dim : faint, maxWidth: bounds.width - padX * 2)
         }
     }
@@ -1249,14 +1266,9 @@ public final class InlinePanel: NSView {
             } else {
                 // Search runs over the whole subtree — at the root that's the
                 // entire palette, flat, no matter how deep the sections go.
-                let pool = mode == .tabs ? level : PaletteItem.flatten(allItems)
-                filtered = pool
-                    .compactMap { item -> (PaletteItem, Int)? in
-                        CommandPalette.fuzzyScore(query: query, target: item.title + " " + item.subtitle)
-                            .map { (item, $0) }
-                    }
-                    .sorted { $0.1 > $1.1 }
-                    .map { $0.0 }
+                filtered = CommandPalette.search(
+                    query: query, items: level,
+                    ancestors: mode == .tabs ? [] : navStack.dropFirst().map(\.title))
             }
             if query.isEmpty { restoreRememberedSelection() }
             else { selected = 0; listTop = 0 }
@@ -1289,14 +1301,17 @@ public final class InlinePanel: NSView {
                 item.action()
                 prefsSnapshot = currentPreferencesSnapshot()
                 previewHooks?.commit()
-                keptListTitles[navigationLevel] = item.title
-                hint = "✓ \(item.title) kept · keep choosing · esc back"
-                onPick?(item)
+                keptListTitles[settingLevel(for: item)] = item.title
+                let picked = contextualItem(item)
+                hint = "✓ \(picked.displayTitle) kept · keep choosing · esc back"
+                onPick?(picked)
                 needsDisplay = true
                 return
             }
+            let picked = contextualItem(item)
+            let onPick = self.onPick
             dismiss()
-            DispatchQueue.main.async { item.action(); self.onPick?(item) }
+            DispatchQueue.main.async { item.action(); onPick?(picked) }
         case .tabs:
             pinCurrentSelection()
         case .input:

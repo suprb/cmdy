@@ -11,6 +11,27 @@ be called out here with a migration path before a versioned release.
 
 ## [Unreleased]
 
+## [1.0.8] - 2026-10-11
+
+### Changed
+
+- Faster terminal response across the board. Keystrokes, full-screen apps,
+  scrolling, paste and resize now reach the display sooner: a keystroke lands in
+  about 10 ms and a resize redraws in about 49 ms on a 120 Hz MacBook Pro.
+- The first window and its login shell start during app launch, and launch work
+  stays off the first frame's path; the first complete frame appears in about
+  0.33 s.
+- Animated shaders tick from the display link and run at the display rate in a
+  focused window, removing stutter on 120 Hz displays.
+- Lower idle cost: cursor frames reuse exact cached pixels, temporary cursor
+  backing is released, and an idle window uses about 0.09% of one core.
+- Session recovery, settings and command workflows are more reliable.
+
+### Fixed
+
+- The bottom terminal row is no longer clipped.
+- Browser component swaps no longer call the GitHub API.
+
 ## [1.0.7] - 2026-09-05
 
 ### Fixed

@@ -675,6 +675,7 @@ final class CmdyEditorManager {
     }
 
     var hasDirtyDocuments: Bool { documents.contains(where: \.isDirty) }
+    var dirtyDocumentCount: Int { documents.filter(\.isDirty).count }
     var documentCountForTesting: Int { documents.count }
 
     /// Make the editor visible without treating a visibility command as a

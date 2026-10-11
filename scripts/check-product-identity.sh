@@ -35,7 +35,7 @@ process.stdout.write([
 test "$node_values" \
     = "$PRODUCT_NAME|$PRODUCT_SLUG|$PRODUCT_ENV_PREFIX|$PRODUCT_CONFIG_DIR_NAME|$PRODUCT_SLUG-browser"
 
-for script in package.sh release.sh publish-release.sh plugins.sh test.sh; do
+for script in package.sh release.sh publish-release.sh test.sh; do
     grep -Fq 'source scripts/product-identity.sh' "$script"
 done
 grep -Fq 'product_assert_canonical_checkout' release.sh
@@ -52,23 +52,8 @@ for source in \
     Kit/Sources/CmdyKit/AppUpdates.swift \
     App/TerminalWindowController.swift \
     App/EmbeddedChromium.swift \
-    Plugins/chromium/mcp/index.js \
-    Plugins/sim/mcp/index.js \
-    Plugins/appdock/mcp/index.js; do
+    Plugins/chromium/mcp/index.js; do
     test -f "$source"
-done
-
-# Public website links must follow the canonical repository. Legacy registry
-# URLs remain valid only in compatibility snapshots and runtime fallbacks.
-for source in \
-    site/src/components/SiteShell.tsx \
-    site/src/pages/HomePage.tsx \
-    site/src/pages/MarketplacePage.tsx; do
-    grep -Fq "https://github.com/$PRODUCT_GITHUB_REPOSITORY" "$source"
-    if grep -Eq 'github\.com/[^/]+/(termite|term64)(/|"|$)' "$source"; then
-        echo "Legacy public repository URL found in $source" >&2
-        exit 1
-    fi
 done
 
 # The stable protocol namespaces are deliberately not renamed with the public
@@ -84,11 +69,9 @@ done
 bash -n scripts/product-identity.sh scripts/rename-product.sh \
     scripts/check-product-identity.sh scripts/package-resource-policy.sh \
     scripts/demo.sh scripts/record-tour.sh Tests/package-resource-policy.sh \
-    package.sh release.sh publish-release.sh plugins.sh test.sh
+    package.sh release.sh publish-release.sh test.sh
 node --check Identity/Node/product-identity.js
 node --check Plugins/chromium/mcp/index.js
-node --check Plugins/sim/mcp/index.js
-node --check Plugins/appdock/mcp/index.js
 bash Tests/package-resource-policy.sh >/dev/null
 
 # Prove that the public rename command mutates only an isolated manifest and

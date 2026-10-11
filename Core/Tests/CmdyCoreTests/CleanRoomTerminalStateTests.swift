@@ -2829,7 +2829,7 @@ final class CleanRoomTerminalStateTests: XCTestCase {
     func testInsertCellDirectUsesActiveRangeAndPreservesOutsideMargins() {
         let normal = CmdyTerminal(cols: 6, rows: 2)
         seedRow(normal, row: 0, scalars: Array("ABCDEF".unicodeScalars.map(\.value)))
-        normal.insertMode = true
+        normal.setInsertMode(true)
         normal.buffer.x = 2
         normal.insertCellDirect(Cell(scalar: 0x58))
         XCTAssertEqual(normal.buffer.liveLine(0).cells.map(\.scalar),
@@ -2837,8 +2837,8 @@ final class CleanRoomTerminalStateTests: XCTestCase {
 
         let margins = CmdyTerminal(cols: 7, rows: 2)
         seedRow(margins, row: 0, scalars: Array("abcdefg".unicodeScalars.map(\.value)))
-        margins.insertMode = true
-        margins.marginMode = true
+        margins.setInsertMode(true)
+        margins.setMarginMode(true)
         margins.buffer.marginLeft = 2
         margins.buffer.marginRight = 4
         margins.buffer.x = 3
@@ -3153,7 +3153,7 @@ final class CleanRoomTerminalStateTests: XCTestCase {
 
     func testCRLFINDAndRICursorTransitions() {
         let cr = CmdyTerminal(cols: 8, rows: 5)
-        cr.marginMode = true
+        cr.setMarginMode(true)
         cr.buffer.marginLeft = 2
         cr.buffer.marginRight = 6
         cr.buffer.x = 5

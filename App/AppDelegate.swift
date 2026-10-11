@@ -2,11 +2,20 @@ import AppKit
 import ProductIdentity
 import SwiftUI
 import CmdyKit
-import CmdyGPU
+@_spi(CmdyApp) import CmdyGPU
 
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var controllers: [TerminalWindowController] = []
     lazy var windowGridCoordinator = WindowGridCoordinator(appDelegate: self)
+    private var settingsController: CmdySettingsWindowController?
+    private weak var populatedFontMenu: NSMenu?
+    @MainActor private lazy var sessionLifecycle = SessionLifecycle(
+        controllers: { [weak self] in self?.controllers ?? [] },
+        capture: { [weak self] in self?.serializedSessionLayouts() ?? [] },
+        persistenceEnabled: {
+            Preferences.shared.restoreSession
+                && !CommandLine.arguments.contains(where: { $0.hasPrefix("--ui-test") })
+        })
     /// AppKit windows remain the durable tab/session owners, but while the
     /// left sidebar is visible they are temporarily ungrouped so macOS does
     /// not draw a second tab strip. This set preserves ordering and selection
@@ -42,7 +51,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var workspaceTabSets: [WorkspaceTabSet] = []
     private var isTerminating = false
     private var sidebarCloseHandoffSuppressionDepth = 0
-    private var editorTerminationApproved = false
     private var standardKeybindings: StandardKeybindings?
     private struct ClosedLayout {
         let layout: [String: Any]
@@ -88,6 +96,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 "--ui-test-split-affordance-hold")
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        let launchStarted = CmdyPerformanceTrace.now()
+        defer {
+            CmdyPerformanceTrace.record(
+                event: "startup.did-finish-launching", started: launchStarted)
+        }
         NotificationCenter.default.addObserver(
             self, selector: #selector(preferencesDidChange),
             name: .cmdyPreferencesChanged, object: nil)
@@ -103,14 +116,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         NotificationCenter.default.addObserver(
             self, selector: #selector(channelExtensionRuntimeDidChange(_:)),
             name: .cmdyExtensionRuntimeChanged, object: nil)
+        let configStarted = CmdyPerformanceTrace.now()
         ConfigFile.migrateLegacyDirectoriesIfNeeded()
         ConfigFile.applyIfPresent()   // config file wins at launch…
+        Preferences.shared.migrateLegacyAssistantKey()
         ConfigFile.startWatching()    // …and re-applies live on every save
+        CmdyPerformanceTrace.record(event: "startup.config", started: configStarted)
         standardKeybindings = StandardKeybindings(delegate: self)
-        ShellIntegration.cleanupStaleDirectories()
+        let shellCleanupStarted = CmdyPerformanceTrace.now()
+        ShellIntegration.scheduleStaleDirectoryCleanup()
+        CmdyPerformanceTrace.record(
+            event: "startup.shell-cleanup-scheduled", started: shellCleanupStarted)
+        let dockStarted = CmdyPerformanceTrace.now()
         WindowDock.shared.start()   // drag a window/tab over another → dock zones
+        CmdyPerformanceTrace.record(event: "startup.dock", started: dockStarted)
 
         // Extension system: isolated programs speaking the public HTTP API.
+        let extensionSetupStarted = CmdyPerformanceTrace.now()
         PluginManager.shared.panesProvider = { [weak self] in
             self?.pluginPanes() ?? []
         }
@@ -228,11 +250,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         PluginManager.shared.frameStatsProvider = { [weak self] in
             let win = self?.controllers.first?.window
+            let process = ProcessInfo.processInfo
             return ["frames": MetalTerminalRenderer.framesPresented,
                     "rowsRebuilt": MetalTerminalRenderer.rowsRebuilt,
                     "rowsReused": MetalTerminalRenderer.rowsReused,
                     "visible": win?.occlusionState.contains(.visible) ?? false,
-                    "key": win?.isKeyWindow ?? false]
+                    "key": win?.isKeyWindow ?? false,
+                    "lowPowerMode": process.isLowPowerModeEnabled,
+                    "thermalState": process.thermalState.rawValue,
+                    "screenHz": win?.screen?.maximumFramesPerSecond ?? 0]
+        }
+        PluginManager.shared.cursorStatsProvider = { [weak self] in
+            let windows: [[String: Any]] = (self?.controllers ?? []).map { controller in
+                let panes: [[String: Any]] = controller.panes.map { pane in
+                    ["pane": pane.paneId,
+                     "cache": (pane.surface as? CmdyTerminalSurface)?.metalRenderer?.cursorCacheStats
+                        ?? ["active": false]]
+                }
+                return ["windowID": controller.window?.windowNumber ?? 0,
+                        "key": controller.window?.isKeyWindow ?? false, "panes": panes]
+            }
+            return ["windows": windows]
         }
         PluginManager.shared.showInfo = { title, body in
             AIResponseWindow.shared.show(title: title, body: body)
@@ -270,6 +308,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         let browserSmoke = CommandLine.arguments.contains(
             "--ui-test-embedded-browser")
+        CmdyPerformanceTrace.record(
+            event: "startup.extension-host-setup", started: extensionSetupStarted)
+        let extensionActivationStarted = CmdyPerformanceTrace.now()
         _ = BrowserEdition.ensureBundledActivationInstalled(force: browserSmoke)
         PluginManager.shared.activateAll()
         // If a legacy Browser-edition app cannot create its migration record,
@@ -279,6 +320,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             && !BrowserEdition.isActivationInstalled {
             EmbeddedChromiumRuntime.shared.enableBundledRuntimeIfPresent()
         }
+        CmdyPerformanceTrace.record(
+            event: "startup.extension-activation", started: extensionActivationStarted)
         // Beam is app UI (chips drawn on panes) — its global hotkeys live
         // here now that Bridge runs as an external plugin.
         PluginManager.shared.registerHotKey(keyCode: UInt32(11) /* B */, modifiers: UInt32(4352) /* ⌃⌘ */) {
@@ -290,7 +333,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         // Restore any cached app release before constructing windows so the
         // optional fourth traffic-light slot is correct on the first frame.
         // A fresh network result is delivered to existing windows afterward.
+        let appUpdateStarted = CmdyPerformanceTrace.now()
         AppUpdateMonitor.shared.startMonitoring()
+        CmdyPerformanceTrace.record(
+            event: "startup.app-update-state", started: appUpdateStarted)
+        let windowSetupStarted = CmdyPerformanceTrace.now()
         if CommandLine.arguments.contains("--ui-test-show-editor") {
             newWindow(nil)
             runShowEditorSmokeTest()
@@ -711,6 +758,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                         NSRect(x: 180, y: 180, width: 760, height: 480),
                         display: true)
                     emptyWindow.makeKeyAndOrderFront(nil)
+                    // Settings is a separate native window. Both keyboard and
+                    // File > Close must leave its underlying terminal alive.
+                    self.openSettings(nil)
+                    guard let settingsWindow = self.settingsController?.window,
+                          let closeEvent = NSEvent.keyEvent(
+                            with: .keyDown, location: .zero, modifierFlags: [.command],
+                            timestamp: 0, windowNumber: settingsWindow.windowNumber,
+                            context: nil, characters: "w", charactersIgnoringModifiers: "w",
+                            isARepeat: false, keyCode: 13) else { exit(1) }
+                    let settingsKeyHandled = self.standardKeybindings?.handle(closeEvent) == true
+                    let settingsKeyClosed = !settingsWindow.isVisible && emptyWindow.isVisible
+                        && self.controllers.contains { $0 === emptyController }
+                    self.openSettings(nil)
+                    self.closePaneOrWindow(nil)
+                    let settingsOwnWindow = settingsKeyHandled && settingsKeyClosed
+                        && !settingsWindow.isVisible && emptyWindow.isVisible
+                        && self.controllers.contains { $0 === emptyController }
+                    emptyWindow.makeKeyAndOrderFront(nil)
+                    if let pane = emptyController.panes.first {
+                        pane.blockStore.commandStarted(
+                            row: 1, promptRow: 0, command: "printf completed", cwd: nil)
+                        _ = pane.blockStore.commandFinished(row: 2, exitCode: 0)
+                    }
                     emptyWindow.performClose(nil)
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
                         let emptyDiagnostic = emptyController
@@ -728,9 +798,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                         self.controllers.last?.window?.orderOut(nil)
                         pane.blockStore.commandStarted(
                             row: 1, promptRow: 0,
-                            command: "printf activity", cwd: nil)
-                        _ = pane.blockStore.commandFinished(
-                            row: 2, exitCode: 0)
+                            command: "sleep 120", cwd: nil)
                         activeWindow.performClose(nil)
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
                             let diagnostic = activeController
@@ -745,8 +813,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                                     && !self.controllers.contains {
                                         $0 === activeController
                                     }
-                                let ok = emptyImmediate && activeProtected && activeClosed
+                                let ok = settingsOwnWindow && emptyImmediate && activeProtected && activeClosed
                                 print("UICLOSE emptyImmediate=\(emptyImmediate) "
+                                      + "settingsOwnWindow=\(settingsOwnWindow) "
                                       + "activeProtected=\(activeProtected) "
                                       + "activeClosed=\(activeClosed) "
                                       + "pending=\(diagnostic.pending) "
@@ -1009,16 +1078,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                     }
                 }
             }
-        } else if Preferences.shared.restoreSession, let saved = SessionStore.load() {
+        } else if Preferences.shared.restoreSession, let saved = sessionLifecycle.loadSavedLayouts() {
             restoreSession(saved)
         } else {
             newWindow(nil)
         }
+        // Only a fresh first window adopts the prelaunched shell.
+        InitialShellPrelaunch.discard()
+        CmdyPerformanceTrace.record(
+            event: "startup.window-setup", started: windowSetupStarted,
+            fields: ["windowCount": controllers.count])
+        let postWindowStarted = CmdyPerformanceTrace.now()
         refreshActionsMenu()
         refreshChannelsMenu()
         windowGridCoordinator.start()
+        sessionLifecycle.startCheckpoints()
+        if CommandLine.arguments.contains("--ui-test-session-lifecycle") {
+            SessionLifecycleDiagnostics.run(lifecycle: sessionLifecycle, controllers: controllers)
+        }
         refreshMenuStates()
         MarketplaceUpdateMonitor.shared.checkIfDue()
+        CmdyPerformanceTrace.record(
+            event: "startup.post-window", started: postWindowStarted)
         if CommandLine.arguments.contains("--ui-test-app-update") {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in
                 guard let window = self?.controllers.first?.window,
@@ -1133,6 +1214,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             surface.forceRedraw()
 
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                // Window layout and the fresh shell may move scrollback while
+                // the fixture warms up. Compare against the real starting
+                // viewport, not the liveTop captured before that warmup.
+                let startTopRow = surface.engine.currentTopRow
+                let startLiveTop = surface.engine.liveScreenTopRow
+                let startColumns = surface.engine.cols
+                let startRows = surface.engine.rows
                 let eventCount = 720
                 let eventRate = 120.0
                 let half = eventCount / 2
@@ -1223,8 +1311,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                             semanticRowsPresent = !pane.blockStore.blocks.isEmpty
                                 && !surface.failedBlockRows.isEmpty
                         }
-                        let ok = handlerDurations.count == eventCount
+                        let eventsComplete = handlerDurations.count == eventCount
+                        let returnedToStart = surface.engine.currentTopRow == startTopRow
+                        let fixtureStable = surface.engine.liveScreenTopRow == startLiveTop
+                            && surface.engine.cols == startColumns
+                            && surface.engine.rows == startRows
+                        let ok = eventsComplete
                             && semanticRowsPresent
+                            && fixtureStable
                             && captures > 0
                             && projections > 0
                             && captures < eventCount
@@ -1234,8 +1328,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                             && rebuilt <= captures * surface.engine.rows
                             && reused > rebuilt
                             && cadenceRatio >= 0.75
-                            && surface.engine.currentTopRow
-                                == (eventPixels > 3 ? liveTop / 2 : liveTop)
+                            && returnedToStart
                         print(String(format:
                             "UIDENSESCROLL variant=%@ pixels=%d blocks=%d failed=%d "
                             + "grid=%dx%d screenHz=%d lowPower=%@ "
@@ -1243,7 +1336,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                             + "fps=%.2f targetFPS=%.0f cadenceRatio=%.3f "
                             + "handlerMeanMs=%.3f handlerP95Ms=%.3f "
                             + "handlerMaxMs=%.3f timerP95Ms=%.3f timerMaxMs=%.3f "
-                            + "rebuilt=%d reused=%d captures=%d projections=%d yDisp=%d ok=%@",
+                            + "rebuilt=%d reused=%d captures=%d projections=%d yDisp=%d "
+                            + "startYDisp=%d startHistory=%d observedEvents=%d "
+                            + "semantic=%@ stable=%@ returned=%@ ok=%@",
                             variant.rawValue, eventPixels,
                             pane.blockStore.blocks.count,
                             surface.failedBlockRows.count,
@@ -1260,6 +1355,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                             (timerLateness.max() ?? 0) * 1_000,
                             rebuilt, reused, captures, projections,
                             surface.engine.currentTopRow,
+                            startTopRow, startLiveTop, handlerDurations.count,
+                            semanticRowsPresent ? "true" : "false",
+                            fixtureStable ? "true" : "false",
+                            returnedToStart ? "true" : "false",
                             ok ? "true" : "false"))
                         fflush(stdout)
                         if !CommandLine.arguments.contains(
@@ -2209,12 +2308,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
     }
 
+    @objc func openSettings(_ sender: Any?) {
+        // AppKit selectors and the legacy keybinding router call on main.
+        MainActor.assumeIsolated {
+            if settingsController == nil {
+                settingsController = CmdySettingsWindowController(
+                    openConfig: { [weak self] in self?.openConfig(nil) },
+                    focusedPane: { [weak self] in self?.focusedSettingsContext() })
+            }
+            settingsController?.showSettings()
+        }
+    }
+
     @objc func openConfig(_ sender: Any?) {
         CmdyEditorManager.shared.open(ConfigFile.prepareForEditing(), respectPreference: true)
     }
     @objc func reloadConfig(_ sender: Any?) {
         Theme.reloadUserThemes()
-        ConfigFile.applyIfPresent()
+        ConfigFile.applyIfPresent(force: true)
+        if !ConfigFile.issues.isEmpty || ConfigFile.persistenceError != nil
+            || Preferences.shared.credentialError != nil {
+            openSettings(sender)
+        }
     }
 
     @objc private func preferencesDidChange() {
@@ -2328,13 +2443,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
     }
 
-    private func fontDisplayName(_ name: String) -> String {
+    func fontDisplayName(_ name: String) -> String {
         if name == "System" { return "System Mono" }
         if let bf = bundledFonts.first(where: { $0.fontName == name }) { return bf.displayName }
-        return NSFont(name: name, size: 12)?.displayName ?? name
+        return FontLoader.font(named: name, size: 12)?.displayName ?? name
     }
 
-    private static func cursorLabel(_ value: String) -> String {
+    static func cursorLabel(_ value: String) -> String {
         switch value {
         case "steadyBlock": return "Block"
         case "blinkBar": return "Bar (blink)"
@@ -2355,7 +2470,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         ("Quick", 1.5), ("Fast", 2.0), ("Very Fast", 3.0),
     ]
 
-    private static func scrollSpeedLabel(_ value: CGFloat) -> String {
+    static func scrollSpeedLabel(_ value: CGFloat) -> String {
         if let match = scrollSpeedOptions.first(where: {
             abs($0.1 - Double(value)) < 0.001
         }) {
@@ -2364,14 +2479,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         return String(format: "%.2gx", Double(value))
     }
 
-    private static func lineSpacingLabel(_ value: CGFloat) -> String {
+    static func lineSpacingLabel(_ value: CGFloat) -> String {
         if let match = lineSpacingOptions.first(where: { abs($0.1 - Double(value)) < 0.001 }) {
             return match.0
         }
         return String(format: "%.2f×", Double(value))
     }
 
-    private static func textRenderingLabel(_ value: String) -> String {
+    static func textRenderingLabel(_ value: String) -> String {
         switch value {
         case "y-snap": return "Y snap"
         case "atlas-padding": return "atlas padding"
@@ -2409,18 +2524,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        if editorTerminationApproved || !CmdyEditorManager.shared.hasDirtyDocuments {
-            controllers.forEach { $0.approveNextWindowClose() }
-            return .terminateNow
-        }
-        CmdyEditorManager.shared.confirmAllDirty { [weak self] approved in
-            guard let self else { return }
-            self.editorTerminationApproved = approved
-            if approved { self.controllers.forEach { $0.approveNextWindowClose() } }
-            else { PluginsWindow.shared.applicationTerminationWasCancelled() }
-            sender.reply(toApplicationShouldTerminate: approved)
-        }
-        return .terminateLater
+        sessionLifecycle.applicationShouldTerminate(sender)
     }
 
     func applicationDidBecomeActive(_ notification: Notification) {
@@ -3502,13 +3606,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         isTerminating = true
+        sessionLifecycle.stopAndFlush()
         standardKeybindings?.invalidate()
         standardKeybindings = nil
         PluginManager.shared.deactivateAll()
         EmbeddedChromiumRuntime.shared.shutdown()
-        if Preferences.shared.restoreSession, !uiTestMerge, !uiTestCompose {
-            SessionStore.save(layouts: serializedSessionLayouts())
-        }
         controllers.forEach { c in c.panes.forEach { $0.shutdown() } }   // kill spawned shells, no orphans
         Preferences.shared.clearIsolatedStorage()
     }
@@ -3547,6 +3649,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     /// the user gets one window instead of a desktop full of leaked tab owners.
     /// Without the sidebar, identical frames remain the narrow legacy signal.
     func restoreSession(_ saved: [[String: Any]]) {
+        MainActor.assumeIsolated { sessionLifecycle.pauseCheckpoints() }
+        defer { MainActor.assumeIsolated { sessionLifecycle.resumeCheckpoints() } }
+        let existingWorkspaceSets = workspaceTabSets
         let hasExplicitWorkspaceGroups = saved.contains {
             $0[WorkspaceSessionKey.group] as? String != nil
         }
@@ -3592,7 +3697,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         // may create provisional singleton sets while the remaining saved tabs
         // are still being constructed; the persisted grouping below is the
         // authoritative owner for this restore.
-        workspaceTabSets.removeAll()
+        workspaceTabSets = existingWorkspaceSets
 
         var orderedGroupIdentifiers: [String] = []
         for entry in entries where
@@ -3683,6 +3788,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     /// Reconcile our presentation-neutral tab set with AppKit whenever native
     /// tabs are in use. Native drag/reorder/merge operations therefore remain
     /// authoritative instead of creating a second tab model.
+    private func isSoleRegisteredController(_ controller: TerminalWindowController) -> Bool {
+        controllers.count == 1 && controllers.first === controller
+    }
+
     private func workspaceTabSet(containing controller: TerminalWindowController)
         -> WorkspaceTabSet {
         // Removing or adding native windows changes `tabGroup.windows`
@@ -3697,9 +3806,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             return transitioning
         }
 
-        let nativeControllers = controller.window?.tabGroup?.windows.compactMap {
-            $0.windowController as? TerminalWindowController
-        } ?? []
+        // Reading tabGroup constructs AppKit's native group on demand. With
+        // one registered controller there is no cross-window order to reconcile.
+        // Ask AppKit as soon as another controller exists; transitions above
+        // still keep their complete durable set frozen.
+        let nativeControllers = isSoleRegisteredController(controller)
+            ? [controller]
+            : controller.window?.tabGroup?.windows.compactMap {
+                $0.windowController as? TerminalWindowController
+            } ?? []
 
         if nativeControllers.count > 1 {
             let intersecting = workspaceTabSets.filter { set in
@@ -3810,7 +3925,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     func selectedWorkspaceTab(containing controller: TerminalWindowController)
         -> TerminalWindowController? {
         let set = workspaceTabSet(containing: controller)
-        if !set.usesSidebar,
+        if isSoleRegisteredController(controller) {
+            set.selected = controller
+        } else if !set.usesSidebar,
            let native = controller.window?.tabGroup?.selectedWindow?.windowController
                 as? TerminalWindowController {
             set.selected = native
@@ -3825,7 +3942,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                                 for controller: TerminalWindowController) {
         let set = workspaceTabSet(containing: controller)
         let selected: TerminalWindowController
-        if set.usesSidebar {
+        if isSoleRegisteredController(controller) {
+            selected = controller
+            set.selected = controller
+        } else if set.usesSidebar {
             selected = set.selected ?? set.controllers.first ?? controller
         } else {
             selected = controller.window?.tabGroup?.selectedWindow?.windowController
@@ -4538,12 +4658,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     @objc func newWindow(_ sender: Any?) {
+        let windowStarted = CmdyPerformanceTrace.now()
         let source = currentController
         let sourceWindow = source?.window
+        let constructionStarted = CmdyPerformanceTrace.now()
         let c = TerminalWindowController(
             cwd: source?.workingDirectory,
             appearance: source?.tabAppearanceSnapshot,
-            deferWorkspaceTabPresentation: true)
+            deferWorkspaceTabPresentation: true,
+            deferInitialShellStart: true)
+        CmdyPerformanceTrace.record(
+            event: "window.controller-construction", started: constructionStarted)
         controllers.append(c)
         let gridFrame = Preferences.shared.windowGridEnabled
             ? windowGridCoordinator.prepareNewWindow(c, source: source)
@@ -4563,6 +4688,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             c.window?.center()
         }
         c.finishDeferredWorkspaceTabPresentation()
+        // Bypass only the initial order-in animation. Workspace/tab setup above
+        // establishes the longer-lived policy, restored after these ordering
+        // calls so later tab, restore, and close behavior keep that policy.
+        let presentationWindow = c.window
+        let previousAnimationBehavior = presentationWindow?.animationBehavior
+        presentationWindow?.animationBehavior = .none
+        defer {
+            if let previousAnimationBehavior {
+                presentationWindow?.animationBehavior = previousAnimationBehavior
+            }
+        }
         c.showWindow(nil)
         // showWindow can still apply AppKit's initial placement to an unseen
         // window. Reassert Cmdy's geometry before the next display pass.
@@ -4571,13 +4707,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         } else {
             c.window?.center()
         }
+        c.startDeferredInitialShells()
         c.window?.makeKeyAndOrderFront(nil)
+        if c.adoptedPrelaunchedShell {
+            // Launch keeps the main thread in AppKit's first-window work for a
+            // while. Commit the ordered-in window's layer tree now, so the
+            // terminal's first drawable has an on-screen layer to present into.
+            c.window?.displayIfNeeded()
+            CATransaction.flush()
+            // The prelaunched shell's output is already in the model, so no new
+            // output will drive a frame. Request the full screen now: the
+            // model captures it off the main thread, so its delivery is
+            // already queued when AppKit's first-window work ends. A frame
+            // dropped before the window reaches the screen is redrawn by the
+            // renderer once presentation reports it.
+            c.panes.forEach { $0.surface.forceRedraw() }
+        }
         NSApp.activate(ignoringOtherApps: true)
         // Coalesce key-repeat Cmd-N bursts before starting any NSWindow frame
         // animation. Every new window is already presented in its own current
         // target rectangle; after the burst, surrounding windows perform one
         // native movement to the final topology.
         windowGridCoordinator.scheduleReconcile(animated: true, after: 0.08)
+        CmdyPerformanceTrace.record(
+            event: "window.created-and-presented", started: windowStarted,
+            fields: ["windowCount": controllers.count])
     }
 
     @objc func newTab(_ sender: Any?) {
@@ -4783,7 +4937,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     @objc func breakPaneOut(_ sender: Any?) { currentController?.breakOutFocusedPane(asTab: false) }
     @objc func breakPaneTab(_ sender: Any?) { currentController?.breakOutFocusedPane(asTab: true) }
     @objc func closePaneOrWindow(_ sender: Any?) {
-        if let editor = CmdyEditorManager.shared.focusedEditor {
+        if let window = NSApp.keyWindow,
+           window.windowController is CmdySettingsWindowController {
+            window.performClose(sender)
+        } else if let editor = CmdyEditorManager.shared.focusedEditor {
             CmdyEditorManager.shared.requestClose(editor)
         } else if let c = currentController { c.closePaneOrWindow() }
         else { NSApp.keyWindow?.performClose(sender) }
@@ -4841,10 +4998,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         // drawn in the terminal's font/theme — not a floating window.
         guard let controller = currentController,
               let pane = controller.focusedPane else { NSSound.beep(); return }
+        pane.captureWorkspaceResumePaletteOrigin()
         let itemsProvider = { [weak self] in self?.paletteItems() ?? [] }
-        pane.presentInlinePanel().configureList(
+        let panel = pane.presentInlinePanel()
+        panel.onPick = { item in CommandCatalogHistory.record(item) }
+        panel.configureList(
             items: itemsProvider(),
-            placeholder: "type a command, theme, font, or recent shell command…",
+            placeholder: "find an action or setting…",
             hint: "↑↓ select · → open · settings preview live · ⏎ keep + stay · esc back",
             memoryKey: "command-palette",
             itemsProvider: itemsProvider,
@@ -4865,320 +5025,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
     @objc func runPluginCommand(_ sender: NSMenuItem) {
         (sender.representedObject as? () -> Void)?()
-    }
-
-    /// Everything the palette can do: actions, themes, fonts, cursor styles,
-    /// toggles, and the focused pane's recent commands.
-    // MARK: - Palette tree (sections; shared with the Config Mixer)
-
-    private func item(_ title: String, _ subtitle: String = "", previews: Bool = false,
-                      _ action: @escaping () -> Void) -> PaletteItem {
-        PaletteItem(title: title, subtitle: subtitle, action: action,
-                    preview: previews ? action : nil)
-    }
-
-    private func booleanPaletteItems(current: Bool,
-                                     set: @escaping (Bool) -> Void) -> [PaletteItem] {
-        [
-            item("On", current ? "current" : "", previews: true) { set(true) },
-            item("Off", !current ? "current" : "", previews: true) { set(false) },
-        ]
-    }
-
-    func themePaletteItems() -> [PaletteItem] {
-        let p = Preferences.shared
-        let controller = currentController
-        let selected = controller?.selectedThemeName ?? p.themeName
-        return Theme.names.map { name in
-            item(name, selected == name ? "current" : "theme", previews: true) {
-                [weak controller] in
-                if let controller {
-                    controller.setTabTheme(name)
-                } else {
-                    Preferences.shared.themeName = name
-                }
-            }
-        }
-    }
-
-    func fontPaletteItems() -> [PaletteItem] {
-        let p = Preferences.shared
-        var out = [item("System Mono", p.fontName == "System" ? "current" : "font", previews: true) {
-            Preferences.shared.fontName = "System"
-        }]
-        for bf in bundledFonts {
-            out.append(item(bf.displayName, p.fontName == bf.fontName ? "current" : "font", previews: true) {
-                Preferences.shared.fontName = bf.fontName
-            })
-        }
-        return out
-    }
-
-    func shaderPaletteItems() -> [PaletteItem] {
-        let p = Preferences.shared
-        let controller = currentController
-        let selected = controller?.selectedShaderName ?? p.shaderName
-        var out = Preferences.shaderNames.map { name in
-            item(name, selected == name ? "current" : "shader", previews: true) {
-                [weak controller] in
-                if let controller {
-                    controller.setTabShader(name)
-                } else {
-                    Preferences.shared.shaderName = name
-                }
-            }
-        }
-        for name in UserShaders.names {
-            out.append(item(String(name.dropFirst("user/".count)),
-                            selected == name ? "current" : "user shader", previews: true) {
-                [weak controller] in
-                if let controller {
-                    controller.setTabShader(name)
-                } else {
-                    Preferences.shared.shaderName = name
-                }
-            })
-        }
-        out.append(item("New User Shader…", "scaffold + live reload") {
-            UserShaders.createAndEdit()
-        })
-        return out
-    }
-
-    func cursorPaletteItems() -> [PaletteItem] {
-        let p = Preferences.shared
-        let styles: [(String, String)] = [
-            ("Block (blink)", "blinkBlock"), ("Block", "steadyBlock"),
-            ("Bar (blink)", "blinkBar"), ("Bar", "steadyBar"),
-            ("Underline (blink)", "blinkUnderline"), ("Underline", "steadyUnderline"),
-        ]
-        return styles.map { label, value in
-            item(label, p.cursorStyleName == value ? "current" : "cursor", previews: true) {
-                Preferences.shared.cursorStyleName = value
-            }
-        }
-    }
-
-    func lineSpacingPaletteItems() -> [PaletteItem] {
-        let p = Preferences.shared
-        return Self.lineSpacingOptions.map { label, v in
-            item(label, abs(Double(p.lineHeight) - v) < 0.001 ? "current" : "spacing", previews: true) {
-                Preferences.shared.lineHeight = CGFloat(v)
-            }
-        }
-    }
-
-    func textRenderingPaletteItems() -> [PaletteItem] {
-        let p = Preferences.shared
-        let options: [(String, String, String)] = [
-            ("Current Baseline", "current", "linear · X snap · 1.35 contrast"),
-            ("Y Pixel Snap", "y-snap", "baseline + vertical pixel snap"),
-            ("Atlas Padding", "atlas-padding", "baseline + 1px glyph gutter"),
-            ("Nearest Sampling", "nearest", "baseline + nearest texture filter"),
-            ("Higher Contrast", "high-contrast", "baseline + 1.55 edge curve"),
-            ("Crisp Combined", "crisp", "Y snap + gutter + 1.55 contrast"),
-        ]
-        return options.map { label, value, detail in
-            item(label, p.textRenderingMode == value ? "current" : detail, previews: true) {
-                Preferences.shared.textRenderingMode = value
-            }
-        }
-    }
-
-    func windowInsetPaletteItems() -> [PaletteItem] {
-        let p = Preferences.shared
-        let options: [(String, CGFloat)] = [("Small", 6), ("Medium", 10), ("Large", 18)]
-        return options.map { label, v in
-            let density = v <= 10 ? "compact" : "unified"
-            let detail = abs(p.contentMargin - v) < 0.5
-                ? "current · \(density)" : "\(Int(v))pt · \(density)"
-            return item(label, detail, previews: true) {
-                Preferences.shared.contentMargin = v
-            }
-        }
-    }
-
-    private func paletteItems() -> [PaletteItem] {
-        let p = Preferences.shared
-        var root: [PaletteItem] = []
-
-        // Recent commands stay flat at the root — the fastest reach.
-        if let c = currentController {
-            for cmd in c.recentCommands(limit: 5) where !cmd.command.isEmpty {
-                root.append(item("Run: \(cmd.command)", "re-run") { [weak self] in
-                    self?.currentController?.runCommand(cmd.command)
-                })
-            }
-        }
-
-        root.append(.section("AI", "agent · compose · explain · fix", [
-            item("Agent Mode…", "⇧⌘A") { [weak self] in self?.startAgent(nil) },
-            item("Integration Doctor…", "Browser · Sim · Bridge · MCP") { [weak self] in
-                self?.showIntegrationDoctor(nil)
-            },
-            item("Compose Command…", "⇧⌘K") { [weak self] in self?.composeAI(nil) },
-            item("Explain Last Command", "⇧⌘E") { [weak self] in self?.explainLast(nil) },
-            item("Fix Last Failed Command", "⇧⌘X") { [weak self] in self?.fixLastAI(nil) },
-        ]))
-
-        root.append(.section("Windows & Panes", "new · split · merge · beam", [
-            item("New Window", "⌘N") { [weak self] in self?.newWindow(nil) },
-            item("New Tab", "⌘T") { [weak self] in self?.newTab(nil) },
-            item("Split Right", "⌘D") { [weak self] in self?.splitRight(nil) },
-            item("Split Down", "⇧⌘D") { [weak self] in self?.splitDown(nil) },
-            item("Focus Next Pane", "⌘]") { [weak self] in self?.focusNextPane(nil) },
-            item("Break Pane into Window", "⇧⌘B") { [weak self] in self?.breakPaneOut(nil) },
-            item("Break Pane into Tab", "⌥⌘B") { [weak self] in self?.breakPaneTab(nil) },
-            item("Break Splits into Grid Windows") {
-                [weak self] in self?.breakSplitsIntoGridWindows(nil)
-            },
-            item("Combine Grid Windows into Splits") {
-                [weak self] in self?.combineGridWindowsIntoSplits(nil)
-            },
-            item("Merge All Windows into Tabs") { NSApp.keyWindow?.mergeAllWindows(nil) },
-            item("Merge All Windows into Splits") { [weak self] in self?.mergeIntoSplits(nil) },
-            item("Window Grid", p.windowGridEnabled ? "on" : "off") {
-                [weak self] in self?.toggleWindowGrid(nil)
-            },
-            item("Float Window on Top", "⌥⌘F") { [weak self] in self?.toggleFloat(nil) },
-            item("Beam Selected Text to Pane…", "⌃⌘B") { [weak self] in self?.beamSelection(nil) },
-            item("Beam Screenshot to Pane…", "⌃⌘S") { [weak self] in self?.beamScreenshot(nil) },
-        ]))
-
-        root.append(MainActor.assumeIsolated { namedWorkspacePaletteSection() })
-        root.append(keybindingImportPaletteSection())
-
-        root.append(.section("Appearance", "mixer · themes · fonts · shaders", [
-            item("Config Mixer…", "blend theme/font/shader/cursor live") { [weak self] in self?.showConfigMixer(nil) },
-            .section(
-                "Themes", currentController?.selectedThemeName ?? p.themeName,
-                themePaletteItems()),
-            .section("Fonts", fontDisplayName(p.fontName), fontPaletteItems()),
-            .section(
-                "Shaders", currentController?.selectedShaderName ?? p.shaderName,
-                shaderPaletteItems()),
-            .section("Cursors", Self.cursorLabel(p.cursorStyleName), cursorPaletteItems()),
-            .section("Cursor Glide Speed", String(format: "%.2gx", p.cursorGlideSpeed), [
-                item("Slow", "0.45x", previews: true) { p.cursorGlideSpeed = 0.45 },
-                item("Relaxed", "0.7x", previews: true) { p.cursorGlideSpeed = 0.7 },
-                item("Balanced", "1x", previews: true) { p.cursorGlideSpeed = 1 },
-                item("Fast", "1.6x", previews: true) { p.cursorGlideSpeed = 1.6 },
-                item("Very Fast", "2.5x", previews: true) { p.cursorGlideSpeed = 2.5 },
-            ]),
-            .section("Cursor Glide Distance",
-                     p.cursorGlideMaxDistance == 0 ? "unlimited" : "\(Int(p.cursorGlideMaxDistance)) cells", [
-                item("Unlimited", previews: true) { p.cursorGlideMaxDistance = 0 },
-                item("Up to 8 cells", previews: true) { p.cursorGlideMaxDistance = 8 },
-                item("Up to 4 cells", previews: true) { p.cursorGlideMaxDistance = 4 },
-                item("Up to 2 cells", previews: true) { p.cursorGlideMaxDistance = 2 },
-            ]),
-            .section("Line Spacing", Self.lineSpacingLabel(p.lineHeight), lineSpacingPaletteItems()),
-            .section("Text Rendering Lab", Self.textRenderingLabel(p.textRenderingMode),
-                     textRenderingPaletteItems()),
-            item("Increase Font Size", "⌘+") { [weak self] in self?.increaseFontSize(nil) },
-            item("Decrease Font Size", "⌘−") { [weak self] in self?.decreaseFontSize(nil) },
-            .section("Window Buttons", p.hideTrafficLights ? "off" : "on",
-                     booleanPaletteItems(current: !p.hideTrafficLights) { p.hideTrafficLights = !$0 }),
-            .section("Window Inset", "\(Int(p.contentMargin))pt", windowInsetPaletteItems()),
-        ]))
-
-        root.append(.section("Terminal", "find · clear · blocks", [
-            item("Find…", "⌘F") { [weak self] in self?.showFind(nil) },
-            item("Clear Buffer", "⌘K") { [weak self] in self?.clearBuffer(nil) },
-            item("Copy Last Command Output", "⇧⌘C") { [weak self] in self?.copyLastOutput(nil) },
-        ]))
-
-        var actionItems = availableCmdyActions().map { action in
-            let shortcut = action.shortcut.map { " · \($0.display)" } ?? ""
-            let purpose = action.guide.whatItDoes.first ?? action.group
-            return item(action.title, "\(action.group)\(shortcut) · \(purpose)") { [weak self] in
-                do { try self?.runCmdyAction(action) }
-                catch { self?.showCmdyActionError(error) }
-            }
-        }
-        actionItems.append(item("Install Starter Actions…", "five editable workflows") { [weak self] in
-            self?.installStarterActions(nil)
-        })
-        actionItems.append(item("Save Last Command as Action…", "authoring") { [weak self] in
-            self?.saveLastCommandAsAction(nil)
-        })
-        actionItems.append(item("Create Sample Action", "scaffold") { [weak self] in
-            self?.createSampleAction(nil)
-        })
-        actionItems.append(item(
-            "Open Actions Folder",
-            "~/.config/\(ProductIdentity.current.configurationDirectoryName)/actions"
-        ) { [weak self] in
-            self?.openActionsFolder(nil)
-        })
-        root.append(.section("Actions", "scripts · commands · workflows", actionItems))
-
-        root.append(channelPaletteSection())
-
-        root.append(.section("Settings", "config file · toggles", [
-            item("Open Config File", "⌘,") { [weak self] in self?.openConfig(nil) },
-            item("Reload Config", "⇧⌘,") { [weak self] in self?.reloadConfig(nil) },
-            .section("Smooth Cursor", p.smoothCursor ? "on" : "off",
-                     booleanPaletteItems(current: p.smoothCursor) { p.smoothCursor = $0 }),
-            .section("Smooth Scroll", p.smoothScroll ? "on" : "off",
-                     booleanPaletteItems(current: p.smoothScroll) { p.smoothScroll = $0 }),
-            .section("Scroll Speed", Self.scrollSpeedLabel(p.scrollSpeed),
-                     Self.scrollSpeedOptions.map { label, value in
-                         item(
-                            label,
-                            abs(value - Double(p.scrollSpeed)) < 0.001
-                                ? "current · \(String(format: "%.2gx", value))"
-                                : String(format: "%.2gx", value)
-                         ) {
-                             p.scrollSpeed = CGFloat(value)
-                         }
-                     }),
-            .section("SID Sounds", p.sounds ? "on" : "off",
-                     booleanPaletteItems(current: p.sounds) { p.sounds = $0 }),
-            .section("Ghost Text", p.ghostText ? "on" : "off",
-                     booleanPaletteItems(current: p.ghostText) { p.ghostText = $0 }),
-            .section("Automatic Error Help", p.automaticErrorHelp ? "on" : "off",
-                     booleanPaletteItems(current: p.automaticErrorHelp) { p.automaticErrorHelp = $0 }),
-            .section("Marketplace Update Checks", p.marketplaceUpdateChecks ? "on" : "off",
-                     booleanPaletteItems(current: p.marketplaceUpdateChecks) { enabled in
-                         p.marketplaceUpdateChecks = enabled
-                         if enabled { MarketplaceUpdateMonitor.shared.checkIfDue(force: true) }
-                         else { MarketplaceUpdateMonitor.shared.clearKnownUpdates() }
-                     }),
-        ]))
-
-        let marketplaceUpdateCount = MarketplaceUpdateMonitor.shared.extensionUpdateCount
-        var pluginItems: [PaletteItem] = [
-            item("Extensions…", marketplaceUpdateCount == 0
-                 ? "⇧⌘L" : "\(marketplaceUpdateCount) update\(marketplaceUpdateCount == 1 ? "" : "s") · ⇧⌘L") {
-                [weak self] in self?.showPlugins(nil)
-            },
-            item("Browse the Marketplace…", "shaders · themes · rigs · extensions") { [weak self] in
-                self?.browseMarketplace(nil)
-            },
-        ]
-        // Each plugin is its own subsection — scalable, not one long list.
-        for group in extensionCommandGroups {
-            pluginItems.append(.section(group.plugin, "\(group.commands.count) commands",
-                group.commands.map { command in
-                    item(Self.trimPluginPrefix(command.title, plugin: group.plugin), group.plugin.lowercased()) {
-                        command.run()
-                    }
-                }))
-        }
-        pluginItems.append(item("Create Sample Extension", "scaffold") { PluginManager.shared.createSamplePlugin() })
-        pluginItems.append(item("Open Author Guide", "EXTENSIONS.md") { PluginManager.shared.openAuthorGuide() })
-        pluginItems.append(item("Open Extensions Folder") {
-            try? FileManager.default.createDirectory(at: PluginManager.extensionsDirectory,
-                                                     withIntermediateDirectories: true)
-            NSWorkspace.shared.open(PluginManager.extensionsDirectory)
-        })
-        let extensionSubtitle = marketplaceUpdateCount == 0
-            ? "manage · commands · authoring"
-            : "\(marketplaceUpdateCount) update\(marketplaceUpdateCount == 1 ? "" : "s") · manage · commands"
-        root.append(.section("Extensions", extensionSubtitle, pluginItems))
-
-        return root
     }
 
     @objc func previousPrompt(_ sender: Any?) { currentController?.jumpToPreviousPrompt() }
@@ -5234,6 +5080,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     /// Rebuild the Blocks menu on open: keep the 4 static items, then list the
     /// key window's recent commands with ✓/✗ status (click to jump).
     func menuNeedsUpdate(_ menu: NSMenu) {
+        if menu.title == "Appearance" {
+            MainActor.assumeIsolated {
+                applyStates(in: menu)
+                refreshValueLabels(in: menu)
+            }
+            return
+        }
+        if menu.title == "Font" {
+            MainActor.assumeIsolated {
+                if populatedFontMenu !== menu {
+                    populateFontMenu(menu)
+                    populatedFontMenu = menu
+                }
+                applyStates(in: menu)
+            }
+            return
+        }
         if menu.title == "Workspaces" {
             MainActor.assumeIsolated { rebuildNamedWorkspacesMenu(menu) }
             return
@@ -5357,7 +5220,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     /// External Extensions register commands over the SDK. Embedded native
     /// components have no child process, so the host contributes their narrow
     /// App-owned commands here without reviving the retired Browser sidecar.
-    private var extensionCommandGroups:
+    var extensionCommandGroups:
         [(plugin: String, commands: [(title: String, run: () -> Void)])] {
         var groups = PluginManager.shared.commandsByPlugin
         guard EmbeddedChromiumRuntime.shared.isAvailable,

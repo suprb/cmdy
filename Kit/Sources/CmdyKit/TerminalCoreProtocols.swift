@@ -118,6 +118,10 @@ public protocol TerminalEngine: AnyObject {
     /// Right-trimmed text for an inclusive row range. Implementations that
     /// serialize access to their buffer can capture the full range atomically.
     func scrollbackLineTexts(rows: ClosedRange<Int>) -> [String]
+    /// Plain text of every retained row in the current buffer, independent of
+    /// viewport position. Physical wraps remain line breaks. Queue-backed
+    /// engines must capture the extent and its rows in one serialized read.
+    func scrollbackText() -> String
     /// Text for a terminal-cell range. This preserves the distinction between
     /// Unicode characters and the one or two grid cells they occupy.
     func scrollbackLineText(row: Int, columns: Range<Int>) -> String?
@@ -149,6 +153,14 @@ public protocol TerminalEngine: AnyObject {
 }
 
 public extension TerminalEngine {
+    func scrollbackText() -> String {
+        let count = bufferLineCount
+        guard count > 0 else { return "" }
+        let columns = 0..<max(0, cols)
+        return (0..<count).map { scrollbackLineText(row: $0, columns: columns) ?? "" }
+            .joined(separator: "\n") + "\n"
+    }
+
     func scrollbackLineTexts(rows: ClosedRange<Int>) -> [String] {
         rows.map { scrollbackLineText(row: $0) ?? "" }
     }
@@ -172,6 +184,11 @@ public protocol TerminalSurface: AnyObject {
     /// Everything the view would write to the process (mouse reports, arrow
     /// keys, typed text). Headless suites capture this to assert routing.
     var onSendToProcess: ((ArraySlice<UInt8>) -> Void)? { get set }
+    /// Text committed by the native input system, including IME composition.
+    /// Paste and command/control sequences have their own input paths.
+    var onTextInputCommitted: ((String) -> Void)? { get set }
+    /// A new preedit session is user input even if it is later cancelled.
+    var onTextCompositionStarted: (() -> Void)? { get set }
     /// Paste policy hook. Return transformed text, or nil to cancel. It is
     /// invoked only for explicit user paste, never for ordinary PTY output.
     var onPasteRequest: ((String) -> String?)? { get set }
@@ -201,6 +218,9 @@ public protocol TerminalSurface: AnyObject {
     // Insets — the grid lends space to UI (inline panels, gutters, chrome).
     // Resize math accounts for reserved space; content reflows, not overlays.
     var topContentInset: CGFloat { get set }
+    /// The effective bottom inset is the larger of the persistent edge margin
+    /// and the current panel reservation written through bottomContentInset.
+    var minimumBottomContentInset: CGFloat { get set }
     var bottomContentInset: CGFloat { get set }
     var leftContentInset: CGFloat { get set }
     var rightContentInset: CGFloat { get set }
@@ -212,10 +232,12 @@ public protocol TerminalSurface: AnyObject {
     // GPU / shader runtime
     func setUseMetal(_ on: Bool) throws
     var isUsingMetalRenderer: Bool { get }
-    /// Compile + install a user shader (cmdy_main contract). Returns the
-    /// compile error, or nil on success. Passing nil clears it.
+    /// Renderer initialization/capture failures, delivered on the UI executor.
+    var onRendererError: ((String) -> Void)? { get set }
+    /// Compile and install on the render worker without blocking the UI.
+    /// Returns the compile error, or nil on success. Passing nil clears it.
     @discardableResult
-    func setUserShader(_ source: String?) -> String?
+    func setUserShader(_ source: String?) async -> String?
     /// Built-in shader index into Preferences.shaderNames (append-only), or
     /// -1 while a user shader is installed.
     var shaderMode: Int { get set }

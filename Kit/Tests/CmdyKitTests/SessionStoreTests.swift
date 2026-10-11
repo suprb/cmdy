@@ -87,6 +87,62 @@ final class SessionStoreTests: XCTestCase {
             ["session.json"])
     }
 
+    func testCheckpointsAndPreviousCopyArePrivateAndRecoverCorruption() throws {
+        let directory = temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let url = directory.appendingPathComponent("session.json")
+        let previous = SessionStore.previousURL(for: url)
+        try SessionStore.save(layouts: [["type": "pane", "cwd": "/first"]], to: url)
+        try SessionStore.save(layouts: [["type": "pane", "cwd": "/second"]], to: url)
+        for file in [url, previous] {
+            let attributes = try FileManager.default.attributesOfItem(atPath: file.path)
+            XCTAssertEqual((attributes[.posixPermissions] as? NSNumber)?.intValue, 0o600)
+        }
+
+        try Data("{interrupted".utf8).write(to: url)
+        let recovered = SessionStore.loadWithRecovery(from: url)
+        XCTAssertEqual(recovered.layouts?.first?["cwd"] as? String, "/first")
+        guard case .recoveredPrevious = recovered.notice else {
+            return XCTFail("recovery must include a visible-notice payload")
+        }
+        // A corrupt primary must not poison the last-good backup on retry.
+        try SessionStore.save(layouts: [["type": "pane", "cwd": "/third"]], to: url)
+        XCTAssertEqual(try SessionStore.load(from: previous)?.first?["cwd"] as? String, "/first")
+    }
+
+    func testEmptyCheckpointNeverResurrectsClosedWindows() throws {
+        let directory = temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let url = directory.appendingPathComponent("session.json")
+        let previous = SessionStore.previousURL(for: url)
+        try SessionStore.save(layouts: [["type": "pane", "cwd": "/old"]], to: url)
+        let oldData = try Data(contentsOf: url)
+        try SessionStore.save(layouts: [], to: url)
+        // Simulate interruption before an obsolete previous copy is removed.
+        try oldData.write(to: previous)
+        let loaded = SessionStore.loadWithRecovery(from: url)
+        XCTAssertNil(loaded.layouts)
+        XCTAssertNil(loaded.notice)
+    }
+
+    func testMissingPrimaryUsesPreviousAndDoubleCorruptionReportsFailure() throws {
+        let directory = temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let url = directory.appendingPathComponent("session.json")
+        let previous = SessionStore.previousURL(for: url)
+        try SessionStore.save(layouts: [["type": "pane", "cwd": "/old"]], to: url)
+        try SessionStore.save(layouts: [["type": "pane", "cwd": "/new"]], to: url)
+        try FileManager.default.removeItem(at: url)
+        XCTAssertEqual(SessionStore.loadWithRecovery(from: url).layouts?.first?["cwd"] as? String, "/old")
+        try Data("bad".utf8).write(to: url)
+        try Data("also bad".utf8).write(to: previous)
+        let failed = SessionStore.loadWithRecovery(from: url)
+        XCTAssertNil(failed.layouts)
+        guard case .couldNotRestore = failed.notice else {
+            return XCTFail("unreadable recovery state must not silently disappear")
+        }
+    }
+
     private func temporaryDirectory() -> URL {
         FileManager.default.temporaryDirectory
             .appendingPathComponent("cmdy-session-tests-\(UUID().uuidString)")

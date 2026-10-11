@@ -33,6 +33,7 @@ public final class BlockStore {
     /// Forget all blocks/prompts (after a screen+scrollback clear, the absolute
     /// row coordinates are no longer valid).
     public func reset() {
+        guard !blocks.isEmpty || !promptRows.isEmpty else { return }
         blocks.removeAll()
         promptRows.removeAll()
         onChange?()
@@ -69,7 +70,7 @@ public final class BlockStore {
     /// Scrollback trimmed `delta` lines off the top: every stored absolute row
     /// shifts down, and blocks that scrolled out of retention are dropped.
     public func rebase(droppedLines delta: Int) {
-        guard delta > 0 else { return }
+        guard delta > 0, !blocks.isEmpty || !promptRows.isEmpty else { return }
         blocks = blocks.compactMap { b in
             var b = b
             b.promptRow -= delta

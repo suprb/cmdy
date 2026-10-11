@@ -16,6 +16,7 @@ import io
 import json
 import os
 import platform
+import re
 import shutil
 import struct
 import subprocess
@@ -186,6 +187,28 @@ class BuildLayout:
     module: Path
     objects: tuple[Path, ...]
     resource_bundles: tuple[Path, ...]
+    native: NativeBuild | None = None
+
+
+@dataclass(frozen=True)
+class NativeBuild:
+    description: Path
+    module_map: Path
+    artifact: Path
+    archive: Path
+    headers: Path
+    objects: tuple[Path, ...]
+    receipt: dict[str, Any]
+
+
+NATIVE_IDENTITY_FIELDS = (
+    "sources", "zig_version", "zig_sha256", "optimize", "architectures",
+    "minimum_macos", "platform_toolchain",
+)
+RUNNER_FRAMEWORKS = (
+    "AppKit", "CoreGraphics", "CoreText", "CoreFoundation", "Foundation",
+    "ImageIO", "Metal", "MetalKit", "QuartzCore",
+)
 
 
 @dataclass(frozen=True)
@@ -538,6 +561,128 @@ def run_command(command: list[str], *, cwd: Path | None = None) -> str:
     return completed.stdout.strip()
 
 
+def validate_native_headers(headers: Path, receipt: dict[str, Any]) -> None:
+    prefix = "Sources/CmdyNative/include/"
+    expected = {
+        name.removeprefix(prefix): value
+        for name, value in receipt["sources"].items()
+        if name.startswith(prefix)
+    }
+    if not expected or any(
+        Path(name).is_absolute() or ".." in Path(name).parts
+        or not name.endswith(".h") or not isinstance(value, str)
+        for name, value in expected.items()
+    ):
+        raise GateError("native receipt has an invalid header inventory")
+    actual: dict[str, str] = {}
+    for path in headers.rglob("*"):
+        if path.is_symlink():
+            raise GateError(f"native headers contain a symlink: {path}")
+        if path.is_file():
+            name = path.relative_to(headers).as_posix()
+            if name == "cmdy_engine_build.h":
+                stamp = (f'#define CMDY_ZIG_SOURCE_KEY "{receipt["source_key"]}"\n'
+                         f'#define CMDY_ZIG_BUILD_MODE "{receipt["optimize"]}"\n')
+                if path.read_bytes() != stamp.encode():
+                    raise GateError("native generated header does not match its receipt")
+            else:
+                actual[name] = sha256_file(path)
+    if actual != expected:
+        raise GateError("native archive header hashes do not match its receipt")
+
+
+def locate_native_build(release: Path) -> NativeBuild | None:
+    """Select the archive recorded by this Swift build, never the latest alias.
+
+    Old frozen Swift-only renderer builds remain supported without Core. A
+    native build must retain its SwiftPM description and generated module map;
+    neither missing metadata nor a stale current manifest can become a fallback.
+    """
+    native_dir = release / "CmdyNative.build"
+    description_path = release / "description.json"
+    commands: list[dict[str, Any]] = []
+    if description_path.is_file():
+        description = load_json_object(description_path, "SwiftPM build description")
+        swift_commands = description.get("swiftCommands", {})
+        if not isinstance(swift_commands, dict):
+            raise GateError("invalid Swift commands in build description")
+        commands = [value for value in swift_commands.values()
+                    if isinstance(value, dict) and value.get("moduleName") == "CmdyGPU"]
+    selected: list[str] = []
+    for command in commands:
+        arguments = command.get("otherArguments", [])
+        if not isinstance(arguments, list) or any(not isinstance(v, str) for v in arguments):
+            raise GateError("invalid CmdyGPU compiler arguments in build description")
+        selected.extend(value.removeprefix("-D") for value in arguments
+                        if value.removeprefix("-D").startswith("CMDY_ZIG_SELECTED_"))
+    if not native_dir.exists() and not selected:
+        return None
+    if len(commands) != 1 or len(selected) != 1:
+        raise GateError("native renderer build has no unique recorded archive selection")
+    command = commands[0]
+    recorded_module = command.get("moduleOutputPath")
+    recorded_objects = command.get("objects")
+    if (not isinstance(recorded_module, str)
+            or Path(recorded_module).resolve() != (release / "Modules/CmdyGPU.swiftmodule").resolve()
+            or not isinstance(recorded_objects, list) or not recorded_objects
+            or any(not isinstance(path, str) for path in recorded_objects)
+            or len(set(recorded_objects)) != len(recorded_objects)
+            or {Path(path).resolve() for path in recorded_objects}
+                != {path.resolve() for path in (release / "CmdyGPU.build").glob("*.o")}):
+        raise GateError("native renderer module/object inventory differs from its build description")
+    found = re.fullmatch(r"CMDY_ZIG_SELECTED_([0-9a-f]{64})", selected[0])
+    if found is None:
+        raise GateError("native renderer build has an invalid recorded source key")
+    key = found[1]
+    objects = tuple(sorted(native_dir.rglob("*.o")))
+    if not objects:
+        raise GateError("native renderer build is missing its CmdyNative bridge objects")
+    module_map = native_dir / "module.modulemap"
+    try:
+        text = module_map.read_text()
+    except OSError as error:
+        raise GateError(f"native renderer module map is missing: {error}") from error
+    umbrella = re.fullmatch(
+        r'\s*module\s+CmdyNative\s*\{\s*umbrella\s+("(?:\\.|[^"\\])*")\s*export\s+\*\s*\}\s*',
+        text,
+    )
+    if umbrella is None:
+        raise GateError("native renderer module map is not the expected explicit umbrella")
+    try:
+        include = Path(json.loads(umbrella[1]))
+    except (ValueError, TypeError) as error:
+        raise GateError("native renderer module map has an invalid umbrella path") from error
+    if not include.is_absolute() or include.parts[-3:] != ("Sources", "CmdyNative", "include"):
+        raise GateError("native renderer module map does not identify its Core package")
+    core = include.parents[2]
+    artifact = core / ".zig-build/artifacts" / key
+    receipt = load_json_object(artifact / "receipt.json", "immutable native build receipt")
+    try:
+        identity = {name: receipt[name] for name in NATIVE_IDENTITY_FIELDS}
+        computed = sha256_bytes(json.dumps(identity, sort_keys=True).encode())
+        architectures = receipt["architectures"]
+        if (receipt["status"] != "pass" or receipt["source_key"] != key
+                or computed != key or receipt["zig_version"] != "0.15.2"
+                or receipt["optimize"] not in {"Debug", "ReleaseSafe", "ReleaseFast"}
+                or receipt["minimum_macos"] != "26.0"
+                or not isinstance(architectures, list) or not architectures
+                or any(value not in {"arm64", "x86_64"} for value in architectures)
+                or len(set(architectures)) != len(architectures)
+                or not isinstance(receipt["sources"], dict)
+                or any(not isinstance(name, str) for name in receipt["sources"])
+                or not isinstance(receipt["platform_toolchain"], dict)):
+            raise GateError("native archive receipt has an invalid build identity")
+        require_sha256(receipt["zig_sha256"], "native compiler checksum")
+        archive = artifact / "libcmdy_engine.a"
+        if sha256_file(archive) != require_sha256(receipt["archive_sha256"], "native archive checksum"):
+            raise GateError("native archive checksum does not match its receipt")
+        headers = artifact / "include"
+        validate_native_headers(headers, receipt)
+    except (KeyError, TypeError, OSError) as error:
+        raise GateError(f"native archive receipt is incomplete: {error}") from error
+    return NativeBuild(description_path, module_map, artifact, archive, headers, objects, receipt)
+
+
 def locate_build(path: Path) -> BuildLayout:
     requested = path.expanduser().resolve()
     candidates: list[Path] = []
@@ -566,18 +711,24 @@ def locate_build(path: Path) -> BuildLayout:
             key=lambda value: value.name,
         )
     )
-    return BuildLayout(requested, release, module, objects, bundles)
+    return BuildLayout(requested, release, module, objects, bundles, locate_native_build(release))
 
 
 def build_candidate() -> BuildLayout:
+    native_builder = REPOSITORY / "Core/Tools/ZigEngine/build.py"
+    # The normal wrapper selects the pinned compiler, target and native mode.
+    # Explicit historical Swift-only builds never require the native toolchain.
+    command = (["bash", str(REPOSITORY / "build.sh")] if native_builder.is_file()
+               else ["swift", "build"])
     run_command(
-        [
-            "swift",
-            "build",
+        command + [
             "--package-path",
             str(REPOSITORY / "Renderer"),
             "-c",
             "release",
+            "--manifest-cache",
+            "none",
+            "--disable-build-manifest-caching",
         ],
         cwd=REPOSITORY,
     )
@@ -589,6 +740,9 @@ def build_candidate() -> BuildLayout:
             str(REPOSITORY / "Renderer"),
             "-c",
             "release",
+            "--manifest-cache",
+            "none",
+            "--disable-build-manifest-caching",
             "--show-bin-path",
         ],
         cwd=REPOSITORY,
@@ -607,12 +761,62 @@ def object_set_sha256(objects: Iterable[Path]) -> str:
     return digest.hexdigest()
 
 
+def freeze_build_inputs(build: BuildLayout, runner_dir: Path) -> tuple[Path, tuple[Path, ...], dict[str, Any] | None]:
+    frozen = runner_dir / "link-inputs"
+    modules = frozen / "Modules"
+    modules.mkdir(parents=True)
+    for path in build.module.parent.glob("CmdyGPU.*"):
+        shutil.copy2(path, modules / path.name)
+    objects: list[Path] = []
+    for target, inputs in (("CmdyGPU.build", build.objects),
+                           ("CmdyNative.build", build.native.objects if build.native else ())):
+        for path in inputs:
+            destination = frozen / target / path.relative_to(build.release / target)
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(path, destination)
+            objects.append(destination)
+    if build.native is None:
+        return modules, tuple(objects), None
+    native = build.native
+    directory = frozen / "Native"
+    directory.mkdir()
+    shutil.copy2(native.archive, directory / "libcmdy_engine.a")
+    shutil.copy2(native.artifact / "receipt.json", directory / "receipt.json")
+    shutil.copy2(native.description, directory / "swiftpm-description.json")
+    shutil.copy2(native.module_map, directory / "swiftpm-module.modulemap")
+    shutil.copytree(native.headers, directory / "include")
+    if load_json_object(directory / "receipt.json", "frozen native receipt") != native.receipt:
+        raise GateError("native receipt changed while freezing the runner inputs")
+    if sha256_file(directory / "libcmdy_engine.a") != native.receipt["archive_sha256"]:
+        raise GateError("native archive changed while freezing the runner inputs")
+    validate_native_headers(directory / "include", native.receipt)
+    stamp = (f'#define CMDY_ZIG_SOURCE_KEY "{native.receipt["source_key"]}"\n'
+             f'#define CMDY_ZIG_BUILD_MODE "{native.receipt["optimize"]}"\n')
+    (directory / "include/cmdy_engine_build.h").write_text(stamp)
+    (directory / "module.modulemap").write_text('module CmdyNative { umbrella "include" export * }\n')
+    return modules, tuple(objects), {
+        "artifact": str(native.artifact), "sourceKey": native.receipt["source_key"],
+        "optimize": native.receipt["optimize"], "architectures": native.receipt["architectures"],
+        "archiveSha256": native.receipt["archive_sha256"],
+        "receiptSha256": sha256_file(directory / "receipt.json"),
+        "stampRule": "exact source-key and build-mode definitions derived from frozen receipt",
+    }
+
+
+def verify_native_bridge_identity(native: dict[str, Any], output: str) -> None:
+    if output.strip() != f'{native["sourceKey"]}\n{native["optimize"]}':
+        raise GateError("compiled CmdyNative bridge selected a different native archive or build mode")
+
+
 def compile_runner(
     label: str, build: BuildLayout, destination: Path, fixture_source: Path
 ) -> Path:
     runner_dir = destination / f"{label}-runner"
     runner_dir.mkdir()
     executable = runner_dir / "renderer-pixel-fixture"
+    modules, objects, native = freeze_build_inputs(build, runner_dir)
+    fixture = runner_dir / "RendererPixelFixture.swift"
+    shutil.copy2(fixture_source, fixture)
     command = [
         "xcrun",
         "swiftc",
@@ -623,22 +827,34 @@ def compile_runner(
         "-module-name",
         "RendererPixelFixture",
         "-I",
-        str(build.release / "Modules"),
-        str(fixture_source),
-        *(str(path) for path in build.objects),
+        str(modules),
+        str(fixture),
+        *(str(path) for path in objects),
         "-o",
         str(executable),
     ]
-    for framework in (
-        "AppKit",
-        "CoreGraphics",
-        "CoreText",
-        "Foundation",
-        "ImageIO",
-        "Metal",
-        "MetalKit",
-        "QuartzCore",
-    ):
+    if native is not None:
+        directory = runner_dir / "link-inputs/Native"
+        command.extend(("-I", str(directory / "include"), "-Xcc",
+                        "-fmodule-map-file=" + str(directory / "module.modulemap"),
+                        str(directory / "libcmdy_engine.a"), "-lobjc"))
+        probe = runner_dir / "NativeBuildIdentity.c"
+        probe.write_text('#include "cmdy_native.h"\n#include <stdio.h>\n'
+            'int main(void) { puts(cmdy_native_engine_source_key()); '
+            'puts(cmdy_native_engine_build_mode()); return 0; }\n')
+        identity_executable = runner_dir / "native-build-identity"
+        identity_command = ["xcrun", "clang", "-I", str(directory / "include"), str(probe),
+                            *(str(path) for path in objects if "CmdyNative.build" in path.parts),
+                            str(directory / "libcmdy_engine.a"), "-lobjc", "-o", str(identity_executable)]
+        for framework in RUNNER_FRAMEWORKS:
+            identity_command.extend(("-framework", framework))
+        run_command(identity_command, cwd=REPOSITORY)
+        output = run_command([str(identity_executable)], cwd=REPOSITORY)
+        verify_native_bridge_identity(native, output)
+        native["identityCompileCommand"] = identity_command
+        native["compiledBridgeIdentity"] = output.splitlines()
+        native["identityProbeSha256"] = sha256_file(identity_executable)
+    for framework in RUNNER_FRAMEWORKS:
         command.extend(("-framework", framework))
     run_command(command, cwd=REPOSITORY)
 
@@ -647,17 +863,24 @@ def compile_runner(
     write_json(
         runner_dir / "link-inputs.json",
         {
-            "schemaVersion": 1,
+            "schemaVersion": 2,
             "fixtureSource": str(fixture_source),
-            "fixtureSourceSha256": sha256_file(fixture_source),
+            "fixtureSourceSha256": sha256_file(fixture),
             "cmdyGPUModule": str(build.module),
-            "cmdyGPUModuleSha256": sha256_file(build.module),
-            "objectSetSha256": object_set_sha256(build.objects),
+            "cmdyGPUModuleSha256": sha256_file(modules / build.module.name),
+            "objectSetSha256": object_set_sha256(path for path in objects if "CmdyGPU.build" in path.parts),
             "objects": [
                 {"name": path.name, "sha256": sha256_file(path)}
-                for path in build.objects
+                for path in objects if "CmdyGPU.build" in path.parts
             ],
             "resourceBundles": [bundle.name for bundle in build.resource_bundles],
+            "native": native,
+            "compileCommand": command,
+            "executableSha256": sha256_file(executable),
+            "frozenFiles": {
+                path.relative_to(runner_dir).as_posix(): sha256_file(path)
+                for path in sorted((runner_dir / "link-inputs").rglob("*")) if path.is_file()
+            },
         },
     )
     return executable
@@ -1179,6 +1402,15 @@ def collect_environment(
     fixture_source: Path,
     reference_captures: ReferenceCaptures | None = None,
 ) -> None:
+    def native_identity(build: BuildLayout) -> dict[str, Any] | None:
+        native = build.native
+        if native is None:
+            return None
+        return {"sourceKey": native.receipt["source_key"], "optimize": native.receipt["optimize"],
+                "archiveSha256": native.receipt["archive_sha256"],
+                "receiptSha256": sha256_file(native.artifact / "receipt.json"),
+                "bridgeObjectSetSha256": object_set_sha256(native.objects)}
+
     def version(command: list[str]) -> str:
         try:
             return subprocess.run(
@@ -1200,6 +1432,7 @@ def collect_environment(
             "releaseBuild": str(reference.release),
             "moduleSha256": sha256_file(reference.module),
             "objectSetSha256": object_set_sha256(reference.objects),
+            "native": native_identity(reference),
         }
     else:
         assert reference_captures is not None
@@ -1238,6 +1471,7 @@ def collect_environment(
                 "releaseBuild": str(candidate.release),
                 "moduleSha256": sha256_file(candidate.module),
                 "objectSetSha256": object_set_sha256(candidate.objects),
+                "native": native_identity(candidate),
             },
         },
     )
@@ -1257,6 +1491,101 @@ def ensure_output_directory(requested: Path | None) -> Path:
         raise GateError(f"refusing to overwrite non-empty output directory {output}")
     output.mkdir(parents=True, exist_ok=True)
     return output
+
+
+def native_link_input_self_test() -> None:
+    with tempfile.TemporaryDirectory(prefix="cmdy-renderer-native-link-selftest.") as temp:
+        root = Path(temp)
+        release = root / "build/release"
+        (release / "Modules").mkdir(parents=True)
+        module = release / "Modules/CmdyGPU.swiftmodule"
+        module.write_bytes(b"frozen Swift module")
+        (release / "CmdyGPU.build").mkdir()
+        gpu_object = release / "CmdyGPU.build/Renderer.swift.o"
+        gpu_object.write_bytes(b"frozen Swift object")
+        assert locate_native_build(release) is None
+        native_dir = release / "CmdyNative.build"
+        native_dir.mkdir()
+        (native_dir / "bridge.c.o").write_bytes(b"frozen C bridge")
+        core = root / "Core"
+        module_map = native_dir / "module.modulemap"
+        module_map.write_text('module CmdyNative { umbrella '
+            + json.dumps(str(core / "Sources/CmdyNative/include")) + ' export * }\n')
+        header = b"unsigned cmdy_native_engine_abi_version(void);\n"
+        archive_bytes = b"frozen native archive"
+        identity = {"sources": {"Sources/CmdyNative/include/cmdy_native.h": sha256_bytes(header)},
+                    "zig_version": "0.15.2", "zig_sha256": "a" * 64, "optimize": "ReleaseFast",
+                    "architectures": ["arm64"], "minimum_macos": "26.0", "platform_toolchain": {}}
+        key = sha256_bytes(json.dumps(identity, sort_keys=True).encode())
+        artifact = core / ".zig-build/artifacts" / key
+        (artifact / "include").mkdir(parents=True)
+        (artifact / "include/cmdy_native.h").write_bytes(header)
+        (artifact / "libcmdy_engine.a").write_bytes(archive_bytes)
+        receipt = dict(identity, source_key=key, status="pass", archive_sha256=sha256_bytes(archive_bytes))
+        write_json(artifact / "receipt.json", receipt)
+        description = {"swiftCommands": {"CmdyGPU": {"moduleName": "CmdyGPU",
+                        "moduleOutputPath": str(module), "objects": [str(gpu_object)],
+                        "otherArguments": ["-DCMDY_ZIG_SELECTED_" + key]}}}
+        write_json(release / "description.json", description)
+        native = locate_native_build(release)
+        assert native is not None and native.artifact == artifact
+        build = locate_build(release)
+        assert build.native is not None
+        runner_dir = root / "runner"
+        runner_dir.mkdir()
+        modules, objects, metadata = freeze_build_inputs(build, runner_dir)
+        assert (modules / module.name).read_bytes() == module.read_bytes()
+        assert len(objects) == 2 and metadata is not None
+        verify_native_bridge_identity(metadata, key + "\nReleaseFast\n")
+        for output in ("b" * 64 + "\nReleaseFast\n", key + "\nDebug\n"):
+            try:
+                verify_native_bridge_identity(metadata, output)
+            except GateError:
+                pass
+            else:
+                raise AssertionError("mismatched compiled native bridge was accepted")
+        frozen_header = runner_dir / "link-inputs/Native/include/cmdy_native.h"
+        (artifact / "include/cmdy_native.h").write_bytes(header + b"void injected(void);\n")
+        assert frozen_header.read_bytes() == header
+        try:
+            locate_native_build(release)
+        except GateError as error:
+            assert "header hashes" in str(error)
+        else:
+            raise AssertionError("changed native header was accepted")
+        (artifact / "include/cmdy_native.h").write_bytes(header)
+        (artifact / "libcmdy_engine.a").write_bytes(archive_bytes + b"corruption")
+        try:
+            locate_native_build(release)
+        except GateError as error:
+            assert "archive checksum" in str(error)
+        else:
+            raise AssertionError("changed native archive was accepted")
+        (artifact / "libcmdy_engine.a").write_bytes(archive_bytes)
+        write_json(artifact / "receipt.json", dict(receipt, optimize="Debug"))
+        try:
+            locate_native_build(release)
+        except GateError as error:
+            assert "build identity" in str(error)
+        else:
+            raise AssertionError("receipt with changed build identity was accepted")
+        write_json(artifact / "receipt.json", receipt)
+        stray_object = release / "CmdyGPU.build/Stale.swift.o"
+        stray_object.write_bytes(b"stale object from another source graph")
+        try:
+            locate_native_build(release)
+        except GateError as error:
+            assert "module/object inventory" in str(error)
+        else:
+            raise AssertionError("stale renderer object outside the completed build was accepted")
+        stray_object.unlink()
+        (release / "description.json").unlink()
+        try:
+            locate_native_build(release)
+        except GateError as error:
+            assert "archive selection" in str(error)
+        else:
+            raise AssertionError("native build without selection fell back to Swift-only")
 
 
 def self_test() -> None:
@@ -1340,7 +1669,8 @@ def self_test() -> None:
             pass
         else:
             raise AssertionError(f"unsafe archive member was accepted: {unsafe!r}")
-    print("renderer pixel parity self-test: strict diff and locked corpus checks passed")
+    native_link_input_self_test()
+    print("renderer pixel parity self-test: strict diff, locked corpus and native link-input checks passed")
 
 
 def parse_arguments() -> argparse.Namespace:

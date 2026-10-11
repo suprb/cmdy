@@ -41,26 +41,15 @@ following notice is preserved verbatim from the historical
 
 Upstream: [migueldeicaza/SwiftTerm](https://github.com/migueldeicaza/SwiftTerm)
 
-## Website source and dependencies
+## Zig native engine support
 
-Versions below are pinned by `site/package-lock.json`.
+The terminal engine is compiled with Zig 0.15.2 and includes standard-library
+support under the Zig contributors' MIT license. The build compiler itself is
+not bundled in the app. Upstream: [Zig](https://ziglang.org/).
 
-| Component | Use | License | Upstream license |
-| --- | --- | --- | --- |
-| React 19.2.7 and ReactDOM 19.2.7 | Runtime | MIT, Copyright Meta Platforms, Inc. and affiliates | [React license](https://github.com/facebook/react/blob/v19.2.7/LICENSE) |
-| OGL 0.0.29 | Runtime WebGL library | MIT, Copyright 2018 oframe | [OGL package license](https://unpkg.com/ogl@0.0.29/LICENSE) |
-| Vite 6.4.3 | Build tooling | Vite core is MIT. Its published artifact also records Apache-2.0, BSD-2-Clause, CC0-1.0, ISC, and MIT bundled dependencies. | [Vite license and bundled notices](https://github.com/vitejs/vite/blob/v6.4.3/LICENSE) |
-| TypeScript 5.9.3 | Build tooling | Apache License 2.0 | [TypeScript license](https://github.com/microsoft/TypeScript/blob/v5.9.3/LICENSE.txt) |
-
-### Codrops ASCII/OGL technique
-
-The homepage ASCII shader adapts the glyph-bitmask technique from
-[andrico1234/codrops-ascii-ogl](https://github.com/andrico1234/codrops-ascii-ogl).
-The same notice is retained in `site/THIRD_PARTY_NOTICES.md`:
-
-> MIT License
+> The MIT License (Expat)
 >
-> Copyright (c) 2009-2024 Codrops
+> Copyright (c) Zig contributors
 >
 > Permission is hereby granted, free of charge, to any person obtaining a copy
 > of this software and associated documentation files (the "Software"), to deal
@@ -69,31 +58,66 @@ The same notice is retained in `site/THIRD_PARTY_NOTICES.md`:
 > copies of the Software, and to permit persons to whom the Software is
 > furnished to do so, subject to the following conditions:
 >
-> The above copyright notice and this permission notice shall be included in all
-> copies or substantial portions of the Software.
+> The above copyright notice and this permission notice shall be included in
+> all copies or substantial portions of the Software.
 >
 > THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 > IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 > FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 > AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 > LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-> OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-> SOFTWARE.
+> OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+> THE SOFTWARE.
 
-The implementation also uses OGL under the separate OGL license listed above.
+## Unicode data
 
-### SRCL / Sacred Computer
+The native engine uses generated Unicode 17.0.0 terminal-width data and Unicode
+16.0.0 grapheme-boundary data. The generators record the authenticated source
+files and their SHA-256 hashes. Upstream: [Unicode data license](https://www.unicode.org/license.txt).
 
-Small website interface primitives are adapted from
-[SRCL / Sacred Computer](https://github.com/internet-development/www-sacred).
-Its exact MIT notice, including the copyright for INTERNET DEVELOPMENT STUDIO
-COMPANY, is preserved in `site/THIRD_PARTY_NOTICES.md` and published with
-the generated static site.
+> UNICODE LICENSE V3
+>
+> COPYRIGHT AND PERMISSION NOTICE
+>
+> Copyright © 1991-2026 Unicode, Inc.
+>
+> NOTICE TO USER: Carefully read the following legal agreement. BY
+> DOWNLOADING, INSTALLING, COPYING OR OTHERWISE USING DATA FILES, AND/OR
+> SOFTWARE, YOU UNEQUIVOCALLY ACCEPT, AND AGREE TO BE BOUND BY, ALL OF THE
+> TERMS AND CONDITIONS OF THIS AGREEMENT. IF YOU DO NOT AGREE, DO NOT
+> DOWNLOAD, INSTALL, COPY, DISTRIBUTE OR USE THE DATA FILES OR SOFTWARE.
+>
+> Permission is hereby granted, free of charge, to any person obtaining a
+> copy of data files and any associated documentation (the "Data Files") or
+> software and any associated documentation (the "Software") to deal in the
+> Data Files or Software without restriction, including without limitation
+> the rights to use, copy, modify, merge, publish, distribute, and/or sell
+> copies of the Data Files or Software, and to permit persons to whom the
+> Data Files or Software are furnished to do so, provided that either (a)
+> this copyright and permission notice appear with all copies of the Data
+> Files or Software, or (b) this copyright and permission notice appear in
+> associated Documentation.
+>
+> THE DATA FILES AND SOFTWARE ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY
+> KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+> MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT OF
+> THIRD PARTY RIGHTS.
+>
+> IN NO EVENT SHALL THE COPYRIGHT HOLDER OR HOLDERS INCLUDED IN THIS NOTICE
+> BE LIABLE FOR ANY CLAIM, OR ANY SPECIAL INDIRECT OR CONSEQUENTIAL DAMAGES,
+> OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS,
+> WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
+> ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THE DATA
+> FILES OR SOFTWARE.
+>
+> Except as contained in this notice, the name of a copyright holder shall
+> not be used in advertising or otherwise to promote the sale, use or other
+> dealings in these Data Files or Software without prior written
+> authorization of the copyright holder.
 
 ## Swift package dependencies
 
-Versions below are pinned by `Vendor/BraincellBridge/Package.resolved` and
-`Plugins/bridge/Package.resolved`.
+Versions below are pinned by `Vendor/BraincellBridge/Package.resolved`.
 
 | Component | Version | License | Upstream |
 | --- | --- | --- | --- |
@@ -131,8 +155,8 @@ Upstream: [Chromium Embedded Framework](https://github.com/chromiumembedded/cef)
 ## Bundled fonts
 
 The native app bundles 35 font binaries under
-`Kit/Sources/CmdyKit/Fonts/`. The marketing site additionally bundles Alpha
-Lyrae and web builds of Geist Mono. Complete applicable terms and provenance
+`Kit/Sources/CmdyKit/Fonts/`. The repository additionally carries the Alpha
+Lyrae webfont under `Brand/Assets/`. Complete applicable terms and provenance
 notices are stored locally as follows:
 
 | Bundled family | Local terms and notices | License |
@@ -160,9 +184,6 @@ notices are stored locally as follows:
 | Nine Web437 faces | `Kit/Sources/CmdyKit/Fonts/Web437-NOTICE.md`; `Kit/Sources/CmdyKit/Fonts/CC-BY-SA-4.0.txt` | Creative Commons Attribution-ShareAlike 4.0 International |
 | iA Writer Duo, Mono, and Quattro | `Kit/Sources/CmdyKit/Fonts/iAWriter-LICENSE.md` | SIL Open Font License 1.1 with Reserved Font Names |
 
-`site/scripts/sync-brand.mjs` copies the Alpha Lyrae notices and Geist Mono
-license into `site/public/fonts/`; Vite then copies them into `site/dist/fonts/`.
-`site/scripts/verify-build.mjs` requires the generated release files.
 `SacredPack-LICENSES.txt` is a provenance index for the fonts originally
 discovered through the SACRED design system.
 

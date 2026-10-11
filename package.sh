@@ -44,7 +44,7 @@ if [ "$BROWSER_EDITION" != "$REQUIRE_CHROMIUM_HELPERS" ]; then
 fi
 
 echo "Building release..."
-swift build -c release
+./build.sh -c release
 
 echo "Generating icon..."
 ICONSET="$PRODUCT_ICON_BASENAME.iconset"
@@ -95,6 +95,7 @@ HELPER_PLIST
 cmdy_copy_required_swiftpm_resource_bundles \
     ".build/release" "${APP}/Contents/Resources" "$BROWSER_EDITION"
 cp "$ICON" "${APP}/Contents/Resources/$ICON"
+cp App/Resources/Cmdy.sdef "${APP}/Contents/Resources/Cmdy.sdef"
 cp ACTIONS.md BUILDING.md CHANNELS.md EXTENSIONS.md EXTENSION_PROTOCOL.md MARKETPLACE.md PLATFORM.md SURFACE_PROTOCOL.md \
    "${APP}/Contents/Resources/"
 mkdir -p "${APP}/Contents/Resources/Schemas"
@@ -185,6 +186,8 @@ cat > "${APP}/Contents/Info.plist" <<PLIST
   <key>LSMinimumSystemVersion</key><string>26.0</string>
   <key>NSHighResolutionCapable</key><true/>
   <key>NSPrincipalClass</key><string>NSApplication</string>
+  <key>NSAppleScriptEnabled</key><true/>
+  <key>OSAScriptingDefinition</key><string>Cmdy.sdef</string>
 </dict>
 </plist>
 PLIST

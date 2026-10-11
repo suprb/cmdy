@@ -1,531 +1,280 @@
 import AppKit
-import ImageIO
-import CmdyCore
-import CmdyGPU
+@_spi(CmdyApp) import CmdyCore
+import CmdyNative
+@_spi(CmdyApp) import CmdyGPU
 
-/// Immutable inputs used while converting one captured terminal generation to
-/// renderer values.  Keeping these values together makes row shaping a pure
-/// operation: it never reaches back into the mutable terminal model.
-struct CmdyShapingStyle {
-    let palette: [NSColor]
-    let normalFont: NSFont
-    let boldFont: NSFont
-    let italicFont: NSFont
-    let boldItalicFont: NSFont
-    let foreground: NSColor
-    let background: NSColor
-    let selectionBackground: NSColor
-    let failedRows: Set<Int>
-    let failedForeground: NSColor
-    let failedBackground: NSColor
+private func shapeObject(_ value: AnyObject) -> UnsafeRawPointer {
+    UnsafeRawPointer(Unmanaged.passUnretained(value).toOpaque())
+}
+private func shapeBorrowed<T: AnyObject>(_ pointer: UnsafeRawPointer?) -> T {
+    precondition(pointer != nil, "Missing native shaping value")
+    return Unmanaged<T>.fromOpaque(pointer!).takeUnretainedValue()
+}
+private func shapeRetained<T: AnyObject>(_ pointer: UnsafeRawPointer?) -> T {
+    precondition(pointer != nil, "Cannot allocate native shaping value")
+    return Unmanaged<T>.fromOpaque(pointer!).takeRetainedValue()
+}
+private final class CmdyNativeShapingStyle {
+    let handle: OpaquePointer
+    init(retained: OpaquePointer) { handle = retained }
+    deinit { cmdy_shape_style_free(handle) }
 }
 
-/// Clean-room snapshot-to-render-value conversion.  All decisions in this
-/// type come from SHAPING_SURFACE_CONTRACT.md and the public CmdyGPU seam.
+/// Platform values projected from the native library's immutable shaping style.
+/// Color resolution and exact style identity are owned by Zig.
+struct CmdyShapingStyle: Equatable {
+    private let storage: CmdyNativeShapingStyle
+    fileprivate var native: OpaquePointer { storage.handle }
+    fileprivate init(borrowed: OpaquePointer) {
+        storage = CmdyNativeShapingStyle(retained: cmdy_shape_style_retain(borrowed)!)
+    }
+    init(palette: [NSColor], normalFont: NSFont, boldFont: NSFont,
+         italicFont: NSFont, boldItalicFont: NSFont, foreground: NSColor,
+         background: NSColor, selectionBackground: NSColor, failedRows: Set<Int>,
+         failedForeground: NSColor, failedBackground: NSColor) {
+        let palettePointers = palette.map { Optional(shapeObject($0)) }
+        let rows = Array(failedRows)
+        var input = CmdyShapeStyleInput()
+        input.fonts = (shapeObject(normalFont), shapeObject(boldFont),
+                       shapeObject(italicFont), shapeObject(boldItalicFont))
+        input.colors = (shapeObject(foreground), shapeObject(background),
+                        shapeObject(selectionBackground), shapeObject(failedForeground),
+                        shapeObject(failedBackground))
+        input.palette_count = palettePointers.count
+        input.failed_row_count = rows.count
+        let handle = withExtendedLifetime((palette, normalFont, boldFont, italicFont,
+            boldItalicFont, foreground, background, selectionBackground, failedForeground, failedBackground)) {
+            palettePointers.withUnsafeBufferPointer { colors in
+                rows.withUnsafeBufferPointer { rows in
+                    input.palette = colors.baseAddress
+                    input.failed_rows = rows.baseAddress
+                    return cmdy_shape_style_create(&input)
+                }
+            }
+        }
+        guard let handle else { preconditionFailure("Cannot allocate native shaping style") }
+        storage = CmdyNativeShapingStyle(retained: handle)
+    }
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        withExtendedLifetime((lhs, rhs)) { cmdy_shape_style_equal(lhs.native, rhs.native) != 0 }
+    }
+    private func object<T: AnyObject>(_ group: UInt8, _ index: Int) -> T {
+        withExtendedLifetime(storage) { shapeBorrowed(cmdy_shape_style_object(native, group, index)) }
+    }
+    var palette: [NSColor] { (0..<cmdy_shape_style_count(native, 0)).map { object(0, $0) } }
+    var normalFont: NSFont { object(1, 0) }
+    var boldFont: NSFont { object(1, 1) }
+    var italicFont: NSFont { object(1, 2) }
+    var boldItalicFont: NSFont { object(1, 3) }
+    var foreground: NSColor { object(2, 0) }
+    var background: NSColor { object(2, 1) }
+    var selectionBackground: NSColor { object(2, 2) }
+    var failedForeground: NSColor { object(2, 3) }
+    var failedBackground: NSColor { object(2, 4) }
+    var failedRows: Set<Int> {
+        Set(UnsafeBufferPointer(start: cmdy_shape_style_failed_rows(native), count: cmdy_shape_style_count(native, 3)))
+    }
+}
+
+/// The host establishes AppKit's drawing appearance; native state owns lazy
+/// frame preparation, resolved style comparison and row revision eligibility.
+@MainActor
+final class CmdySnapshotRowContext {
+    private let native = cmdy_shape_context_create()!
+    private var frozenStyle: (revision: UInt64, value: NativeRowStyle)?
+    deinit { cmdy_shape_context_free(native) }
+    func beginFrame() { cmdy_shape_context_begin(native) }
+    func style(_ makeStyle: @autoclosure () -> CmdyShapingStyle,
+               appearance: NSAppearance? = nil) -> CmdyShapingStyle {
+        if let cached = cmdy_shape_context_style(native) { return CmdyShapingStyle(borrowed: cached) }
+        let original = makeStyle()
+        var result: OpaquePointer?
+        let resolve = { result = cmdy_shape_context_set(self.native, original.native) }
+        if let appearance { appearance.performAsCurrentDrawingAppearance(resolve) } else { resolve() }
+        return CmdyShapingStyle(borrowed: result!)
+    }
+    func revision(snapshot: CoreTerminalSnapshot, absoluteRow: Int,
+                  style makeStyle: @autoclosure () -> CmdyShapingStyle,
+                  appearance: NSAppearance? = nil) -> SnapshotRowRevision? {
+        guard let line = snapshot.line(absolute: absoluteRow), line.version != 0,
+              line.images.isEmpty, snapshot.kittyImages.isEmpty, snapshot.kittyPlacements.isEmpty else { return nil }
+        _ = style(makeStyle(), appearance: appearance)
+        var context: UInt64 = 0
+        guard cmdy_shape_context_revision(native, line.version, 0, &context) != 0 else { return nil }
+        return SnapshotRowRevision(content: line.version, context: context)
+    }
+
+    func deferredRow(snapshot: CoreTerminalSnapshot, absoluteRow: Int,
+                     style makeStyle: @autoclosure () -> CmdyShapingStyle,
+                     appearance: NSAppearance?, parameters: NativeRowCaptureParameters) throws -> DeferredRenderRow? {
+        guard let line = snapshot.line(absolute: absoluteRow) else { return nil }
+        let frozen = try nativeStyle(makeStyle(), appearance: appearance)
+        return try line.withNativeLine {
+            try DeferredRenderRow(nativeLine: $0, sourceRow: absoluteRow,
+                style: frozen, parameters: parameters, images: line.images.map(CmdyCellImage.wrap))
+        }
+    }
+
+    func nativeStyle(_ makeStyle: @autoclosure () -> CmdyShapingStyle,
+                     appearance: NSAppearance?) throws -> NativeRowStyle {
+        let current = style(makeStyle(), appearance: appearance)
+        var revision: UInt64 = 0
+        precondition(cmdy_shape_context_revision(native, 1, 0, &revision) != 0)
+        if frozenStyle?.revision != revision {
+            // The context has already resolved all colors under the appearance.
+            // Capture a separate native style instead of sharing its UI refs.
+            frozenStyle = (revision, try withExtendedLifetime(current) {
+                try NativeRowStyle(nativeStyle: current.native)
+            })
+        }
+        return frozenStyle!.value
+    }
+}
+
+/// This facade marshals native row results into the existing renderer contract.
+/// The native shaper reads the immutable engine row directly, without a Swift
+/// cell array, and owns run grouping, text, procedural glyphs and attributes.
 @MainActor
 enum CmdySnapshotShaper {
-    private struct RunKey: Equatable {
-        let attribute: CellAttribute
-        let selected: Bool
-        let failed: Bool
-        let columnWidth: Int
-    }
-
-    private struct PendingRun {
-        let key: RunKey
-        let column: Int
-        var text = ""
-        var boundaries = [0]
-        var cellCount = 0
-    }
-
-    static func lineInfo(
-        snapshot: CoreTerminalSnapshot,
-        absoluteRow: Int,
-        style: CmdyShapingStyle,
-        selectedColumns: ClosedRange<Int>?
-    ) -> ViewLineInfo {
+    static func lineInfo(snapshot: CoreTerminalSnapshot, absoluteRow: Int,
+                         style: CmdyShapingStyle, selectedColumns: ClosedRange<Int>?) -> ViewLineInfo {
+        let started = CmdyPerformanceTrace.now()
         guard let line = snapshot.line(absolute: absoluteRow) else {
+            CmdyPerformanceTrace.record(event: "shaper.missingLine", started: started, fields: ["row": absoluteRow])
             return ViewLineInfo(segments: [], images: nil)
         }
-
-        let failed = style.failedRows.contains(absoluteRow)
-        let lastRepresentedIndex = line.cells.indices.last { index in
-            let cell = line.cells[index]
-            guard cell.width != 0 else { return false }
-            let width = max(1, Int(cell.width))
-            let selected = selectedColumns.map {
-                rangesOverlap($0, index...(index + width - 1))
-            } ?? false
-            return failed || selected || cell.scalar != 0
-                || cell.attribute != .bufferDefault
-        }
-        guard let lastRepresentedIndex else {
-            return ViewLineInfo(
-                segments: [],
-                images: wrappedImages(line.images),
-                kittyPlaceholders: [],
-                blockElements: [],
-                boxDrawings: [])
-        }
-
-        var segments: [ViewLineSegment] = []
-        var blockElements: [BlockElementRenderItem] = []
-        var boxDrawings: [BoxDrawingRenderItem] = []
-        var placeholders: [KittyPlaceholderCell] = []
-        var decoder = KittyUnicodePlaceholderDecoder()
-        var pending: PendingRun?
-
-        func flushPending() {
-            guard let run = pending, run.cellCount > 0 else {
-                pending = nil
-                return
-            }
-            let rendered = NSAttributedString(
-                string: run.text,
-                attributes: attributes(
-                    for: run.key.attribute,
-                    selected: run.key.selected,
-                    failed: run.key.failed,
-                    style: style))
-            segments.append(ViewLineSegment(
-                column: run.column,
-                columnWidth: run.key.columnWidth,
-                characterCount: run.cellCount,
-                attributedString: rendered,
-                cellUTF16Boundaries: run.boundaries))
-            pending = nil
-        }
-
-        for column in 0...lastRepresentedIndex {
-            let cell = line.cells[column]
-            guard cell.width != 0 else { continue }
-            let width = max(1, Int(cell.width))
-            let selected = selectedColumns.map {
-                rangesOverlap($0, column...(column + width - 1))
-            } ?? false
-            let key = RunKey(attribute: cell.attribute, selected: selected,
-                             failed: failed, columnWidth: width)
-
-            let placeholder = decoder.decode(
-                cell, absoluteRow: absoluteRow, column: column)
-            let scalar = cell.scalar
-            let proceduralForeground = resolvedColors(
-                for: cell.attribute, failed: failed, style: style).foreground
-            let displayText: String
-            if let placeholder {
-                placeholders.append(KittyPlaceholderCell(
-                    row: placeholder.row,
-                    col: placeholder.col,
-                    imageId: placeholder.imageId,
-                    placementId: placeholder.placementId,
-                    placeholderRow: placeholder.placeholderRow,
-                    placeholderCol: placeholder.placeholderCol,
-                    msb: placeholder.msb))
-                displayText = " "
-            } else if scalar == 0x10EEEE {
-                // Malformed placeholder metadata is still private protocol
-                // data; never leak the private-use scalar into CoreText.
-                displayText = " "
-            } else if let rects = BlockElementMapping.rects(for: scalar) {
-                blockElements.append(BlockElementRenderItem(
-                    column: column, columnWidth: width,
-                    codePoint: scalar, rects: rects,
-                    foregroundColor: proceduralForeground))
-                displayText = " "
-            } else if scalar >= UInt32(BoxDrawingRenderer.lowerBoundary),
-                      scalar <= UInt32(BoxDrawingRenderer.upperBoundary) {
-                boxDrawings.append(BoxDrawingRenderItem(
-                    column: column, columnWidth: width,
-                    codePoint: scalar,
-                    foregroundColor: proceduralForeground))
-                displayText = " "
-            } else {
-                decoder.reset()
-                displayText = cellText(cell)
-            }
-
-            if pending?.key != key {
-                flushPending()
-                pending = PendingRun(key: key, column: column)
-            }
-            if var run = pending {
-                run.text.append(displayText)
-                run.cellCount += 1
-                run.boundaries.append(run.text.utf16.count)
-                pending = run
+        let result = withExtendedLifetime(style) {
+            line.withNativeLine {
+                cmdy_shape_line(OpaquePointer($0), absoluteRow, style.native,
+                    selectedColumns == nil ? 0 : 1, selectedColumns?.lowerBound ?? 0, selectedColumns?.upperBound ?? 0)
             }
         }
-        flushPending()
-
-        return ViewLineInfo(
-            segments: segments,
-            images: wrappedImages(line.images),
-            kittyPlaceholders: placeholders,
-            blockElements: blockElements,
-            boxDrawings: boxDrawings)
+        guard let result else { preconditionFailure("Cannot allocate native shaped row") }
+        defer { cmdy_shape_result_free(result) }
+        var view = CmdyShapeView()
+        cmdy_shape_result_view(result, &view)
+        let segments = UnsafeBufferPointer(start: view.segments, count: view.segment_count).map { item in
+            ViewLineSegment(column: item.column, columnWidth: item.column_width,
+                characterCount: item.character_count, attributedString: shapeBorrowed(item.attributed_string),
+                cellUTF16Boundaries: Array(UnsafeBufferPointer(start: item.boundaries, count: item.boundary_count)))
+        }
+        let blocks = UnsafeBufferPointer(start: view.blocks, count: view.block_count).map { item in
+            var raw = item.rects
+            let rects = withUnsafeBytes(of: &raw) { bytes in
+                Array(bytes.bindMemory(to: CmdyRenderBlockRect.self).prefix(item.rect_count)).map {
+                    BlockElementRect(native: $0)
+                }
+            }
+            return BlockElementRenderItem(column: item.column, columnWidth: item.column_width,
+                codePoint: item.code_point, rects: rects, foregroundColor: shapeBorrowed(item.foreground))
+        }
+        let boxes = UnsafeBufferPointer(start: view.boxes, count: view.box_count).map { item in
+            BoxDrawingRenderItem(column: item.column, columnWidth: item.column_width,
+                codePoint: item.code_point, foregroundColor: shapeBorrowed(item.foreground))
+        }
+        let placeholders = UnsafeBufferPointer(start: view.placeholders, count: view.placeholder_count).map { item in
+            KittyPlaceholderCell(row: item.row, col: item.col, imageId: item.image_id,
+                placementId: item.placement_id, placeholderRow: item.placeholder_row,
+                placeholderCol: item.placeholder_col, msb: item.msb)
+        }
+        CmdyPerformanceTrace.record(event: view.represented_columns == 0 ? "shaper.emptyLine" : "shaper.line",
+            started: started, fields: ["row": absoluteRow,
+                "columns": view.represented_columns == 0 ? line.nativeCellCount : view.represented_columns,
+                "segments": segments.count, "blocks": blocks.count, "boxes": boxes.count])
+        return ViewLineInfo(segments: segments, images: line.images.isEmpty ? nil : line.images.map(CmdyCellImage.wrap),
+            kittyPlaceholders: placeholders, blockElements: blocks, boxDrawings: boxes)
     }
-
-    static func cursorString(
-        snapshot: CoreTerminalSnapshot,
-        style: CmdyShapingStyle,
-        caretColor: NSColor,
-        caretTextColor: NSColor?
-    ) -> NSAttributedString? {
-        let grid = snapshot.grid
-        guard let line = snapshot.line(absolute: grid.cursorRow),
-              grid.cursorCol >= 0, grid.cursorCol < line.cells.count else {
-            return nil
+    static func cursorString(snapshot: CoreTerminalSnapshot, style: CmdyShapingStyle,
+                             caretColor: NSColor, caretTextColor: NSColor?) -> NSAttributedString? {
+        guard let line = snapshot.line(absolute: snapshot.grid.cursorRow) else { return nil }
+        return withExtendedLifetime((style, caretColor, caretTextColor)) {
+            line.withNativeLine { pointer in
+                guard let result = cmdy_shape_cursor(OpaquePointer(pointer), snapshot.grid.cursorCol,
+                    style.native, shapeObject(caretColor), caretTextColor.map(shapeObject)) else { return nil }
+                return shapeRetained(result)
+            }
         }
-        let cell = line.cells[grid.cursorCol]
-        let bold = cell.attribute.style.contains(.bold)
-        let italic = cell.attribute.style.contains(.italic)
-        let font = fontVariant(bold: bold, italic: italic, style: style)
-        return NSAttributedString(string: cellText(cell), attributes: [
-            .font: font,
-            .foregroundColor: caretTextColor ?? style.foreground,
-            .backgroundColor: caretColor,
-            .ligature: 0,
-        ])
     }
-
-    static func attributes(
-        for attribute: CellAttribute,
-        selected: Bool,
-        failed: Bool,
-        style: CmdyShapingStyle
-    ) -> [NSAttributedString.Key: Any] {
-        let colors = resolvedColors(for: attribute, failed: failed, style: style)
-        let bold = attribute.style.contains(.bold)
-        let italic = attribute.style.contains(.italic)
-        var result: [NSAttributedString.Key: Any] = [
-            .font: fontVariant(bold: bold, italic: italic, style: style),
-            .foregroundColor: colors.foreground,
-            .ligature: 0,
-        ]
-
-        if colors.hasExplicitBackground || failed {
-            result[.backgroundColor] = colors.background
+    static func attributes(for attribute: CellAttribute, selected: Bool, failed: Bool,
+                           style: CmdyShapingStyle) -> [NSAttributedString.Key: Any] {
+        var cell = nativeAttribute(attribute)
+        let dict: NSDictionary = withExtendedLifetime(style) {
+            shapeRetained(cmdy_shape_attributes(&cell, selected ? 1 : 0, failed ? 1 : 0, style.native))
         }
-        if selected {
-            result[.selectionBackgroundColor] = style.selectionBackground
-        }
-        if attribute.style.contains(.underline) {
-            let kind = attribute.underlineKind == .none
-                ? UnderlineKind.single : attribute.underlineKind
-            result[.underlineStyle] = NSUnderlineStyle.single.rawValue
-            result[CmdyUnderlineStyleKey] = RenderUnderlineStyle(
-                rawValue: kind.rawValue)?.rawValue ?? RenderUnderlineStyle.single.rawValue
-            let underline = attribute.underlineColor.map {
-                mapColor($0, role: .foreground, bold: bold,
-                         invertedDefault: false, style: style)
-            } ?? colors.foreground
-            result[.underlineColor] = underline
-        }
-        if attribute.style.contains(.crossedOut) {
-            result[.strikethroughStyle] = NSUnderlineStyle.single.rawValue
-            result[.strikethroughColor] = colors.foreground
-        }
-        return result
+        return dict as! [NSAttributedString.Key: Any]
     }
-
-    static func mapColor(
-        _ color: CellColor,
-        isForeground: Bool,
-        isBold: Bool,
-        style: CmdyShapingStyle
-    ) -> NSColor {
-        mapColor(color, role: isForeground ? .foreground : .background,
-                 bold: isBold, invertedDefault: false, style: style)
+    static func mapColor(_ color: CellColor, isForeground: Bool, isBold: Bool, style: CmdyShapingStyle) -> NSColor {
+        withExtendedLifetime(style) {
+            shapeRetained(cmdy_shape_map_color(colorWord(color), isForeground ? 1 : 0, isBold ? 1 : 0, style.native))
+        }
     }
-
     static func needsExplicitBackground(_ attribute: CellAttribute) -> Bool {
-        attribute.bg != .defaultColor
-            || attribute.style.contains(.inverse)
+        var cell = nativeAttribute(attribute)
+        return cmdy_shape_explicit_background(&cell) != 0
     }
-
-    private enum ColorRole: Equatable { case foreground, background }
-
-    private struct ResolvedColors {
-        let foreground: NSColor
-        let background: NSColor
-        let hasExplicitBackground: Bool
-    }
-
-    private static func resolvedColors(
-        for attribute: CellAttribute,
-        failed: Bool,
-        style: CmdyShapingStyle
-    ) -> ResolvedColors {
-        if failed {
-            return ResolvedColors(
-                foreground: style.failedForeground,
-                background: style.failedBackground,
-                hasExplicitBackground: true)
-        }
-
-        let inverse = attribute.style.contains(.inverse)
-        let fgToken = inverse ? attribute.bg : attribute.fg
-        let bgToken = inverse ? attribute.fg : attribute.bg
-        let bold = attribute.style.contains(.bold)
-        var foreground = mapColor(
-            fgToken, role: .foreground, bold: bold,
-            invertedDefault: inverse, style: style)
-        let background = mapColor(
-            bgToken, role: .background, bold: false,
-            invertedDefault: inverse, style: style)
-        if attribute.style.contains(.dim) {
-            foreground = midpoint(foreground, background)
-        }
-        if attribute.style.contains(.invisible) {
-            foreground = background
-        }
-        return ResolvedColors(
-            foreground: foreground,
-            background: background,
-            hasExplicitBackground: inverse || bgToken != .defaultColor)
-    }
-
-    private static func mapColor(
-        _ color: CellColor,
-        role: ColorRole,
-        bold: Bool,
-        invertedDefault: Bool,
-        style: CmdyShapingStyle
-    ) -> NSColor {
+    private static func colorWord(_ color: CellColor) -> UInt32 {
         switch color {
-        case .ansi256(let raw):
-            var index = Int(raw)
-            if role == .foreground, bold, index <= 6 { index += 8 }
-            return style.palette.indices.contains(index)
-                ? style.palette[index]
-                : (role == .foreground ? style.foreground : style.background)
-        case .trueColor(let red, let green, let blue):
-            return NSColor(srgbRed: CGFloat(red) / 255,
-                           green: CGFloat(green) / 255,
-                           blue: CGFloat(blue) / 255,
-                           alpha: 1)
-        case .defaultColor:
-            let native = role == .foreground ? style.foreground : style.background
-            return invertedDefault ? complement(native) : native
-        case .defaultInverted:
-            let native = role == .foreground ? style.foreground : style.background
-            return complement(native)
+        case .defaultColor: return 0
+        case .defaultInverted: return 0x03000000
+        case .ansi256(let n): return 0x01000000 | UInt32(n)
+        case .trueColor(let r, let g, let b): return 0x02000000 | UInt32(r) << 16 | UInt32(g) << 8 | UInt32(b)
         }
     }
-
-    private static func complement(_ color: NSColor) -> NSColor {
-        guard let rgb = color.usingColorSpace(.sRGB) else { return color }
-        return NSColor(srgbRed: 1 - rgb.redComponent,
-                       green: 1 - rgb.greenComponent,
-                       blue: 1 - rgb.blueComponent,
-                       alpha: rgb.alphaComponent)
+    private static func nativeAttribute(_ attribute: CellAttribute) -> CmdyZigCell {
+        var cell = CmdyZigCell()
+        cell.fg = colorWord(attribute.fg); cell.bg = colorWord(attribute.bg)
+        cell.style = attribute.style.rawValue; cell.underline_kind = attribute.underlineKind.rawValue
+        cell.underline_present = attribute.underlineColor == nil ? 0 : 1
+        cell.underline_color = attribute.underlineColor.map(colorWord) ?? 0
+        return cell
     }
+}
 
-    private static func midpoint(_ first: NSColor, _ second: NSColor) -> NSColor {
-        guard let a = first.usingColorSpace(.sRGB),
-              let b = second.usingColorSpace(.sRGB) else { return first }
-        return NSColor(srgbRed: (a.redComponent + b.redComponent) / 2,
-                       green: (a.greenComponent + b.greenComponent) / 2,
-                       blue: (a.blueComponent + b.blueComponent) / 2,
-                       alpha: (a.alphaComponent + b.alphaComponent) / 2)
+/// Source-compatible image object. Identity cache, eviction and image decoding
+/// are native; this object exposes the retained platform image to AppKit.
+@MainActor
+final class CmdyCellImage: @preconcurrency RenderableCellImage, EncodedRenderableCellImage {
+    private static let releaseContext: @convention(c) (UnsafeMutableRawPointer?) -> Void = { pointer in
+        if let pointer { Unmanaged<CmdyCellImage>.fromOpaque(pointer).release() }
     }
-
-    private static func fontVariant(
-        bold: Bool, italic: Bool, style: CmdyShapingStyle
-    ) -> NSFont {
-        switch (bold, italic) {
-        case (true, true): return style.boldItalicFont
-        case (true, false): return style.boldFont
-        case (false, true): return style.italicFont
-        case (false, false): return style.normalFont
+    static func wrap(_ source: CoreLineImageSnapshot) -> CmdyCellImage {
+        var identity = source.renderIdentity.uuid
+        return withUnsafeBytes(of: &identity) { raw in
+            let bytes = raw.bindMemory(to: UInt8.self).baseAddress!
+            if let context = cmdy_image_bridge_cached(bytes) {
+                let cached = Unmanaged<CmdyCellImage>.fromOpaque(context).takeUnretainedValue()
+                cached.col = source.col
+                return cached
+            }
+            let wrapper = CmdyCellImage(source)
+            let retained = Unmanaged.passRetained(wrapper).toOpaque()
+            if cmdy_image_bridge_cache(bytes, retained, releaseContext) == 0 { releaseContext(retained) }
+            return wrapper
         }
     }
-
-    private static func cellText(_ cell: Cell) -> String {
-        guard cell.scalar != 0, let first = Unicode.Scalar(cell.scalar) else {
-            return " "
-        }
-        var result = String(first)
-        for raw in cell.clusterExtras ?? [] {
-            if let scalar = Unicode.Scalar(raw) { result.unicodeScalars.append(scalar) }
-        }
+    let renderIdentity: UUID
+    let encodedPayload: KittyImagePayload
+    private var decodedImage: NSImage?
+    var image: NSImage {
+        if let decodedImage { return decodedImage }
+        let result = decodeImage()
+        decodedImage = result
         return result
     }
-
-    private static func rangesOverlap(
-        _ lhs: ClosedRange<Int>, _ rhs: ClosedRange<Int>
-    ) -> Bool {
-        lhs.lowerBound <= rhs.upperBound && rhs.lowerBound <= lhs.upperBound
-    }
-
-    private static func wrappedImages(
-        _ images: [CoreLineImageSnapshot]
-    ) -> [any RenderableCellImage]? {
-        guard !images.isEmpty else { return nil }
-        return images.map { CmdyCellImage.wrap($0) }
-    }
-}
-
-/// Deterministic access ordering makes the fixed cache bound observable and
-/// independent of ambient memory pressure.
-private struct CmdyImageAccessCache<Key: Hashable, Value: AnyObject> {
-    private let capacity: Int
-    private var entries: [Key: Value] = [:]
-    private var accessOrder: [Key] = []
-
-    init(capacity: Int) {
-        precondition(capacity > 0)
-        self.capacity = capacity
-    }
-
-    mutating func value(for key: Key) -> Value? {
-        guard let value = entries[key] else { return nil }
-        recordAccess(to: key)
-        return value
-    }
-
-    mutating func insert(_ value: Value, for key: Key) {
-        let replacedExistingValue = entries.updateValue(value, forKey: key) != nil
-        if replacedExistingValue {
-            recordAccess(to: key)
-            return
-        }
-
-        accessOrder.append(key)
-        if entries.count > capacity {
-            let leastRecentlyUsed = accessOrder.removeFirst()
-            entries.removeValue(forKey: leastRecentlyUsed)
-        }
-    }
-
-    private mutating func recordAccess(to key: Key) {
-        if let previousIndex = accessOrder.firstIndex(of: key) {
-            accessOrder.remove(at: previousIndex)
-        }
-        accessOrder.append(key)
-    }
-}
-
-private struct CmdyCheckedPixelLayout {
-    let width: Int
-    let height: Int
-    let bytesPerRow: Int
-    let byteCount: Int
-
-    init?(width: Int, height: Int) {
-        guard width > 0, height > 0 else { return nil }
-        let (bytesPerRow, rowOverflow) = width.multipliedReportingOverflow(by: 4)
-        let (byteCount, imageOverflow) =
-            bytesPerRow.multipliedReportingOverflow(by: height)
-        guard !rowOverflow, !imageOverflow else { return nil }
-
-        self.width = width
-        self.height = height
-        self.bytesPerRow = bytesPerRow
-        self.byteCount = byteCount
-    }
-}
-
-private enum CmdyImageDecoderStrategy {
-    case png(Data)
-    case rgba(Data, CmdyCheckedPixelLayout)
-
-    init?(_ payload: LineImage.Payload) {
-        switch payload {
+    private func decodeImage() -> NSImage {
+        switch encodedPayload {
         case .png(let data):
-            self = .png(data)
+            return data.withUnsafeBytes {
+                shapeRetained(cmdy_image_bridge_decode(0, $0.bindMemory(to: UInt8.self).baseAddress,
+                    $0.count, 0, 0, pixelWidth, pixelHeight))
+            }
         case .rgba(let bytes, let width, let height):
-            guard let layout = CmdyCheckedPixelLayout(
-                width: width, height: height),
-                  bytes.count == layout.byteCount else {
-                return nil
+            return bytes.withUnsafeBufferPointer {
+                shapeRetained(cmdy_image_bridge_decode(1, $0.baseAddress, $0.count,
+                    width, height, pixelWidth, pixelHeight))
             }
-            self = .rgba(Data(bytes), layout)
         }
     }
-
-    func makeImage(sized size: NSSize) -> NSImage? {
-        switch self {
-        case .png(let data):
-            let pngSignature: [UInt8] = [
-                0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
-            ]
-            guard data.starts(with: pngSignature),
-                  let source = CGImageSourceCreateWithData(
-                    data as CFData, nil),
-                  CGImageSourceGetCount(source) > 0,
-                  let decoded = CGImageSourceCreateImageAtIndex(
-                    source, 0, [
-                        kCGImageSourceShouldCache: true,
-                    ] as CFDictionary) else {
-                return nil
-            }
-            return NSImage(cgImage: decoded, size: size)
-
-        case .rgba(let data, let layout):
-            guard let provider = CGDataProvider(data: data as CFData),
-                  let decoded = CGImage(
-                    width: layout.width,
-                    height: layout.height,
-                    bitsPerComponent: 8,
-                    bitsPerPixel: 32,
-                    bytesPerRow: layout.bytesPerRow,
-                    space: CGColorSpaceCreateDeviceRGB(),
-                    bitmapInfo: CGBitmapInfo(
-                        rawValue: CGImageAlphaInfo.last.rawValue),
-                    provider: provider,
-                    decode: nil,
-                    shouldInterpolate: false,
-                    intent: .defaultIntent) else {
-                return nil
-            }
-            return NSImage(cgImage: decoded, size: size)
-        }
-    }
-
-    static func transparentImage(sized size: NSSize) -> NSImage {
-        let clearPixel = Data([0, 0, 0, 0])
-        guard let provider = CGDataProvider(data: clearPixel as CFData),
-              let decoded = CGImage(
-                width: 1,
-                height: 1,
-                bitsPerComponent: 8,
-                bitsPerPixel: 32,
-                bytesPerRow: 4,
-                space: CGColorSpaceCreateDeviceRGB(),
-                bitmapInfo: CGBitmapInfo(
-                    rawValue: CGImageAlphaInfo.premultipliedLast.rawValue),
-                provider: provider,
-                decode: nil,
-                shouldInterpolate: false,
-                intent: .defaultIntent) else {
-            return NSImage(size: size)
-        }
-        return NSImage(cgImage: decoded, size: size)
-    }
-}
-
-/// Identity-bearing image bridge.  The bounded cache preserves renderer
-/// texture identity across immutable snapshot publications without retaining
-/// an unbounded terminal history.
-@MainActor
-final class CmdyCellImage: @preconcurrency RenderableCellImage {
-    private static var cache =
-        CmdyImageAccessCache<UUID, CmdyCellImage>(capacity: 512)
-
-    static func wrap(_ source: CoreLineImageSnapshot) -> CmdyCellImage {
-        if let cached = cache.value(for: source.renderIdentity) {
-            cached.col = source.col
-            return cached
-        }
-
-        let wrapper = CmdyCellImage(source)
-        cache.insert(wrapper, for: source.renderIdentity)
-        return wrapper
-    }
-
-    let image: NSImage
     let pixelWidth: Int
     let pixelHeight: Int
     var col: Int
@@ -534,35 +283,17 @@ final class CmdyCellImage: @preconcurrency RenderableCellImage {
     let kittyZIndex: Int
     let kittyPixelOffsetX: Int
     let kittyPixelOffsetY: Int
-
     private init(_ source: CoreLineImageSnapshot) {
-        pixelWidth = source.pixelWidth
-        pixelHeight = source.pixelHeight
-        col = source.col
-        kittyIsKitty = source.kittyIsKitty
-        kittyImageId = source.kittyImageId
+        renderIdentity = source.renderIdentity
+        pixelWidth = source.pixelWidth; pixelHeight = source.pixelHeight; col = source.col
+        kittyIsKitty = source.kittyIsKitty; kittyImageId = source.kittyImageId
         kittyZIndex = source.kittyZIndex
-        kittyPixelOffsetX = source.kittyPixelOffsetX
-        kittyPixelOffsetY = source.kittyPixelOffsetY
-        image = Self.decode(
-            source.payload,
-            declaredWidth: source.pixelWidth,
-            declaredHeight: source.pixelHeight)
-    }
-
-    private static func decode(
-        _ payload: LineImage.Payload,
-        declaredWidth: Int,
-        declaredHeight: Int
-    ) -> NSImage {
-        let declaredSize = NSSize(
-            width: CGFloat(max(0, declaredWidth)),
-            height: CGFloat(max(0, declaredHeight)))
-        guard let strategy = CmdyImageDecoderStrategy(payload),
-              let image = strategy.makeImage(sized: declaredSize) else {
-            return CmdyImageDecoderStrategy.transparentImage(
-                sized: declaredSize)
+        kittyPixelOffsetX = source.kittyPixelOffsetX; kittyPixelOffsetY = source.kittyPixelOffsetY
+        switch source.payload {
+        case .png(let data):
+            encodedPayload = .png(data)
+        case .rgba(let bytes, let width, let height):
+            encodedPayload = .rgba(bytes: bytes, width: width, height: height)
         }
-        return image
     }
 }

@@ -1,0 +1,177 @@
+[
+  {
+    "displayName": "Cascadia Mono",
+    "fontName": "CascadiaMono-Regular",
+    "resource": "CascadiaMono-Regular.ttf"
+  },
+  {
+    "displayName": "CommitMono",
+    "fontName": "CommitMono-Regular",
+    "resource": "CommitMono-400-Regular.otf"
+  },
+  {
+    "displayName": "Departure Mono",
+    "fontName": "DepartureMono-Regular",
+    "resource": "DepartureMono-Regular.otf"
+  },
+  {
+    "displayName": "Fira Code",
+    "fontName": "FiraCode-Regular",
+    "resource": "FiraCode-Regular.ttf"
+  },
+  {
+    "displayName": "Fixedsys Excelsior",
+    "fontName": "FixedsysExcelsiorIIIb",
+    "resource": "FixedsysExcelsior.ttf"
+  },
+  {
+    "displayName": "Fragment Mono",
+    "fontName": "FragmentMono-Regular",
+    "resource": "FragmentMono.ttf"
+  },
+  {
+    "displayName": "Geist Mono",
+    "fontName": "GeistMono-Regular",
+    "resource": "GeistMono-Regular.otf"
+  },
+  {
+    "displayName": "Glass TTY VT220",
+    "fontName": "Glass_TTY_VT220",
+    "resource": "GlassTTYVT220.ttf"
+  },
+  {
+    "displayName": "Intel One Mono",
+    "fontName": "IntelOneMono-Regular",
+    "resource": "IntelOneMono.ttf"
+  },
+  {
+    "displayName": "Iosevka Term",
+    "fontName": "Iosevka-Term",
+    "resource": "IosevkaTerm.ttf"
+  },
+  {
+    "displayName": "JetBrains Mono",
+    "fontName": "JetBrainsMono-Regular",
+    "resource": "JetBrainsMono-Regular.ttf"
+  },
+  {
+    "displayName": "JuliaMono",
+    "fontName": "JuliaMono-Regular",
+    "resource": "JuliaMono.ttf"
+  },
+  {
+    "displayName": "M PLUS 1 Code",
+    "fontName": "MPLUS1Code-Regular",
+    "resource": "MPlus1Code.ttf"
+  },
+  {
+    "displayName": "Martian Mono",
+    "fontName": "MartianMono-Regular",
+    "resource": "MartianMono-Regular.otf"
+  },
+  {
+    "displayName": "Monaspace Argon",
+    "fontName": "MonaspaceArgon-Regular",
+    "resource": "MonaspaceArgon-Regular.otf"
+  },
+  {
+    "displayName": "Monaspace Krypton",
+    "fontName": "MonaspaceKrypton-Regular",
+    "resource": "MonaspaceKrypton-Regular.otf"
+  },
+  {
+    "displayName": "Monaspace Neon",
+    "fontName": "MonaspaceNeon-Regular",
+    "resource": "MonaspaceNeon-Regular.otf"
+  },
+  {
+    "displayName": "Monaspace Radon",
+    "fontName": "MonaspaceRadon-Regular",
+    "resource": "MonaspaceRadon-Regular.otf"
+  },
+  {
+    "displayName": "Monaspace Xenon",
+    "fontName": "MonaspaceXenon-Regular",
+    "resource": "MonaspaceXenon-Regular.otf"
+  },
+  {
+    "displayName": "Monocraft",
+    "fontName": "Monocraft",
+    "resource": "Monocraft.ttf"
+  },
+  {
+    "displayName": "Pixel Code",
+    "fontName": "PixelCode-",
+    "resource": "PixelCode.ttf"
+  },
+  {
+    "displayName": "Server Mono",
+    "fontName": "ServerMono-Regular",
+    "resource": "ServerMono.ttf"
+  },
+  {
+    "displayName": "Ubuntu Sans Mono",
+    "fontName": "UbuntuSansMono-Regular",
+    "resource": "UbuntuSansMono.ttf"
+  },
+  {
+    "displayName": "WebPlus AST PremiumExec",
+    "fontName": "WebPlus_AST_PremiumExec",
+    "resource": "Web437ASTPremiumExec.ttf"
+  },
+  {
+    "displayName": "Web437 DOS/V re. ANK16",
+    "fontName": "Web437_DOS-V_re._ANK16",
+    "resource": "Web437DOSVANK16.ttf"
+  },
+  {
+    "displayName": "Web437 DOS/V re. ANK24",
+    "fontName": "Web437_DOS-V_re._ANK24",
+    "resource": "Web437DOSVANK24.ttf"
+  },
+  {
+    "displayName": "WebPlus IBM BIOS",
+    "fontName": "WebPlus_IBM_BIOS",
+    "resource": "Web437IBMBIOS.ttf"
+  },
+  {
+    "displayName": "WebPlus IBM VGA 8x16",
+    "fontName": "WebPlus_IBM_VGA_8x16",
+    "resource": "Web437IBMVGA8x16.ttf"
+  },
+  {
+    "displayName": "Web437 Nix8810 M16",
+    "fontName": "Web437_Nix8810_M16",
+    "resource": "Web437Nix8810M16.ttf"
+  },
+  {
+    "displayName": "Web437 PhoenixEGA 8x8-2y",
+    "fontName": "Web437_PhoenixEGA_8x8-2y",
+    "resource": "Web437PhoenixEGA8x8.ttf"
+  },
+  {
+    "displayName": "Web437 SanyoMBC775-2y",
+    "fontName": "Web437_SanyoMBC775-2y",
+    "resource": "Web437SanyoMBC775.ttf"
+  },
+  {
+    "displayName": "WebPlus ToshibaTxL1 8x16",
+    "fontName": "WebPlus_ToshibaTxL1_8x16",
+    "resource": "Web437ToshibaTxL1.ttf"
+  },
+  {
+    "displayName": "iA Writer Duo S",
+    "fontName": "iAWriterDuoS-Regular",
+    "resource": "iAWriterDuoS-Regular.ttf"
+  },
+  {
+    "displayName": "iA Writer Mono S",
+    "fontName": "iAWriterMonoS-Regular",
+    "resource": "iAWriterMonoS-Regular.ttf"
+  },
+  {
+    "displayName": "iA Writer Quattro S",
+    "fontName": "iAWriterQuattroS-Regular",
+    "resource": "iAWriterQuattroS-Regular.ttf"
+  }
+]

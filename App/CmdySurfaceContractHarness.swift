@@ -10,6 +10,8 @@ import CmdyGPU
 @MainActor
 enum CmdySurfaceContractHarness {
     static func run(_ check: (Bool, String) -> Void) {
+        CmdySnapshotRevisionHarness.run(check)
+
         func drain(_ seconds: TimeInterval = 0.025) {
             RunLoop.main.run(until: Date().addingTimeInterval(seconds))
         }
@@ -182,21 +184,19 @@ enum CmdySurfaceContractHarness {
         check(key(0, "a", [.option]) == "\u{1b}a",
               "independent seam: Option-as-Meta prefixes the unmodified character")
 
-        let oldPasteboard = NSPasteboard.general.string(forType: .string)
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString("paste", forType: .string)
+        let pasteboard = NSPasteboard.withUniqueName()
+        defer { pasteboard.releaseGlobally() }
+        pasteboard.setString("paste", forType: .string)
         input.feed(text: "\u{1b}[?2004h")
         drain()
         sent.removeAll()
         var pasteHookCalls = 0
         input.onPasteRequest = { pasteHookCalls += 1; return $0.uppercased() }
-        input.paste(nil)
+        input.paste(from: pasteboard)
         drain()
         check(pasteHookCalls == 1
                 && String(decoding: sent, as: UTF8.self) == "\u{1b}[200~PASTE\u{1b}[201~",
               "independent seam: bracketed paste transforms once and brackets once")
-        NSPasteboard.general.clearContents()
-        if let oldPasteboard { NSPasteboard.general.setString(oldPasteboard, forType: .string) }
 
         let selection = CmdyTerminalSurface(
             frame: NSRect(x: 0, y: 0, width: 480, height: 140))
@@ -291,6 +291,43 @@ enum CmdySurfaceContractHarness {
                 && upperBoundedText == "ef"
                 && boundedCopy.selectedText().isEmpty,
               "independent seam: copy bounds intersect valid cells without trapping")
+
+        let alternateSelection = CmdyTerminalSurface(
+            frame: NSRect(x: 0, y: 0, width: 480, height: 140))
+        alternateSelection.setFrameSize(NSSize(
+            width: alternateSelection.cellSize.width * 120,
+            height: alternateSelection.cellSize.height * 36))
+        check(alternateSelection.engine.cols == 120
+                && alternateSelection.engine.rows == 36,
+              "independent seam: alternate selection fixture uses a 120x36 grid")
+        func nonemptySelectedRows() -> [String] {
+            alternateSelection.selectedText().components(separatedBy: "\n")
+                .map { $0.trimmingCharacters(in: .whitespaces) }
+                .filter { !$0.isEmpty }
+        }
+        let primaryRows = (0..<64).map { "PRIMARY-ROW-\($0)" }
+        alternateSelection.feed(text: primaryRows.joined(separator: "\r\n") + "\r\n")
+        drain()
+        alternateSelection.selectAllContent()
+        check(nonemptySelectedRows() == primaryRows,
+              "independent seam: primary Select All includes retained history")
+        let alternateRows = (0..<35).map { "ALTERNATE-ROW-\($0)" }
+        let alternateBurst = "\u{1b}[?1049h" + String(repeating: "A", count: 3_000_000)
+        let alternateFinalScreen = "\u{1b}[2J\u{1b}[H"
+            + alternateRows.joined(separator: "\r\n") + "\r\n"
+        alternateSelection.feed(text: alternateBurst + alternateFinalScreen)
+        drain()
+        alternateSelection.selectAllContent()
+        check(alternateSelection.renderSnapshot.grid.isAlternateBuffer
+                && alternateSelection.renderSnapshot.grid.liveTopRow > 0
+                && nonemptySelectedRows() == alternateRows,
+              "independent seam: alternate Select All excludes the hidden predecessor after erase")
+        alternateSelection.feed(text: "\u{1b}[?1049l")
+        drain()
+        alternateSelection.selectAllContent()
+        check(!alternateSelection.renderSnapshot.grid.isAlternateBuffer
+                && nonemptySelectedRows() == primaryRows,
+              "independent seam: leaving alternate screen restores full primary selection")
 
         selection.feed(text: "\u{1b}[?1000h\u{1b}[?1006h")
         drain()

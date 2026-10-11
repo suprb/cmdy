@@ -2,10 +2,12 @@
 <!--
   Transparent cmdy wordmark outlined from Alpha Lyrae Medium.
   The opening c uses ss01 and the final y uses ss02.
+  Set at 640 units per em with -0.05em tracking (-32 per glyph), matching the
+  website's Alpha Lyrae headings.
 -->
 <svg xmlns="http://www.w3.org/2000/svg"
      xmlns:xlink="http://www.w3.org/1999/xlink"
-     width="1600" height="650" viewBox="0 140 1600 650" role="img">
+     width="1504" height="650" viewBox="0 140 1504 650" role="img">
   <title>cmdy</title>
   <defs>
     <path id="c-ss01" d="M97.921875-326.398438H261.121094V-272H97.921875ZM43.519531-272H97.921875V-54.398438H43.519531ZM261.121094-272H315.519531V-217.601562H261.121094ZM261.121094-108.800781H315.519531V-54.398438H261.121094ZM97.921875-54.398438H261.121094V0H97.921875Z"/>
@@ -15,8 +17,8 @@
   </defs>
   <g fill="#141414">
     <use xlink:href="#c-ss01" x="0" y="620.796875"/>
-    <use xlink:href="#m" x="334.71875" y="620.796875"/>
-    <use xlink:href="#d" x="878.71875" y="620.796875"/>
-    <use xlink:href="#y-ss02" x="1245.4375" y="620.796875"/>
+    <use xlink:href="#m" x="302.71875" y="620.796875"/>
+    <use xlink:href="#d" x="814.71875" y="620.796875"/>
+    <use xlink:href="#y-ss02" x="1149.4375" y="620.796875"/>
   </g>
 </svg>

@@ -7,6 +7,23 @@ import Metal
 struct IndependentSolidRect {
     var rect: CGRect // row-local device pixels, y-down
     var color: SIMD4<Float>
+
+    /// Join only exactly adjacent rectangles in their existing paint order.
+    /// Pixel alignment can make fractional-width cells overlap; merging those
+    /// would change repeated alpha blending even when their colors match.
+    static func appendCoalescing(_ solid: Self, to output: inout [Self]) {
+        if let last = output.last,
+           last.color == solid.color,
+           last.rect.width > 0, last.rect.height > 0,
+           solid.rect.width > 0, solid.rect.height > 0,
+           last.rect.minY == solid.rect.minY,
+           last.rect.height == solid.rect.height,
+           last.rect.maxX == solid.rect.minX {
+            output[output.count - 1].rect.size.width += solid.rect.width
+        } else {
+            output.append(solid)
+        }
+    }
 }
 
 struct IndependentTintSpan {
@@ -99,79 +116,91 @@ struct IndependentRowKey: Hashable {
 struct IndependentSharedTextAttributeRunKey: Hashable {
     let location: Int
     let length: Int
-    let font: NSFont?
-    let foreground: NSColor?
-    let background: NSColor?
-    let selectionBackground: NSColor?
-    let cmdySelectionBackground: NSColor?
-    let underlineColor: NSColor?
-    let cmdyUnderlineColor: NSColor?
-    let strikethroughColor: NSColor?
-    let ligature: Int?
-    let kernBits: UInt64?
-    let underlineStyle: Int?
-    let cmdyUnderlineStyle: Int?
-    let strikethroughStyle: Int?
+    private(set) var font: NSFont?
+    private(set) var foreground: NSColor?
+    private(set) var background: NSColor?
+    private(set) var selectionBackground: NSColor?
+    private(set) var cmdySelectionBackground: NSColor?
+    private(set) var underlineColor: NSColor?
+    private(set) var cmdyUnderlineColor: NSColor?
+    private(set) var strikethroughColor: NSColor?
+    private(set) var ligature: Int?
+    private(set) var kernBits: UInt64?
+    private(set) var underlineStyle: Int?
+    private(set) var cmdyUnderlineStyle: Int?
+    private(set) var strikethroughStyle: Int?
 
     init?(range: NSRange, attributes: [NSAttributedString.Key: Any]) {
-        let supported: Set<NSAttributedString.Key> = [
-            .font, .foregroundColor, .backgroundColor,
-            .selectionBackgroundColor, .cmdySelectionBackground,
-            .underlineColor, .cmdyUnderlineColor,
-            .strikethroughColor, .ligature, .kern,
-            .underlineStyle, .cmdyUnderlineStyle, .strikethroughStyle,
-        ]
-        guard attributes.keys.allSatisfy(supported.contains) else { return nil }
-
-        func color(_ key: NSAttributedString.Key) -> NSColor? {
-            attributes[key] as? NSColor
-        }
-        func integer(_ key: NSAttributedString.Key) -> Int? {
-            if let value = attributes[key] as? NSNumber { return value.intValue }
-            if let value = attributes[key] as? Int { return value }
-            if let value = attributes[key] as? UInt8 { return Int(value) }
+        func integer(_ value: Any) -> Int? {
+            if let value = value as? NSNumber { return value.intValue }
+            if let value = value as? Int { return value }
+            if let value = value as? UInt8 { return Int(value) }
             return nil
         }
-        func scalarBits(_ key: NSAttributedString.Key) -> UInt64? {
-            if let value = attributes[key] as? NSNumber {
+        func scalarBits(_ value: Any) -> UInt64? {
+            if let value = value as? NSNumber {
                 return value.doubleValue.bitPattern
             }
-            if let value = attributes[key] as? CGFloat {
+            if let value = value as? CGFloat {
                 return Double(value).bitPattern
             }
-            if let value = attributes[key] as? Double {
+            if let value = value as? Double {
                 return value.bitPattern
             }
             return nil
         }
-        for key in [
-            NSAttributedString.Key.foregroundColor, .backgroundColor,
-            .selectionBackgroundColor, .cmdySelectionBackground,
-            .underlineColor, .cmdyUnderlineColor, .strikethroughColor,
-        ] where attributes[key] != nil && color(key) == nil { return nil }
-        for key in [
-            NSAttributedString.Key.ligature, .underlineStyle,
-            .cmdyUnderlineStyle, .strikethroughStyle,
-        ] where attributes[key] != nil && integer(key) == nil { return nil }
-        if attributes[.kern] != nil && scalarBits(.kern) == nil { return nil }
-        if attributes[.font] != nil && !(attributes[.font] is NSFont) { return nil }
-
-        let attributedFont = attributes[.font] as? NSFont
         location = range.location
         length = range.length
-        font = attributedFont
-        foreground = color(.foregroundColor)
-        background = color(.backgroundColor)
-        selectionBackground = color(.selectionBackgroundColor)
-        cmdySelectionBackground = color(.cmdySelectionBackground)
-        underlineColor = color(.underlineColor)
-        cmdyUnderlineColor = color(.cmdyUnderlineColor)
-        strikethroughColor = color(.strikethroughColor)
-        ligature = integer(.ligature)
-        kernBits = scalarBits(.kern)
-        underlineStyle = integer(.underlineStyle)
-        cmdyUnderlineStyle = integer(.cmdyUnderlineStyle)
-        strikethroughStyle = integer(.strikethroughStyle)
+
+        // Syntax-heavy rows contain many short runs with only a few keys.
+        // Decode each present value once instead of building an allowlist and
+        // repeatedly probing every optional attribute. Unknown or malformed
+        // values must still disable sharing rather than produce a partial key.
+        for (key, value) in attributes {
+            switch key {
+            case .font:
+                guard let value = value as? NSFont else { return nil }
+                font = value
+            case .foregroundColor:
+                guard let value = value as? NSColor else { return nil }
+                foreground = value
+            case .backgroundColor:
+                guard let value = value as? NSColor else { return nil }
+                background = value
+            case .selectionBackgroundColor:
+                guard let value = value as? NSColor else { return nil }
+                selectionBackground = value
+            case .cmdySelectionBackground:
+                guard let value = value as? NSColor else { return nil }
+                cmdySelectionBackground = value
+            case .underlineColor:
+                guard let value = value as? NSColor else { return nil }
+                underlineColor = value
+            case .cmdyUnderlineColor:
+                guard let value = value as? NSColor else { return nil }
+                cmdyUnderlineColor = value
+            case .strikethroughColor:
+                guard let value = value as? NSColor else { return nil }
+                strikethroughColor = value
+            case .ligature:
+                guard let value = integer(value) else { return nil }
+                ligature = value
+            case .kern:
+                guard let value = scalarBits(value) else { return nil }
+                kernBits = value
+            case .underlineStyle:
+                guard let value = integer(value) else { return nil }
+                underlineStyle = value
+            case .cmdyUnderlineStyle:
+                guard let value = integer(value) else { return nil }
+                cmdyUnderlineStyle = value
+            case .strikethroughStyle:
+                guard let value = integer(value) else { return nil }
+                strikethroughStyle = value
+            default:
+                return nil
+            }
+        }
     }
 }
 
@@ -208,8 +237,22 @@ struct IndependentSharedTextSegmentKey: Hashable {
     }
 }
 
+/// Raster inputs whose exact values are not carried by the terminal row key.
+/// Pixel dimensions round cell geometry; underline metrics and fallback font
+/// details may change independently of a row's terminal version.
+struct IndependentRowRasterInputs: Hashable {
+    let cellWidth: CGFloat
+    let cellHeight: CGFloat
+    let scale: CGFloat
+    let normalFont: NSFont
+    let foreground: SIMD4<Float>
+    let underlinePosition: CGFloat
+    let underlineThickness: CGFloat
+}
+
 struct IndependentSharedTextRowKey: Hashable {
     let segments: [IndependentSharedTextSegmentKey]
+    let rasterInputs: IndependentRowRasterInputs
     let lineMode: RenderLineMode
     let cols: Int
     let widthPx: Int
@@ -225,7 +268,8 @@ struct IndependentSharedTextRowKey: Hashable {
     let antialiasBlocks: Bool
     let bufferingMode: MetalBufferingMode
 
-    init?(info: ViewLineInfo, rowKey: IndependentRowKey) {
+    init?(info: ViewLineInfo, rowKey: IndependentRowKey,
+          rasterInputs: IndependentRowRasterInputs) {
         guard info.images?.isEmpty != false,
               info.kittyPlaceholders.isEmpty,
               info.blockElements.isEmpty,
@@ -239,6 +283,7 @@ struct IndependentSharedTextRowKey: Hashable {
             segmentKeys.append(key)
         }
         segments = segmentKeys
+        self.rasterInputs = rasterInputs
         lineMode = rowKey.lineMode
         cols = rowKey.cols
         widthPx = rowKey.widthPx
@@ -264,6 +309,7 @@ struct IndependentColorLayer {
 struct IndependentRowCacheEntry {
     var key: IndependentRowKey
     let sharedTextKey: IndependentSharedTextRowKey?
+    var snapshotRevision: SnapshotRowRevision? = nil
     let coverageTexture: MTLTexture?
     let colorLayers: [IndependentColorLayer]
     let backgrounds: [IndependentSolidRect]
@@ -297,6 +343,69 @@ struct IndependentCPURow {
 
 @MainActor
 enum IndependentRowRasterizer {
+    /// Fonts are immutable. Retain each exact source object with its prepared
+    /// result only for this row; scale and fallback never change in this scope.
+    /// Keeping the source alive also prevents an ObjectIdentifier from being
+    /// reused while a cached entry exists.
+    struct RowFonts {
+        let scale: CGFloat
+        let normal: NSFont
+        let caching: Bool
+        private var firstScaled: (source: NSFont, font: NSFont)?
+        private var additionalScaled: [ObjectIdentifier: (source: NSFont, font: NSFont)]?
+        private var firstShaping: (source: NSFont, font: CTFont)?
+        private var additionalShaping: [ObjectIdentifier: (source: NSFont, font: CTFont)]?
+
+        // Internal inspection exposes no mutable storage and performs no work
+        // on the raster path. It lets regressions prove the two cache tiers.
+        var scaledEntryCount: Int { (firstScaled == nil ? 0 : 1) + (additionalScaled?.count ?? 0) }
+        var shapingEntryCount: Int { (firstShaping == nil ? 0 : 1) + (additionalShaping?.count ?? 0) }
+        var hasAdditionalScaledStorage: Bool { additionalScaled != nil }
+        var hasAdditionalShapingStorage: Bool { additionalShaping != nil }
+
+        init(scale: CGFloat, normal: NSFont, caching: Bool) {
+            self.scale = scale
+            self.normal = normal
+            self.caching = caching
+        }
+
+        mutating func scaledFont(_ source: NSFont?) -> NSFont {
+            guard let source else { return normal }
+            if caching {
+                if let entry = firstScaled, entry.source === source { return entry.font }
+                if let entry = additionalScaled?[ObjectIdentifier(source)] { return entry.font }
+            }
+            let font = NSFont(descriptor: source.fontDescriptor,
+                              size: source.pointSize * scale) ?? normal
+            if caching {
+                if firstScaled == nil {
+                    firstScaled = (source, font)
+                } else {
+                    if additionalScaled == nil { additionalScaled = [:] }
+                    additionalScaled![ObjectIdentifier(source)] = (source, font)
+                }
+            }
+            return font
+        }
+
+        mutating func shapingFont(_ source: NSFont) -> CTFont {
+            if caching {
+                if let entry = firstShaping, entry.source === source { return entry.font }
+                if let entry = additionalShaping?[ObjectIdentifier(source)] { return entry.font }
+            }
+            let font = terminalGridShapingFont(source as CTFont)
+            if caching {
+                if firstShaping == nil {
+                    firstShaping = (source, font)
+                } else {
+                    if additionalShaping == nil { additionalShaping = [:] }
+                    additionalShaping![ObjectIdentifier(source)] = (source, font)
+                }
+            }
+            return font
+        }
+    }
+
     static func rasterize(info: ViewLineInfo,
                           cols: Int,
                           width: Int,
@@ -310,7 +419,8 @@ enum IndependentRowRasterizer {
                           underlineThickness: CGFloat,
                           preset: TextRenderingMode,
                           antialiasBlocks: Bool,
-                          asciiCaching: Bool = true) -> IndependentCPURow? {
+                          asciiCaching: Bool = true,
+                          fontCaching: Bool = true) -> IndependentCPURow? {
         guard cols > 0, width > 0, height > 0,
               width <= 32_768, height <= 2_048,
               width <= Int.max / height else { return nil }
@@ -334,6 +444,7 @@ enum IndependentRowRasterizer {
                                     decorations: [], images: [],
                                     kittyPlaceholders: info.kittyPlaceholders,
                                     width: width, height: height)
+        var fonts = RowFonts(scale: scale, normal: normalFont, caching: fontCaching)
         for segment in info.segments {
             rasterize(segment: segment, in: coverageContext, row: &row,
                       width: width, height: height,
@@ -343,7 +454,7 @@ enum IndependentRowRasterizer {
                       nativeForeground: nativeForeground,
                       underlinePosition: underlinePosition * scale,
                       underlineThickness: underlineThickness * scale,
-                      preset: preset, asciiCaching: asciiCaching)
+                      preset: preset, asciiCaching: asciiCaching, fonts: &fonts)
         }
 
         let white = NSColor.white
@@ -421,7 +532,8 @@ enum IndependentRowRasterizer {
                                   underlinePosition: CGFloat,
                                   underlineThickness: CGFloat,
                                   preset: TextRenderingMode,
-                                  asciiCaching: Bool) {
+                                  asciiCaching: Bool,
+                                  fonts: inout RowFonts) {
         guard segment.characterCount > 0, segment.columnWidth > 0,
               segment.attributedString.length > 0 else { return }
         let boundaries = cellBoundaries(for: segment)
@@ -435,7 +547,7 @@ enum IndependentRowRasterizer {
             nativeForeground: nativeForeground,
             underlinePosition: underlinePosition,
             underlineThickness: underlineThickness,
-            preset: preset) {
+            preset: preset, fonts: &fonts) {
             return
         }
         let naturalBoundaries = TerminalCellIndexMap(
@@ -455,20 +567,14 @@ enum IndependentRowRasterizer {
                 at: min(lower, segment.attributedString.length - 1),
                 effectiveRange: nil)
             if let background = selectionOrBackground(attributes) {
-                row.backgrounds.append(IndependentSolidRect(
+                IndependentSolidRect.appendCoalescing(IndependentSolidRect(
                     rect: pixelAligned(CGRect(x: x, y: 0,
                                               width: spanWidth,
                                               height: cellHeight)),
-                    color: rgba(background)))
+                    color: rgba(background)), to: &row.backgrounds)
             }
             guard upper > lower else { continue }
-            let font: NSFont
-            if let attributedFont = attributes[.font] as? NSFont {
-                font = NSFont(descriptor: attributedFont.fontDescriptor,
-                              size: attributedFont.pointSize * scale) ?? normalFont
-            } else {
-                font = normalFont
-            }
+            let font = fonts.scaledFont(attributes[.font] as? NSFont)
             let foreground = (attributes[.foregroundColor] as? NSColor)
                 ?? nativeForeground
             let rect = CGRect(x: x, y: 0, width: spanWidth, height: cellHeight)
@@ -479,7 +585,7 @@ enum IndependentRowRasterizer {
                 let attributed = segment.attributedString.attributedSubstring(
                     from: glyphRange)
                 if isColorGlyphText(attributed.string, font: font) {
-                    if let tile = colorTile(for: attributed, font: font,
+                    if let tile = colorTile(for: attributed, shapingFont: fonts.shapingFont(font),
                                             gridFont: normalFont,
                                             width: max(1, Int(spanWidth.rounded())),
                                             height: height,
@@ -490,7 +596,7 @@ enum IndependentRowRasterizer {
                     }
                 } else {
                     let glyphResult = drawCoverage(
-                        attributed, font: font,
+                        coverageLine(attributed, shapingFont: fonts.shapingFont(font)),
                         gridFont: normalFont,
                         in: coverageContext, rect: rect,
                         rowHeight: CGFloat(height), scale: scale,
@@ -538,7 +644,8 @@ enum IndependentRowRasterizer {
         nativeForeground: NSColor,
         underlinePosition: CGFloat,
         underlineThickness: CGFloat,
-        preset: TextRenderingMode
+        preset: TextRenderingMode,
+        fonts: inout RowFonts
     ) -> Bool {
         let attributed = segment.attributedString
         let cellCount = segment.characterCount
@@ -560,19 +667,16 @@ enum IndependentRowRasterizer {
         let spanWidth = CGFloat(cellCount) * cellWidth
         guard x >= 0, x + spanWidth <= CGFloat(width) else { return false }
 
-        let font: NSFont
-        if let attributedFont = attributes[.font] as? NSFont {
-            font = NSFont(
-                descriptor: attributedFont.fontDescriptor,
-                size: attributedFont.pointSize * scale) ?? normalFont
-        } else {
-            font = normalFont
-        }
+        let font = fonts.scaledFont(attributes[.font] as? NSFont)
         let foreground = (attributes[.foregroundColor] as? NSColor)
             ?? nativeForeground
         let foregroundRGBA = rgba(foreground)
         let characters = Array(attributed.string.utf16)
-        var lineCache: [UInt16: CTLine] = [:]
+        enum CachedCoverage {
+            case empty
+            case line(CTLine)
+        }
+        var lineCache: [UInt16: CachedCoverage] = [:]
         lineCache.reserveCapacity(min(cellCount, 95))
 
         for index in 0..<cellCount {
@@ -580,25 +684,35 @@ enum IndependentRowRasterizer {
                 x: x + CGFloat(index) * cellWidth, y: 0,
                 width: cellWidth, height: cellHeight)
             if let background = selectionOrBackground(attributes) {
-                row.backgrounds.append(IndependentSolidRect(
-                    rect: pixelAligned(rect), color: rgba(background)))
+                IndependentSolidRect.appendCoalescing(IndependentSolidRect(
+                    rect: pixelAligned(rect), color: rgba(background)),
+                    to: &row.backgrounds)
             }
             let codeUnit = characters[index]
-            let line: CTLine
-            if let cached = lineCache[codeUnit] {
-                line = cached
-            } else {
+            let glyphResult: (envelope: CGRect?, glyphs: [IndependentGlyphSeed])
+            switch lineCache[codeUnit] {
+            case .empty?:
+                // The immutable line previously produced no admitted glyph
+                // bounds. The existing clip is empty at every cell origin;
+                // backgrounds, tint spans and decorations still apply below.
+                glyphResult = (nil, [])
+            case .line(let line)?:
+                glyphResult = drawCoverage(
+                    line, gridFont: normalFont,
+                    in: context, rect: rect,
+                    rowHeight: CGFloat(height), scale: scale,
+                    preset: preset, foreground: foregroundRGBA)
+            case nil:
                 let source = attributed.attributedSubstring(
                     from: NSRange(location: index, length: 1))
-                let prepared = coverageLine(source, font: font)
-                lineCache[codeUnit] = prepared
-                line = prepared
+                let line = coverageLine(source, shapingFont: fonts.shapingFont(font))
+                glyphResult = drawCoverage(
+                    line, gridFont: normalFont,
+                    in: context, rect: rect,
+                    rowHeight: CGFloat(height), scale: scale,
+                    preset: preset, foreground: foregroundRGBA)
+                lineCache[codeUnit] = glyphResult.envelope == nil ? .empty : .line(line)
             }
-            let glyphResult = drawCoverage(
-                line, gridFont: normalFont,
-                in: context, rect: rect,
-                rowHeight: CGFloat(height), scale: scale,
-                preset: preset, foreground: foregroundRGBA)
             row.tintSpans.append(IndependentTintSpan(
                 rect: rect, glyphEnvelope: glyphResult.envelope,
                 replacedByAtlas: true, color: foregroundRGBA))
@@ -654,29 +768,12 @@ enum IndependentRowRasterizer {
         return result
     }
 
-    private static func drawCoverage(_ source: NSAttributedString,
-                                     font: NSFont,
-                                     gridFont: NSFont,
-                                     in context: CGContext,
-                                     rect: CGRect,
-                                     rowHeight: CGFloat,
-                                     scale: CGFloat,
-                                     preset: TextRenderingMode,
-                                     foreground: SIMD4<Float>)
-        -> (envelope: CGRect?, glyphs: [IndependentGlyphSeed]) {
-        drawCoverage(
-            coverageLine(source, font: font), gridFont: gridFont,
-            in: context, rect: rect, rowHeight: rowHeight,
-            scale: scale, preset: preset, foreground: foreground)
-    }
-
     private static func coverageLine(
         _ source: NSAttributedString,
-        font: NSFont
+        shapingFont: CTFont
     ) -> CTLine {
         let text = NSMutableAttributedString(attributedString: source)
         let full = NSRange(location: 0, length: text.length)
-        let shapingFont = terminalGridShapingFont(font as CTFont)
         text.addAttributes([.font: shapingFont,
                             .foregroundColor: NSColor.white,
                             .ligature: 0,
@@ -727,7 +824,7 @@ enum IndependentRowRasterizer {
     }
 
     private static func colorTile(for source: NSAttributedString,
-                                  font: NSFont,
+                                  shapingFont: CTFont,
                                   gridFont: NSFont,
                                   width: Int,
                                   height: Int,
@@ -748,7 +845,7 @@ enum IndependentRowRasterizer {
         context.setShouldAntialias(true)
         let text = NSMutableAttributedString(attributedString: source)
         let full = NSRange(location: 0, length: text.length)
-        text.addAttributes([.font: terminalGridShapingFont(font as CTFont),
+        text.addAttributes([.font: shapingFont,
                             .ligature: 0, .kern: 0], range: full)
         text.removeAttribute(.backgroundColor, range: full)
         text.removeAttribute(.underlineStyle, range: full)

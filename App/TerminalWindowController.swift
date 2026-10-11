@@ -628,7 +628,7 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
     }
     private static let globalAppearanceSelection = "$cmdy.global"
 
-    private let container = DropView(frame: .zero)
+    private let container = TerminalBackgroundContainerView(frame: .zero)
     private let paneHost = NSView(frame: .zero)   // the region inside the border
     private(set) var panes: [TerminalPane] = []
     private var editorPanes: [CmdyEditorPane] = []
@@ -659,7 +659,9 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
     private var pendingPluginFrameEmit: DispatchWorkItem?
     private var paneStateBroadcastWorkItem: DispatchWorkItem?
     private var pendingPaneStateBroadcastIDs = Set<String>()
-    private let findBar = FindBar(frame: .zero)
+    /// Search controls are created on the first Find request and retained for
+    /// later searches. Theme and toolbar state updates must not create them.
+    private var findBar: FindBar?
     private let rootViewController = NSViewController()
     private let workspaceSplitController = NSSplitViewController()
     private let workspaceSplitView = ThemedSplitView(frame: .zero)
@@ -712,8 +714,33 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
     private var windowCloseApproved = false
     private var windowCloseConfirmationPending = false
     private var windowCloseConfirmationAlert: NSAlert?
+    private var paneCloseConfirmationID: String?
+    private var paneCloseConfirmationAlert: NSAlert?
+    private var pluginWindowCloseApproved = false
 
     func approveNextWindowClose() { windowCloseApproved = true }
+
+    var hasPendingCloseConfirmation: Bool {
+        windowCloseConfirmationPending || paneCloseConfirmationID != nil
+    }
+
+    func approveCloseForApplicationTermination() {
+        windowCloseApproved = true
+        editorWindowCloseApproved = true
+        pluginWindowCloseApproved = true
+    }
+
+    func pluginAllowsWindowClose(applicationQuit: Bool = false) -> Bool {
+        guard let pane = focusedPane ?? panes.first else { return true }
+        let decision = PluginManager.shared.decide(.paneClose, payload: [
+            "pane": pane.paneId,
+            "panes": panes.map(\.paneId),
+            "cwd": pane.currentCwd ?? "",
+            "window": true,
+            "applicationQuit": applicationQuit,
+        ])
+        return decision.action != .cancel
+    }
 
     private var workspaceTrailing: NSLayoutConstraint?
     private var workspaceBottom: NSLayoutConstraint?
@@ -734,6 +761,9 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
     private var workspaceInspectorVisible = false
     private let initialCwd: String?          // new tabs/windows inherit the parent's cwd
     private let startsShells: Bool
+    private let initialShellLaunches: InitialShellLaunches<TerminalPane>
+    /// The first pane adopted InitialShellPrelaunch's running login shell.
+    private(set) var adoptedPrelaunchedShell = false
     private let borderInset: CGFloat = 27                 // 1px less than the top band
 
     /// Right-edge strip reserved by a plugin (POST /v1/ui/inset — the chromium
@@ -1688,7 +1718,7 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
         case NativeToolbarItem.extensions: app?.showPlugins(sender)
         case NativeToolbarItem.channels: app?.showChannelManager(sender)
         case NativeToolbarItem.doctor: app?.showIntegrationDoctor(sender)
-        case NativeToolbarItem.settings: app?.openConfig(sender)
+        case NativeToolbarItem.settings: app?.openSettings(sender)
         case NativeToolbarItem.agent: startAgent()
         case NativeToolbarItem.compose: composeWithAI()
         case NativeToolbarItem.fullScreen: window?.toggleFullScreen(sender)
@@ -1844,7 +1874,7 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
         case NativeToolbarItem.zoomPane:
             return !splitZoomHiddenViews.isEmpty
         case NativeToolbarItem.find:
-            return !findBar.isHidden
+            return isFindVisible
         case NativeToolbarItem.fullScreen:
             return window?.styleMask.contains(.fullScreen) == true
         case NativeToolbarItem.agent:
@@ -2647,9 +2677,12 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
          adopting pane: TerminalPane? = nil,
          appearance: TerminalTabAppearance? = nil,
          deferWorkspaceTabPresentation: Bool = false,
+         deferInitialShellStart: Bool = false,
          startShells: Bool = true) {
         initialCwd = cwd
         startsShells = startShells
+        initialShellLaunches = InitialShellLaunches(
+            enabled: startShells, deferred: deferInitialShellStart)
         restoreNode = session
         adoptedPane = pane
         defersWorkspaceTabPresentation = deferWorkspaceTabPresentation
@@ -2686,6 +2719,11 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
         window.contentView = container
 
         super.init(window: window)
+        container.backgroundExclusionViews = { [weak self] in
+            self?.panes.compactMap { pane -> NSView? in
+                pane.surface.isUsingMetalRenderer ? pane.surface.view : nil
+            } ?? []
+        }
 
         // Keep AppKit in charge of the window and tabs while giving the native
         // split controller a real parent in the window's view-controller tree.
@@ -2951,31 +2989,6 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
         ])
         updateWorkspaceToolbarHairlineVisibility()
 
-        // Find bar, right-aligned in the top band (hidden until ⌘F).
-        findBar.translatesAutoresizingMaskIntoConstraints = false
-        findBar.isHidden = true
-        container.addSubview(findBar)
-        findTrailing = findBar.trailingAnchor.constraint(
-            equalTo: paneHost.trailingAnchor, constant: -borderInset)
-        findTop = findBar.topAnchor.constraint(
-            equalTo: container.topAnchor, constant: max(0, (topInset - 28) / 2))
-        NSLayoutConstraint.activate([
-            findTrailing!,
-            findTop!,
-            findBar.widthAnchor.constraint(equalToConstant: 420),
-            findBar.heightAnchor.constraint(equalToConstant: 28),
-        ])
-        findBar.onSearch = { [weak self] term, forward in
-            guard let self, let pane = self.focusedPane ?? self.panes.first else { return }
-            let opts = self.findBar.options
-            let found = forward
-                ? pane.surface.findNext(term, options: opts)
-                : pane.surface.findPrevious(term, options: opts)
-            let status = pane.surface.searchStatus(term, options: opts)
-            self.findBar.indicate(found: found, index: status.index, total: status.total)
-        }
-        findBar.onClose = { [weak self] in self?.hideFindBar() }
-
         workspaceDividerOverlay.splitView = workspaceSplitView
         workspaceDividerOverlay.isLeadingRailVisible = { [weak self] in
             guard let self else { return false }
@@ -3089,9 +3102,7 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
             installRoot(root)
             lastFocused = panes.first
             applyPreferences()
-            if startsShells {
-                for pane in panes { pane.startShell() }
-            }
+            initialShellLaunches.schedule(panes) { $0.startShell() }
             window?.initialFirstResponder = panes.first?.surface.view
             if let f = node["frame"] as? String {
                 let rect = NSRectFromString(f)
@@ -3104,13 +3115,16 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
                 self.panes.forEach { $0.surface.forceRedraw() }
             }
         } else {
-            // First pane fills the host.
-            let pane = makePane(cwd: initialCwd)
+            // First pane fills the host. A fresh first window adopts the login
+            // shell InitialShellPrelaunch started during app launch.
+            let prelaunched = startsShells && initialCwd == nil ? InitialShellPrelaunch.take() : nil
+            adoptedPrelaunchedShell = prelaunched != nil
+            let pane = makePane(cwd: initialCwd, prelaunchedModel: prelaunched)
             panes = [pane]
             lastFocused = pane
             installRoot(pane)
             applyPreferences()
-            if startsShells { pane.startShell() }
+            initialShellLaunches.schedule([pane]) { $0.startShell() }
             window?.initialFirstResponder = pane.surface.view
         }
         refreshSplitAffordances()
@@ -3118,6 +3132,25 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
         window?.representedURL = URL(fileURLWithPath: NSHomeDirectory())
         scheduleChromeUpdate()
         NotificationCenter.default.post(name: .cmdyWorkspaceFrameChanged, object: self)
+    }
+
+    /// Called only by the new-window path after native placement/tab chrome.
+    /// Resolve the final view bounds and title inset synchronously before the
+    /// process snapshots its initial terminal dimensions; no timer or resize
+    /// workaround is involved. Other launch paths retain eager startup.
+    func startDeferredInitialShells() {
+        initialShellLaunches.finish(
+            prepareLayout: { [self] in
+                container.needsLayout = true
+                container.layoutSubtreeIfNeeded()
+                updateTopInsets()
+                container.layoutSubtreeIfNeeded()
+            },
+            stillOwned: { [self] pane in
+                guard let window, window.isVisible else { return false }
+                return pane.window === window && panes.contains(where: { $0 === pane })
+            },
+            launch: { $0.startShell() })
     }
 
     // MARK: - Session persistence
@@ -3146,6 +3179,9 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
                 "cwd": pane.currentCwd ?? NSHomeDirectory(),
                 "scrollback": pane.scrollbackForSession(),
             ]
+            if let hint = pane.workspaceLaunchHint {
+                node["launchHint"] = hint.layoutValue
+            }
             if let themeName = pane.paneAppearance.themeName {
                 node["paneTheme"] = themeName
             }
@@ -3178,6 +3214,8 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
             shaderName: node["paneShader"] as? String,
             fontName: node["paneFont"] as? String))
         pane.pendingRestoreText = node["scrollback"] as? String
+        pane.hasRestoredTranscript = !(pane.pendingRestoreText ?? "").isEmpty
+        pane.workspaceLaunchHint = WorkspaceLaunchHint.fromLayout(node["launchHint"])
         panes.append(pane)
         return pane
     }
@@ -3189,8 +3227,8 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
         }
     }
 
-    private func makePane(cwd: String?) -> TerminalPane {
-        let pane = TerminalPane(cwd: cwd)
+    private func makePane(cwd: String?, prelaunchedModel: TerminalModel? = nil) -> TerminalPane {
+        let pane = TerminalPane(cwd: cwd, prelaunchedModel: prelaunchedModel)
         wire(pane)
         return pane
     }
@@ -3230,6 +3268,7 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
             }
             self.schedulePaneStateBroadcast(for: p.paneId)
             self.scheduleChromeUpdate()
+            NotificationCenter.default.post(name: .cmdySessionStateChanged, object: self)
         }
         pane.onClosed = { [weak self] p in
             self?.pendingPaneStateBroadcastIDs.remove(p.paneId)
@@ -3304,6 +3343,7 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
             }
         }
         pane.onCommandStarted = { [weak self] p, block in
+            p.hasRestoredTranscript = false
             PluginManager.shared.emit("command-started", [
                 "pane": p.paneId,
                 "block": block.id,
@@ -4001,6 +4041,18 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
     @discardableResult
     func closePaneById(_ id: String) -> Bool {
         guard let pane = panes.first(where: { $0.paneId == id }) else { return false }
+        if pane.closeState.requiresConfirmation {
+            presentPaneCloseConfirmation(pane)
+            // The close has not happened yet. API callers must not treat a
+            // pending user decision as successful process termination.
+            return false
+        }
+        return closeApprovedPane(pane)
+    }
+
+    @discardableResult
+    private func closeApprovedPane(_ pane: TerminalPane) -> Bool {
+        guard panes.contains(where: { $0 === pane }) else { return false }
         let decision = PluginManager.shared.decide(.paneClose, payload: [
             "pane": pane.paneId,
             "cwd": pane.currentCwd ?? "",
@@ -4008,6 +4060,36 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
         guard decision.action != .cancel else { return false }
         removePane(pane)
         return true
+    }
+
+    private func presentPaneCloseConfirmation(_ pane: TerminalPane) {
+        guard !hasPendingCloseConfirmation, let window,
+              window.attachedSheet == nil else { return }
+        paneCloseConfirmationID = pane.paneId
+        let state = pane.closeState
+        let alert = NSAlert()
+        alert.alertStyle = .warning
+        alert.messageText = "Close this terminal pane?"
+        alert.informativeText = SessionClosePolicy.assess([state]).explanation
+        alert.addButton(withTitle: "Close Pane")
+        alert.addButton(withTitle: "Cancel")
+        alert.buttons.first?.hasDestructiveAction = true
+        paneCloseConfirmationAlert = alert
+        alert.beginSheetModal(for: window) { [weak self, weak pane] response in
+            guard let self else { return }
+            self.paneCloseConfirmationID = nil
+            self.paneCloseConfirmationAlert = nil
+            guard response == .alertFirstButtonReturn, let pane else { return }
+            DispatchQueue.main.async { [weak self, weak pane] in
+                guard let self, let pane else { return }
+                let latest = pane.closeState
+                if latest.requiresConfirmation, !latest.isCovered(by: state) {
+                    self.presentPaneCloseConfirmation(pane)
+                } else {
+                    _ = self.closeApprovedPane(pane)
+                }
+            }
+        }
     }
 
     /// Pull a pane out of the layout WITHOUT touching its shell (breakout /
@@ -4126,25 +4208,19 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
     func windowShouldClose(_ sender: NSWindow) -> Bool {
         if !windowCloseApproved,
            panes.allSatisfy(\.isDisposableEmptySession) {
-            // The shell itself is always a live process; an untouched prompt
-            // is not meaningful work and should close on the first click.
+            // Scrollback and completed commands are not running work.
             windowCloseApproved = true
         }
         if !windowCloseApproved {
             presentWindowCloseConfirmation(for: sender)
             return false
         }
-        if let pane = focusedPane ?? panes.first {
-            let decision = PluginManager.shared.decide(.paneClose, payload: [
-                "pane": pane.paneId,
-                "panes": panes.map(\.paneId),
-                "cwd": pane.currentCwd ?? "",
-                "window": true,
-            ])
-            guard decision.action != .cancel else {
+        if !pluginWindowCloseApproved {
+            guard pluginAllowsWindowClose() else {
                 windowCloseApproved = false
                 return false
             }
+            pluginWindowCloseApproved = true
         }
         if editorWindowCloseApproved { return true }
         let dirtyEditors = editorPanes.filter(\.isDirty)
@@ -4153,6 +4229,7 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
             guard let self else { return }
             guard approved else {
                 self.windowCloseApproved = false
+                self.pluginWindowCloseApproved = false
                 return
             }
             self.editorWindowCloseApproved = true
@@ -4162,18 +4239,16 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
     }
 
     private func presentWindowCloseConfirmation(for sender: NSWindow) {
-        guard !windowCloseConfirmationPending else { return }
+        guard !hasPendingCloseConfirmation, sender.attachedSheet == nil else { return }
         windowCloseConfirmationPending = true
+        let states = Dictionary(uniqueKeysWithValues: panes.map { ($0.paneId, $0.closeState) })
 
         let alert = NSAlert()
         alert.alertStyle = .warning
         alert.messageText = "Close this window?"
-        let runningCount = panes.count
-        if runningCount > 1 {
-            alert.informativeText = "This will close \(runningCount) terminal panes and stop their running processes."
-        } else {
-            alert.informativeText = "This will close the terminal and stop its running process."
-        }
+        alert.informativeText = SessionClosePolicy.assess(
+            panes.compactMap { states[$0.paneId] },
+            dirtyDocumentCount: editorPanes.filter(\.isDirty).count).explanation
         alert.addButton(withTitle: "Close Window")
         alert.addButton(withTitle: "Cancel")
         alert.buttons.first?.hasDestructiveAction = true
@@ -4183,12 +4258,23 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
             self.windowCloseConfirmationPending = false
             self.windowCloseConfirmationAlert = nil
             guard response == .alertFirstButtonReturn, let sender else { return }
-            self.windowCloseApproved = true
             // AppKit can ignore performClose while it is still unwinding the
             // sheet completion. Retry on the next main-loop turn, after the
             // sheet has detached, so the destructive button really closes.
-            DispatchQueue.main.async { [weak sender] in
-                sender?.performClose(nil)
+            DispatchQueue.main.async { [weak self, weak sender] in
+                guard let self, let sender else { return }
+                let newlyActive = self.panes.contains { pane in
+                    let latest = pane.closeState
+                    guard latest.requiresConfirmation else { return false }
+                    guard let previous = states[pane.paneId] else { return true }
+                    return !latest.isCovered(by: previous)
+                }
+                if newlyActive {
+                    self.presentWindowCloseConfirmation(for: sender)
+                    return
+                }
+                self.windowCloseApproved = true
+                sender.performClose(nil)
             }
         }
     }
@@ -4355,22 +4441,59 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
 
     // MARK: - Find (⌘F)
 
+    private func prepareFindBar() -> FindBar {
+        if let findBar { return findBar }
+        let bar = FindBar(frame: .zero)
+        findBar = bar
+        bar.translatesAutoresizingMaskIntoConstraints = false
+        bar.isHidden = true
+        // Keep the original setup order even when later overlays already exist.
+        container.addSubview(bar, positioned: .above, relativeTo: inspectorTitleLabel)
+        findTrailing = bar.trailingAnchor.constraint(
+            equalTo: paneHost.trailingAnchor, constant: -8)
+        findTop = bar.topAnchor.constraint(
+            equalTo: container.topAnchor, constant: max(0, (topInset - 28) / 2))
+        NSLayoutConstraint.activate([
+            findTrailing!,
+            findTop!,
+            bar.widthAnchor.constraint(equalToConstant: 420),
+            bar.heightAnchor.constraint(equalToConstant: 28),
+        ])
+        bar.onSearch = { [weak self] term, forward in
+            guard let self, let bar = self.findBar,
+                  let pane = self.focusedPane ?? self.panes.first else { return }
+            let opts = bar.options
+            let found = forward
+                ? pane.surface.findNext(term, options: opts)
+                : pane.surface.findPrevious(term, options: opts)
+            let status = pane.surface.searchStatus(term, options: opts)
+            bar.indicate(found: found, index: status.index, total: status.total)
+        }
+        bar.onClose = { [weak self] in self?.hideFindBar() }
+        bar.applyTheme(effectiveTheme, onBorder: false)
+        return bar
+    }
+
     func showFindBar(term: String? = nil) {
+        let findBar = prepareFindBar()
         findBar.isHidden = false
         updateNativeToolbarToggleStates()
         findBar.beginSearch(in: window, term: term)
     }
 
     func hideFindBar() {
-        findBar.isHidden = true
+        findBar?.isHidden = true
         updateNativeToolbarToggleStates()
         for p in panes { p.surface.clearSearch() }
         focusedPane?.focus()
     }
 
-    var isFindVisible: Bool { !findBar.isHidden }
+    var isFindVisible: Bool { findBar?.isHidden == false }
     @discardableResult
-    func stepFind(forward: Bool) -> Bool { !findBar.isHidden && findBar.step(forward: forward) }
+    func stepFind(forward: Bool) -> Bool {
+        guard let findBar, !findBar.isHidden else { return false }
+        return findBar.step(forward: forward)
+    }
 
     func showInspector() {
         Preferences.shared.workspaceInspectorVisible.toggle()
@@ -4459,7 +4582,8 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
             let home = FileManager.default.homeDirectoryForCurrentUser.path
             let cwd = pane?.currentCwd?.replacingOccurrences(of: home, with: "~") ?? "starting…"
             let summary = controller.panes.count > 1 ? ["\(controller.panes.count) panes"] : []
-            let detail = ([cwd] + summary).joined(separator: " · ")
+            let session = pane?.workspaceSessionStatus.map { [$0] } ?? []
+            let detail = ([cwd] + summary + session).joined(separator: " · ")
             return WorkspaceRailItem(
                 id: "tab-\(tabWindow.windowNumber)",
                 title: title, detail: detail, badge: "\(index + 1)",
@@ -4534,6 +4658,21 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
             }
 
             let runningBlock = pane.blockStore.blocks.last(where: \.running)
+            if let sessionStatus = pane.workspaceSessionStatus {
+                var sessionActions: [WorkspaceRailAction] = []
+                if let hint = pane.workspaceLaunchHint {
+                    sessionActions.append(WorkspaceRailAction(
+                        id: "resume-agent", title: "Resume \(hint.displayName)",
+                        action: { [weak pane] in pane?.stageWorkspaceResume() }))
+                }
+                inspectorSections.append(WorkspaceRailSection(
+                    id: "session", title: "Session", items: [WorkspaceRailItem(
+                        id: "session-state", title: sessionStatus,
+                        detail: pane.workspaceLaunchHint == nil
+                            ? "Saved scrollback · previous processes are not running"
+                            : "Resume inserts a command for review",
+                        status: .neutral, presentation: .summary, actions: sessionActions)]))
+            }
             if let runningBlock {
                 let command = runningBlock.commandText.isEmpty
                     ? "Command \(runningBlock.index)" : runningBlock.commandText
@@ -5015,24 +5154,33 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
 
     enum ScreenFileAction { case copy, paste, open }
     @discardableResult
+    func writeScrollbackFile() -> Bool {
+        guard let pane = focusedPane else { return false }
+        do {
+            try TerminalScrollbackExport.paste(from: pane.surface.engine) {
+                pane.surface.send(txt: $0)
+            }
+            return true
+        } catch { return false }
+    }
+
+    @discardableResult
     func writeScreenFile(_ action: ScreenFileAction) -> Bool {
         guard let pane = focusedPane else { return false }
-        let engine = pane.surface.engine
-        let text = (0..<engine.rows).compactMap {
-            engine.scrollbackLineText(row: engine.currentTopRow + $0)
-        }.joined(separator: "\n") + "\n"
-        let url = FileManager.default.temporaryDirectory
-            .appendingPathComponent(
-                "\(ProductIdentity.current.slug)-screen-\(UUID().uuidString).txt")
-        do { try text.write(to: url, atomically: true, encoding: .utf8) }
-        catch { return false }
-        switch action {
-        case .copy:
-            NSPasteboard.general.clearContents()
-            NSPasteboard.general.setString(url.path, forType: .string)
-        case .paste: pane.surface.send(txt: url.path)
-        case .open: NSWorkspace.shared.open(url)
-        }
+        do {
+            try TerminalScreenExport.write(
+                from: pane.surface.engine,
+                filename: "\(ProductIdentity.current.slug)-screen-\(UUID().uuidString).txt"
+            ) { url in
+                switch action {
+                case .copy:
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(url.path, forType: .string)
+                case .paste: pane.surface.send(txt: url.path)
+                case .open: NSWorkspace.shared.open(url)
+                }
+            }
+        } catch { return false }
         return true
     }
 
@@ -5185,7 +5333,8 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
         window?.isOpaque = !translucent
         window?.backgroundColor = translucent ? .clear : theme.ns(band)
         window?.hasShadow = true
-        container.layer?.backgroundColor = theme.ns(band).withAlphaComponent(translucent ? opacity : 1).cgColor
+        container.backgroundFillColor = theme.ns(band).withAlphaComponent(
+            translucent ? opacity : 1)
         if translucent {
             for pane in panes {
                 pane.surface.nativeBackgroundColor =
@@ -5219,7 +5368,7 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
         titleLabel.textColor = titleColor
         inspectorTitleLabel.textColor = titleColor
         updateNativeToolbarTint(titleColor)
-        findBar.applyTheme(theme, onBorder: false)
+        findBar?.applyTheme(theme, onBorder: false)
 
         scheduleChromeUpdate()   // refresh the GPU/CPU badge after any change
     }
@@ -5939,5 +6088,19 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
         }
         panes.removeAll()
         delegate?.remove(self)
+        // AppKit's native tab group can outlive its last visible member.
+        // Explicitly remove a closing window after workspace replacement has
+        // been selected, before disconnecting its controller/view hierarchy.
+        if let window { window.tabGroup?.removeWindow(window) }
+        // A closed terminal window is never reused: undo-close restores its
+        // serialized layout in a new controller. Disconnect the native view
+        // hierarchy and toolbar now instead of depending on AppKit's deferred
+        // window/chrome caches to release the content controller graph.
+        // This runs after tab replacement and layout capture have consumed it.
+        window?.contentViewController = nil
+        window?.contentView = nil
+        window?.toolbar = nil
+        window?.delegate = nil
+        window = nil
     }
 }

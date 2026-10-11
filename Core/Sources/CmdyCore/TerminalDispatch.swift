@@ -1142,8 +1142,8 @@ extension CmdyTerminal {
         buf.y = min(max(0, saved.y), buf.rows - 1)
         currentAttribute = saved.attribute
         originMode = saved.originMode
-        autoWrap = saved.autoWrap
-        marginMode = saved.marginMode
+        setAutoWrapMode(saved.autoWrap)
+        setMarginMode(saved.marginMode)
         reverseWraparound = saved.reverseWraparound
     }
 
@@ -1153,8 +1153,8 @@ extension CmdyTerminal {
         let buf = buffer
         cursorHidden = false
         originMode = false
-        autoWrap = true
-        insertMode = false
+        setAutoWrapMode(true)
+        setInsertMode(false)
         applicationCursorKeys = false
         buf.scrollTop = 0
         buf.scrollBottom = buf.rows - 1
@@ -1197,7 +1197,7 @@ extension CmdyTerminal {
         normalBuffer.x = min(max(0, altX), normalBuffer.cols)
         normalBuffer.y = min(max(0, altY), normalBuffer.rows - 1)
         reverseVideo = false
-        marginMode = false
+        setMarginMode(false)
         reverseWraparound = savedReverseWrap
         mouseMode = .off
         mouseProtocol = .x10

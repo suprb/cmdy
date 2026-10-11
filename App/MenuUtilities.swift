@@ -38,19 +38,7 @@ extension NSMenuItem {
             title: title,
             action: action,
             menuTitle: menu?.title)
-        guard let base = NSImage(
-            systemSymbolName: symbol,
-            accessibilityDescription: title)
-            ?? NSImage(
-                systemSymbolName: "command",
-                accessibilityDescription: title)
-        else { return }
-
-        let configuration = NSImage.SymbolConfiguration(
-            pointSize: 13,
-            weight: .regular)
-        image = base.withSymbolConfiguration(configuration) ?? base
-        image?.isTemplate = true
+        image = CmdyMenuIconInstaller.menuImage(symbol: symbol, title: title)
     }
 }
 
@@ -61,6 +49,32 @@ final class CmdyMenuIconInstaller: NSObject {
     static let shared = CmdyMenuIconInstaller()
 
     private var installed = false
+
+    // Copies share immutable symbol representations while retaining each item's
+    // own accessibility label, template flag and image size. The fixed limit
+    // also bounds future callers which might supply arbitrary symbol names.
+    private static var menuSymbolPrototypes: [String: NSImage] = [:]
+    private static let menuSymbolConfiguration = NSImage.SymbolConfiguration(
+        pointSize: 13, weight: .regular)
+
+    fileprivate static func menuImage(symbol: String, title: String) -> NSImage? {
+        let prototype: NSImage
+        if let existing = menuSymbolPrototypes[symbol] {
+            prototype = existing
+        } else {
+            guard let base = NSImage(systemSymbolName: symbol, accessibilityDescription: nil)
+                ?? NSImage(systemSymbolName: "command", accessibilityDescription: nil)
+            else { return nil }
+            prototype = base.withSymbolConfiguration(menuSymbolConfiguration) ?? base
+            prototype.isTemplate = true
+            if menuSymbolPrototypes.count < 128 {
+                menuSymbolPrototypes[symbol] = prototype
+            }
+        }
+        guard let image = prototype.copy() as? NSImage else { return nil }
+        image.accessibilityDescription = title
+        return image
+    }
 
     func install() {
         guard !installed else { return }

@@ -23,7 +23,6 @@ for document in "${required_documents[@]}"; do
 done
 
 for lockfile in \
-    Plugins/bridge/Package.resolved \
     Vendor/BraincellBridge/Package.resolved; do
     [ -f "$lockfile" ] || fail "missing reproducible dependency lockfile $lockfile"
 done
@@ -40,32 +39,23 @@ generated_captures="$(git ls-files 'Tests/zoo-results/*.png' 'Tests/zoo-results/
     fail "tracked zoo captures may expose machine-local state"
 }
 
-legacy_site_tree="$(git ls-files 'website' 'website/**')"
-[ -z "$legacy_site_tree" ] || {
-    printf '%s\n' "$legacy_site_tree" >&2
-    fail "legacy website/ tree is tracked; editable website source belongs in site/"
-}
-
-legacy_site_docs="$(git grep -nE 'website/|cd[[:space:]]+website|[[:space:]]website[[:space:]]+\.github|:[[:space:]]*"?/?website"?[[:space:]]*$' -- '*.md' '*.yml' '*.yaml' '*.json' '*.toml' || true)"
-[ -z "$legacy_site_docs" ] || {
-    printf '%s\n' "$legacy_site_docs" >&2
-    fail "tracked documentation or configuration still references the legacy website/ source path"
+# The website, first-party Extensions and working notes live in the private
+# cmdy-private repository. Keep them out of this open-source tree.
+private_tree="$(git ls-files 'site' 'site/**' 'website' 'website/**' \
+    'Plugins/appdock' 'Plugins/appdock/**' 'Plugins/bridge' 'Plugins/bridge/**' \
+    'Plugins/detox' 'Plugins/detox/**' \
+    'Plugins/sim' 'Plugins/sim/**' 'Plugins/swarm' 'Plugins/swarm/**' \
+    'docs/performance' 'docs/performance/**' 'docs/roadmap' 'docs/roadmap/**' \
+    'docs/history' 'docs/history/**')"
+[ -z "$private_tree" ] || {
+    printf '%s\n' "$private_tree" >&2
+    fail "private website, Extension, or notes content is tracked in the public repository"
 }
 
 ci_publication_gate="$(grep -n -E '(^|[[:space:]])publication([[:space:]]|$)' .github/workflows/ci.yml || true)"
 [ -z "$ci_publication_gate" ] || {
     printf '%s\n' "$ci_publication_gate" >&2
     fail "ordinary CI must not require human publication approval; keep that gate in the release workflow"
-}
-
-for site_source in site/package.json site/vite.config.ts site/src/main.tsx; do
-    [ -f "$site_source" ] || fail "missing editable website source $site_source"
-done
-
-generated_site="$(git ls-files 'site/dist' 'site/dist/**')"
-[ -z "$generated_site" ] || {
-    printf '%s\n' "$generated_site" >&2
-    fail "tracked website build output; publish a fresh build from site/"
 }
 
 while read -r mode _ _ tracked_path; do

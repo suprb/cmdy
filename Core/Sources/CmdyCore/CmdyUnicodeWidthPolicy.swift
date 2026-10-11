@@ -7,12 +7,14 @@
 enum CmdyUnicodeWidthPolicy {
     @inline(__always)
     static func columnWidth(of scalar: UnicodeScalar) -> Int {
-        let value = scalar.value
-        if value == 0 { return 0 }
-        if contains(value, in: GeneratedUnicodeWidthTables.controls) { return -1 }
-        if contains(value, in: GeneratedUnicodeWidthTables.zeroWidth) { return 0 }
-        if contains(value, in: GeneratedUnicodeWidthTables.wide) { return 2 }
-        return 1
+        // The generated map encodes the identical pinned width policy in two
+        // bits per scalar. Deduplicated 256-scalar pages keep lookup constant
+        // time without a mutable cache or a per-terminal allocation.
+        let value = Int(scalar.value)
+        let page = Int(GeneratedUnicodeWidthTables.widthPageIndices[value >> 8])
+        let word = GeneratedUnicodeWidthTables.widthPageWords[
+            page * 8 + ((value >> 5) & 7)]
+        return Int((word >> ((value & 31) * 2)) & 3) - 1
     }
 
     @inline(__always)

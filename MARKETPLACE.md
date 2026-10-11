@@ -124,9 +124,9 @@ One git repo, `cmdy-registry`:
 
 ## The web mirror
 
-The generated `site/dist/marketplace.html` renders the last-known registry snapshot
-from `site/public/marketplace-data.js` immediately, then refreshes from the
-public registry in the background. Live data remains the source of truth; the
+The website's Marketplace page (the website is maintained separately) renders
+a last-known registry snapshot immediately, then refreshes from the public
+registry in the background. Live data remains the source of truth; the
 generated copy keeps discovery working when GitHub is blocked, the visitor is
 offline, or the static page is opened locally. Refresh the source snapshot
 whenever the public registry changes.
@@ -194,8 +194,7 @@ reviewed package files and pinned hashes used by both the app and website.
   Settings or with `marketplace-update-checks = false`. Source-only installs do
   not trigger automatic registry access.
 
-The deployable web gallery is generated into `site/dist/`; it prefers the public
-registry and falls back to its checked-in last-known snapshot for browsing.
+The web gallery prefers the public registry and falls back to its checked-in last-known snapshot for browsing.
 Extension and Channel rows include one-click install, the CLI command, and a
 direct hash-pinned `.cmdyext` download for double-click installation or sharing.
 Every path enters the same verified, consented in-app installer. Browser uses

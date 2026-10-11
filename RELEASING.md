@@ -29,9 +29,9 @@ gh release edit v1.2.0 --repo suprb/cmdy --prerelease=false --latest
 ```
 
 GitHub assets are the first publication phase. Pin the released Browser
-activation URL and SHA-256 in `cmdy-registry`, merge that change, refresh
-`site/public/marketplace-data.js` from the merged registry, and merge the site
-snapshot. The release is complete only when this strict live cross-repository
+activation URL and SHA-256 in `cmdy-registry`, merge that change, then refresh
+the website's offline Marketplace snapshot from the merged registry (the website
+is maintained separately). The release is complete only when this strict live cross-repository
 gate passes:
 
 ```sh

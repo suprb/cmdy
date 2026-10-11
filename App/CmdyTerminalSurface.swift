@@ -1,13 +1,25 @@
 import AppKit
-import CoreText
+import CmdyNative
 import Darwin
 import MetalKit
-import CmdyCore
-import CmdyGPU
+@_spi(CmdyApp) import CmdyCore
+@_spi(CmdyApp) import CmdyGPU
 import CmdyKit
 
 private final class CmdyRenderView: MTKView {
     override func hitTest(_ point: NSPoint) -> NSView? { nil }
+}
+
+/// Input-method preedit stays native and separate from process output.
+private final class CmdyMarkedTextView: NSView {
+    var text = NSAttributedString(string: "")
+    var fill = NSColor.textBackgroundColor
+    override func hitTest(_ point: NSPoint) -> NSView? { nil }
+    override func draw(_ dirtyRect: NSRect) {
+        fill.setFill()
+        bounds.fill()
+        text.draw(in: bounds.insetBy(dx: 2, dy: 0))
+    }
 }
 
 /// Active AppKit host for one CmdyCore model and one CmdyGPU renderer.
@@ -15,6 +27,7 @@ private final class CmdyRenderView: MTKView {
 /// pane hosts after validation by the independent surface contract harness.
 @MainActor
 final class CmdyTerminalSurface: NSView,
+                                 @preconcurrency NSTextInputClient,
                                  @preconcurrency TerminalSurface,
                                  @preconcurrency TerminalSession {
     struct SelectionPoint: Equatable {
@@ -31,8 +44,11 @@ final class CmdyTerminalSurface: NSView,
     let terminal: TerminalModel
     private(set) var renderSnapshot: CoreTerminalSnapshot
     var frameSnapshot: CoreTerminalSnapshot
+    private var directModelPublication = false
 
     var onSendToProcess: ((ArraySlice<UInt8>) -> Void)?
+    var onTextInputCommitted: ((String) -> Void)?
+    var onTextCompositionStarted: (() -> Void)?
     var onPasteRequest: ((String) -> String?)?
     var onTerminalMouseDown: (() -> Void)?
     var onOpenLink: ((URL) -> Void)?
@@ -75,24 +91,29 @@ final class CmdyTerminalSurface: NSView,
     var cellSize: CGSize { cellDimension }
     var textBaselineFromRowTop: CGFloat { baselineFromRowTop }
 
+    // Preference passes reassign every appearance value (window key changes,
+    // coalesced settings notifications). Unchanged values must not discard
+    // cached rows or supersede a frame that is already being drawn.
     var nativeForegroundColor = NSColor.textColor {
-        didSet { appearanceChanged() }
+        didSet { if oldValue != nativeForegroundColor { appearanceChanged() } }
     }
     var nativeBackgroundColor = NSColor.textBackgroundColor {
-        didSet {
-            layer?.backgroundColor = nativeBackgroundColor.cgColor
-            appearanceChanged()
-        }
+        didSet { if oldValue != nativeBackgroundColor { appearanceChanged() } }
     }
-    var caretColor = NSColor.textColor { didSet { appearanceChanged() } }
-    var caretTextColor: NSColor? { didSet { appearanceChanged() } }
+    var caretColor = NSColor.textColor { didSet { if oldValue != caretColor { appearanceChanged() } } }
+    var caretTextColor: NSColor? { didSet { if oldValue != caretTextColor { appearanceChanged() } } }
     var selectedTextBackgroundColor = NSColor.selectedTextBackgroundColor {
-        didSet { queueDisplay() }
+        didSet {
+            guard oldValue != selectedTextBackgroundColor else { return }
+            snapshotRowContext.beginFrame()
+            queueDisplay()
+        }
     }
     var optionAsMetaKey = false
 
     private var storedTopInset: CGFloat = 0
     private var storedBottomInset: CGFloat = 0
+    private var storedMinimumBottomInset: CGFloat = 0
     private var storedLeftInset: CGFloat = 0
     private var storedRightInset: CGFloat = 0
 
@@ -106,11 +127,26 @@ final class CmdyTerminalSurface: NSView,
         }
     }
     var bottomContentInset: CGFloat {
-        get { storedBottomInset }
+        get { max(storedBottomInset, storedMinimumBottomInset) }
         set {
             let safe = sanitizedInset(newValue)
             guard storedBottomInset != safe else { return }
+            let previous = bottomContentInset
             storedBottomInset = safe
+            guard bottomContentInset != previous else { return }
+            metricsOrInsetsChanged(recomputeMetrics: false)
+        }
+    }
+    /// Keep complete terminal cells clear of the native bottom edge. Panels
+    /// reserve their existing height from that same edge, so the two overlap.
+    var minimumBottomContentInset: CGFloat {
+        get { storedMinimumBottomInset }
+        set {
+            let safe = sanitizedInset(newValue)
+            guard storedMinimumBottomInset != safe else { return }
+            let previous = bottomContentInset
+            storedMinimumBottomInset = safe
+            guard bottomContentInset != previous else { return }
             metricsOrInsetsChanged(recomputeMetrics: false)
         }
     }
@@ -137,11 +173,23 @@ final class CmdyTerminalSurface: NSView,
 
     private(set) var metalView: MTKView?
     private(set) var metalRenderer: MetalTerminalRenderer?
+    var onRendererError: ((String) -> Void)?
+    private var shaderRequestGeneration: UInt64 = 0
+    /// The user shader the current renderer is known to have installed. Unknown
+    /// (nil) while a load is in flight or after a failure, so only a settled,
+    /// identical request is skipped.
+    private var installedUserShader: (renderer: ObjectIdentifier, source: String?)?
     var shaderMode = 0 {
-        didSet { metalRenderer?.shaderMode = shaderMode; queueDisplay() }
+        didSet {
+            guard oldValue != shaderMode else { return }
+            shaderRequestGeneration &+= 1
+            metalView?.layer?.isOpaque = nativeBackgroundColor.alphaComponent >= 1 && shaderMode != -1
+            metalRenderer?.shaderMode = shaderMode; queueDisplay()
+        }
     }
     var textRenderingModeName = TextRenderingMode.current.rawValue {
         didSet {
+            guard oldValue != textRenderingModeName else { return }
             guard let mode = TextRenderingMode(rawValue: textRenderingModeName) else {
                 textRenderingModeName = oldValue
                 return
@@ -151,7 +199,10 @@ final class CmdyTerminalSurface: NSView,
         }
     }
     var smoothCursor = true {
-        didSet { metalRenderer?.smoothCursorEnabled = smoothCursor; queueDisplay() }
+        didSet {
+            guard oldValue != smoothCursor else { return }
+            metalRenderer?.smoothCursorEnabled = smoothCursor; queueDisplay()
+        }
     }
     var hostCursorHidden = false {
         didSet { metalRenderer?.hostCursorHidden = hostCursorHidden; queueDisplay() }
@@ -170,22 +221,39 @@ final class CmdyTerminalSurface: NSView,
     }
     var smoothScroll = true {
         didSet {
+            guard oldValue != smoothScroll else { return }
             metalRenderer?.smoothScrollEnabled = smoothScroll
             if !smoothScroll { resetScrollOffset() }
             queueDisplay()
         }
     }
     var failedBlockRows: Set<Int> = [] { didSet { appearanceChanged() } }
-    var failedBlockForegroundColor = NSColor.systemRed { didSet { appearanceChanged() } }
+    var failedBlockForegroundColor = NSColor.systemRed {
+        didSet { if oldValue != failedBlockForegroundColor { appearanceChanged() } }
+    }
     var failedBlockBackgroundColor = NSColor.systemRed.withAlphaComponent(0.16) {
-        didSet { appearanceChanged() }
+        didSet { if oldValue != failedBlockBackgroundColor { appearanceChanged() } }
     }
     private(set) var visualScrollOffset: CGFloat = 0
     var onVisualScrollChanged: (() -> Void)?
-    var activityKeypressTime: Double = 0
-    var activityTypingRate: Float = 0
+    var activityKeypressTime: Double = 0 {
+        didSet { publishInputActivity() }
+    }
+    var activityTypingRate: Float = 0 {
+        didSet { publishInputActivity() }
+    }
+
+    private func publishInputActivity() {
+        metalRenderer?.updateInputActivity(keypressTime: activityKeypressTime,
+                                          typingRate: activityTypingRate)
+    }
 
     private var pendingDirtyRows: ClosedRange<Int>?
+    private var frameContentGeneration: UInt64 = 1
+    // Resolved native style survives content publications. UI inputs, including
+    // system colors, invalidate it before the next lazy style request.
+    private let snapshotRowContext = CmdySnapshotRowContext()
+    private var systemColorObserver: NSObjectProtocol?
     private var selectionAnchor: SelectionPoint?
     private var selectionActive: SelectionPoint?
     private var gestureOrigin: GridPoint?
@@ -202,6 +270,13 @@ final class CmdyTerminalSurface: NSView,
     private var trackingAreaReference: NSTrackingArea?
     private var windowObservers: [NSObjectProtocol] = []
     private var terminated = false
+    private let markedTextView = CmdyMarkedTextView(frame: .zero)
+    private var markedText = NSMutableAttributedString(string: "")
+    private var markedSelection = NSRange(location: 0, length: 0)
+    private var interpretingTextEvent: NSEvent?
+    private var interpretingComposition = false
+    private var compositionCommit = ""
+    private var discardingComposition = false
 
     var scrollAccumulatorForTesting: CGFloat { scrollAccumulator }
     var windowObserverCountForTesting: Int { windowObservers.count }
@@ -216,6 +291,13 @@ final class CmdyTerminalSurface: NSView,
         calculateMetrics(font: font, multiplier: multiplier, scale: scale)
     }
 
+    /// Set by TerminalEngineFactory immediately around one construction.
+    @MainActor static var adoptedModelForNextInit = AdoptedModelSlot()
+    struct AdoptedModelSlot {
+        var model: TerminalModel?
+        mutating func take() -> TerminalModel? { defer { model = nil }; return model }
+    }
+
     override init(frame frameRect: NSRect) {
         let initialFont = NSFont.monospacedSystemFont(ofSize: 13, weight: .regular)
         let initialMetrics = Self.calculateMetrics(
@@ -223,7 +305,9 @@ final class CmdyTerminalSurface: NSView,
             scale: NSScreen.main?.backingScaleFactor ?? 1)
         let cols = max(2, Int(floor(max(0, frameRect.width) / initialMetrics.size.width)))
         let rows = max(1, Int(floor(max(0, frameRect.height) / initialMetrics.size.height)))
-        let model = TerminalModel(cols: cols, rows: rows)
+        let adopted = Self.adoptedModelForNextInit.take()
+        let model = adopted ?? TerminalModel(cols: cols, rows: rows)
+        holdsGrid = adopted != nil
         terminal = model
         renderSnapshot = model.snapshot
         frameSnapshot = model.snapshot
@@ -234,9 +318,19 @@ final class CmdyTerminalSurface: NSView,
         super.init(frame: frameRect)
         wantsLayer = true
         layer?.backgroundColor = nativeBackgroundColor.cgColor
+        systemColorObserver = NotificationCenter.default.addObserver(
+            forName: NSColor.systemColorsDidChangeNotification, object: nil, queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self, !self.terminated else { return }
+                self.effectiveAppearance.performAsCurrentDrawingAppearance { self.appearanceChanged() }
+            }
+        }
         terminal.observer = self
         updateTrackingAreas()
-        updatePixelMetadataAndPTY(cols: cols, rows: rows)
+        // An adopted model's shell already has its size; this placeholder
+        // frame must not reach it (releaseGridHold applies the real one).
+        if !holdsGrid { updatePixelMetadataAndPTY(cols: cols, rows: rows) }
     }
 
     required init?(coder: NSCoder) {
@@ -245,6 +339,7 @@ final class CmdyTerminalSurface: NSView,
 
     deinit {
         for token in windowObservers { NotificationCenter.default.removeObserver(token) }
+        if let systemColorObserver { NotificationCenter.default.removeObserver(systemColorObserver) }
     }
 
     override var acceptsFirstResponder: Bool { true }
@@ -257,10 +352,14 @@ final class CmdyTerminalSurface: NSView,
         metalView?.frame = bounds
         resizeGrid(reflowHooks: true)
         resetCursorRects()
+        if hasMarkedText() { updateMarkedTextPresentation() }
     }
 
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
+        metalRenderer?.cancelKeyboardInteraction()
+        terminal.cancelKeyboardInteraction()
+        cancelTextComposition()
         removeWindowObservers()
         guard let window else { return }
         let center = NotificationCenter.default
@@ -273,6 +372,11 @@ final class CmdyTerminalSurface: NSView,
             ) { [weak self] note in
                 MainActor.assumeIsolated {
                     guard let self else { return }
+                    if note.name == NSWindow.didResignKeyNotification {
+                        self.metalRenderer?.cancelKeyboardInteraction()
+                        self.terminal.cancelKeyboardInteraction()
+                        self.cancelTextComposition()
+                    }
                     if note.name == NSWindow.didChangeBackingPropertiesNotification {
                         self.metricsOrInsetsChanged(recomputeMetrics: true)
                     } else {
@@ -296,6 +400,9 @@ final class CmdyTerminalSurface: NSView,
     }
 
     override func resignFirstResponder() -> Bool {
+        metalRenderer?.cancelKeyboardInteraction()
+        terminal.cancelKeyboardInteraction()
+        cancelTextComposition()
         if terminal.focusReporting { terminal.send(Array("\u{1b}[O".utf8)) }
         queueDisplay()
         onViewportChanged?()
@@ -312,13 +419,15 @@ final class CmdyTerminalSurface: NSView,
     }
 
     func installColors(_ colors: [TermColor]) {
+        var changed = false
         for (index, color) in colors.prefix(16).enumerated() {
-            palette[index] = NSColor(
+            let next = NSColor(
                 srgbRed: CGFloat(color.red) / CGFloat(UInt16.max),
                 green: CGFloat(color.green) / CGFloat(UInt16.max),
                 blue: CGFloat(color.blue) / CGFloat(UInt16.max), alpha: 1)
+            if palette[index] != next { palette[index] = next; changed = true }
         }
-        appearanceChanged()
+        if changed { appearanceChanged() }
     }
 
     static func defaultPalette() -> [NSColor] {
@@ -346,11 +455,11 @@ final class CmdyTerminalSurface: NSView,
     }
 
     func fontVariant(bold: Bool, italic: Bool) -> NSFont {
-        var traits: NSFontTraitMask = []
-        if bold { traits.insert(.boldFontMask) }
-        if italic { traits.insert(.italicFontMask) }
-        let converted = NSFontManager.shared.convert(storedFont, toHaveTrait: traits)
-        return converted
+        withExtendedLifetime(storedFont) {
+            let pointer = cmdy_shape_font_variant(Unmanaged.passUnretained(storedFont).toOpaque(),
+                bold ? 1 : 0, italic ? 1 : 0)!
+            return Unmanaged<NSFont>.fromOpaque(pointer).takeRetainedValue()
+        }
     }
 
     static func needsExplicitBackground(_ attribute: CellAttribute) -> Bool {
@@ -367,6 +476,9 @@ final class CmdyTerminalSurface: NSView,
         view.autoresizingMask = [.width, .height]
         view.colorPixelFormat = .bgra8Unorm
         view.framebufferOnly = false
+        // The drawable carries terminal background alpha; its Metal layer must
+        // permit compositing whenever that background is translucent.
+        view.layer?.isOpaque = nativeBackgroundColor.alphaComponent >= 1 && shaderMode != -1
         view.enableSetNeedsDisplay = true
         view.isPaused = true
         let renderer = try MetalTerminalRenderer(view: view, source: self)
@@ -377,6 +489,11 @@ final class CmdyTerminalSurface: NSView,
         renderer.cursorGlideSpeed = Float(cursorGlideSpeed)
         renderer.cursorGlideMaxDistance = Float(cursorGlideMaxDistance)
         renderer.smoothScrollEnabled = smoothScroll
+        renderer.onFailure = { [weak self] message in
+            guard let self, !self.terminated, let message else { return }
+            NSLog("cmdy: renderer failed: %@", message)
+            self.onRendererError?(message)
+        }
         renderer.onScrollOffsetChanged = { [weak self] offset in
             guard let self else { return }
             let snapped = self.snapToPixel(offset)
@@ -388,17 +505,35 @@ final class CmdyTerminalSurface: NSView,
         addSubview(view, positioned: .below, relativeTo: nil)
         metalView = view
         metalRenderer = renderer
+        installedUserShader = (ObjectIdentifier(renderer), nil)
+        // Metal owns the pane background; a host fill would composite it twice.
+        layer?.backgroundColor = NSColor.clear.cgColor
+        publishInputActivity()
+        let sink = CmdyModelRenderSink(publisher: renderer.modelPublisher)
+        terminal.setRenderPublication { snapshot, generation in sink.publish(snapshot, generation: generation) }
+        directModelPublication = true
         queueDisplay()
     }
 
     var isUsingMetalRenderer: Bool { metalRenderer != nil }
 
     @discardableResult
-    func setUserShader(_ source: String?) -> String? {
+    func setUserShader(_ source: String?) async -> String? {
+        guard !terminated, !Task.isCancelled else { return nil }
+        if let renderer = metalRenderer, let installed = installedUserShader,
+           installed.renderer == ObjectIdentifier(renderer), installed.source == source {
+            return nil
+        }
+        installedUserShader = nil
+        shaderRequestGeneration &+= 1
+        let generation = shaderRequestGeneration
         guard let renderer = metalRenderer else {
             return source == nil ? nil : "Metal renderer is unavailable"
         }
-        let result = renderer.loadUserShader(source: source)
+        let result = await renderer.loadUserShader(source: source)
+        guard !terminated, !Task.isCancelled, generation == shaderRequestGeneration,
+              metalRenderer === renderer else { return nil }
+        if result == nil { installedUserShader = (ObjectIdentifier(renderer), source) }
         if result == nil, source != nil { shaderMode = -1 }
         queueDisplay()
         return result
@@ -413,6 +548,8 @@ final class CmdyTerminalSurface: NSView,
     }
 
     func queueDisplay() {
+        frameContentGeneration &+= 1
+        metalRenderer?.sourceDidChange()
         if let metalView {
             metalView.needsDisplay = true
         } else {
@@ -495,12 +632,17 @@ final class CmdyTerminalSurface: NSView,
     }
 
     func selectAllContent() {
-        let count = renderSnapshot.grid.bufferLineCount
-        guard count > 0 else { clearSelection(notify: true); return }
+        let grid = renderSnapshot.grid
+        let first = grid.isAlternateBuffer ? max(0, grid.liveTopRow) : 0
+        let last = grid.isAlternateBuffer
+            ? min(grid.bufferLineCount - 1, first + max(0, grid.rows - 1))
+            : grid.bufferLineCount - 1
+        guard first <= last else { clearSelection(notify: true); return }
+        // The alternate ring retains a predecessor for internal bookkeeping.
+        // Select its live screen; only the primary buffer exposes history.
         setSelection(
-            anchor: SelectionPoint(row: 0, col: 0),
-            active: SelectionPoint(
-                row: count - 1, col: max(0, renderSnapshot.grid.cols - 1)),
+            anchor: SelectionPoint(row: first, col: 0),
+            active: SelectionPoint(row: last, col: max(0, grid.cols - 1)),
             notify: true)
     }
 
@@ -600,6 +742,46 @@ final class CmdyTerminalSurface: NSView,
     }
 
     override func keyDown(with event: NSEvent) {
+        if hasMarkedText() {
+            interpretCompositionKey(event) { inputContext?.handleEvent(event) == true }
+            return
+        }
+        handleUnmarkedKeyEvent(event)
+    }
+
+    /// An IME may insert and then delete text within one key event. Keep those
+    /// edits local until interpretation finishes; PTY bytes cannot be taken back.
+    func interpretCompositionKey(_ event: NSEvent, interpret: () -> Bool) {
+        interpretingTextEvent = event
+        interpretingComposition = true
+        compositionCommit = ""
+        defer {
+            let text = compositionCommit
+            compositionCommit = ""
+            interpretingTextEvent = nil
+            interpretingComposition = false
+            emitCommittedText(text)
+        }
+        if interpret() { return }
+        handleUnhandledCompositionKey(event)
+    }
+
+    /// Only called after the input method declines the event. Candidate keys
+    /// remain private to composition, but an unhandled interrupt must reach
+    /// the terminal through its usual control-byte encoder.
+    func handleUnhandledCompositionKey(_ event: NSEvent) {
+        let flags = event.modifierFlags.intersection([.shift, .option, .control, .command])
+        if flags.contains(.control), !flags.contains(.command),
+           let scalar = event.charactersIgnoringModifiers?.unicodeScalars.first,
+           Self.controlByte(for: scalar) == 3 {
+            cancelTextComposition()
+            handleUnmarkedKeyEvent(event)
+        } else if event.keyCode == 53 {
+            cancelTextComposition()
+        }
+    }
+
+    private func handleUnmarkedKeyEvent(_ event: NSEvent) {
         let modifiers = event.modifierFlags.intersection([.shift, .option, .control, .command])
         guard !modifiers.contains(.command) else { super.keyDown(with: event); return }
         let relevant = modifiers.intersection([.shift, .option, .control])
@@ -656,11 +838,186 @@ final class CmdyTerminalSurface: NSView,
             emitUserInput(prefix + [control])
             return
         }
-        let text = modifiers.contains(.option) && optionAsMetaKey
-            ? event.charactersIgnoringModifiers : event.characters
-        guard let text, !text.isEmpty else { return }
-        let prefix: [UInt8] = modifiers.contains(.option) && optionAsMetaKey ? [0x1B] : []
-        emitUserInput(prefix + Array(text.utf8))
+        if modifiers.contains(.option), optionAsMetaKey {
+            guard let text = event.charactersIgnoringModifiers, !text.isEmpty else { return }
+            emitUserInput([0x1B] + Array(text.utf8))
+            return
+        }
+        // Printable keys enter AppKit's text system, so dead keys and IME
+        // preedit are not emitted as shell input before they are committed.
+        interpretingTextEvent = event
+        defer { interpretingTextEvent = nil }
+        if inputContext?.handleEvent(event) == true { return }
+        if let text = event.characters, !text.isEmpty {
+            insertText(text, replacementRange: NSRange(location: NSNotFound, length: 0))
+        }
+    }
+
+    // MARK: - Native text input
+
+    override func insertText(_ insertString: Any) {
+        insertText(insertString, replacementRange: NSRange(location: NSNotFound, length: 0))
+    }
+
+    func insertText(_ string: Any, replacementRange: NSRange) {
+        guard !discardingComposition else { return }
+        let text = (string as? NSAttributedString)?.string ?? (string as? String) ?? ""
+        unmarkText()
+        if interpretingComposition {
+            compositionCommit += text
+            return
+        }
+        emitCommittedText(text)
+    }
+
+    private func emitCommittedText(_ text: String) {
+        guard !text.isEmpty else { return }
+        onTextInputCommitted?(text)
+        emitUserInput(Array(text.utf8))
+    }
+
+    override func doCommand(by selector: Selector) {
+        if interpretingComposition, !hasMarkedText(),
+           selector == #selector(NSResponder.deleteBackward(_:)), !compositionCommit.isEmpty {
+            compositionCommit.removeLast()
+            return
+        }
+        if selector == #selector(NSResponder.cancelOperation(_:)) {
+            cancelTextComposition()
+            return
+        }
+        // Return used to confirm an IME candidate must not also submit the
+        // shell command. Other terminal control keys never enter this path.
+        guard !interpretingComposition, !hasMarkedText(),
+              let text = interpretingTextEvent?.characters, !text.isEmpty else { return }
+        insertText(text, replacementRange: NSRange(location: NSNotFound, length: 0))
+    }
+
+    func setMarkedText(_ string: Any, selectedRange: NSRange, replacementRange: NSRange) {
+        guard !discardingComposition else { return }
+        let wasComposing = hasMarkedText()
+        let incoming = (string as? NSAttributedString)
+            ?? NSAttributedString(string: (string as? String) ?? "")
+        let replacement: NSRange
+        if replacementRange.location != NSNotFound,
+           replacementRange.location <= markedText.length {
+            replacement = NSRange(location: replacementRange.location,
+                                  length: min(replacementRange.length,
+                                              markedText.length - replacementRange.location))
+        } else {
+            replacement = NSRange(location: 0, length: markedText.length)
+        }
+        markedText.replaceCharacters(in: replacement, with: incoming)
+        let start = selectedRange.location == NSNotFound
+            ? incoming.length : min(selectedRange.location, incoming.length)
+        markedSelection = NSRange(location: replacement.location + start,
+                                  length: min(selectedRange.length, incoming.length - start))
+        if !wasComposing, hasMarkedText() { onTextCompositionStarted?() }
+        updateMarkedTextPresentation()
+    }
+
+    func unmarkText() {
+        markedText = NSMutableAttributedString(string: "")
+        markedSelection = NSRange(location: 0, length: 0)
+        markedTextView.text = NSAttributedString(string: "")
+        markedTextView.removeFromSuperview()
+    }
+
+    func hasMarkedText() -> Bool { markedText.length > 0 }
+    func markedRange() -> NSRange {
+        NSRange(location: hasMarkedText() ? 0 : NSNotFound, length: markedText.length)
+    }
+    func selectedRange() -> NSRange { markedSelection }
+
+    func attributedSubstring(forProposedRange range: NSRange,
+                             actualRange: NSRangePointer?) -> NSAttributedString? {
+        guard range.location != NSNotFound, range.location <= markedText.length else {
+            actualRange?.pointee = NSRange(location: NSNotFound, length: 0)
+            return nil
+        }
+        let actual = NSRange(location: range.location,
+                             length: min(range.length, markedText.length - range.location))
+        actualRange?.pointee = actual
+        return markedText.attributedSubstring(from: actual)
+    }
+
+    func validAttributesForMarkedText() -> [NSAttributedString.Key] {
+        [.font, .foregroundColor, .backgroundColor, .underlineStyle, .markedClauseSegment]
+    }
+
+    func firstRect(forCharacterRange range: NSRange, actualRange: NSRangePointer?) -> NSRect {
+        let location = range.location == NSNotFound
+            ? markedSelection.location : min(range.location, markedText.length)
+        let length = min(range.length, markedText.length - location)
+        actualRange?.pointee = NSRange(location: location, length: length)
+        let display = markedTextView.text
+        let prefix = display.attributedSubstring(from: NSRange(location: 0, length: location)).size().width
+        var rect = markedTextFrame
+        rect.origin.x += min(prefix + 2, max(0, rect.width - cellDimension.width))
+        rect.size.width = cellDimension.width
+        guard let window else { return rect }
+        return window.convertToScreen(convert(rect, to: nil))
+    }
+
+    func characterIndex(for point: NSPoint) -> Int {
+        guard hasMarkedText(), let window else { return NSNotFound }
+        let local = convert(window.convertPoint(fromScreen: point), from: nil)
+        let x = local.x - markedTextFrame.minX - 2
+        guard x >= 0 else { return 0 }
+        for index in 1...markedText.length {
+            let prefix = markedTextView.text.attributedSubstring(
+                from: NSRange(location: 0, length: index)).size().width
+            if prefix > x { return index - 1 }
+        }
+        return markedText.length
+    }
+
+    private var markedTextFrame: NSRect {
+        let grid = renderSnapshot.grid
+        let row = min(max(0, grid.cursorRow - grid.displayTopRow), max(0, grid.rows - 1))
+        let column = min(max(0, grid.cursorCol), max(0, grid.cols - 1))
+        let size = markedTextView.text.size()
+        let width = min(max(cellDimension.width, ceil(size.width) + 4), max(1, bounds.width))
+        return NSRect(
+            x: min(contentXOrigin + CGFloat(column) * cellDimension.width,
+                   max(0, bounds.width - width)),
+            y: bounds.maxY - topContentInset - CGFloat(row + 1) * cellDimension.height,
+            width: width, height: max(cellDimension.height, ceil(size.height)))
+    }
+
+    private func updateMarkedTextPresentation() {
+        guard hasMarkedText() else { markedTextView.removeFromSuperview(); return }
+        let display = NSMutableAttributedString(attributedString: markedText)
+        let paragraph = NSMutableParagraphStyle()
+        paragraph.lineBreakMode = .byClipping
+        display.addAttributes([
+            .font: storedFont, .foregroundColor: nativeForegroundColor,
+            .underlineStyle: NSUnderlineStyle.single.rawValue, .paragraphStyle: paragraph,
+        ], range: NSRange(location: 0, length: display.length))
+        if markedSelection.length > 0 {
+            display.addAttribute(.backgroundColor, value: selectedTextBackgroundColor,
+                                 range: markedSelection)
+        }
+        markedTextView.text = display
+        markedTextView.fill = nativeBackgroundColor
+        markedTextView.frame = markedTextFrame
+        addSubview(markedTextView, positioned: .above, relativeTo: nil)
+        markedTextView.needsDisplay = true
+        inputContext?.invalidateCharacterCoordinates()
+    }
+
+    private func cancelTextComposition() {
+        compositionCommit = ""
+        guard hasMarkedText() else { return }
+        discardingComposition = true
+        inputContext?.discardMarkedText()
+        unmarkText()
+        discardingComposition = false
+    }
+
+    var markedTextPresentationForTesting: (text: String, frame: NSRect)? {
+        guard hasMarkedText(), markedTextView.superview === self else { return nil }
+        return (markedTextView.text.string, markedTextView.frame)
     }
 
     static func returnKeyBytes(
@@ -678,14 +1035,30 @@ final class CmdyTerminalSurface: NSView,
     }
 
     @objc func paste(_ sender: Any?) {
-        guard let source = NSPasteboard.general.string(forType: .string),
-              let accepted = onPasteRequest?(source) ?? (onPasteRequest == nil ? source : nil)
-        else { return }
+        paste(from: .general)
+    }
+
+    func paste(from pasteboard: NSPasteboard) {
+        guard let source = pasteboard.string(forType: .string) else { return }
+        pasteText(source)
+    }
+
+    @objc func pasteSelection(_ sender: Any?) {
+        let source = selectedText()
+        guard !source.isEmpty else { return }
+        pasteText(source)
+    }
+
+    @discardableResult func pasteText(_ source: String) -> Bool {
+        guard let accepted = onPasteRequest?(source) ?? (onPasteRequest == nil ? source : nil)
+        else { return false }
+        cancelTextComposition()
         if terminal.bracketedPaste {
             emitUserInput(Array("\u{1b}[200~\(accepted)\u{1b}[201~".utf8))
         } else {
             emitUserInput(Array(accepted.utf8))
         }
+        return true
     }
 
     @objc func copy(_ sender: Any?) {
@@ -805,6 +1178,12 @@ final class CmdyTerminalSurface: NSView,
             return
         }
 
+        // Fence the previous worker-owned viewport before changing motion.
+        // Otherwise the worker can render old rows with the new scroll offset
+        // between noteScroll/updateScrollHeld and installViewportUpdate. That
+        // frame can look like the final target, then jump back into animation.
+        // A fresh host capture cannot run until this main-actor event returns.
+        metalRenderer?.sourceDidChange()
         if event.hasPreciseScrollingDeltas, smoothScroll {
             applyPreciseLocalScroll(delta)
         } else {
@@ -813,13 +1192,19 @@ final class CmdyTerminalSurface: NSView,
             metalRenderer?.setScrollHeld(0)
             let lines = min(31, max(1, Int(abs(delta).rounded())))
             let update = terminal.scrollViewport(lines: delta > 0 ? -lines : lines)
-            installViewportUpdate(update)
             if update.after != update.before {
                 let glidePoints = Self.discreteScrollGlidePixels(
                     before: update.before, after: update.after,
                     cellHeight: cellDimension.height)
                 metalRenderer?.noteScroll(pixels: Self.rendererScrollPixels(
                     points: glidePoints, backingScale: backingScaleFactor()))
+            }
+            // Fence/capture after the animation control. A READY issued by the
+            // old scroll state must not install a new viewport with zero glide
+            // and then let the next frame start its animation afterward.
+            installViewportUpdate(update)
+            if update.after != update.before, let metalView {
+                metalRenderer?.requestViewportDraw(in: metalView)
             }
         }
     }
@@ -864,6 +1249,11 @@ final class CmdyTerminalSurface: NSView,
                                  width: bounds.width,
                                  height: topContentInset), cursor: .arrow)
         }
+    }
+
+    override func viewWillStartLiveResize() {
+        super.viewWillStartLiveResize()
+        queueDisplay()
     }
 
     override func viewDidEndLiveResize() {
@@ -926,10 +1316,20 @@ final class CmdyTerminalSurface: NSView,
 
     func terminate() {
         guard !terminated else { return }
+        cancelTextComposition()
         terminated = true
+        terminal.setRenderPublication(nil)
+        directModelPublication = false
         terminal.observer = nil
         removeWindowObservers()
+        if let systemColorObserver {
+            NotificationCenter.default.removeObserver(systemColorObserver)
+            self.systemColorObserver = nil
+        }
+        shaderRequestGeneration &+= 1
         metalRenderer?.onScrollOffsetChanged = nil
+        metalRenderer?.close()
+        onRendererError = nil
         metalView?.delegate = nil
         metalView?.removeFromSuperview()
         metalView = nil
@@ -940,7 +1340,8 @@ final class CmdyTerminalSurface: NSView,
     var shellPid: pid_t { terminal.shellPid }
 
     private var shapingStyle: CmdyShapingStyle {
-        CmdyShapingStyle(
+        let traceStarted = CmdyPerformanceTrace.now()
+        let style = CmdyShapingStyle(
             palette: palette,
             normalFont: storedFont,
             boldFont: fontVariant(bold: true, italic: false),
@@ -952,6 +1353,10 @@ final class CmdyTerminalSurface: NSView,
             failedRows: failedBlockRows,
             failedForeground: failedBlockForegroundColor,
             failedBackground: failedBlockBackgroundColor)
+        CmdyPerformanceTrace.record(event: "surface.shapingStyle", started: traceStarted,
+                                    fields: ["source": Int(bitPattern: ObjectIdentifier(self)),
+                                             "fontConversions": 3])
+        return style
     }
 
     private func sanitizedInset(_ proposed: CGFloat) -> CGFloat {
@@ -970,12 +1375,32 @@ final class CmdyTerminalSurface: NSView,
         resizeGrid(reflowHooks: true, forceHookPair: recomputeMetrics)
         invalidateRows()
         resetCursorRects()
+        if hasMarkedText() { updateMarkedTextPresentation() }
+    }
+
+    /// True while an adopted, already running model keeps the grid its shell
+    /// started with. Window construction lays this view out at transient
+    /// sizes; forwarding them would resize the shell repeatedly before the
+    /// window is placed. releaseGridHold() applies the settled geometry once.
+    private(set) var holdsGrid = false
+
+    func releaseGridHold() {
+        guard holdsGrid else { return }
+        holdsGrid = false
+        if CmdyPerformanceTrace.enabled {
+            let scale = backingScaleFactor()
+            CmdyPerformanceTrace.record(event: "startup.grid-hold-release", started: CmdyPerformanceTrace.now(), fields: [
+                "pixelWidth": Int((max(0, bounds.width - storedLeftInset - storedRightInset) * scale).rounded(.down)),
+                "pixelHeight": Int((max(0, bounds.height - storedTopInset - bottomContentInset) * scale).rounded(.down)),
+                "boundsHeight": Int(bounds.height), "topInset": Int(storedTopInset), "bottomInset": Int(bottomContentInset)])
+        }
+        resizeGrid(reflowHooks: true)
     }
 
     private func resizeGrid(reflowHooks: Bool, forceHookPair: Bool = false) {
-        guard cellDimension.width > 0, cellDimension.height > 0 else { return }
+        guard !holdsGrid, cellDimension.width > 0, cellDimension.height > 0 else { return }
         let availableWidth = max(0, bounds.width - storedLeftInset - storedRightInset)
-        let availableHeight = max(0, bounds.height - storedTopInset - storedBottomInset)
+        let availableHeight = max(0, bounds.height - storedTopInset - bottomContentInset)
         let cols = max(2, Int(floor(availableWidth / cellDimension.width)))
         let rows = max(1, Int(floor(availableHeight / cellDimension.height)))
         let changed = cols != renderSnapshot.grid.cols || rows != renderSnapshot.grid.rows
@@ -1004,7 +1429,7 @@ final class CmdyTerminalSurface: NSView,
     private func updatePixelMetadataAndPTY(cols: Int, rows: Int) {
         let scale = backingScaleFactor()
         let availableWidth = max(0, bounds.width - storedLeftInset - storedRightInset)
-        let availableHeight = max(0, bounds.height - storedTopInset - storedBottomInset)
+        let availableHeight = max(0, bounds.height - storedTopInset - bottomContentInset)
         let pixelWidth = Int((availableWidth * scale).rounded(.down))
         let pixelHeight = Int((availableHeight * scale).rounded(.down))
         terminal.updatePixelSize(width: pixelWidth, height: pixelHeight)
@@ -1026,25 +1451,39 @@ final class CmdyTerminalSurface: NSView,
     }
 
     private func appearanceChanged() {
-        layer?.backgroundColor = nativeBackgroundColor.cgColor
+        layer?.backgroundColor = metalView == nil
+            ? nativeBackgroundColor.cgColor : NSColor.clear.cgColor
+        metalView?.layer?.isOpaque = nativeBackgroundColor.alphaComponent >= 1 && shaderMode != -1
         invalidateRows()
     }
 
+    override func viewDidChangeEffectiveAppearance() {
+        super.viewDidChangeEffectiveAppearance()
+        // Appearance can change without assigning any color preference. Clear
+        // even clean cached rows, including inverse/semantic palette colors.
+        effectiveAppearance.performAsCurrentDrawingAppearance { appearanceChanged() }
+    }
+
     private func invalidateRows() {
+        snapshotRowContext.beginFrame()
         metalRenderer?.invalidateRowCache()
         queueDisplay()
     }
 
-    private func installSnapshot(_ snapshot: CoreTerminalSnapshot) {
+    private func installSnapshot(_ snapshot: CoreTerminalSnapshot, notifyRenderer: Bool = true) {
+        // Model publication can request renderer activity without queueDisplay.
+        frameContentGeneration &+= 1
         let widthChanged = snapshot.grid.cols != renderSnapshot.grid.cols
         renderSnapshot = snapshot
         pendingDirtyRows = union(pendingDirtyRows, snapshot.dirtyRows)
+        if notifyRenderer { metalRenderer?.sourceDidChange() }
         if widthChanged {
             // Selection and search hits are physical row/column coordinates.
             // A width reflow can move their cells to different rows, so keeping
             // those coordinates would silently select or copy different text.
             clearSearch()
         }
+        if hasMarkedText() { updateMarkedTextPresentation() }
     }
 
     private func installViewportUpdate(_ update: TerminalViewportUpdate) {
@@ -1054,12 +1493,23 @@ final class CmdyTerminalSurface: NSView,
             return
         }
         installSnapshot(snapshot)
+        if let damage = update.damage {
+            pendingDirtyRows = union(pendingDirtyRows, damage.rows)
+            if damage.invalidatesAllRows { metalRenderer?.invalidateRowCache() }
+        }
         queueDisplay()
         onViewportChanged?()
     }
 
     private func emitUserInput(_ bytes: [UInt8]) {
         guard !bytes.isEmpty else { return }
+        let traceStarted = CmdyPerformanceTrace.now()
+        defer {
+            CmdyPerformanceTrace.record(event: "surface.input", started: traceStarted,
+                                        fields: ["source": Int(bitPattern: ObjectIdentifier(self)),
+                                                 "model": Int(bitPattern: ObjectIdentifier(terminal)),
+                                                 "bytes": bytes.count])
+        }
         let currentTop = terminal.currentTopRow
         let liveTop = terminal.liveScreenTopRow
         if currentTop != liveTop {
@@ -1068,8 +1518,8 @@ final class CmdyTerminalSurface: NSView,
         }
         resetScrollOffset()
         activityKeypressTime = CFAbsoluteTimeGetCurrent()
-        metalRenderer?.noteActivity()
-        terminal.send(bytes)
+        metalRenderer?.noteKeyboardInteraction()
+        terminal.sendUserInput(bytes)
     }
 
     private func applyPreciseLocalScroll(_ delta: CGFloat) {
@@ -1169,6 +1619,9 @@ final class CmdyTerminalSurface: NSView,
         let oldActive = selectionActive
         let changed = oldAnchor != anchor || oldActive != active
         if changed {
+            // Selection uses its own renderer interaction path, without a
+            // redraw request or any mutation of immutable terminal rows.
+            frameContentGeneration &+= 1
             selectionAnchor = anchor
             selectionActive = active
             // Selection is composed as a dynamic Metal overlay. Invalidating
@@ -1388,28 +1841,35 @@ final class CmdyTerminalSurface: NSView,
         }
     }
 
+    /// The grid a fresh first window will lay out to, so a shell started
+    /// before that window exists usually needs no resize. A mismatch is
+    /// corrected by the ordinary layout pass.
+    /// The grid and PTY pixel size of a pane filling `contentSize`, with the
+    /// window's top content inset and the margin on the other three sides.
+    static func predictedGrid(contentSize: NSSize, font: NSFont, lineHeight: CGFloat,
+                              margin: CGFloat, topInset: CGFloat,
+                              scale: CGFloat)
+        -> (cols: Int, rows: Int, pixelWidth: Int, pixelHeight: Int) {
+        let cell = calculateMetrics(font: font, multiplier: lineHeight, scale: scale).size
+        let width = max(0, contentSize.width - margin * 2)
+        let height = max(0, contentSize.height - topInset - margin)
+        // Same pixel rounding as updatePixelMetadataAndPTY, so the adopted PTY's
+        // size is unchanged when the hold is released and the shell is not
+        // sent a SIGWINCH that makes it redraw its first prompt.
+        let pixelWidth = Int((width * scale).rounded(.down))
+        let pixelHeight = Int((height * scale).rounded(.down))
+        guard cell.width > 0, cell.height > 0 else { return (80, 24, pixelWidth, pixelHeight) }
+        return (max(2, Int(floor(width / cell.width))), max(1, Int(floor(height / cell.height))),
+                pixelWidth, pixelHeight)
+    }
+
     private static func calculateMetrics(
         font: NSFont, multiplier: CGFloat, scale: CGFloat
     ) -> (size: CGSize, baseline: CGFloat) {
-        let safeScale = max(1, scale.isFinite ? scale : 1)
-        let ctFont = font as CTFont
-        func advance(_ character: UniChar) -> CGFloat {
-            var character = character
-            var glyph: CGGlyph = 0
-            guard CTFontGetGlyphsForCharacters(ctFont, &character, &glyph, 1),
-                  glyph != 0 else { return 0 }
-            var glyphCopy = glyph
-            return CTFontGetAdvancesForGlyphs(ctFont, .horizontal,
-                                              &glyphCopy, nil, 1)
+        withExtendedLifetime(font) {
+            let metrics = cmdy_shape_metrics(Unmanaged.passUnretained(font).toOpaque(), multiplier, scale)
+            return (CGSize(width: metrics.width, height: metrics.height), metrics.baseline)
         }
-        let measuredWidth = advance(0x30)
-        let width = measuredWidth > 0 ? measuredWidth : max(1, advance(0x57))
-        let natural = ceil(font.ascender + abs(font.descender) + font.leading)
-        let rawHeight = min(8192, max(1, natural * multiplier))
-        let snappedWidth = max(1, ceil(width * safeScale) / safeScale)
-        let snappedHeight = max(1, ceil(rawHeight * safeScale) / safeScale)
-        let baseline = snappedHeight - ceil(abs(font.descender) + font.leading)
-        return (CGSize(width: snappedWidth, height: snappedHeight), baseline)
     }
 
     private func snapToPixel(_ value: CGFloat) -> CGFloat {
@@ -1452,17 +1912,34 @@ final class CmdyTerminalSurface: NSView,
 
 extension CmdyTerminalSurface: TerminalModelObserver {
     func terminalModel(
-        _ model: TerminalModel, didPublish snapshot: CoreTerminalSnapshot
+        _ model: TerminalModel, didPublish snapshot: CoreTerminalSnapshot,
+        damage: SnapshotPublicationDamage
     ) {
+        let traceStarted = CmdyPerformanceTrace.now()
+        defer {
+            CmdyPerformanceTrace.record(event: "surface.publish", started: traceStarted,
+                                        fields: ["source": Int(bitPattern: ObjectIdentifier(self)),
+                                                 "model": Int(bitPattern: ObjectIdentifier(model)),
+                                                 "rows": snapshot.grid.rows,
+                                                 "columns": snapshot.grid.cols,
+                                                 "dirtyRows": damage.rows?.count ?? 0,
+                                                 "invalidatesAllRows": damage.invalidatesAllRows ? 1 : 0])
+        }
         let followedTail = renderSnapshot.grid.displayTopRow
             == renderSnapshot.grid.liveTopRow
         let oldLiveTop = renderSnapshot.grid.liveTopRow
-        installSnapshot(snapshot)
+        let publishedDirectly = directModelPublication && model.wasPublishedToRenderer(snapshot)
+        installSnapshot(snapshot, notifyRenderer: !publishedDirectly)
+        pendingDirtyRows = union(pendingDirtyRows, damage.rows)
+        if damage.invalidatesAllRows { metalRenderer?.invalidateRowCache() }
         if followedTail, snapshot.grid.liveTopRow != oldLiveTop {
             resetScrollOffset()
         }
-        metalRenderer?.noteActivity()
-        queueDisplay()
+        if let metalRenderer {
+            if !publishedDirectly { metalRenderer.noteActivity() }
+        } else {
+            queueDisplay()
+        }
         onViewportChanged?()
     }
 
@@ -1512,7 +1989,20 @@ extension CmdyTerminalSurface: TerminalModelObserver {
     }
 }
 
-extension CmdyTerminalSurface: MetalRenderSource {
+extension CmdyTerminalSurface: MetalRenderSource, SnapshotRowRevisionSource, DeferredRowRenderSource, WorkerPublishedRenderSource, NativeViewportRenderSource {
+    var frameContentRevision: UInt64 { frameContentGeneration }
+
+    func nativeFrameGraphics() -> NativeFrameGraphics? {
+        frameSnapshot.withNativeGraphics { $0.map { NativeFrameGraphics(retaining: $0) } }
+    }
+
+    func nativeFrameViewport() throws -> NativeFrameViewport {
+        let style = try snapshotRowContext.nativeStyle(shapingStyle, appearance: effectiveAppearance)
+        let selection = normalizedSelection().map { ($0.start.row, $0.start.col, $0.end.row, $0.end.col) }
+        return frameSnapshot.withNativeRows { NativeFrameViewport(retaining: $0, style: style, selection: selection,
+            modelGeneration: frameSnapshot.modelPublicationGeneration) }
+    }
+
     func captureGrid() -> GridSnapshot {
         frameSnapshot = renderSnapshot
         let grid = frameSnapshot.grid
@@ -1530,11 +2020,27 @@ extension CmdyTerminalSurface: MetalRenderSource {
     }
 
     func lineInfo(forRow row: Int) -> ViewLineInfo {
-        CmdySnapshotShaper.lineInfo(
+        let traceStarted = CmdyPerformanceTrace.now()
+        let info = CmdySnapshotShaper.lineInfo(
             snapshot: frameSnapshot,
             absoluteRow: row,
-            style: shapingStyle,
+            style: snapshotRowContext.style(shapingStyle, appearance: effectiveAppearance),
             selectedColumns: nil)
+        CmdyPerformanceTrace.record(event: "surface.lineInfo", started: traceStarted,
+                                    fields: ["source": Int(bitPattern: ObjectIdentifier(self)),
+                                             "row": row, "segments": info.segments.count])
+        return info
+    }
+
+    func snapshotRowRevision(forRow row: Int) -> SnapshotRowRevision? {
+        snapshotRowContext.revision(
+            snapshot: frameSnapshot, absoluteRow: row, style: shapingStyle,
+            appearance: effectiveAppearance)
+    }
+
+    func deferredRenderRow(forRow row: Int, parameters: NativeRowCaptureParameters) throws -> DeferredRenderRow? {
+        try snapshotRowContext.deferredRow(snapshot: frameSnapshot, absoluteRow: row,
+            style: shapingStyle, appearance: effectiveAppearance, parameters: parameters)
     }
 
     func lineRenderMode(forRow row: Int) -> CmdyGPU.RenderLineMode {

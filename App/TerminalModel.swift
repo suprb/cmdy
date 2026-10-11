@@ -1,12 +1,13 @@
 import Foundation
 import CmdyKit
-import CmdyCore
-import CmdyPTY
+@_spi(CmdyApp) import CmdyCore
+@_spi(CmdyApp) import CmdyPTY
 
 /// Main-thread event sink for a pane's worker-owned terminal model.
 @MainActor
 protocol TerminalModelObserver: AnyObject {
-    func terminalModel(_ model: TerminalModel, didPublish snapshot: CoreTerminalSnapshot)
+    func terminalModel(_ model: TerminalModel, didPublish snapshot: CoreTerminalSnapshot,
+                       damage: SnapshotPublicationDamage)
     func terminalModel(_ model: TerminalModel, didSetTitle title: String)
     func terminalModel(_ model: TerminalModel, didSetCurrentDirectory directory: String?)
     func terminalModelDidBell(_ model: TerminalModel)
@@ -20,6 +21,7 @@ struct TerminalViewportUpdate {
     let before: Int
     let after: Int
     let snapshot: CoreTerminalSnapshot?
+    var damage: SnapshotPublicationDamage? = nil
 }
 
 /// Owns one mutable VT model and its PTY on a dedicated serial queue. AppKit
@@ -32,22 +34,48 @@ final class TerminalModel: @unchecked Sendable {
     private let snapshotLock = NSLock()
     private var publishedSnapshot: CoreTerminalSnapshot
     private var publishedSnapshotGeneration: UInt64 = 0
-    private var snapshotScheduled = false
+    // Called only on the terminal queue, after releasing snapshotLock.
+    private var renderPublication: (@Sendable (CoreTerminalSnapshot, UInt64) -> Bool)?
+    private var renderAcceptedGeneration: UInt64 = 0 // protected by snapshotLock
+    private var publications = SnapshotPublicationMailbox()
+    private var reflowEpoch: UInt64 = 0
+    private var publicationScheduler = SnapshotPublicationScheduler()
+    private var historyMaintenance = HistoryMaintenanceScheduler()
+    private var pendingCaptureTraceStarted: UInt64 = 0
+    private var traceInputSequence = 0 // terminal-queue owned, diagnostic only
+    // Explicit synthetic-fixture opt-in. Log three background colors, never
+    // terminal text. Normal traces do not inspect or project any extra cells.
+    private static let traceMarkerRow = CmdyPerformanceTrace.enabled
+        ? ProcessInfo.processInfo.environment["CMDY_TRACE_MARKER_ROW"].flatMap(Int.init) : nil
+    private var processingPTYOutput = false
+    private var ptyOutputContinues = false
+    /// FIONREAD, _IOR('f', 127, int); Swift cannot import the macro.
+    private static let fionread: UInt = 0x4004_667f
+    /// The macOS PTY output queue's high-water mark: one read never exceeds it.
+    private static let ptyOutputChunk = 1024
     private var pixelWidth = 0
     private var pixelHeight = 0
 
     private(set) var viewportSnapshotReuseCountForTesting = 0
     private(set) var viewportSnapshotCaptureCountForTesting = 0
 
-    weak var observer: TerminalModelObserver?
+    weak var observer: TerminalModelObserver? {
+        didSet {
+            cancelKeyboardInteraction()
+            snapshotLock.lock()
+            publications.discardPending()
+            snapshotLock.unlock()
+        }
+    }
 
-    lazy var process: LocalProcess = LocalProcess(delegate: self, dispatchQueue: queue)
+    lazy var process: LocalProcess = LocalProcess(delegate: self, serialQueue: queue)
 
     init(cols: Int, rows: Int) {
         queue = DispatchQueue(label: "com.cmdy.model.\(UUID().uuidString)",
                               qos: .userInteractive)
         terminal = CmdyTerminal(cols: cols, rows: rows)
         publishedSnapshot = terminal.captureTerminalSnapshot(consumeDamage: false)
+        publishedSnapshot.modelPublicationGeneration = 1
         queue.setSpecific(key: queueKey, value: 1)
         terminal.delegate = self
     }
@@ -59,24 +87,52 @@ final class TerminalModel: @unchecked Sendable {
         return value
     }
 
-    /// Store a capture and return its generation. Main-queue deliveries check
-    /// this before notifying the view so a pre-resize callback cannot replace a
-    /// newer, synchronously installed resize snapshot.
-    @discardableResult
-    private func storePublishedSnapshot(_ snapshot: CoreTerminalSnapshot) -> UInt64 {
+    func setRenderPublication(_ callback: (@Sendable (CoreTerminalSnapshot, UInt64) -> Bool)?) {
+        sync {
+            snapshotLock.lock()
+            renderAcceptedGeneration = 0
+            snapshotLock.unlock()
+            renderPublication = callback
+            publishToRenderer(publishedSnapshot)
+        }
+    }
+    private func publishToRenderer(_ snapshot: CoreTerminalSnapshot) {
+        let traceStarted = CmdyPerformanceTrace.now()
+        let accepted = renderPublication?(snapshot, publishedSnapshotGeneration) ?? false
+        CmdyPerformanceTrace.record(event: "model.renderPublication", started: traceStarted,
+            fields: ["model": Int(bitPattern: ObjectIdentifier(self)),
+                     "generation": Int(truncatingIfNeeded: snapshot.modelPublicationGeneration),
+                     "input": traceInputSequence, "accepted": accepted ? 1 : 0])
         snapshotLock.lock()
-        publishedSnapshot = snapshot
-        publishedSnapshotGeneration &+= 1
-        let generation = publishedSnapshotGeneration
+        if accepted { renderAcceptedGeneration = snapshot.modelPublicationGeneration }
+        else if renderPublication == nil { renderAcceptedGeneration = 0 }
         snapshotLock.unlock()
-        return generation
+    }
+    func wasPublishedToRenderer(_ snapshot: CoreTerminalSnapshot) -> Bool {
+        snapshotLock.lock(); defer { snapshotLock.unlock() }
+        return snapshot.modelPublicationGeneration != 0 && snapshot.modelPublicationGeneration <= renderAcceptedGeneration
     }
 
-    private func publicationIsCurrent(_ generation: UInt64) -> Bool {
+    private var hasPendingPublication: Bool {
         snapshotLock.lock()
-        let current = publishedSnapshotGeneration == generation
+        defer { snapshotLock.unlock() }
+        return publications.pending != nil
+    }
+
+    /// Synchronous resize/scroll callers install this value before returning to
+    /// the main run loop. Their cache invalidation owns any superseded damage.
+    @discardableResult
+    private func storeSynchronousSnapshot(
+        _ snapshot: inout CoreTerminalSnapshot, publishRenderer: Bool = true
+    ) -> SnapshotPublicationDamage {
+        snapshotLock.lock()
+        publishedSnapshotGeneration &+= 1
+        snapshot.modelPublicationGeneration = publishedSnapshotGeneration + 1
+        publishedSnapshot = snapshot
+        let damage = publications.replaceSynchronously(snapshot, reflowEpoch: reflowEpoch)
         snapshotLock.unlock()
-        return current
+        if publishRenderer { publishToRenderer(snapshot) }
+        return damage
     }
 
     @inline(__always)
@@ -96,27 +152,119 @@ final class TerminalModel: @unchecked Sendable {
         }
     }
 
-    private func scheduleSnapshot() {
+    private func scheduleSnapshot(fromPTYOutput: Bool = false) {
         dispatchPrecondition(condition: .onQueue(queue))
-        guard !snapshotScheduled else { return }
-        snapshotScheduled = true
-        // A one-millisecond window folds parser callbacks from the same PTY
-        // burst into one COW row capture without adding a visible frame delay.
-        queue.asyncAfter(deadline: .now() + .milliseconds(1)) { [weak self] in
+        let previous = publicationScheduler.pending?.generation
+        let service = publicationScheduler.request(
+            at: ProcessInfo.processInfo.systemUptime, fromPTYOutput: fromPTYOutput,
+            outputContinues: fromPTYOutput && ptyOutputContinues)
+        if publicationScheduler.pending?.generation != previous {
+            pendingCaptureTraceStarted = CmdyPerformanceTrace.now()
+        }
+        if let service { enqueueCaptureService(service) }
+    }
+
+    private func scheduleHistoryMaintenance(restart: Bool = false) {
+        dispatchPrecondition(condition: .onQueue(queue))
+        if let service = historyMaintenance.request(restart: restart) {
+            enqueueHistoryMaintenance(service)
+        }
+    }
+
+    private func enqueueHistoryMaintenance(_ service: HistoryMaintenanceScheduler.Service) {
+        queue.asyncAfter(deadline: .now() + service.delay) { [weak self] in
             guard let self else { return }
-            guard self.snapshotScheduled else { return }
-            self.snapshotScheduled = false
+            let action = self.historyMaintenance.fire(service)
+            if let next = action.enqueue { self.enqueueHistoryMaintenance(next) }
+            guard let batch = action.batch else { return }
+            let result = self.terminal.compactHistory(
+                startingAt: batch.startingAt,
+                maximumRows: HistoryMaintenanceScheduler.maximumRows)
+            if let next = self.historyMaintenance.finish(
+                batch, nextAbsoluteRow: result.nextAbsoluteRow, complete: result.complete) {
+                self.enqueueHistoryMaintenance(next)
+            }
+        }
+    }
+
+    private func enqueueCaptureService(_ service: SnapshotPublicationScheduler.Service) {
+        let operation: @Sendable () -> Void = { [weak self] in
+            guard let self else { return }
+            let action = self.publicationScheduler.fire(
+                service, at: ProcessInfo.processInfo.systemUptime)
+            if let next = action.enqueue { self.enqueueCaptureService(next) }
+            guard let capture = action.capture else { return }
+            CmdyPerformanceTrace.record(event: "model.snapshotWait",
+                                        started: self.pendingCaptureTraceStarted,
+                                        fields: ["expedited": capture.kind == .immediate ? 1 : 0])
             self.publishSnapshot()
+        }
+        switch service.kind {
+        case .immediate:
+            // Do not use async(_:): it runs inline on the worker queue. The
+            // parser and all callbacks in this drain must finish before capture.
+            queue.async(execute: operation)
+        case .delayed:
+            let delay = max(0, service.readyAt - ProcessInfo.processInfo.systemUptime)
+            queue.asyncAfter(deadline: .now() + delay, execute: operation)
         }
     }
 
     private func publishSnapshot() {
         dispatchPrecondition(condition: .onQueue(queue))
-        let snapshot = terminal.captureTerminalSnapshot()
-        let generation = storePublishedSnapshot(snapshot)
+        let captureStarted = CmdyPerformanceTrace.now()
+        var snapshot = terminal.captureTerminalSnapshot()
+        let publicationStarted = CmdyPerformanceTrace.now()
+        snapshotLock.lock()
+        publishedSnapshotGeneration &+= 1
+        snapshot.modelPublicationGeneration = publishedSnapshotGeneration + 1
+        publishedSnapshot = snapshot
+        let generation = publishedSnapshotGeneration
+        let enqueueDelivery = publications.offer(
+            snapshot, generation: generation, reflowEpoch: reflowEpoch,
+            started: publicationStarted)
+        snapshotLock.unlock()
+        if let row = Self.traceMarkerRow, row >= 0, row < snapshot.grid.rows,
+           let line = snapshot.line(absolute: snapshot.grid.displayTopRow + row) {
+            let started = CmdyPerformanceTrace.now()
+            let cells = line.cells
+            func color(_ column: Int) -> Int {
+                guard cells.indices.contains(column), case let .trueColor(r, g, b) = cells[column].attribute.bg else { return -1 }
+                return (Int(r) << 16) | (Int(g) << 8) | Int(b)
+            }
+            CmdyPerformanceTrace.record(event: "model.fixtureMarker", started: started,
+                fields: ["model": Int(bitPattern: ObjectIdentifier(self)), "input": traceInputSequence,
+                         "generation": Int(truncatingIfNeeded: snapshot.modelPublicationGeneration),
+                         "row": row, "leftRGB": color(0), "middleRGB": color(snapshot.grid.cols / 2),
+                         "rightRGB": color(snapshot.grid.cols - 1)])
+        }
+        CmdyPerformanceTrace.record(event: "model.capture", started: captureStarted,
+                                    fields: ["generation": Int(truncatingIfNeeded: generation),
+                                             "renderGeneration": Int(truncatingIfNeeded: snapshot.modelPublicationGeneration),
+                                             "model": Int(bitPattern: ObjectIdentifier(self)),
+                                             "input": traceInputSequence,
+                                             "cursorRow": snapshot.grid.cursorRow,
+                                             "cursorCol": snapshot.grid.cursorCol])
+        publishToRenderer(snapshot)
+        guard enqueueDelivery else { return }
         DispatchQueue.main.async { [weak self] in
-            guard let self, self.publicationIsCurrent(generation) else { return }
-            self.observer?.terminalModel(self, didPublish: snapshot)
+            guard let self else { return }
+            self.snapshotLock.lock()
+            let publication = self.publications.take()
+            self.snapshotLock.unlock()
+            guard let publication else { return }
+            self.snapshotLock.lock()
+            let current = self.publications.accepts(publication)
+            self.snapshotLock.unlock()
+            CmdyPerformanceTrace.record(event: "model.mainQueueWait", started: publication.started,
+                                        fields: ["generation": Int(truncatingIfNeeded: publication.generation),
+                                                 "current": current ? 1 : 0])
+            guard current else { return }
+            let deliveryStarted = CmdyPerformanceTrace.now()
+            self.observer?.terminalModel(self, didPublish: publication.snapshot,
+                                         damage: publication.damage)
+            CmdyPerformanceTrace.record(event: "model.delivery", started: deliveryStarted,
+                                        fields: ["generation": Int(truncatingIfNeeded: publication.generation)])
         }
     }
 
@@ -127,8 +275,10 @@ final class TerminalModel: @unchecked Sendable {
             self.pixelWidth = pixelWidth
             self.pixelHeight = pixelHeight
             terminal.resize(cols: cols, rows: rows)
-            let snapshot = terminal.captureTerminalSnapshot()
-            storePublishedSnapshot(snapshot)
+            scheduleHistoryMaintenance(restart: true)
+            publicationScheduler.resetPendingCapture()
+            var snapshot = terminal.captureTerminalSnapshot()
+            storeSynchronousSnapshot(&snapshot)
             return snapshot
         }
     }
@@ -143,17 +293,61 @@ final class TerminalModel: @unchecked Sendable {
     func startProcess(executable: String, args: [String], environment: [String]?,
                       currentDirectory: String?) {
         sync {
+            publicationScheduler.cancelUserInput()
+            historyMaintenance.resume()
+            scheduleHistoryMaintenance(restart: true)
             process.startProcess(executable: executable, args: args, environment: environment,
                                  execName: String?.none, currentDirectory: currentDirectory)
         }
     }
 
-    func terminate() { sync { process.terminate() } }
+    func terminate() {
+        sync {
+            renderPublication = nil
+            snapshotLock.lock()
+            renderAcceptedGeneration = 0
+            snapshotLock.unlock()
+            publicationScheduler.resetPendingCapture()
+            historyMaintenance.cancel()
+            process.terminate()
+        }
+    }
     var shellPid: pid_t { sync { process.shellPid } }
     var childFileDescriptor: Int32 { sync { process.childfd } }
 
+    /// Only committed terminal input carries response intent. Protocol replies,
+    /// focus reports and other host sends keep the ordinary output policy.
+    func sendUserInput(_ bytes: [UInt8]) {
+        guard !bytes.isEmpty else { return }
+        let sentAt = ProcessInfo.processInfo.systemUptime
+        let enqueued = CmdyPerformanceTrace.now()
+        async { [self] in
+            if CmdyPerformanceTrace.enabled { traceInputSequence &+= 1 }
+            CmdyPerformanceTrace.record(event: "model.inputQueueWait", started: enqueued,
+                fields: ["model": Int(bitPattern: ObjectIdentifier(self)), "input": traceInputSequence])
+            let started = CmdyPerformanceTrace.now()
+            publicationScheduler.noteUserInput(at: sentAt)
+            historyMaintenance.noteActivity()
+            process.send(data: bytes[...])
+            CmdyPerformanceTrace.record(event: "model.inputWrite", started: started,
+                fields: ["model": Int(bitPattern: ObjectIdentifier(self)), "input": traceInputSequence,
+                         "bytes": bytes.count])
+        }
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            self.observer?.terminalModel(self, didSend: bytes)
+        }
+    }
+
+    func cancelKeyboardInteraction() {
+        async { [weak self] in self?.publicationScheduler.cancelUserInput() }
+    }
+
     func send(_ bytes: [UInt8]) {
-        async { [process] in process.send(data: bytes[...]) }
+        async { [self] in
+            historyMaintenance.noteActivity()
+            process.send(data: bytes[...])
+        }
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
             self.observer?.terminalModel(self, didSend: bytes)
@@ -161,7 +355,10 @@ final class TerminalModel: @unchecked Sendable {
     }
 
     func feed(text: String) {
-        sync { terminal.feed(text: text) }
+        sync {
+            historyMaintenance.noteActivity()
+            terminal.feed(text: text)
+        }
     }
 
     func markViewportDirty() {
@@ -174,37 +371,50 @@ final class TerminalModel: @unchecked Sendable {
     @discardableResult
     func scrollViewport(to row: Int) -> TerminalViewportUpdate {
         sync {
+            historyMaintenance.noteActivity()
             let before = terminal.currentTopRow
-            let hadPendingSnapshot = snapshotScheduled
+            let hadUndeliveredSnapshot = hasPendingPublication
+            let hadPendingSnapshot = publicationScheduler.isScheduled || hadUndeliveredSnapshot
             terminal.scrollViewport(to: row)
             let after = terminal.currentTopRow
             guard after != before else {
                 return TerminalViewportUpdate(before: before, after: after, snapshot: nil)
             }
+            scheduleHistoryMaintenance(restart: true)
             // Scrolling changes the grid origin but not its rows. Publish the
             // coherent viewport now so the renderer never combines the new
             // pixel offset with the previous yDisp for one flashing frame.
-            snapshotScheduled = false
-            let snapshot = viewportSnapshot(hadPendingSnapshot: hadPendingSnapshot)
-            storePublishedSnapshot(snapshot)
-            return TerminalViewportUpdate(before: before, after: after, snapshot: snapshot)
+            publicationScheduler.resetPendingCapture()
+            var snapshot = viewportSnapshot(hadPendingSnapshot: hadPendingSnapshot)
+            // The main-actor caller must install viewport and scroll-animation
+            // state together. An immediate worker model publication here can
+            // show the final viewport before the scroll control, then animate
+            // away from that already-presented frame. The caller's source
+            // invalidation requests a coherent host capture after the event.
+            let damage = storeSynchronousSnapshot(&snapshot, publishRenderer: false)
+            return TerminalViewportUpdate(before: before, after: after, snapshot: snapshot,
+                                          damage: damage)
         }
     }
 
     @discardableResult
     func scrollViewport(lines: Int) -> TerminalViewportUpdate {
         sync {
+            historyMaintenance.noteActivity()
             let before = terminal.currentTopRow
-            let hadPendingSnapshot = snapshotScheduled
+            let hadUndeliveredSnapshot = hasPendingPublication
+            let hadPendingSnapshot = publicationScheduler.isScheduled || hadUndeliveredSnapshot
             terminal.scrollViewport(lines: lines)
             let after = terminal.currentTopRow
             guard after != before else {
                 return TerminalViewportUpdate(before: before, after: after, snapshot: nil)
             }
-            snapshotScheduled = false
-            let snapshot = viewportSnapshot(hadPendingSnapshot: hadPendingSnapshot)
-            storePublishedSnapshot(snapshot)
-            return TerminalViewportUpdate(before: before, after: after, snapshot: snapshot)
+            scheduleHistoryMaintenance(restart: true)
+            publicationScheduler.resetPendingCapture()
+            var snapshot = viewportSnapshot(hadPendingSnapshot: hadPendingSnapshot)
+            let damage = storeSynchronousSnapshot(&snapshot, publishRenderer: false)
+            return TerminalViewportUpdate(before: before, after: after, snapshot: snapshot,
+                                          damage: damage)
         }
     }
 
@@ -280,6 +490,7 @@ final class TerminalModel: @unchecked Sendable {
                         modifiers: CmdyTerminal.MouseModifiers,
                         col: Int, row: Int) {
         sync {
+            historyMaintenance.noteActivity()
             _ = terminal.sendMouseEvent(button: button, pressed: pressed, motion: motion,
                                         modifiers: modifiers, col: col, row: row)
         }
@@ -320,6 +531,18 @@ extension TerminalModel: TerminalEngine {
 
     func scrollbackLineTexts(rows: ClosedRange<Int>) -> [String] {
         sync { terminal.scrollbackLineTexts(rows: rows) }
+    }
+
+    func scrollbackText() -> String {
+        sync {
+            let count = terminal.bufferLineCount
+            guard count > 0 else { return "" }
+            // The grid-shaped row accessor represents a wide-cell continuation
+            // as a space. Export characters through the cell-aware accessor.
+            let columns = 0..<terminal.cols
+            return (0..<count).map { terminal.scrollbackLineText(row: $0, columns: columns) ?? "" }
+                .joined(separator: "\n") + "\n"
+        }
     }
 
     func scrollbackLineText(row: Int, columns: Range<Int>) -> String? {
@@ -407,14 +630,22 @@ extension TerminalModel: CmdyTerminalDelegate {
         }
     }
 
-    func contentChanged(_ terminal: CmdyTerminal) { scheduleSnapshot() }
-    func willReflow(_ terminal: CmdyTerminal) {}
+    func contentChanged(_ terminal: CmdyTerminal) {
+        scheduleSnapshot(fromPTYOutput: processingPTYOutput)
+        scheduleHistoryMaintenance()
+    }
+    func willReflow(_ terminal: CmdyTerminal) {
+        reflowEpoch &+= 1
+        scheduleHistoryMaintenance(restart: true)
+    }
     func didReflow(_ terminal: CmdyTerminal) {}
     func now(_ terminal: CmdyTerminal) -> Double { CFAbsoluteTimeGetCurrent() }
 }
 
 extension TerminalModel: LocalProcessDelegate {
     func processTerminated(_ source: LocalProcess, exitCode: Int32?) {
+        publicationScheduler.cancelUserInput()
+        historyMaintenance.cancel()
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
             self.observer?.terminalModel(self, processTerminated: exitCode)
@@ -423,7 +654,25 @@ extension TerminalModel: LocalProcessDelegate {
 
     func dataReceived(slice: ArraySlice<UInt8>) {
         dispatchPrecondition(condition: .onQueue(queue))
+        let started = CmdyPerformanceTrace.now()
+        historyMaintenance.noteActivity()
+        processingPTYOutput = true
+        // A read that is one piece of a larger burst: output is still queued
+        // in the PTY, or the read filled the PTY's output buffer (macOS hands
+        // over at most that much at a time while the writer is blocked with
+        // the rest). See SnapshotPublicationScheduler.request.
+        var queued: Int32 = 0
+        let descriptor = process.childfd
+        ptyOutputContinues = slice.count >= Self.ptyOutputChunk
+            || (descriptor >= 0 && ioctl(descriptor, Self.fionread, &queued) == 0 && queued > 0)
+        defer { processingPTYOutput = false; ptyOutputContinues = false }
         terminal.feed(slice)
+        if CmdyPerformanceTrace.enabled {
+            CmdyPerformanceTrace.record(event: "model.feed", started: started,
+                                        fields: ["bytes": slice.count,
+                                                 "model": Int(bitPattern: ObjectIdentifier(self)),
+                                                 "input": traceInputSequence])
+        }
     }
 
     func getWindowSize() -> winsize {

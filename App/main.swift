@@ -1,6 +1,8 @@
 import AppKit
 import ProductIdentity
 import CmdyKit
+import CmdyNative
+import Metal
 
 // The independently signed helper app performs app-bundle replacement before
 // AppKit is created. The replacement app acknowledges only after AppDelegate
@@ -92,7 +94,29 @@ private func item(_ title: String, _ action: Selector?, _ key: String = "",
 }
 
 @MainActor
-private func buildMainMenu() -> NSMenu {
+func populateFontMenu(_ menu: NSMenu) {
+    menu.removeAllItems()
+    menu.addItem(item("Browse with Preview…", #selector(AppDelegate.browseFonts(_:)), "", modifiers: []))
+    menu.addItem(.separator())
+    menu.addItem(item("System Mono", #selector(AppDelegate.setFontMenu(_:)), "", modifiers: [], represented: "System"))
+    if !bundledFonts.isEmpty {
+        menu.addItem(.separator())
+        for bf in bundledFonts {
+            menu.addItem(item(bf.displayName, #selector(AppDelegate.setFontMenu(_:)), "", modifiers: [], represented: bf.fontName))
+        }
+    }
+    let systemCandidates = ["Menlo", "Monaco", "SF Mono", "SFMono-Regular", "Courier New", "PT Mono", "Andale Mono"]
+    let installed = systemCandidates.filter { NSFont(name: $0, size: 13) != nil }
+    if !installed.isEmpty {
+        menu.addItem(.separator())
+        for name in installed {
+            menu.addItem(item(name, #selector(AppDelegate.setFontMenu(_:)), "", modifiers: [], represented: name))
+        }
+    }
+}
+
+@MainActor
+private func buildMainMenu(delegate: AppDelegate) -> NSMenu {
     let main = NSMenu()
     let productName = ProductIdentity.current.displayName
 
@@ -108,7 +132,8 @@ private func buildMainMenu() -> NSMenu {
     appMenu.addItem(item(
         "Check for Updates…", #selector(AppDelegate.checkForUpdates(_:))))
     appMenu.addItem(.separator())
-    appMenu.addItem(item("Settings…", #selector(AppDelegate.openConfig(_:)), ","))
+    appMenu.addItem(item("Settings…", #selector(AppDelegate.openSettings(_:)), ","))
+    appMenu.addItem(item("Open Config File…", #selector(AppDelegate.openConfig(_:))))
     appMenu.addItem(item("Reload Config", #selector(AppDelegate.reloadConfig(_:)), ",", modifiers: [.command, .shift]))
     appMenu.addItem(.separator())
     appMenu.addItem(item(
@@ -247,6 +272,7 @@ private func buildMainMenu() -> NSMenu {
     appearanceItem.image = NSImage(
         systemSymbolName: "paintpalette", accessibilityDescription: "Appearance")
     let appearanceMenu = NSMenu(title: "Appearance")
+    appearanceMenu.delegate = delegate
     appearanceItem.submenu = appearanceMenu
     appearanceMenu.addItem(item("Config Mixer…", #selector(AppDelegate.showConfigMixer(_:)), "m", modifiers: [.command, .shift]))
     appearanceMenu.addItem(.separator())
@@ -255,10 +281,9 @@ private func buildMainMenu() -> NSMenu {
     let themeMenu = NSMenu(title: "Theme")
     themeMenu.delegate = delegate   // rebuilt on open so user themes appear live
     themeItem.submenu = themeMenu
-    for name in Theme.names {
-        themeMenu.addItem(item(name, #selector(AppDelegate.setThemeMenu(_:)), "", modifiers: [], represented: name))
-    }
-    // (the Theme menu is rebuilt on open — Browse is prepended there too)
+    // Keep the entry available without constructing choices that the delegate
+    // replaces on every opening to include the user's current themes.
+    themeMenu.addItem(item("Browse with Preview…", #selector(AppDelegate.browseThemes(_:)), "", modifiers: []))
     appearanceMenu.addItem(themeItem)
 
     let cursorItem = NSMenuItem(title: "Cursor", action: nil, keyEquivalent: "")
@@ -296,29 +321,15 @@ private func buildMainMenu() -> NSMenu {
     cursorMenu.addItem(glideDistanceItem)
     appearanceMenu.addItem(cursorItem)
 
-    // Font submenu — "System Mono" plus whichever monospaced fonts are installed.
+    // The choices have no keyboard equivalents. Build them on first opening
+    // rather than resolving system fonts and allocating every item at launch.
     let fontItem = NSMenuItem(title: "Font", action: nil, keyEquivalent: "")
     let fontMenu = NSMenu(title: "Font")
+    fontMenu.delegate = delegate
     fontItem.submenu = fontMenu
     fontMenu.addItem(item("Browse with Preview…", #selector(AppDelegate.browseFonts(_:)), "", modifiers: []))
     fontMenu.addItem(.separator())
     fontMenu.addItem(item("System Mono", #selector(AppDelegate.setFontMenu(_:)), "", modifiers: [], represented: "System"))
-    // Bundled redistributable fonts (registered at launch) — always available.
-    if !bundledFonts.isEmpty {
-        fontMenu.addItem(.separator())
-        for bf in bundledFonts {
-            fontMenu.addItem(item(bf.displayName, #selector(AppDelegate.setFontMenu(_:)), "", modifiers: [], represented: bf.fontName))
-        }
-    }
-    // System-installed classics, if present.
-    let systemCandidates = ["Menlo", "Monaco", "SF Mono", "SFMono-Regular", "Courier New", "PT Mono", "Andale Mono"]
-    let installed = systemCandidates.filter { NSFont(name: $0, size: 13) != nil }
-    if !installed.isEmpty {
-        fontMenu.addItem(.separator())
-        for name in installed {
-            fontMenu.addItem(item(name, #selector(AppDelegate.setFontMenu(_:)), "", modifiers: [], represented: name))
-        }
-    }
     appearanceMenu.addItem(fontItem)
 
     // Shader lives with the other appearance pickers (Theme/Font/Cursor/…).
@@ -497,8 +508,27 @@ private func buildMainMenu() -> NSMenu {
     return main
 }
 
-let bundledFonts = FontLoader.registerBundledFonts()   // redistributable fonts shipped in the app
+let bundledFonts = FontLoader.bundledFonts
+// Install before any renderer can shape text, including headless capture modes.
+precondition(cmdy_render_set_font_fallback_loader {
+    FontLoader.ensureFallbackFontsRegistered() ? 1 : 0
+} != 0)
 CrashLogger.install()       // dump a stack trace to /tmp/cmdy-crash.log on crash
+if CommandLine.arguments.contains("--renderer-style-test") {
+    MainActor.assumeIsolated {
+        CmdyRendererStyleHarness.run(arguments: CommandLine.arguments)
+    }
+}
+if CommandLine.arguments.contains("--renderer-capture-profile") {
+    MainActor.assumeIsolated {
+        CmdyRendererCaptureProfile.run(arguments: CommandLine.arguments)
+    }
+}
+if CommandLine.arguments.contains("--renderer-window-test") {
+    MainActor.assumeIsolated {
+        CmdyRendererWindowHarness.run(arguments: CommandLine.arguments)
+    }
+}
 MainActor.assumeIsolated {
     SelfTest.runIfRequested()   // exits early if --selftest was passed
 }
@@ -603,6 +633,7 @@ if CommandLine.arguments.contains("--plugin-menu") {
 }
 if CommandLine.arguments.contains("--fonts") {
     // Headless check that every bundled font registered and resolves.
+    _ = FontLoader.registerBundledFonts()
     for bf in bundledFonts {
         let resolves = NSFont(name: bf.fontName, size: 13) != nil
         print("\(resolves ? "ok  " : "FAIL") \(bf.displayName)  (\(bf.fontName))")
@@ -959,27 +990,35 @@ if CommandLine.arguments.contains("--shader-test") {
         print("SKIP: no Metal device (\(error))")
         exit(0)
     }
-    var failures = 0
-    if let err = tv.setUserShader(UserShaders.template) {
-        print("FAIL: template does not compile — \(err.prefix(400))")
-        failures += 1
-    } else {
-        print("PASS: user shader template compiles")
+    Task { @MainActor in
+        var failures = 0
+        if let err = await tv.setUserShader(UserShaders.template) {
+            print("FAIL: template does not compile — \(err.prefix(400))")
+            failures += 1
+        } else {
+            print("PASS: user shader template compiles")
+        }
+        if await tv.setUserShader("garbage ((") == nil {
+            print("FAIL: broken shader should report an error")
+            failures += 1
+        } else {
+            print("PASS: broken shader reports a compile error")
+        }
+        if let err = await tv.setUserShader(nil) {
+            print("FAIL: clearing shader errored: \(err)")
+            failures += 1
+        } else {
+            print("PASS: clearing the user shader works")
+        }
+        print(failures == 0 ? "ALL SHADER TESTS PASS" : "\(failures) FAILURE(S)")
+        await (tv as? CmdyTerminalSurface)?.metalRenderer?.shutdown()
+        exit(failures == 0 ? 0 : 1)
     }
-    if tv.setUserShader("garbage ((") == nil {
-        print("FAIL: broken shader should report an error")
-        failures += 1
-    } else {
-        print("PASS: broken shader reports a compile error")
-    }
-    if let err = tv.setUserShader(nil) {
-        print("FAIL: clearing shader errored: \(err)")
-        failures += 1
-    } else {
-        print("PASS: clearing the user shader works")
-    }
-    print(failures == 0 ? "ALL SHADER TESTS PASS" : "\(failures) FAILURE(S)")
-    exit(failures == 0 ? 0 : 1)
+    RunLoop.main.run()
+    // This diagnostic must never fall through into normal application launch
+    // if the run loop exits before its asynchronous checks finish.
+    print("FAIL: shader-test run loop exited before completion")
+    exit(1)
 }
 
 if CommandLine.arguments.contains("--panel-test") {
@@ -1127,6 +1166,80 @@ if CommandLine.arguments.contains("--panel-test") {
     RunLoop.main.run(until: Date().addingTimeInterval(0.1))
     check("tree: root search finds nested items", ranNested)
 
+    // A generic On/Off leaf remains searchable by its setting name, and its
+    // preview/commit transaction must survive the contextual search result.
+    let savedGhostText = Preferences.shared.ghostText
+    let savedSearchTheme = Preferences.shared.themeName
+    Preferences.shared.ghostText = true
+    var searchTabTheme = "Light"
+    var searchTabThemeBaseline = searchTabTheme
+    let searchPreviewHooks = InlinePanelPreviewHooks(
+        begin: { searchTabThemeBaseline = searchTabTheme },
+        restore: { searchTabTheme = searchTabThemeBaseline },
+        commit: { searchTabThemeBaseline = searchTabTheme })
+    var pickedSettingPath: [String] = []
+    let searchableSettings: [PaletteItem] = [
+        .section("Themes", "", [
+            PaletteItem(title: "Green",
+                        action: {
+                            Preferences.shared.themeName = "Green"
+                            searchTabTheme = "Green"
+                        },
+                        preview: {
+                            Preferences.shared.themeName = "Green"
+                            searchTabTheme = "Green"
+                        }),
+        ]),
+        .section("Settings", "", [
+            .section("Ghost Text", "on", [
+                PaletteItem(title: "On", subtitle: "current",
+                            action: { Preferences.shared.ghostText = true },
+                            preview: { Preferences.shared.ghostText = true }),
+                PaletteItem(title: "Off",
+                            action: { Preferences.shared.ghostText = false },
+                            preview: { Preferences.shared.ghostText = false }),
+            ]),
+        ]),
+    ]
+    dismissed = false
+    panel.onPick = { pickedSettingPath = $0.ancestors }
+    panel.configureList(items: searchableSettings, placeholder: "", hint: "",
+                        previewHooks: searchPreviewHooks)
+    func typeSearch(_ text: String) {
+        for ch in text {
+            panel.keyDown(with: NSEvent.keyEvent(
+                with: .keyDown, location: .zero, modifierFlags: [], timestamp: 0,
+                windowNumber: 0, context: nil, characters: String(ch),
+                charactersIgnoringModifiers: String(ch), isARepeat: false, keyCode: 0)!)
+        }
+    }
+    typeSearch("g")
+    check("search: initial prefix previews an appearance result",
+          Preferences.shared.themeName == "Green" && searchTabTheme == "Green")
+    typeSearch("host text off")
+    check("search: Ghost Text Off restores unrelated previews before previewing the setting",
+          !Preferences.shared.ghostText && Preferences.shared.themeName == savedSearchTheme
+              && searchTabTheme == "Light")
+    panel.keyDown(with: key(53))
+    check("search: escape restores the original setting", Preferences.shared.ghostText && !dismissed)
+    typeSearch("ghost text off")
+    panel.keyDown(with: key(36))
+    check("search: return keeps the setting and reports its full path",
+          !Preferences.shared.ghostText && !dismissed
+              && pickedSettingPath == ["Settings", "Ghost Text"])
+    panel.keyDown(with: key(53))
+    typeSearch("g")
+    typeSearch("zz")
+    check("search: no matches restores appearance and preserves committed settings",
+          Preferences.shared.themeName == savedSearchTheme && searchTabTheme == "Light"
+              && !Preferences.shared.ghostText)
+    panel.keyDown(with: key(53))
+    panel.keyDown(with: key(53))
+    check("search: committed setting survives clearing search and closing",
+          !Preferences.shared.ghostText && dismissed)
+    panel.onPick = nil
+    Preferences.shared.ghostText = savedGhostText
+
     // Reopening a palette remembers the last row in each section.
     let navigationDefaultsKey = "cmdy.inline-panel.navigation.v1"
     let savedNavigation = UserDefaults.standard.object(forKey: navigationDefaultsKey)
@@ -1259,45 +1372,92 @@ if let i = CommandLine.arguments.firstIndex(of: "--make-iconset") {
     exit(0)
 }
 
-let app = NSApplication.shared
-app.setActivationPolicy(.regular)
-let delegate = AppDelegate()
-app.delegate = delegate
-MainActor.assumeIsolated {
-    let mainMenu = buildMainMenu()
-    app.mainMenu = mainMenu
-    // Install the dynamic icon observer only after AppKit knows which menu is
-    // the menu bar. During construction NSApp.mainMenu is nil, so observing
-    // item additions early makes the icon installer mistake File/Edit/View
-    // and Tools for ordinary submenu commands and replace their titles with
-    // the fallback command symbol.
-    CmdyMenuIconInstaller.shared.install()
-    mainMenu.cmdyApplyIconsRecursively()
+// Prepare Metal's device registry while AppKit performs independent startup.
+// Keep device selection at its existing renderer call sites; no device array
+// or worker is retained after this once-only preparation completes.
+private enum InitialMetalDevicePreparation {
+    static let prepared: Void = autoreleasepool { _ = MTLCopyAllDevices() }
 
-    if CommandLine.arguments.contains("--menu-bar-test") {
-        let expectedMenus = ["File", "Edit", "View", "Tools", "Window"]
-        let actualMenus = mainMenu.items.dropFirst().compactMap(\.submenu?.title)
-        let rootItemsHaveNoIcons = mainMenu.items.allSatisfy { $0.image == nil }
-        let fileMenu = mainMenu.cmdyDescendantMenu(titled: "File")
-        let beamChoiceHidden = mainMenu.cmdyDescendantMenu(titled: "Beam") == nil
-        let showEditor = fileMenu?.item(withTitle: "Show Editor")
-        let showEditorRoutesToEditor = showEditor?.action
-            == #selector(AppDelegate.showEditor(_:))
-        let probe = NSMenuItem(
-            title: "Dynamic Icon Probe", action: #selector(NSText.copy(_:)),
-            keyEquivalent: "")
-        mainMenu.cmdyDescendantMenu(titled: "Actions")?.addItem(probe)
-        let dynamicCommandReceivedIcon = probe.image != nil
-        let ok = actualMenus == expectedMenus
-            && rootItemsHaveNoIcons && dynamicCommandReceivedIcon
-            && beamChoiceHidden && showEditorRoutesToEditor
-        print("UIMENUBAR \(ok ? "PASS" : "FAIL") "
-              + "menus=\(actualMenus.joined(separator: ",")) "
-              + "rootIcons=\(rootItemsHaveNoIcons ? 0 : 1) "
-              + "dynamicIcon=\(dynamicCommandReceivedIcon ? 1 : 0) "
-              + "beamChoice=\(beamChoiceHidden ? 0 : 1) "
-              + "showEditor=\(showEditorRoutesToEditor ? 1 : 0)")
-        exit(ok ? 0 : 1)
+    static func prepareWhile<T>(_ operation: () throws -> T) rethrows -> T {
+        precondition(Thread.isMainThread)
+        let preparation = DispatchWorkItem {
+            autoreleasepool { _ = prepared }
+        }
+        DispatchQueue.global(qos: .userInitiated).async(execute: preparation)
+        // Join before activation, delegate creation or menus, also on error.
+        defer { preparation.wait() }
+        return try operation()
     }
 }
-app.run()
+
+// Drain temporary launch/menu objects before the application event loop.
+// The application and delegate remain strongly owned for the complete run.
+let (app, delegate) = autoreleasepool {
+    let app = InitialMetalDevicePreparation.prepareWhile { NSApplication.shared }
+    app.setActivationPolicy(.regular)
+    MainActor.assumeIsolated {
+        InitialShellPrelaunch.startIfEligible(arguments: CommandLine.arguments)
+    }
+    let delegate = AppDelegate()
+    app.delegate = delegate
+    MainActor.assumeIsolated {
+        // The global tuple is not initialized until this pool returns. Pass
+        // its live local delegate so dynamic menus receive their weak owner.
+        let mainMenu = buildMainMenu(delegate: delegate)
+        app.mainMenu = mainMenu
+        // Install the dynamic icon observer only after AppKit knows which menu is
+        // the menu bar. During construction NSApp.mainMenu is nil, so observing
+        // item additions early makes the icon installer mistake File/Edit/View
+        // and Tools for ordinary submenu commands and replace their titles with
+        // the fallback command symbol.
+        // Icons are seen only in an open menu, and the installer also applies
+        // them when any menu begins tracking. Symbol images for every command
+        // cost tens of milliseconds, so a normal launch adds them just after
+        // the first window instead of before it.
+        let installMenuIcons = {
+            CmdyMenuIconInstaller.shared.install()
+            mainMenu.cmdyApplyIconsRecursively()
+        }
+        if CommandLine.arguments.contains("--menu-bar-test") {
+            installMenuIcons()
+        } else {
+            var launched: NSObjectProtocol?
+            launched = NotificationCenter.default.addObserver(
+                forName: NSApplication.didFinishLaunchingNotification, object: nil, queue: .main
+            ) { _ in
+                if let launched { NotificationCenter.default.removeObserver(launched) }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                    MainActor.assumeIsolated { installMenuIcons() }
+                }
+            }
+        }
+
+        if CommandLine.arguments.contains("--menu-bar-test") {
+            let expectedMenus = ["File", "Edit", "View", "Tools", "Window"]
+            let actualMenus = mainMenu.items.dropFirst().compactMap(\.submenu?.title)
+            let rootItemsHaveNoIcons = mainMenu.items.allSatisfy { $0.image == nil }
+            let fileMenu = mainMenu.cmdyDescendantMenu(titled: "File")
+            let beamChoiceHidden = mainMenu.cmdyDescendantMenu(titled: "Beam") == nil
+            let showEditor = fileMenu?.item(withTitle: "Show Editor")
+            let showEditorRoutesToEditor = showEditor?.action
+                == #selector(AppDelegate.showEditor(_:))
+            let probe = NSMenuItem(
+                title: "Dynamic Icon Probe", action: #selector(NSText.copy(_:)),
+                keyEquivalent: "")
+            mainMenu.cmdyDescendantMenu(titled: "Actions")?.addItem(probe)
+            let dynamicCommandReceivedIcon = probe.image != nil
+            let ok = actualMenus == expectedMenus
+                && rootItemsHaveNoIcons && dynamicCommandReceivedIcon
+                && beamChoiceHidden && showEditorRoutesToEditor
+            print("UIMENUBAR \(ok ? "PASS" : "FAIL") "
+                  + "menus=\(actualMenus.joined(separator: ",")) "
+                  + "rootIcons=\(rootItemsHaveNoIcons ? 0 : 1) "
+                  + "dynamicIcon=\(dynamicCommandReceivedIcon ? 1 : 0) "
+                  + "beamChoice=\(beamChoiceHidden ? 0 : 1) "
+                  + "showEditor=\(showEditorRoutesToEditor ? 1 : 0)")
+            exit(ok ? 0 : 1)
+        }
+    }
+    return (app, delegate)
+}
+withExtendedLifetime(delegate) { app.run() }

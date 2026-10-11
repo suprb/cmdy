@@ -12,7 +12,7 @@ extension CmdyTerminal {
 
     private func setAnsiMode(_ mode: Int, _ value: Bool) {
         switch mode {
-        case 4: insertMode = value           // IRM
+        case 4: setInsertMode(value)           // IRM
         case 20: lineFeedMode = value        // LNM
         default: break
         }
@@ -35,7 +35,7 @@ extension CmdyTerminal {
                 : .empty
         case 6:                                          // DECOM — the flag
             originMode = value                           // flips; NO homing
-        case 7: autoWrap = value                         // DECAWM
+        case 7: setAutoWrapMode(value)                         // DECAWM
         case 9: mouseMode = value ? .x10 : .off
         case 12: cursorBlink = value
         case 25: cursorHidden = !value                   // DECTCEM
@@ -47,7 +47,7 @@ extension CmdyTerminal {
             } else {
                 reverseWraparound = false
             }
-        case 69: marginMode = value                      // DECLRMM
+        case 69: setMarginMode(value)                      // DECLRMM
         case 47:                                         // alt screen, plain
             if value {
                 switchToAltBuffer(clear: true, saveCursor: false)

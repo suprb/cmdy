@@ -22,7 +22,8 @@ extension AppDelegate {
                         windowGridEnabled: preferences.windowGridEnabled,
                         windowGridState: preferences.windowGridStateData,
                         navigatorVisible: preferences.workspaceNavigatorVisible,
-                        inspectorVisible: preferences.workspaceInspectorVisible))
+                        inspectorVisible: preferences.workspaceInspectorVisible),
+                    launchHints: WorkspaceResume.launchHints(in: layouts))
             },
             open: { [weak self] workspace, mode in
                 guard let self else {
@@ -35,7 +36,7 @@ extension AppDelegate {
                 }
 
                 let (layouts, identifiers) = try self.remappedWorkspaceLayouts(
-                    workspace.foundationLayouts())
+                    WorkspaceResume.applying(workspace.launchHints, to: workspace.foundationLayouts()))
                 let presentation = workspace.presentation
                 if let navigatorVisible = presentation.navigatorVisible {
                     Preferences.shared.workspaceNavigatorVisible = navigatorVisible
@@ -164,6 +165,8 @@ extension AppDelegate {
             "Save Workspace As…", action: #selector(saveNamedWorkspaceAs(_:))))
         menu.addItem(workspaceMenuItem(
             "Update Current Workspace", action: #selector(updateNamedWorkspace(_:))))
+        menu.addItem(workspaceMenuItem(
+            "Remember Agent Session…", action: #selector(linkWorkspaceAgentSession(_:))))
         menu.addItem(.separator())
 
         do {
@@ -225,6 +228,7 @@ extension AppDelegate {
                     }
             })
         }
+        children.append(.section("Agent Sessions", "remember · resume", resumeSessionPaletteItems()))
         return .section("Workspaces", "save · update · reopen", children)
     }
 

@@ -1,6 +1,12 @@
 import Foundation
 import Synchronization
 
+/// Independent positive-width bases, already validated by the engine.
+struct OrdinaryUnicodeCell {
+    let scalar: UInt32
+    let width: Int8
+}
+
 /// DECDWL/DECDHL state of a row.
 public enum LineRenderMode: Equatable, Sendable {
     case single, doubleWidth, doubledTop, doubledDown
@@ -44,9 +50,9 @@ public final class Line {
     /// allowing hot writes to leave the already-nil cluster reference untouched
     /// instead of paying retain/release traffic for every cell.
     private var storageHasClusterExtras = false
-    /// A recycled blank row can postpone its O(cols) clear until the next read
-    /// or write. PTY bursts normally populate it immediately, combining clear
-    /// and write into one pass; renderer/API reads still observe blanks.
+    /// A recycled blank row can postpone its O(cols) clear until its backing
+    /// cells are needed. Single-cell reads resolve the logical fill directly;
+    /// PTY bursts can populate the row before full-row reads materialize it.
     private var deferredFill: Cell?
     /// Physical cells inside this range already contain post-clear writes;
     /// cells outside it still read as `deferredFill` until materialized.
@@ -135,10 +141,28 @@ public final class Line {
 
     public var count: Int { cellStorage.count }
 
+    /// Read ownership geometry without retaining a cell's cluster or attributes.
+    /// Deferred rows and out-of-range reads have the public subscript's semantics;
+    /// this does not materialize storage or publish a new row generation.
+    func scalarAndWidth(at index: Int) -> (scalar: UInt32, width: Int8) {
+        guard index >= 0 && index < cellStorage.count else {
+            let cell = Cell()
+            return (cell.scalar, cell.width)
+        }
+        if let fill = deferredFill, deferredValidRange?.contains(index) != true {
+            return (fill.scalar, fill.width)
+        }
+        let cell = cellStorage[index]
+        return (cell.scalar, cell.width)
+    }
+
     public subscript(index: Int) -> Cell {
         get {
-            materializeDeferredFill()
-            return index >= 0 && index < cellStorage.count ? cellStorage[index] : Cell()
+            guard index >= 0 && index < cellStorage.count else { return Cell() }
+            if let fill = deferredFill, deferredValidRange?.contains(index) != true {
+                return fill
+            }
+            return cellStorage[index]
         }
         set {
             materializeDeferredFill()
@@ -148,6 +172,26 @@ public final class Line {
                 bumpVersion()
             }
         }
+    }
+
+    /// Append to a freshly validated lead without retaining another copy of
+    /// its extras. The caller must release its temporary extras capture first;
+    /// row snapshots and externally retained cells still use normal array COW.
+    /// Like the public setter, this materializes a deferred fill and publishes
+    /// exactly one content mutation. No caller code runs inside the borrow.
+    func appendClusterScalar(_ scalar: UInt32, at column: Int, width: Int8) {
+        materializeDeferredFill()
+        guard column >= 0, column < cellStorage.count else { return }
+        cellStorage.withUnsafeMutableBufferPointer { storage in
+            if storage[column].clusterExtras == nil {
+                storage[column].clusterExtras = [scalar]
+            } else {
+                storage[column].clusterExtras!.append(scalar)
+            }
+            storage[column].width = width
+        }
+        storageHasClusterExtras = true
+        bumpVersion()
     }
 
     /// Replace a contiguous cell range with single-width printable ASCII and
@@ -176,12 +220,38 @@ public final class Line {
                 && (pendingFill?.clusterExtras == nil)
             if canStoreFieldsOnly {
                 var target = base.advanced(by: column)
-                for byte in bytes {
-                    target.pointee.scalar = UInt32(byte)
-                    target.pointee.width = 1
-                    target.pointee.attribute = attribute
-                    target.pointee.linkId = linkId
-                    target = target.advanced(by: 1)
+                if _isPOD(CellAttribute.self),
+                   (8...16).contains(MemoryLayout<CellAttribute>.size) {
+                    // Copy only the attribute value. Two possibly overlapping
+                    // words cover its complete representation without touching
+                    // the surrounding Cell or retained cluster storage.
+                    var copiedAttribute = attribute
+                    withUnsafeBytes(of: &copiedAttribute) { sourceAttribute in
+                        let tailOffset = sourceAttribute.count - 8
+                        let firstWord = sourceAttribute.loadUnaligned(as: UInt64.self)
+                        let lastWord = sourceAttribute.loadUnaligned(
+                            fromByteOffset: tailOffset, as: UInt64.self)
+                        for byte in bytes {
+                            target.pointee.scalar = UInt32(byte)
+                            target.pointee.width = 1
+                            withUnsafeMutableBytes(of: &target.pointee.attribute) {
+                                $0.storeBytes(of: firstWord, as: UInt64.self)
+                                $0.storeBytes(of: lastWord, toByteOffset: tailOffset, as: UInt64.self)
+                            }
+                            target.pointee.linkId = linkId
+                            target = target.advanced(by: 1)
+                        }
+                    }
+                } else {
+                    // Preserve typed ownership if attributes gain references
+                    // or their representation outgrows the bounded copy.
+                    for byte in bytes {
+                        target.pointee.scalar = UInt32(byte)
+                        target.pointee.width = 1
+                        target.pointee.attribute = attribute
+                        target.pointee.linkId = linkId
+                        target = target.advanced(by: 1)
+                    }
                 }
             } else {
                 var target = base.advanced(by: column)
@@ -209,6 +279,46 @@ public final class Line {
                 deferredValidRange = nil
             }
         }
+        bumpVersion()
+    }
+
+    /// Commit validated independent bases without publishing intermediate
+    /// cells. Swift array COW detaches retained snapshots before mutation.
+    func writeOrdinaryUnicode(
+        _ cells: UnsafeBufferPointer<OrdinaryUnicodeCell>, at column: Int,
+        columns: Int, attribute: CellAttribute, linkId: UInt16,
+        eraseAttribute: CellAttribute, stubAttribute: CellAttribute
+    ) {
+        precondition(!cells.isEmpty && column >= 0 && column + columns <= cellStorage.count)
+        materializeDeferredFill()
+        let hasClusters = storageHasClusterExtras
+        let stub = Cell(scalar: 0, width: 0, attribute: stubAttribute)
+        cellStorage.withUnsafeMutableBufferPointer { destination in
+            var target = column
+            var cell = Cell(scalar: 0, width: 1, attribute: attribute, linkId: linkId)
+            for value in cells {
+                // Every target receives its complete final value below. No
+                // callback observes this commit, so transient blank writes
+                // before the lead/stub assignment are unnecessary. Neighbors
+                // outside the written span remain untouched.
+                if hasClusters {
+                    cell.scalar = value.scalar
+                    cell.width = value.width
+                    destination[target] = cell
+                } else {
+                    // All extras are nil: keep POD fields in place and avoid
+                    // copying a whole retained Cell for every independent base.
+                    destination[target].scalar = value.scalar
+                    destination[target].width = value.width
+                    destination[target].attribute = attribute
+                    destination[target].linkId = linkId
+                }
+                if value.width == 2 { destination[target + 1] = stub }
+                target += Int(value.width)
+            }
+            precondition(target == column + columns)
+        }
+        if column == 0 && columns == cellStorage.count { storageHasClusterExtras = false }
         bumpVersion()
     }
 
@@ -249,6 +359,7 @@ public final class Line {
         materializeDeferredFill()
         if cols > cellStorage.count {
             cellStorage.append(contentsOf: Array(repeating: fill, count: cols - cellStorage.count))
+            if fill.clusterExtras != nil { storageHasClusterExtras = true }
         } else if cols < cellStorage.count {
             cellStorage.removeSubrange(cols...)
         }

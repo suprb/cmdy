@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 2,
+  "maximumRatio": 1.0,
+  "confidence": 0.95,
+  "bootstrapResamples": 10000,
+  "minimumPairedBlocks": 6,
+  "minimumSamplesPerBlock": {"input": 40, "drain": 20, "memory": 1, "cpu": 3},
+  "scenarios": [
+    {"id": "battery-matched", "powerSource": "Battery Power", "profile": "matched"},
+    {"id": "ac-matched", "powerSource": "AC Power", "profile": "matched"},
+    {"id": "battery-defaults", "powerSource": "Battery Power", "profile": "cmdy-defaults"},
+    {"id": "ac-defaults", "powerSource": "AC Power", "profile": "cmdy-defaults"}
+  ],
+  "cases": [
+    {"id": "input/local-row", "metrics": ["p50", "p95"], "grid": [120, 36]},
+    {"id": "input/full-screen", "metrics": ["p50", "p95"], "grid": [120, 36]},
+    {"id": "drain/continuous", "metrics": ["p50", "p95"], "grid": [120, 36]},
+    {"id": "drain/lines", "metrics": ["p50", "p95"], "grid": [120, 36]},
+    {"id": "drain/styled", "metrics": ["p50", "p95"], "grid": [120, 36]},
+    {"id": "drain/unicode", "metrics": ["p50", "p95"], "grid": [120, 36]},
+    {"id": "drain/source", "metrics": ["p50", "p95"], "grid": [120, 36]},
+    {"id": "input/editor", "metrics": ["p50", "p95"], "grid": [120, 36]},
+    {"id": "input/paste", "metrics": ["p50", "p95"]},
+    {"id": "input/four-pane", "metrics": ["p50", "p95"]},
+    {"id": "scroll", "metrics": ["p50", "p95"]},
+    {"id": "resize", "metrics": ["p50", "p95"]},
+    {"id": "startup/first-visible", "metrics": ["p50", "p95"]},
+    {"id": "memory/idle/rss", "metrics": ["bytes"], "grid": [120, 36]},
+    {"id": "memory/idle/physical-footprint", "metrics": ["bytes"], "grid": [120, 36]},
+    {"id": "memory/1000-lines/rss", "metrics": ["bytes"], "grid": [120, 36]},
+    {"id": "memory/1000-lines/physical-footprint", "metrics": ["bytes"], "grid": [120, 36]},
+    {"id": "memory/5000-lines/rss", "metrics": ["bytes"], "grid": [120, 36]},
+    {"id": "memory/5000-lines/physical-footprint", "metrics": ["bytes"], "grid": [120, 36]},
+    {"id": "memory/alternate-continuous/rss", "metrics": ["bytes"], "grid": [120, 36]},
+    {"id": "memory/alternate-continuous/physical-footprint", "metrics": ["bytes"], "grid": [120, 36]},
+    {"id": "idle-cpu", "metrics": ["cpuTime"]}
+  ]
+}

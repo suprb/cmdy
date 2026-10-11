@@ -56,7 +56,6 @@ enum TerminalAppearanceFontCatalog {
         ]
         seen.insert(systemName)
         for font in bundledFonts where seen.insert(font.fontName).inserted {
-            guard NSFont(name: font.fontName, size: 13) != nil else { continue }
             result.append((title: font.displayName, name: font.fontName))
         }
         return result
@@ -67,7 +66,7 @@ enum TerminalAppearanceFontCatalog {
                 in: .whitespacesAndNewlines),
               !requested.isEmpty else { return nil }
         if requested == systemName { return requested }
-        guard NSFont(name: requested, size: 13) != nil,
+        guard FontLoader.font(named: requested, size: 13) != nil,
               NSFontManager.shared.availableFonts.contains(requested)
         else { return nil }
         return requested
@@ -82,7 +81,7 @@ enum TerminalAppearanceFontCatalog {
         if name == systemName {
             return .monospacedSystemFont(ofSize: size, weight: .regular)
         }
-        return NSFont(name: name, size: size)
+        return FontLoader.font(named: name, size: size)
             ?? .monospacedSystemFont(ofSize: size, weight: .regular)
     }
 }

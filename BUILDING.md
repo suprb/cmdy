@@ -8,6 +8,7 @@ notarization, CEF, Marketplace, or release automation changes.
 
 - Apple silicon Mac running macOS 26 or newer
 - Xcode 26 command-line tools and Swift 6.2
+- Zig 0.15.2 (the build wrapper downloads the pinned, checksum-verified compiler when needed)
 - Node 24 for the website
 - CMake, curl, jq, tar, shasum, and GitHub CLI for full release work
 - A `Developer ID Application` certificate for distributable artifacts
@@ -20,17 +21,27 @@ tree or commit generated CEF files.
 ## Fast source build
 
 ```sh
-swift build
-swift run cmdy
+./build.sh
+swift run --manifest-cache none --disable-build-manifest-caching cmdy
 ```
+
+The normal app uses the Zig terminal and rendering library behind the `CmdyCore`
+and `CmdyGPU` Swift APIs. Native inputs include font handling, row shaping,
+image/glyph caches, scheduling, Metal encoding, and embedded Metal shaders.
+Run `./build.sh` after native source edits; direct SwiftPM builds reject missing,
+stale or incompatible native archives. The existing Swift engine and renderer sources are
+retained as reference and excluded from the selected package graph.
+Direct SwiftPM commands after a native rebuild should use
+`--manifest-cache none --disable-build-manifest-caching`; `./build.sh` includes it automatically.
 
 Run the complete non-CEF test matrix with:
 
 ```sh
-swift test -c release
+./build.sh -c release
+swift test --manifest-cache none --disable-build-manifest-caching -c release
 swift test --package-path Identity -c release
-swift test --package-path Core -c release
-swift test --package-path Renderer -c release
+swift test --manifest-cache none --disable-build-manifest-caching --package-path Core -c release
+swift test --manifest-cache none --disable-build-manifest-caching --package-path Renderer -c release
 swift test --package-path Kit -c release
 swift test --package-path Plugins/CmdySDK -c release
 swift test --package-path Plugins/chromium/Support -c release
@@ -48,6 +59,7 @@ test matrix:
 ```sh
 # Reproduce and verify the pinned Unicode-width tables and exhaustive oracle.
 python3 -B Core/Tools/UnicodeWidth/generate.py --check
+python3 -B Core/Tools/ZigEngine/generate-unicode.py --check
 
 # Exercise the fail-closed scanner, then scan the files on disk. Unlike a
 # history-only audit, this includes modified and untracked active source.
@@ -58,14 +70,14 @@ python3 -B scripts/check-working-tree-provenance.py --mode check
 # aliases and the CmdyUnderlineStyleKey rename.
 ./scripts/check-independent-api.sh
 
-# Confirm the two terminal packages resolve no package dependencies. Their only
-# non-Swift inputs are the documented Darwin and Apple platform frameworks.
-for cmdy_package in Core Renderer; do
-  swift package --package-path "$cmdy_package" \
-    show-dependencies --format json \
-    | jq -e --arg package "$cmdy_package" \
-      '.name == $package and (.dependencies | length == 0)' >/dev/null
-done
+# Core has no external package dependencies. Renderer uses only the local Core
+# native library and its archive-verification plugin, plus Apple frameworks.
+swift package --package-path Core show-dependencies --format json \
+  | jq -e '.name == "Core" and (.dependencies | length == 0)' >/dev/null
+swift package --package-path Renderer show-dependencies --format json \
+  | jq -e '.name == "Renderer" and (.dependencies | length == 1)
+    and .dependencies[0].name == "Core"
+    and (.dependencies[0].dependencies | length == 0)' >/dev/null
 
 # The complete application graph must not resolve SwiftTerm transitively.
 swift package show-dependencies --format json \
@@ -83,11 +95,11 @@ if git grep -n -E \
 fi
 
 # Engine, PTY/process lifecycle, renderer, memory, shader, and pixel oracles.
-swift test --package-path Core -c release
+swift test --manifest-cache none --disable-build-manifest-caching --package-path Core -c release
 swift test --package-path Renderer -c release
 
 # Confirm the release executable has no retired linked image or module symbol.
-swift build -c release
+./build.sh -c release
 ! otool -L .build/release/cmdy | grep -Ei \
   'SwiftTerm|Termite(Core|PTY|GPU)'
 ! nm -m .build/release/cmdy | grep -Ei \
@@ -109,9 +121,9 @@ pre-replacement behavioral artifact; it is deliberately neither committed nor
 downloaded by CI.
 
 ```sh
-swift build --package-path Core -c release --product lib_cmdy
+./build.sh --package-path Core -c release --product lib_cmdy
 cmdy_reference_library=/absolute/path/to/frozen/reference/liblib_cmdy.dylib
-cmdy_candidate_library="$(swift build --package-path Core -c release \
+cmdy_candidate_library="$(swift build --manifest-cache none --disable-build-manifest-caching --package-path Core -c release \
   --show-bin-path)/liblib_cmdy.dylib"
 
 # The first seed is the canonical corpus. The next eleven reproduce every
@@ -323,8 +335,8 @@ codex mcp add cmdy-browser -- node \
 4. Publish all checksums and metadata on the same immutable
    `v<cmdy-version>` GitHub Release.
 5. Pin the new `chromium-<version>.cmdyext` URL and hash in `cmdy-registry`,
-   merge that registry change, then refresh and land
-   `site/public/marketplace-data.js` as the matching offline snapshot.
+   merge that registry change, then refresh the website's offline Marketplace
+   snapshot (the website is maintained separately).
 6. Verify the canonical app on a clean Mac: install Browser from the registry,
    load a real page in-window, run serve-sim into that split, remove Browser,
    and reinstall it.
@@ -391,26 +403,21 @@ swift package show-dependencies --format json \
   '^[[:space:]]*import[[:space:]]+(SwiftTerm|TermiteCore|TermitePTY|TermiteGPU)([[:space:]]|$)' \
   -- '*.swift' '*.metal'
 
-swift test -c release
+swift test --manifest-cache none --disable-build-manifest-caching -c release
 swift test --package-path Identity -c release
-swift test --package-path Core -c release
+swift test --manifest-cache none --disable-build-manifest-caching --package-path Core -c release
 swift test --package-path Renderer -c release
 swift test --package-path Kit -c release
 swift test --package-path Plugins/CmdySDK -c release
 swift test --package-path Plugins/chromium/Support -c release
-swift test --package-path Plugins/sim -c release
 swift test --package-path Vendor/BraincellBridge -c release
-swift build --package-path Plugins/detox -c release
-swift build --package-path Plugins/bridge -c release
-swift build --package-path Plugins/swarm -c release
-swift build --package-path Plugins/appdock -c release
 
 # Local frozen-reference parity is mandatory release evidence. The external
 # artifacts must be retained with their recorded hashes; CI does not download
 # or reconstruct them.
 : "${CMDY_CORE_REFERENCE_LIBRARY:?set to the frozen Core reference dylib}"
 : "${CMDY_RENDERER_REFERENCE_BUILD:?set to the frozen CmdyGPU release build}"
-cmdy_candidate_library="$(swift build --package-path Core -c release \
+cmdy_candidate_library="$(swift build --manifest-cache none --disable-build-manifest-caching --package-path Core -c release \
   --show-bin-path)/liblib_cmdy.dylib"
 for cmdy_seed in \
   49361 104729 123457 99991 2654435761 130363 155921 271828 \
@@ -426,8 +433,8 @@ done
 python3 -B scripts/check-renderer-pixel-parity.py \
   --reference-build "$CMDY_RENDERER_REFERENCE_BUILD"
 
-swift build
-swift build -c release
+./build.sh
+./build.sh -c release
 CMDY_TEST_CONFIGURATION=release ./test.sh
 
 Tests/perf-gate.sh

@@ -9,15 +9,6 @@ updates:
         patterns:
           - "*"
 
-  - package-ecosystem: npm
-    directory: "/site"
-    schedule:
-      interval: monthly
-    groups:
-      site:
-        patterns:
-          - "*"
-
   - package-ecosystem: swift
     directories:
       - "/"
@@ -28,11 +19,6 @@ updates:
       - "/Plugins/CmdySDK"
       - "/Plugins/chromium"
       - "/Plugins/chromium/Support"
-      - "/Plugins/sim"
-      - "/Plugins/swarm"
-      - "/Plugins/bridge"
-      - "/Plugins/detox"
-      - "/Plugins/appdock"
       - "/Vendor/BraincellBridge"
     schedule:
       interval: monthly

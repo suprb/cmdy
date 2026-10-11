@@ -4,6 +4,8 @@ import ProductIdentity
 extension Notification.Name {
     /// Posted whenever any user preference changes; open terminals re-apply live.
     public static let cmdyPreferencesChanged = Notification.Name("cmdy.preferencesChanged")
+    /// Config validation, persistence or credential storage needs attention.
+    public static let cmdySettingsIssuesChanged = Notification.Name("cmdy.settingsIssuesChanged")
 }
 
 /// App-wide settings, persisted in UserDefaults. All terminals share these and
@@ -19,6 +21,13 @@ public final class Preferences {
     public static let defaultWorkspaceInspectorVisible = false
     private let d: UserDefaults
     private let isolatedDefaultsDomain: String?
+    private let assistantCredentials: AssistantCredentials
+    public private(set) var credentialError: String?
+
+    public var usesIsolatedCredentialStorage: Bool {
+        isolatedDefaultsDomain != nil
+            || ProductIdentity.current.environmentValue("CONFIG_DIR") != nil
+    }
 
     private enum Key {
         static let themeName = "themeName"
@@ -49,7 +58,6 @@ public final class Preferences {
         static let restoreSession = "restoreSession"
         static let automaticErrorHelp = "automaticErrorHelp"
         static let disabledPlugins = "disabledPlugins"
-        static let anthropicKey = "anthropicKey"
         static let aiModel = "aiModel"
         static let marketplaceRegistry = "marketplaceRegistry"
         static let marketplaceUpdateChecks = "marketplaceUpdateChecks"
@@ -68,6 +76,12 @@ public final class Preferences {
             isolatedDefaultsDomain = nil
             d = .standard
         }
+        let isolatedCredentials = isolatedDefaultsDomain != nil
+            || ProductIdentity.current.environmentValue("CONFIG_DIR") != nil
+        assistantCredentials = AssistantCredentials(
+            defaults: d, store: isolatedCredentials
+                ? MemoryAssistantCredentialStore() : KeychainAssistantCredentialStore(),
+            migratesLegacyDefaults: !isolatedCredentials)
         d.register(defaults: [
             Key.themeName: Self.defaultThemeName,
             Key.fontName: Self.defaultFontName,
@@ -452,22 +466,72 @@ public final class Preferences {
               sync("automatic-error-help", "\(newValue)")
               changed() }
     }
-    /// Anthropic key from the config file — Finder/Dock launches have no
-    /// shell environment, so the env var alone is not enough.
+    /// Finder/Dock launches read the Keychain. The old defaults entry is
+    /// migrated only after a verified save; a failed migration retains it.
     public var anthropicKey: String? {
-        get { d.string(forKey: Key.anthropicKey) }
-        set { guard newValue != anthropicKey else { return }
-              d.set(newValue, forKey: Key.anthropicKey); changed() }
+        get {
+            do {
+                let key = try assistantCredentials.value()
+                setCredentialError(nil)
+                return key
+            } catch {
+                setCredentialError("Could not read or migrate the assistant key. Unlock your login keychain and try saving it in Settings. Any legacy value has been kept for retry.")
+                return assistantCredentials.legacyValue
+            }
+        }
+        set { _ = saveAnthropicKey(newValue) }
+    }
+
+    /// Explicit Settings save/remove, with feedback instead of a silent failure.
+    @discardableResult
+    public func saveAnthropicKey(_ value: String?) -> Bool {
+        do {
+            try assistantCredentials.save(value)
+            setCredentialError(nil)
+            if !usesIsolatedCredentialStorage { ConfigFile.removeLegacyAssistantKeyEntries() }
+            changed()
+            return true
+        } catch {
+            setCredentialError("Could not confirm the assistant key change in Keychain. Unlock your login keychain and try again. Any legacy value has been kept for retry.")
+            return false
+        }
+    }
+
+    /// Launch migration does no Keychain work when no legacy defaults exist.
+    public func migrateLegacyAssistantKey() {
+        guard assistantCredentials.legacyValue != nil else { return }
+        _ = anthropicKey
+    }
+
+    @discardableResult
+    static func migrateAssistantConfigKey(_ value: String) -> Bool {
+        let preferences = shared
+        do {
+            try preferences.assistantCredentials.migrateConfigValue(value)
+            preferences.setCredentialError(nil)
+            return true
+        } catch {
+            preferences.setCredentialError("Could not move the assistant key to Keychain. The original config entry has been kept. Unlock your login keychain and reload the config to retry.")
+            return false
+        }
+    }
+
+    private func setCredentialError(_ message: String?) {
+        guard credentialError != message else { return }
+        credentialError = message
+        DispatchQueue.main.async {
+            NotificationCenter.default.post(name: .cmdySettingsIssuesChanged, object: nil)
+        }
     }
     /// Model for all AI features (`ai-model` in the config).
     public var aiModel: String {
         get { d.string(forKey: Key.aiModel) ?? "claude-sonnet-4-6" }
         set { guard newValue != aiModel else { return }
-              d.set(newValue, forKey: Key.aiModel); changed() }
+              d.set(newValue, forKey: Key.aiModel); sync("ai-model", newValue); changed() }
     }
 
     public func resolvedFont() -> NSFont {
-        if let f = NSFont(name: fontName, size: fontSize) { return f }
+        if let f = FontLoader.font(named: fontName, size: fontSize) { return f }
         return NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
     }
 

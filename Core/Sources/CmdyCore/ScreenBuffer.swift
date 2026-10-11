@@ -11,6 +11,28 @@ import Foundation
 /// Trimming: when scrollback exceeds `maxScrollback`, rows drop off the top
 /// and `droppedLines` counts them forever (block anchors rebase on it).
 public final class ScreenBuffer {
+    // One private, fixed-size allocation owns only scalar coordinates and
+    // counters. No pointer escapes and no borrow spans a callback. Arrays,
+    // rows, images, saved cursors and their normal COW/lifetimes stay outside.
+    // Each accessor completes an ordinary scalar load/store before returning.
+    private struct NumericState {
+        var lineStart: Int = 0
+        var droppedLines: Int = 0
+        var yBase: Int = 0
+        var yDisp: Int = 0
+        var x: Int = 0
+        var y: Int = 0
+        var cols: Int
+        var rows: Int
+        var maxScrollback: Int
+        var scrollTop: Int = 0
+        var scrollBottom: Int
+        var marginLeft: Int = 0
+        var marginRight: Int = 0
+        var wrapPending: Bool = false
+    }
+    private let numericState: UnsafeMutablePointer<NumericState>
+
     // Swift Array.removeFirst shifts every retained Line reference. Once the
     // scrollback is full that made each ordinary LF O(maxScrollback). Keep a
     // logical start instead; compact only after a sizeable batch of trims so
@@ -19,7 +41,10 @@ public final class ScreenBuffer {
     // rather than surviving until the next prefix compaction.
     nonisolated(unsafe) private static let trimmedLineTombstone = Line(cols: 0)
     private var lineStorage: [Line] = []
-    private var lineStart = 0
+    private var lineStart: Int {
+        get { numericState.pointee.lineStart }
+        set { numericState.pointee.lineStart = newValue }
+    }
 
     /// Snapshot of the retained rows, oldest first. External coordinates stay
     /// local to the retained buffer (row 0 is always the oldest retained row).
@@ -27,25 +52,61 @@ public final class ScreenBuffer {
         guard lineStart > 0 else { return lineStorage }
         return Array(lineStorage[lineStart...])
     }
-    public private(set) var droppedLines = 0
-    public var yBase = 0
-    public var yDisp = 0
-    public var x = 0
-    public var y = 0
-    public private(set) var cols: Int
-    public private(set) var rows: Int
+    public private(set) var droppedLines: Int {
+        get { numericState.pointee.droppedLines }
+        set { numericState.pointee.droppedLines = newValue }
+    }
+    public var yBase: Int {
+        get { numericState.pointee.yBase }
+        set { numericState.pointee.yBase = newValue }
+    }
+    public var yDisp: Int {
+        get { numericState.pointee.yDisp }
+        set { numericState.pointee.yDisp = newValue }
+    }
+    public var x: Int {
+        get { numericState.pointee.x }
+        set { numericState.pointee.x = newValue }
+    }
+    public var y: Int {
+        get { numericState.pointee.y }
+        set { numericState.pointee.y = newValue }
+    }
+    public private(set) var cols: Int {
+        get { numericState.pointee.cols }
+        set { numericState.pointee.cols = newValue }
+    }
+    public private(set) var rows: Int {
+        get { numericState.pointee.rows }
+        set { numericState.pointee.rows = newValue }
+    }
     public let hasScrollback: Bool
-    public var maxScrollback: Int
+    public var maxScrollback: Int {
+        get { numericState.pointee.maxScrollback }
+        set { numericState.pointee.maxScrollback = newValue }
+    }
 
     /// DECSTBM margins, live-screen-relative, inclusive.
-    public var scrollTop = 0
-    public var scrollBottom: Int
+    public var scrollTop: Int {
+        get { numericState.pointee.scrollTop }
+        set { numericState.pointee.scrollTop = newValue }
+    }
+    public var scrollBottom: Int {
+        get { numericState.pointee.scrollBottom }
+        set { numericState.pointee.scrollBottom = newValue }
+    }
 
     /// DECSLRM-style horizontal margins. Faithfully to the reference:
     /// they START AT 0 and only a (soft) reset widens them to the full
     /// row — so a never-reset alt buffer scrolls only at column 0.
-    public var marginLeft = 0
-    public var marginRight = 0
+    public var marginLeft: Int {
+        get { numericState.pointee.marginLeft }
+        set { numericState.pointee.marginLeft = newValue }
+    }
+    public var marginRight: Int {
+        get { numericState.pointee.marginRight }
+        set { numericState.pointee.marginRight = newValue }
+    }
 
     /// Saved cursor (DECSC) — position + attribute + charset state.
     public struct SavedCursor {
@@ -65,16 +126,28 @@ public final class ScreenBuffer {
 
     /// Deferred wrap: after printing into the last column the cursor stays
     /// put and only wraps when the NEXT printable arrives (xterm semantics).
-    public var wrapPending = false
+    public var wrapPending: Bool {
+        get { numericState.pointee.wrapPending }
+        set { numericState.pointee.wrapPending = newValue }
+    }
 
     public init(cols: Int, rows: Int, hasScrollback: Bool, maxScrollback: Int = 10_000) {
-        self.cols = max(1, cols)
-        self.rows = max(1, rows)
+        let initialColumns = max(1, cols)
+        let initialRows = max(1, rows)
+        let state = UnsafeMutablePointer<NumericState>.allocate(capacity: 1)
+        state.initialize(to: NumericState(
+            cols: initialColumns, rows: initialRows,
+            maxScrollback: hasScrollback ? maxScrollback : 0,
+            scrollBottom: initialRows - 1))
+        self.numericState = state
         self.hasScrollback = hasScrollback
-        self.maxScrollback = hasScrollback ? maxScrollback : 0
-        self.scrollBottom = self.rows - 1
         for _ in 0..<self.rows { lineStorage.append(Line(cols: self.cols)) }
         resetTabStops()
+    }
+
+    deinit {
+        numericState.deinitialize(count: 1)
+        numericState.deallocate()
     }
 
     public var lineCount: Int { lineStorage.count - lineStart }
@@ -128,7 +201,12 @@ public final class ScreenBuffer {
     public func absoluteRow(_ r: Int) -> Int { yBase + r }
 
     public func line(absolute row: Int) -> Line? {
-        row >= 0 && row < lineCount ? lineStorage[lineStart + row] : nil
+        guard row >= 0 else { return nil }
+        // One immutable array value covers the bounds check and row lookup.
+        // No mutation or callback occurs between these reads.
+        let storage = lineStorage
+        let start = lineStart
+        return row < storage.count - start ? storage[start + row] : nil
     }
 
     /// Ghost rows past the retained lines: the reference ring auto-vivifies
@@ -159,8 +237,10 @@ public final class ScreenBuffer {
 
     public func liveLine(_ r: Int) -> Line {
         let idx = yBase + r
-        precondition(idx >= 0 && idx < lineCount, "live row \(r) out of range")
-        return lineStorage[lineStart + idx]
+        let storage = lineStorage
+        let start = lineStart
+        precondition(idx >= 0 && idx < storage.count - start, "live row \(r) out of range")
+        return storage[start + idx]
     }
 
     public func resetTabStops() {

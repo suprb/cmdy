@@ -352,6 +352,58 @@ def swift_ranges(name: str, ranges: list[Range]) -> str:
     return "\n".join(lines)
 
 
+def swift_width_pages(tables: Tables) -> str:
+    """Encode the existing width policy; this does not classify emoji clusters.
+
+    Each page holds 256 two-bit widths, encoded as width + 1. Equal pages
+    share eight UInt64 words. Page identities follow first scalar occurrence
+    so generation is independent of hash iteration order. A future repertoire
+    exceeding the UInt8 index is a generation error, never a truncated index.
+    """
+    indices: list[int] = []
+    pages: list[tuple[int, ...]] = []
+    identities: dict[tuple[int, ...], int] = {}
+    for start in range(0, MAX_CODE_POINT + 1, 256):
+        words = []
+        for word_start in range(start, start + 256, 32):
+            word = 0
+            for offset in range(32):
+                code = width(word_start + offset, tables) + 1
+                if not 0 <= code <= 3:
+                    raise ValueError("width does not fit its two-bit encoding")
+                word |= code << (offset * 2)
+            words.append(word)
+        page = tuple(words)
+        if page not in identities:
+            identities[page] = len(pages)
+            pages.append(page)
+        indices.append(identities[page])
+    if len(pages) > 256:
+        raise ValueError("width page identities no longer fit UInt8")
+
+    # Verify the packed representation against the unchanged interval policy,
+    # including page/word edges, NUL and the final Unicode code point.
+    for value in range(MAX_CODE_POINT + 1):
+        word = pages[indices[value >> 8]][(value >> 5) & 7]
+        actual = ((word >> ((value & 31) * 2)) & 3) - 1
+        if actual != width(value, tables):
+            raise ValueError(f"packed width mismatch at U+{value:04X}")
+
+    lines = [
+        f"    // {len(indices)} page indices, {len(pages)} unique 64-byte pages.",
+        "    // Two-bit values encode width + 1; all 0x110000 code points are covered.",
+        "    static let widthPageIndices: [UInt8] = [",
+    ]
+    for start in range(0, len(indices), 32):
+        lines.append("        " + ", ".join(str(x) for x in indices[start:start + 32]) + ",")
+    lines.append("    ]\n\n    static let widthPageWords: [UInt64] = [")
+    for page in pages:
+        for start in range(0, len(page), 4):
+            lines.append("        " + ", ".join(f"0x{x:016X}" for x in page[start:start + 4]) + ",")
+    lines.append("    ]")
+    return "\n".join(lines)
+
+
 def generated_header() -> str:
     source_lines = "\n".join(
         f"//   {source.path} SHA-256 {source.sha256}" for source in SOURCES
@@ -395,6 +447,7 @@ enum GeneratedUnicodeWidthTables {
 """ + source_metadata + """
     ]
 """,
+        swift_width_pages(tables),
         swift_ranges("controls", tables.controls),
         swift_ranges("zeroWidth", tables.zero_width),
         swift_ranges("wide", tables.wide),

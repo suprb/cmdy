@@ -1,8 +1,9 @@
 # Named workspaces
 
 A named workspace is a user-invoked snapshot of cmdy's existing session model.
-It is separate from `session.json`, which continues to provide automatic
-quit-and-relaunch recovery.
+It is separate from `session.json`, which checkpoints during use and on quit.
+Automatic recovery keeps a previous good snapshot and shows a notice if the
+latest snapshot cannot be restored. Both files are written with mode `0600`.
 
 ## What is saved
 
@@ -33,11 +34,19 @@ process memory, authentication files, or implicit shell commands. Codex,
 Claude, and Pi remain ordinary terminal programs. cmdy saves their pane's cwd
 and visible capped scrollback just like any other shell.
 
-An integration may optionally attach a resumable tool session ID only when the
-tool has already exposed that identifier explicitly. `WorkspaceLaunchHint`
-accepts only the known tool name plus a short, restricted identifier; it cannot
-hold a command line, prompt, token, or credential. Restoring a hint still
-requires an explicit app integration and must not infer authentication state.
+Use **File → Workspaces → Remember Agent Session…** with an ID explicitly
+supplied by the agent. Running an explicit `codex resume ID`,
+`claude --resume ID`, or `pi --session ID` command also associates that ID with
+the pane. `WorkspaceLaunchHint` accepts only a known tool and a short, restricted
+identifier, not an arbitrary command or file path. Invalid optional hints are
+ignored without discarding the saved layout.
+
+Opening a workspace always starts fresh shells. The Navigator and Inspector
+distinguish restored transcripts from available agent sessions; live commands
+keep their existing running/attention state. **Resume** in the Inspector or
+palette stages a fixed resume command only at a positively identified empty
+shell prompt. It neither submits the command nor replaces an edited prompt.
+The user presses Return to run it. **Forget Agent Session** removes the hint.
 
 ## App integration
 
@@ -45,8 +54,10 @@ requires an explicit app integration and must not infer authentication state.
 two app callbacks should be thin adapters around the existing implementation:
 
 1. Capture with `AppDelegate.serializedSessionLayouts()` plus the four
-   `WorkspacePresentation` values from `Preferences`.
-2. Restore `SavedWorkspace.foundationLayouts()` using the existing
+   `WorkspacePresentation` values from `Preferences` and explicit hints keyed
+   by window/recursive-child path.
+2. Apply valid hints to `SavedWorkspace.foundationLayouts()` using
+   `WorkspaceResume.applying`, then restore through the existing
    `restoreSession(_:)` path. `.additionalWindows` is the default;
    `.replaceCurrentWorkspace` is allowed only after close approval succeeds.
 

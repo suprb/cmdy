@@ -3,11 +3,9 @@
 # your live cmdy is untouched), drives it over its own plugin API, and
 # asserts frame budgets. "Fastest terminal" as numbers, not vibes.
 #
-# The gate window is never key, so this measures the FLEET profile — the
-# background terminals you keep dozens of: idle must be ZERO frames, output
-# must coalesce, animated shaders must ride the 20fps background throttle.
-# (Focused-profile paces — 60fps shader — need a key window; check
-# those by hand, the gate can't steal your focus.)
+# The input API brings its pane forward. Focus once before measuring so the
+# first prompt edit does not include an unrelated window-activation redraw.
+# Every phase checks visibility/focus; shader budgets also honor power policy.
 #
 #   Tests/perf-gate.sh                              # small fleet window
 #   CMDY_PERF_MAXIMIZED=1 Tests/perf-gate.sh    # full visible screen
@@ -33,18 +31,36 @@ sounds = false
 ghost-text = false
 shader = None
 clean-prompt = true
+automatic-error-help = false
+cursor-blink = false
+smooth-cursor = false
+smooth-scroll = false
+marketplace-update-checks = false
 CFG
+
+# An isolated app config is not an isolated shell. User rc files can add async
+# prompt output, aliases, or hooks and invalidate row-count/latency assertions.
+mkdir -p "$GATE/zsh"
+printf '%s\n' 'HISTFILE=/dev/null' 'SAVEHIST=0' > "$GATE/zsh/.zshrc"
+python3 - "$GATE/app-update-state.json" <<'PY'
+import json, pathlib, sys, time
+pathlib.Path(sys.argv[1]).write_text(json.dumps({"lastCheck": time.time()}))
+PY
+# Collect before launching the timed app; compiling this tiny Foundation probe
+# must never compete with a frame or throughput measurement.
+POWER_STATE=$(swift -e 'import Foundation; let p = ProcessInfo.processInfo; print("\(p.isLowPowerModeEnabled ? 1 : 0) \(p.thermalState.rawValue)")') || exit 1
+read LOW_POWER THERMAL_STATE <<< "$POWER_STATE"
 
 APP_ARGS=()
 if [ "${CMDY_PERF_MAXIMIZED:-0}" = "1" ]; then
   APP_ARGS+=(--ui-test-maximized-perf)
 fi
 if [ "${#APP_ARGS[@]}" -gt 0 ]; then
-  CMDY_DEFAULTS_DOMAIN="$DEFAULTS_DOMAIN" CMDY_CONFIG_DIR="$GATE" \
+  CMDY_DEFAULTS_DOMAIN="$DEFAULTS_DOMAIN" CMDY_CONFIG_DIR="$GATE" ZDOTDIR="$GATE/zsh" \
     "$BIN" "${APP_ARGS[@]}" &
 else
   # Bash 3.2 + `set -u` treats expansion of an empty array as unbound.
-  CMDY_DEFAULTS_DOMAIN="$DEFAULTS_DOMAIN" CMDY_CONFIG_DIR="$GATE" \
+  CMDY_DEFAULTS_DOMAIN="$DEFAULTS_DOMAIN" CMDY_CONFIG_DIR="$GATE" ZDOTDIR="$GATE/zsh" \
     "$BIN" &
 fi
 APP_PID=$!
@@ -175,7 +191,15 @@ check() { # name actual op budget
 }
 
 echo "cmdy perf gate — pid $APP_PID, port $PORT"
+echo "power policy — lowPower=$LOW_POWER thermalState=$THERMAL_STATE"
+# Use the same window-activation path as measured prompt edits, with empty
+# text so setup neither changes the draft nor submits a shell command.
+post "/v1/panes/$PANE/type" '{"text":""}'
 sleep 3   # boot settle
+if [ "$(window_state)" != "1:1" ]; then
+  echo "✗ gate window did not become visible and key during setup; measurement invalid"
+  exit 1
+fi
 
 # Block until rendering has actually quiesced (frames stop climbing) instead of
 # a fixed sleep — the cursor blink can take ~12s to settle and the window's key
@@ -251,9 +275,8 @@ REBUILT=$((RB1 - RB0)); REUSED=$((RU1 - RU0))
 # blinking cursor row); a tall window's other rows must all come from cache.
 check "rows rebuilt for prompt edit" "$REBUILT" "<=" 8
 check "rows reused ≥ rebuilt (cache wins)" "$REUSED" ">=" "$REBUILT"
-# clear what we typed so the later prompt is clean
-type_txt ""
-post "/v1/panes/$PANE/run" "{\"command\": \"\"}"
+# Clear the fixture draft without submitting an additional command/prompt.
+type_txt $'\025'
 
 # 2c · interactive prompt redraws must not rebuild the whole screen. The shell
 # toggles bracketed-paste (CSI ?2004h/l) and erases-below (CSI 0J) around EVERY
@@ -358,27 +381,46 @@ F0=$(frames); sleep 6; F1=$(frames)
 finish_measurement "static-shader idle measurement"
 check "static-shader idle / 6s" $((F1 - F0)) "<=" 2
 
-# 6 · animated shader. Occluded windows render NOTHING by design, so the
-# 10fps background band only applies when the gate window is actually
-# visible on this desktop — otherwise assert the occluded contract (0).
+# 6 · animated shader. Use the documented power/thermal policy rather than
+# treating a deliberately throttled battery-powered window as a regression.
 setcfg Plasma
 sleep 3
 ST=$(api /v1/debug/framestats)
 VIS=$(echo "$ST" | python3 -c "import json,sys;print(1 if json.load(sys.stdin).get('visible') else 0)")
 KEY=$(echo "$ST" | python3 -c "import json,sys;print(1 if json.load(sys.stdin).get('key') else 0)")
+# New builds expose the current policy; older baselines use the launch probe.
+LOW_POWER=$(echo "$ST" | python3 -c 'import json,sys;d=json.load(sys.stdin);print(int(d.get("lowPowerMode",bool(int(sys.argv[1])))))' "$LOW_POWER")
+THERMAL_STATE=$(echo "$ST" | python3 -c 'import json,sys;d=json.load(sys.stdin);print(d.get("thermalState",int(sys.argv[1])))' "$THERMAL_STATE")
 F0=$(frames); sleep 5; F1=$(frames)
+AFTER=$(api /v1/debug/framestats)
+python3 - "$ST" "$AFTER" <<'PY'
+import json, sys
+before, after = (json.loads(item) for item in sys.argv[1:])
+keys = ("visible", "key", "lowPowerMode", "thermalState")
+if any(before.get(key) != after.get(key) for key in keys):
+    raise SystemExit("shader measurement invalid: visibility, focus or power policy changed")
+PY
+if [ $? -ne 0 ]; then exit 1; fi
 D=$((F1 - F0))
 if [ "$VIS" != "1" ]; then
   check "plasma occluded frames / 5s" "$D" "<=" 2
   echo "  · (window occluded — animation correctly stopped)"
 elif [ "$KEY" = "1" ]; then
-  # focused: the renderer's tested 60fps target (allow scheduler slack)
-  check "plasma focused frames / 5s (≥ 40fps)" "$D" ">=" 200
-  check "plasma focused frames / 5s (≤ 70fps)" "$D" "<=" 350
+  case "$THERMAL_STATE" in
+    3) SHADER_FPS=20 ;;
+    2) SHADER_FPS=30 ;;
+    *) SHADER_FPS=60 ;;
+  esac
+  check "plasma focused frames / 5s (min)" "$D" ">=" $((SHADER_FPS * 3))
+  check "plasma focused frames / 5s (max)" "$D" "<=" $((SHADER_FPS * 6))
 else
-  # visible but not key: the 20fps background throttle
-  check "plasma bg frames / 5s (≥ ticking)" "$D" ">=" 25
-  check "plasma bg frames / 5s (≤ 20fps+)" "$D" "<=" 120
+  case "$THERMAL_STATE" in
+    3) SHADER_FPS=2 ;;
+    2) SHADER_FPS=3 ;;
+    *) if [ "$LOW_POWER" = "1" ]; then SHADER_FPS=2; else SHADER_FPS=5; fi ;;
+  esac
+  check "plasma background frames / 5s (min)" "$D" ">=" $((SHADER_FPS * 3))
+  check "plasma background frames / 5s (max)" "$D" "<=" $((SHADER_FPS * 6))
 fi
 
 # 7 · multi-pane isolation: split the maximized window and drain two PTYs at

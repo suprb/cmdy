@@ -9,7 +9,8 @@ the `c` uses stylistic set `ss01` and the final `y` uses `ss02` to carry the
 same alternate-first/alternate-last rhythm as the reference lettering.
 
 `Assets/cmdy-wordmark.svg` carries those same outlined `ss01` / `ss02`
-alternates on a transparent canvas for the website header and footer.
+alternates on a transparent canvas for the website header and footer,
+set with the same -0.05em tracking as the website headings.
 
 `Assets/AlphaLyrae-Medium.woff2` is the unmodified upstream webfont used for
 major website headings. It comes from Vega Protocol's Alpha Lyrae repository
@@ -19,9 +20,8 @@ SIL Open Font License in `Assets/AlphaLyrae-LICENSE.md`.
 `Assets/app-icon.png` is the rendered square 1024 px macOS icon master.
 
 The app iconset generator reads `Assets/app-icon.png` from this directory.
-The website build reads the same masters and copies them to the generated
-`site/dist/` output, which stays local until GitHub Pages publishes a fresh build.
+The website, which is maintained separately, uses the same masters.
 
 For a future name or logo change, keep `Assets/app-icon.png` as the stable build
 input, archive the untouched new source artwork under a name-specific filename,
-and follow the complete [rebranding runbook](../docs/REBRANDING.md).
+and follow the rebranding runbook, which is maintained privately.

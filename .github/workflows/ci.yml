@@ -37,10 +37,24 @@ jobs:
           sw_vers
           xcodebuild -version
           swift --version
+      - name: Pinned Zig engine
+        run: |
+          zig_path="$(./scripts/bootstrap-zig.sh)"
+          echo "$(dirname "$zig_path")" >> "$GITHUB_PATH"
+          CMDY_ZIG="$zig_path" python3 Core/Tools/ZigEngine/build.py --optimize ReleaseFast
       - name: Repository hygiene and product identity
         run: ./scripts/check-repository-hygiene.sh
       - name: Pinned Unicode tables
-        run: python3 -B Core/Tools/UnicodeWidth/generate.py --check
+        run: |
+          python3 -B Core/Tools/UnicodeWidth/generate.py --check
+          python3 -B Core/Tools/ZigEngine/generate-unicode.py --check
+          python3 -B Core/Tools/ZigEngine/Grapheme/generate.py --check --cache "$RUNNER_TEMP/cmdy-grapheme-data"
+      - name: Native engine ownership and compatibility
+        run: |
+          native_arch="$(uname -m)"
+          if [ "$native_arch" = arm64 ]; then native_arch=aarch64; fi
+          zig test Core/Zig/tests.zig -lc -O Debug -target "$native_arch-macos.26.0.0"
+          zig test Core/Zig/tests.zig -lc -O ReleaseSafe -target "$native_arch-macos.26.0.0"
       - name: Independent source provenance
         run: |
           python3 -B Tests/test-working-tree-provenance.py
@@ -61,13 +75,12 @@ jobs:
         run: ./scripts/check-independent-api.sh
       - name: Independent dependency and import boundaries
         run: |
-          for package in Core Renderer; do
-            swift package --package-path "$package" \
-              show-dependencies --format json \
-              | jq -e --arg package "$package" \
-                '.name == $package and (.dependencies | length == 0)' \
-                >/dev/null
-          done
+          swift package --package-path Core show-dependencies --format json \
+            | jq -e '.name == "Core" and (.dependencies | length == 0)' >/dev/null
+          swift package --package-path Renderer show-dependencies --format json \
+            | jq -e '.name == "Renderer" and (.dependencies | length == 1)
+              and .dependencies[0].name == "Core"
+              and (.dependencies[0].dependencies | length == 0)' >/dev/null
           swift package show-dependencies --format json \
             | jq -e \
               '[recurse(.dependencies[]?)
@@ -88,14 +101,40 @@ jobs:
           python3 -m json.tool Schemas/surface-v1.schema.json >/dev/null
       - name: Shell syntax
         run: git ls-files '*.sh' -z | xargs -0 -n 1 bash -n
+      - name: Benchmark fixture tests
+        run: |
+          python3 -B Tests/test_competitive_bench.py
+          python3 -B Tests/test-input-latency-worker.py
+          python3 -B Tests/test_input_latency_bench.py
+          python3 -B Tests/test-editor-latency-worker.py
+          python3 -B Tests/test_memory_bench.py
+          python3 -B Tests/test-frame-trace-fields.py
+          history_probe_dir="$(mktemp -d)"
+          trap 'rm -rf "$history_probe_dir"' EXIT
+          swiftc -O Tests/TerminalHistoryProbe.swift -o "$history_probe_dir/terminal-history-probe"
+          "$history_probe_dir/terminal-history-probe" --self-test
+          swiftc -O -parse-as-library Tests/TerminalInputObserver.swift -o "$history_probe_dir/input-observer"
+          "$history_probe_dir/input-observer" --self-test-clock > "$history_probe_dir/input-clock.json"
+          CMDY_INPUT_CLOCK_SELFTEST="$history_probe_dir/input-clock.json" python3 -B Tests/test_parity_gate.py
+      - name: Scroll benchmark contracts
+        run: |
+          python3 -B -W error::ResourceWarning -m unittest discover -s Tests -p 'test_scroll*.py'
+          python3 -B Tests/test_bench_ancestry.py
+          python3 -B Tests/test-scroll-native.py
+      - name: Four-pane benchmark contracts
+        run: |
+          python3 -B -W error::ResourceWarning -m unittest discover -s Tests -p 'test_four_pane*.py'
+          four_pane_build_dir="$(mktemp -d)"
+          trap 'rm -rf "$four_pane_build_dir"' EXIT
+          swiftc -O -parse-as-library Tests/ScrollWindowGeometry.swift Tests/FourPaneSetup.swift -o "$four_pane_build_dir/four-pane-setup"
       - name: Repository tests
-        run: swift test -c release
+        run: swift test --manifest-cache none --disable-build-manifest-caching -c release
       - name: Identity tests
         run: swift test --package-path Identity -c release
       - name: Core tests
-        run: swift test --package-path Core -c release
+        run: swift test --manifest-cache none --disable-build-manifest-caching --package-path Core -c release
       - name: Renderer tests
-        run: swift test --package-path Renderer -c release
+        run: swift test --manifest-cache none --disable-build-manifest-caching --package-path Renderer -c release
       - name: Locked renderer corpus and qualified pixel parity
         run: |
           python3 -B scripts/check-renderer-pixel-parity.py --self-test
@@ -145,15 +184,8 @@ jobs:
         run: ./scripts/test-chromium-lifecycle.sh
       - name: Bridge tests
         run: swift test --package-path Vendor/BraincellBridge -c release
-      - name: First-party Extension builds
-        run: |
-          swift build --package-path Plugins/detox -c release
-          swift build --package-path Plugins/bridge -c release
-          swift build --package-path Plugins/swarm -c release
-          swift build --package-path Plugins/appdock -c release
-          swift test --package-path Plugins/sim -c release
       - name: Release build
-        run: swift build -c release
+        run: ./build.sh -c release
       - name: Independent linked-image and symbol boundary
         run: |
           if otool -L .build/release/cmdy \
@@ -170,18 +202,6 @@ jobs:
         env:
           CMDY_TEST_CONFIGURATION: release
         run: ./test.sh
-      - name: Node toolchain
-        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
-        with:
-          node-version: 24
-          cache: npm
-          cache-dependency-path: site/package-lock.json
-      - name: Website build and render smoke
-        working-directory: site
-        run: |
-          npm ci
-          npm audit --audit-level=high
-          npm test
 
   chromium:
     name: Sandboxed Chromium
@@ -193,6 +213,11 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Bootstrap pinned CEF
         run: ./scripts/bootstrap-chromium.sh
+      - name: Pinned Zig engine
+        run: |
+          zig_path="$(./scripts/bootstrap-zig.sh)"
+          echo "$(dirname "$zig_path")" >> "$GITHUB_PATH"
+          CMDY_ZIG="$zig_path" python3 Core/Tools/ZigEngine/build.py --optimize ReleaseFast
       - name: Full Browser build and lifecycle smoke
         run: ./scripts/check-chromium-build.sh
       - name: Package lean and Browser apps, then exercise install and removal

@@ -10,7 +10,7 @@ final class RowCacheMemoryTests: XCTestCase {
 
     func testThreeViewportASCIIResidencyUsesExactAllocatedSizesAndHonorsBudget() throws {
         let device = try XCTUnwrap(MTLCreateSystemDefaultDevice())
-        let renderer = try MetalTerminalRenderer(
+        let renderer = try NativeRendererCacheHarness(
             view: MTKView(frame: .zero, device: device),
             source: MemoryRenderSource())
 
@@ -64,7 +64,7 @@ final class RowCacheMemoryTests: XCTestCase {
 
     func testSharedTextTextureCountsOnceAgainstTheResidencyBudget() throws {
         let device = try XCTUnwrap(MTLCreateSystemDefaultDevice())
-        let renderer = try MetalTerminalRenderer(
+        let renderer = try NativeRendererCacheHarness(
             view: MTKView(frame: .zero, device: device),
             source: MemoryRenderSource())
         let coverage = try makeTexture(device: device, format: .r8Unorm,
@@ -84,6 +84,72 @@ final class RowCacheMemoryTests: XCTestCase {
                        coverage.allocatedSize)
     }
 
+    func testReplacingRowsReleasesOnlyTheirFinalTextureReference() throws {
+        let device = try XCTUnwrap(MTLCreateSystemDefaultDevice())
+        let renderer = try NativeRendererCacheHarness(
+            view: MTKView(frame: .zero, device: device), source: MemoryRenderSource())
+        let first = try makeTexture(device: device, format: .r8Unorm,
+                                    width: 512, height: 20)
+        let second = try makeTexture(device: device, format: .r8Unorm,
+                                     width: 256, height: 20)
+        let color = try makeTexture(device: device, format: .bgra8Unorm,
+                                    width: 32, height: 32)
+        let colorLayer = IndependentColorLayer(
+            texture: color, rect: CGRect(x: 0, y: 0, width: 32, height: 32))
+        // Repeated layers and different rows can own the same allocation.
+        let shared = [colorLayer, colorLayer]
+        renderer.replaceAndTrimRowCacheForTesting([
+            0: entry(row: 0, coverage: first, colorLayers: shared, lastUse: 0),
+            1: entry(row: 1, coverage: first, colorLayers: shared, lastUse: 1),
+        ], visibleRows: [0, 1], visibleCount: 2)
+        XCTAssertEqual(renderer.rowCacheAllocatedBytesForTesting,
+                       first.allocatedSize + color.allocatedSize)
+
+        renderer.storeAndTrimRowCacheEntryForTesting(
+            entry(row: 0, coverage: second, colorLayers: [colorLayer], lastUse: 2),
+            at: 0, visibleRows: [0, 1], visibleCount: 2)
+        XCTAssertEqual(renderer.rowCacheAllocatedBytesForTesting,
+                       first.allocatedSize + second.allocatedSize + color.allocatedSize)
+        renderer.storeAndTrimRowCacheEntryForTesting(
+            entry(row: 1, coverage: second, colorLayers: [], lastUse: 3),
+            at: 1, visibleRows: [0, 1], visibleCount: 2)
+        XCTAssertEqual(renderer.rowCacheAllocatedBytesForTesting,
+                       second.allocatedSize + color.allocatedSize)
+        renderer.storeAndTrimRowCacheEntryForTesting(
+            entry(row: 0, coverage: second, colorLayers: [], lastUse: 4),
+            at: 0, visibleRows: [0, 1], visibleCount: 2)
+        XCTAssertEqual(renderer.rowCacheAllocatedBytesForTesting, second.allocatedSize)
+
+        renderer.invalidateRowCache()
+        XCTAssertEqual(renderer.rowCacheCountForTesting, 0)
+        XCTAssertEqual(renderer.rowCacheAllocatedBytesForTesting, 0)
+        renderer.storeAndTrimRowCacheEntryForTesting(
+            entry(row: 0, coverage: first, colorLayers: [], lastUse: 5),
+            at: 0, visibleRows: [0], visibleCount: 1)
+        XCTAssertEqual(renderer.rowCacheAllocatedBytesForTesting, first.allocatedSize)
+    }
+
+    func testLRUEvictionProtectsVisibleRowsAndSharedAllocations() throws {
+        let device = try XCTUnwrap(MTLCreateSystemDefaultDevice())
+        let renderer = try NativeRendererCacheHarness(
+            view: MTKView(frame: .zero, device: device), source: MemoryRenderSource())
+        let texture = try makeTexture(device: device, format: .r8Unorm,
+                                      width: 512, height: 20)
+        let entries = Dictionary(uniqueKeysWithValues: (0..<10).map { row in
+            (row, entry(row: row, coverage: texture, colorLayers: [], lastUse: UInt64(row)))
+        })
+        // The oldest two rows are visible, so evict the next four in LRU order.
+        renderer.replaceAndTrimRowCacheForTesting(
+            entries, visibleRows: [0, 1], visibleCount: 2)
+        XCTAssertEqual(renderer.rowCacheRowsForTesting, [0, 1, 6, 7, 8, 9])
+        XCTAssertEqual(renderer.rowCacheAllocatedBytesForTesting, texture.allocatedSize)
+        // A later viewport can evict those old rows without releasing the
+        // allocation still owned by the three most recent rows.
+        renderer.trimRowCacheForTesting(visibleRows: [9], visibleCount: 1)
+        XCTAssertEqual(renderer.rowCacheRowsForTesting, [7, 8, 9])
+        XCTAssertEqual(renderer.rowCacheAllocatedBytesForTesting, texture.allocatedSize)
+    }
+
     func testSharedTextKeyIgnoresTerminalIdentityAndBindsRasterContent() throws {
         let font = NSFont.monospacedSystemFont(ofSize: 14, weight: .regular)
         let attributes: [NSAttributedString.Key: Any] = [
@@ -97,10 +163,14 @@ final class RowCacheMemoryTests: XCTestCase {
                 attributedString: NSAttributedString(
                     string: "repeat", attributes: attributes)),
         ], images: nil)
+        let rasterInputs = IndependentRowRasterInputs(
+            cellWidth: 12.5, cellHeight: 16, scale: 2,
+            normalFont: font, foreground: IndependentRowRasterizer.rgba(.white),
+            underlinePosition: -2, underlineThickness: 1)
         let first = try XCTUnwrap(IndependentSharedTextRowKey(
-            info: info, rowKey: rowKey(row: 1, version: 4)))
+            info: info, rowKey: rowKey(row: 1, version: 4), rasterInputs: rasterInputs))
         let moved = try XCTUnwrap(IndependentSharedTextRowKey(
-            info: info, rowKey: rowKey(row: 800, version: 99)))
+            info: info, rowKey: rowKey(row: 800, version: 99), rasterInputs: rasterInputs))
         XCTAssertEqual(first, moved)
 
         let changedInfo = ViewLineInfo(segments: [
@@ -112,7 +182,7 @@ final class RowCacheMemoryTests: XCTestCase {
                     ], uniquingKeysWith: { _, replacement in replacement }))),
         ], images: nil)
         XCTAssertNotEqual(first, IndependentSharedTextRowKey(
-            info: changedInfo, rowKey: rowKey(row: 800, version: 99)))
+            info: changedInfo, rowKey: rowKey(row: 800, version: 99), rasterInputs: rasterInputs))
 
         let unsupportedInfo = ViewLineInfo(segments: [
             ViewLineSegment(
@@ -123,7 +193,50 @@ final class RowCacheMemoryTests: XCTestCase {
                     ])),
         ], images: nil)
         XCTAssertNil(IndependentSharedTextRowKey(
-            info: unsupportedInfo, rowKey: rowKey(row: 1, version: 4)))
+            info: unsupportedInfo, rowKey: rowKey(row: 1, version: 4), rasterInputs: rasterInputs))
+    }
+
+    /// Opt-in CPU maintenance timing. Textures and shared Metal pipelines are
+    /// created before timing; no window is shown and no frames are submitted.
+    /// CMDY_ROW_CACHE_BENCHMARK=1 swift test -c release --filter RowCacheMemoryTests/testRowCacheMaintenanceBenchmark
+    func testRowCacheMaintenanceBenchmark() throws {
+        guard ProcessInfo.processInfo.environment["CMDY_ROW_CACHE_BENCHMARK"] == "1" else {
+            throw XCTSkip("opt-in row cache maintenance benchmark")
+        }
+        let device = try XCTUnwrap(MTLCreateSystemDefaultDevice())
+        let renderer = try NativeRendererCacheHarness(
+            view: MTKView(frame: .zero, device: device),
+            source: MemoryRenderSource())
+        let viewportRows = 90
+        let totalRows = viewportRows * 3
+        let visible = Set((totalRows - viewportRows)..<totalRows)
+        var entries: [Int: IndependentRowCacheEntry] = [:]
+        for row in 0..<totalRows {
+            let texture = try makeTexture(device: device, format: .r8Unorm,
+                                          width: 3_000, height: 32)
+            entries[row] = entry(row: row, coverage: texture,
+                                 colorLayers: [], lastUse: UInt64(row))
+        }
+        for run in 0..<5 {
+            let pressureStart = DispatchTime.now().uptimeNanoseconds
+            for _ in 0..<100 {
+                renderer.replaceAndTrimRowCacheForTesting(
+                    entries, visibleRows: visible, visibleCount: viewportRows)
+            }
+            let pressureMS = Double(DispatchTime.now().uptimeNanoseconds - pressureStart) / 1_000_000
+            let warmStart = DispatchTime.now().uptimeNanoseconds
+            for _ in 0..<10_000 {
+                renderer.trimRowCacheForTesting(
+                    visibleRows: visible, visibleCount: viewportRows)
+            }
+            let warmMS = Double(DispatchTime.now().uptimeNanoseconds - warmStart) / 1_000_000
+            XCTAssertLessThanOrEqual(renderer.rowCacheAllocatedBytesForTesting, budget)
+            XCTAssertGreaterThanOrEqual(renderer.rowCacheCountForTesting, viewportRows)
+            print(String(format:
+                "CMDY_ROW_CACHE_BENCH run=%d pressure_100_ms=%.3f warm_10000_ms=%.3f retained_rows=%d allocated_bytes=%d",
+                run, pressureMS, warmMS, renderer.rowCacheCountForTesting,
+                renderer.rowCacheAllocatedBytesForTesting))
+        }
     }
 
     private func makeTexture(device: MTLDevice,
@@ -184,8 +297,11 @@ final class RowCacheMemoryTests: XCTestCase {
 
 @MainActor
 final class MemoryRenderSource: MetalRenderSource {
+    private(set) var captureCount = 0
+
     func captureGrid() -> GridSnapshot {
-        GridSnapshot(rows: 0, cols: 0, bufferLineCount: 0,
+        captureCount += 1
+        return GridSnapshot(rows: 0, cols: 0, bufferLineCount: 0,
                      displayTopRow: 0, liveTopRow: 0,
                      cursorRow: 0, cursorCol: 0,
                      cursorHidden: true, cursorStyle: .steadyBlock,

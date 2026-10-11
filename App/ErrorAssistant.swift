@@ -118,9 +118,6 @@ enum ErrorAssistant {
 
     static func suggestedCommand(command: String, output: String, exitCode: Int32?,
                                  cwd: String?) async throws -> ErrorAssistantResponse {
-        if isNaturalLanguageRequest(command) {
-            return try await composeCommand(request: command, cwd: cwd)
-        }
         return try await fixCommand(command: command, output: output,
                                     exitCode: exitCode, cwd: cwd)
     }
@@ -199,11 +196,6 @@ enum ErrorAssistant {
 
     private static func specificExplanation(command: String, output: String,
                                             exitCode: Int32?) -> String? {
-        if isNaturalLanguageRequest(command) {
-            return "zsh treated this sentence as a shell command. "
-                + "\(ProductIdentity.current.titleName) can translate the request "
-                + "into a command for you to review."
-        }
         let lower = output.lowercased()
         if lower.contains("eaddrinuse") || lower.contains("address already in use") {
             if let port = firstCapture(in: output, pattern: #"(?i)(?:port\s+|:)(\d{2,5})"#) {
@@ -266,22 +258,6 @@ enum ErrorAssistant {
 
     static func hasDiagnosticEvidence(_ output: String) -> Bool {
         !output.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-    }
-
-    static func isNaturalLanguageRequest(_ command: String) -> Bool {
-        let trimmed = command.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.contains("\n"),
-              trimmed.range(of: #"[|;&<>`]"#, options: .regularExpression) == nil
-        else { return false }
-        if deterministicCommand(for: trimmed) != nil { return true }
-        let words = trimmed.split(whereSeparator: \.isWhitespace)
-        guard words.count >= 2 else { return false }
-        let first = words[0].lowercased().trimmingCharacters(
-            in: CharacterSet.alphanumerics.inverted)
-        let starters = Set(["what", "when", "where", "who", "why", "how",
-                            "can", "could", "would", "please", "tell", "show",
-                            "explain", "help"])
-        return starters.contains(first)
     }
 
     static func deterministicCommand(for request: String) -> String? {

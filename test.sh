@@ -10,9 +10,18 @@ case "$CONFIGURATION" in
   debug|release) ;;
   *) echo "CMDY_TEST_CONFIGURATION must be debug or release" >&2; exit 2 ;;
 esac
-swift build -c "$CONFIGURATION" || exit 1
+./build.sh -c "$CONFIGURATION" || exit 1
 BIN=".build/$CONFIGURATION/$PRODUCT_EXECUTABLE"
 FAIL=0
+
+# Exercise the real model publication path and initial-shell ordering without
+# launching a terminal window or changing production access for test hooks.
+if python3 Tests/test-app-model.py --configuration "$CONFIGURATION"; then
+  echo "PASS  app-model-regressions  snapshot publication and initial-shell ordering"
+else
+  echo "FAIL  app-model-regressions"
+  FAIL=1
+fi
 
 for t in selftest menu-bar-test panel-test shader-test reflow-test wheel-test scroll-test graphics-test; do
   out=$("$BIN" --$t 2>&1)
@@ -52,8 +61,8 @@ else
   FAIL=1
 fi
 
-# A fresh shell is disposable and closes on the first click. Once a command
-# has run, the same action must retain the destructive confirmation.
+# An idle shell closes on the first click even after a completed command.
+# Currently running work must retain the destructive confirmation.
 CLOSE_TEST_HOME=$(mktemp -d "/tmp/$PRODUCT_SLUG-window-close.XXXXXX")
 mkdir -p "$CLOSE_TEST_HOME/config"
 out=$(env HOME="$CLOSE_TEST_HOME" CFFIXED_USER_HOME="$CLOSE_TEST_HOME" \
@@ -63,10 +72,11 @@ code=$?
 rm -rf "$CLOSE_TEST_HOME"
 if [ $code -eq 0 ] \
     && grep -Fq "UICLOSE emptyImmediate=true" <<< "$out" \
+    && grep -Fq "settingsOwnWindow=true" <<< "$out" \
     && grep -Fq "activeProtected=true" <<< "$out" \
     && grep -Fq "activeClosed=true" <<< "$out" \
     && grep -Fq "ok=true" <<< "$out"; then
-  echo "PASS  --ui-test-window-close-confirmation  empty closes; active confirms and closes"
+  echo "PASS  --ui-test-window-close-confirmation  Settings closes itself; idle closes; active confirms"
 else
   echo "FAIL  --ui-test-window-close-confirmation"
   echo "$out" | tail -24
@@ -99,6 +109,30 @@ else
   FAIL=1
 fi
 
+# Quit must protect a real running child, Cancel must preserve it, and a used
+# shell must approve quit immediately once its command is finished. ZDOTDIR
+# keeps the test shell away from personal startup files; the config/defaults
+# overrides isolate application settings and credential storage.
+SESSION_LIFECYCLE_DIR=$(mktemp -d "/tmp/$PRODUCT_SLUG-session-lifecycle.XXXXXX")
+mkdir -p "$SESSION_LIFECYCLE_DIR/config" "$SESSION_LIFECYCLE_DIR/zsh"
+out=$(env ZDOTDIR="$SESSION_LIFECYCLE_DIR/zsh" \
+    "${PRODUCT_ENV_PREFIX}_ORIG_ZDOTDIR=$SESSION_LIFECYCLE_DIR/zsh" \
+    "${PRODUCT_ENV_PREFIX}_CONFIG_DIR=$SESSION_LIFECYCLE_DIR/config" \
+    "${PRODUCT_ENV_PREFIX}_DEFAULTS_DOMAIN=$PRODUCT_BUNDLE_IDENTIFIER.session-lifecycle.$$" \
+    "$BIN" --ui-test-session-lifecycle 2>&1)
+code=$?
+rm -rf "$SESSION_LIFECYCLE_DIR"
+if [ $code -eq 0 ] \
+    && grep -Fq "UISESSIONLIFECYCLE quitPending=true" <<< "$out" \
+    && grep -Fq "cancelPreservedChild=true" <<< "$out" \
+    && grep -Fq "idleApproved=true ok=true" <<< "$out"; then
+  echo "PASS  --ui-test-session-lifecycle  quit confirmed; Cancel preserved child; idle quit approved"
+else
+  echo "FAIL  --ui-test-session-lifecycle"
+  echo "$out" | tail -24
+  FAIL=1
+fi
+
 # The compact Finder-style controls live inside the full-size titlebar. Send a
 # real mouse down/up to one visible icon so titlebar dragging or toolbar-layout
 # normalization cannot silently make the controls unclickable again.
@@ -121,9 +155,9 @@ fi
 # Reproduce the reported dense attributed-output trackpad path in a real
 # window. The app performs the machine-independent assertions itself: viewport
 # capture/projection reuse, bounded row rebuilding, correct semantic overlays,
-# exact return to the starting scroll position, and at least 75% of the
-# hardware-aware presentation budget (including Low Power Mode and thermal
-# pressure).
+# exact return to the post-warmup scroll position with stable history/grid,
+# and at least 75% of the hardware-aware presentation budget (including
+# Low Power Mode and thermal pressure).
 for dense_scroll_pixels in 3 48; do
   DENSE_SCROLL_HOME=$(mktemp -d "/tmp/$PRODUCT_SLUG-dense-scroll.XXXXXX")
   mkdir -p "$DENSE_SCROLL_HOME/config"
@@ -137,6 +171,7 @@ for dense_scroll_pixels in 3 48; do
   rm -rf "$DENSE_SCROLL_HOME"
   if [ $code -eq 0 ] && grep -Fq "UIDENSESCROLL variant=failed" <<< "$out" \
       && grep -Fq "pixels=$dense_scroll_pixels" <<< "$out" \
+      && grep -Fq "observedEvents=720 semantic=true stable=true returned=true" <<< "$out" \
       && grep -Fq "ok=true" <<< "$out"; then
     echo "PASS  --ui-test-dense-scroll-profile  ${dense_scroll_pixels}px dense failed-block burst reused viewport"
   else

@@ -1,9 +1,98 @@
+import AppKit
 import Foundation
+import MetalKit
 import XCTest
 @testable import CmdyGPU
 
 @MainActor
 final class ShaderSchedulingTests: XCTestCase {
+    func testSystemBudgetNotificationsPublishCadenceWithoutCaptureAndDetachOnClose() async throws {
+        let f = try await HeadlessSchedulingFixture(), r = try XCTUnwrap(f.renderer)
+        var lowPower = false, visible = true
+        var thermal: UInt8 = 0
+        var environmentReads = 0
+        r.scheduler.environmentForTesting = {
+            environmentReads += 1
+            return .init(now: ProcessInfo.processInfo.systemUptime, cell_height_pixels: 16,
+                maximum_fps: 120, has_view: true, has_source: true, visible: visible,
+                key_window: false, caret_focused: false, low_power: lowPower, thermal: thermal)
+        }
+        r.shaderMode = 1
+        await f.flushOwner()
+        XCTAssertEqual(r.animationTimerIntervalForTesting, 0.2)
+        XCTAssertEqual(r.scheduler.environmentObserverCountForTesting, 2)
+        lowPower = true
+        NotificationCenter.default.post(name: .NSProcessInfoPowerStateDidChange, object: nil)
+        await f.flushOwner()
+        XCTAssertEqual(r.animationTimerIntervalForTesting, 0.5)
+        thermal = 2
+        NotificationCenter.default.post(name: ProcessInfo.thermalStateDidChangeNotification, object: nil)
+        await f.flushOwner()
+        XCTAssertEqual(r.animationTimerIntervalForTesting, 1.0 / 3.0)
+        visible = false
+        NotificationCenter.default.post(name: .NSProcessInfoPowerStateDidChange, object: nil)
+        await f.flushOwner()
+        XCTAssertFalse(r.animationTimerIsActiveForTesting)
+        XCTAssertEqual(f.source.captureCount, 0)
+        r.close()
+        XCTAssertEqual(r.scheduler.environmentObserverCountForTesting, 0)
+        let readsBeforeClosedNotifications = environmentReads
+        NotificationCenter.default.post(name: .NSProcessInfoPowerStateDidChange, object: nil)
+        NotificationCenter.default.post(name: ProcessInfo.thermalStateDidChangeNotification, object: nil)
+        XCTAssertEqual(environmentReads, readsBeforeClosedNotifications)
+        await r.shutdown()
+    }
+
+    func testKeyboardInteractionUsesDisplayCadenceWithoutStartingAnIdleTimer() async throws {
+        let f = try await HeadlessSchedulingFixture(), r = try XCTUnwrap(f.renderer)
+        let now = ProcessInfo.processInfo.systemUptime
+        XCTAssertEqual(r.targetFrameRateForTesting(at: now), f.staticFPS)
+        r.noteKeyboardInteraction(at: now); await f.flushOwner()
+        XCTAssertEqual(r.cursorActivityTimeForTesting, now)
+        XCTAssertEqual(r.targetFrameRateForTesting(at: now + 0.001), f.interactiveFPS)
+        XCTAssertEqual(r.targetFrameRateForTesting(at: now + 0.149), f.interactiveFPS)
+        XCTAssertFalse(r.animationTimerIsActiveForTesting)
+        r.noteActivity(); await f.flushOwner()
+        XCTAssertEqual(r.targetFrameRateForTesting(at: now + 0.15), f.staticFPS)
+        XCTAssertFalse(r.animationTimerIsActiveForTesting); XCTAssertEqual(f.source.captureCount, 0)
+    }
+
+    func testKeyboardInteractionPreservesBackgroundAndShaderTimerBudgets() async throws {
+        let f = try await HeadlessSchedulingFixture(), r = try XCTUnwrap(f.renderer)
+        f.environment.key = false
+        r.shaderMode = 1; await f.flushOwner()
+        let now = ProcessInfo.processInfo.systemUptime
+        let prior = r.animationTimerIntervalForTesting
+        XCTAssertEqual(prior, 1 / max(1, f.shaderFPS))
+        r.noteKeyboardInteraction(at: now); await f.flushOwner()
+        XCTAssertEqual(r.targetFrameRateForTesting(at: now + 0.01), f.interactiveFPS)
+        XCTAssertEqual(r.animationTimerIntervalForTesting, prior)
+        XCTAssertEqual(r.targetFrameRateForTesting(at: now + 0.15), f.shaderFPS)
+        f.environment.visible = false
+        r.noteKeyboardInteraction(at: now + 0.16); await f.flushOwner()
+        XCTAssertFalse(r.animationTimerIsActiveForTesting); XCTAssertEqual(f.source.captureCount, 0)
+    }
+
+    func testHiddenPaneStopsAnimationAndSkipsSnapshotCapture() async throws {
+        let f = try await HeadlessSchedulingFixture(), r = try XCTUnwrap(f.renderer)
+        let container = NSView(frame: f.view.bounds); container.addSubview(f.view)
+        r.shaderMode = 1; await f.flushOwner(); XCTAssertTrue(r.animationTimerIsActiveForTesting)
+        container.isHidden = true; r.draw(in: f.view); await f.flushOwner()
+        XCTAssertEqual(f.source.captureCount, 0); XCTAssertFalse(r.animationTimerIsActiveForTesting)
+        container.isHidden = false; r.noteActivity(); await f.flushOwner()
+        XCTAssertTrue(r.animationTimerIsActiveForTesting)
+        r.draw(in: f.view); await f.flushOwner(); XCTAssertEqual(f.source.captureCount, 1)
+        f.view.isHidden = true; r.noteActivity(); r.draw(in: f.view); await f.flushOwner()
+        XCTAssertEqual(f.source.captureCount, 1); XCTAssertFalse(r.animationTimerIsActiveForTesting)
+        f.view.isHidden = false; f.environment.visible = false
+        r.noteActivity(); r.draw(in: f.view); await f.flushOwner()
+        XCTAssertEqual(f.source.captureCount, 1); XCTAssertFalse(r.animationTimerIsActiveForTesting)
+        f.environment.visible = true; r.noteActivity(); await f.flushOwner()
+        XCTAssertTrue(r.animationTimerIsActiveForTesting)
+        r.shaderMode = 0; await f.flushOwner(); XCTAssertFalse(r.animationTimerIsActiveForTesting)
+        f.environment.attached = false
+    }
+
     func testOnlyDocumentedBuiltInsContinuouslyAnimate() {
         let staticModes: Set<Int> = [2, 5, 6, 9, 68]
         for mode in 0...68 {
@@ -75,6 +164,57 @@ final class ShaderSchedulingTests: XCTestCase {
         XCTAssertEqual(MetalTerminalRenderer.interactiveContentTargetFPS(
             isKeyWindow: true, thermalState: .critical,
             lowPowerMode: false, maximumFramesPerSecond: 120), 20)
+    }
+
+    func testFocusedShaderAnimationTicksFromTheDisplayLink() async throws {
+        let f = try await HeadlessSchedulingFixture(), r = try XCTUnwrap(f.renderer)
+        r.scheduler.timerInstallerForTesting = nil
+        r.shaderMode = 1
+        await f.flushOwner()
+        XCTAssertTrue(r.animationIsDisplayLockedForTesting)
+        XCTAssertEqual(r.animationTimerIntervalForTesting, 1 / f.shaderFPS)
+        // An unfocused window's slow cadence keeps the plain timer.
+        f.environment.key = false
+        r.scheduler.updateAnimationTimer()
+        await f.flushOwner()
+        XCTAssertFalse(r.animationIsDisplayLockedForTesting)
+        XCTAssertTrue(r.animationTimerIsActiveForTesting)
+        f.environment.key = true
+        r.scheduler.updateAnimationTimer()
+        await f.flushOwner()
+        XCTAssertTrue(r.animationIsDisplayLockedForTesting)
+        r.shaderMode = 0
+        await f.flushOwner()
+        XCTAssertFalse(r.animationTimerIsActiveForTesting)
+        XCTAssertFalse(r.animationIsDisplayLockedForTesting)
+    }
+
+    func testWheelAnimationTimerUsesInteractiveCadenceAndRestoresShaderBudget() async throws {
+        let f = try await HeadlessSchedulingFixture(), r = try XCTUnwrap(f.renderer)
+        r.smoothScrollEnabled = true
+        r.shaderMode = 1
+        await f.flushOwner()
+        XCTAssertEqual(r.animationTimerIntervalForTesting, 1 / f.shaderFPS)
+        // A preceding notch makes this a continuing, eased scroll.
+        r.noteScroll(pixels: 0)
+        r.noteScroll(pixels: 120)
+        await f.flushOwner()
+        XCTAssertEqual(r.animationTimerIntervalForTesting, 1 / f.interactiveFPS)
+        r.cancelScrollAnimation()
+        await f.flushOwner()
+        XCTAssertEqual(r.animationTimerIntervalForTesting, 1 / f.shaderFPS)
+
+        f.environment.key = false
+        r.noteScroll(pixels: -120)
+        await f.flushOwner()
+        XCTAssertEqual(r.animationTimerIntervalForTesting, 1 / f.interactiveFPS)
+        r.cancelScrollAnimation()
+        await f.flushOwner()
+        XCTAssertEqual(r.animationTimerIntervalForTesting, 1 / f.shaderFPS)
+        r.shaderMode = 0
+        await f.flushOwner()
+        XCTAssertFalse(r.animationTimerIsActiveForTesting)
+        XCTAssertEqual(f.source.captureCount, 0)
     }
 
     func testSelectionInteractionKeepsDisplayCadenceUntilDeadline() {

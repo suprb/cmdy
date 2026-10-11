@@ -11,7 +11,7 @@ final class GlyphAtlasPagingTests: XCTestCase {
         let device = try XCTUnwrap(MTLCreateSystemDefaultDevice())
         let view = MTKView(frame: .zero, device: device)
         let source = AtlasRenderSource()
-        let renderer = try MetalTerminalRenderer(view: view, source: source)
+        let renderer = try NativeRendererCacheHarness(view: view, source: source)
 
         XCTAssertEqual(renderer.colorAtlasAllocationCount, 0)
         XCTAssertNil(renderer.colorAtlasPageCapacityForTesting)
@@ -298,8 +298,10 @@ final class GlyphAtlasPagingTests: XCTestCase {
         XCTAssertEqual(SmoothScrollMotion.effectiveOffset(
             source: 0, held: 3, glide: 0), held)
 
-        let decayed = SmoothScrollMotion.decayedGlide(12, elapsed: 0.05)
-        XCTAssertEqual(decayed, 12 * exp(-2), accuracy: 0.0001)
+        let decayed = SmoothScrollMotion.decayedGlide(12, elapsed: 0.001)
+        XCTAssertGreaterThan(decayed, 0.5)
+        XCTAssertLessThan(decayed, 12)
+        XCTAssertEqual(SmoothScrollMotion.decayedGlide(12, elapsed: 1 / 60), 0)
         XCTAssertEqual(SmoothScrollMotion.decayedGlide(0.5, elapsed: 0.05), 0)
         XCTAssertEqual(SmoothScrollMotion.accumulatedGlide(
             current: 18, impulse: 20, cellHeight: 16), 20)

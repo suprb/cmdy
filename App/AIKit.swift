@@ -14,8 +14,7 @@ enum AIError: Error, LocalizedError {
         switch self {
         case .noAPIKey:
             let identity = ProductIdentity.current
-            return "No API key. Add `anthropic-api-key = sk-ant-…` to "
-                + "~/.config/\(identity.configurationDirectoryName)/config (⌘,), "
+            return "No API key. Add an Anthropic API key in Settings → Assistant (⌘,), "
                 + "or launch \(identity.displayName) with ANTHROPIC_API_KEY "
                 + "in the environment."
         case .noAvailableModel:
@@ -38,7 +37,7 @@ enum LLMClient {
     /// Configurable via `ai-model` in the config file.
     static var model: String { Preferences.shared.aiModel }
 
-    /// Config-file key first (works when launched from Finder/Dock, where the
+    /// Keychain key first (works when launched from Finder/Dock, where the
     /// process environment has no ANTHROPIC_API_KEY), env as fallback.
     static var apiKey: String? {
         if let k = Preferences.shared.anthropicKey, !k.isEmpty { return k }

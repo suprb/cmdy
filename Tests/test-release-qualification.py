@@ -242,6 +242,7 @@ class QualificationFixture:
                 "path": "Source/current.swift",
                 "sha256": qualification.sha256_file(self.root / "Source/current.swift"),
             }],
+            "trustFiles": [],
             "issues": [],
             "matches": [],
             "references": {},
@@ -433,6 +434,40 @@ class ReleaseQualificationTests(unittest.TestCase):
             record, path, self.fixture.root, state)
         self.assertEqual(result["sourceCommit"], self.fixture.source_commit)
         self.assertEqual(result["sourceManifestSha256"], self.fixture.manifest_sha)
+
+    def test_provenance_binds_native_build_trust_files(self) -> None:
+        manifest = copy.deepcopy(self.fixture.manifest)
+        entry = {
+            "path": "Core/Tools/ZigEngine/build.py", "mode": "100644",
+            "size": 12, "sha256": "a" * 64,
+        }
+        manifest["trustFiles"] = [entry]
+        manifest["trustFileCount"] = 1
+        report = self.fixture._provenance()
+
+        def validate(value):
+            unsigned = {key: item for key, item in value.items() if key != "reportSHA256"}
+            value["reportSHA256"] = digest_bytes(json.dumps(
+                unsigned, sort_keys=True, separators=(",", ":")).encode())
+            path = self.fixture._write_json("docs/independence/qualification/provenance.json", value)
+            qualification.validate_provenance(self.fixture.root, self.fixture._ref(path), manifest)
+
+        with self.assertRaisesRegex(qualification.QualificationError, "package-graph trust files"):
+            validate(report)
+        report["trustFiles"] = [copy.deepcopy(entry)]
+        validate(report)
+        for key, changed in (("sha256", "b" * 64), ("size", 13), ("mode", "100755")):
+            with self.subTest(key=key):
+                report["trustFiles"] = [dict(entry, **{key: changed})]
+                with self.assertRaisesRegex(qualification.QualificationError, "package-graph trust files"):
+                    validate(report)
+        report["trustFiles"] = [copy.deepcopy(entry), copy.deepcopy(entry)]
+        with self.assertRaisesRegex(qualification.QualificationError, "duplicate provenance trustFiles"):
+            validate(report)
+        report["trustFiles"] = [copy.deepcopy(entry)]
+        report["schemaVersion"] = 1
+        with self.assertRaisesRegex(qualification.QualificationError, "schemaVersion 2"):
+            validate(report)
 
     def test_unbound_descendant_source_change_fails(self) -> None:
         self.fixture._write(

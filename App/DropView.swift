@@ -35,3 +35,45 @@ class DropView: NSView {
             options: [.urlReadingFileURLsOnly: true]) as? [URL]
     }
 }
+
+/// Fills shell regions which are not already painted by an owned Metal pane.
+/// The opaque path keeps the existing backing-layer fill. Translucent panes
+/// each supply their own background alpha, so the shell excludes their bounds.
+final class TerminalBackgroundContainerView: DropView {
+    var backgroundFillColor = NSColor.clear {
+        didSet {
+            layer?.backgroundColor = backgroundFillColor.alphaComponent >= 1
+                ? backgroundFillColor.cgColor : NSColor.clear.cgColor
+            needsDisplay = true
+        }
+    }
+    var backgroundExclusionViews: (() -> [NSView])?
+
+    override func layout() {
+        super.layout()
+        needsDisplay = true
+    }
+
+    override func draw(_ dirtyRect: NSRect) {
+        guard let context = NSGraphicsContext.current?.cgContext else { return }
+        context.saveGState()
+        defer { context.restoreGState() }
+        context.clear(dirtyRect)
+        guard backgroundFillColor.alphaComponent > 0,
+              backgroundFillColor.alphaComponent < 1 else { return }
+        for view in backgroundExclusionViews?() ?? [] {
+            guard view.isDescendant(of: self), !view.isHiddenOrHasHiddenAncestor else { continue }
+            let owned = convert(view.bounds, from: view).intersection(bounds)
+            guard !owned.isEmpty else { continue }
+            // Intersect complements separately so overlapping pane bounds never
+            // reintroduce a fill through an even-odd overlap.
+            let complement = CGMutablePath()
+            complement.addRect(bounds)
+            complement.addRect(owned)
+            context.addPath(complement)
+            context.clip(using: .evenOdd)
+        }
+        backgroundFillColor.setFill()
+        dirtyRect.fill()
+    }
+}

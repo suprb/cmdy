@@ -5,19 +5,18 @@
 .vscode/
 .build/
 .swiftpm/
+.zig-build/
+/.zig-toolchain/
+/Core/Sources/CmdyNative/include/cmdy_engine_build.h
 *.xcodeproj
 DerivedData/
 Package.resolved
-!Plugins/bridge/Package.resolved
 !Vendor/BraincellBridge/Package.resolved
 __pycache__/
 *.py[cod]
 node_modules/
 .vite/
 *.tsbuildinfo
-
-# Generated website deployment output; CI rebuilds it from site/.
-/site/dist/
 
 # app packaging artifacts
 /*.app/
@@ -39,6 +38,3 @@ Plugins/*/.build/
 # Generated visual regression captures can contain local paths and sessions
 /Tests/zoo-results/**/*.png
 /Tests/zoo-results/*.png
-
-# Local full-length demo masters; optimized public clips stay tracked.
-/site/media/*.mp4

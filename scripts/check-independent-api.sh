@@ -13,7 +13,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-for tool in swift xcrun jq cmp diff find; do
+for tool in swift xcrun jq cmp diff find python3; do
     command -v "$tool" >/dev/null || {
         echo "missing required tool: $tool" >&2
         exit 2
@@ -30,11 +30,16 @@ for baseline in \
     }
 done
 
-swift build --package-path "$repo_root/Core"
-swift build --package-path "$repo_root/Renderer"
+if [ -z "${CMDY_ZIG:-}" ]; then
+    CMDY_ZIG="$("$repo_root/scripts/bootstrap-zig.sh")"
+    export CMDY_ZIG
+fi
+python3 "$repo_root/Core/Tools/ZigEngine/build.py" --optimize ReleaseFast
+swift build --manifest-cache none --disable-build-manifest-caching --package-path "$repo_root/Core" -c release
+swift build --manifest-cache none --disable-build-manifest-caching --package-path "$repo_root/Renderer" -c release
 
-core_bin="$(swift build --package-path "$repo_root/Core" --show-bin-path)"
-renderer_bin="$(swift build --package-path "$repo_root/Renderer" --show-bin-path)"
+core_bin="$(swift build --manifest-cache none --disable-build-manifest-caching --package-path "$repo_root/Core" -c release --show-bin-path)"
+renderer_bin="$(swift build --manifest-cache none --disable-build-manifest-caching --package-path "$repo_root/Renderer" -c release --show-bin-path)"
 sdk_path="$(xcrun --show-sdk-path)"
 target_triple="$(swift -print-target-info | jq -r '.target.triple')"
 
@@ -59,12 +64,17 @@ extract_symbols CmdyPTY "$api_work_dir/pty-raw" \
     -I "$core_bin/Modules" \
     -I "$core_bin/CmdyPTYShim.build"
 extract_symbols CmdyGPU "$api_work_dir/gpu-raw" \
-    -I "$renderer_bin/Modules"
+    -I "$renderer_bin/Modules" \
+    -I "$renderer_bin/CmdyNative.build" \
+    -I "$repo_root/Core/Sources/CmdyNative/include"
 
 # Symbol graphs describe the public source surface without exposing private
 # storage layout. Canonicalization removes source prose/locations, joins token
-# fragments (stored and computed read-only properties print the same public
-# declaration), and sorts set-like arrays. The resulting JSON remains strict
+# fragments, and sorts set-like arrays. A public mutable stored property and
+# a computed property with ordinary public get/set accessors have the same
+# source API. Normalize only that exact accessor suffix on property symbols;
+# get-only properties, let declarations, accessor modifiers and types remain
+# distinct. The resulting JSON remains strict
 # about names, argument labels/defaults, types, access, conformances, cases,
 # relationships, and public declaration spelling.
 canonicalize() {
@@ -77,6 +87,12 @@ canonicalize() {
             if type == "object" and has("declarationFragments") then
                 .declaration = ([.declarationFragments[].spelling] | join(""))
                 | del(.declarationFragments)
+            else . end
+          )
+        | .symbols |= map(
+            if (.kind.identifier == "swift.property" or .kind.identifier == "swift.type.property")
+               and (.declaration | test("(^| )var ")) then
+                .declaration |= sub(" \\{ get set \\}$"; "")
             else . end
           )
         | .symbols |= sort_by(.identifier.precise)
@@ -93,6 +109,9 @@ canonicalize \
 canonicalize \
     "$api_work_dir/gpu-raw/CmdyGPU@Foundation.symbols.json" \
     "$api_work_dir/CmdyGPU@Foundation.symbols.json"
+for baseline in CmdyPTY.symbols.json CmdyGPU.symbols.json CmdyGPU@Foundation.symbols.json; do
+    canonicalize "$baseline_dir/$baseline" "$api_work_dir/baseline-$baseline"
+done
 
 compare_exact() {
     local label="$1"
@@ -110,7 +129,7 @@ compare_exact() {
 
 compare_exact \
     CmdyPTY \
-    "$baseline_dir/CmdyPTY.symbols.json" \
+    "$api_work_dir/baseline-CmdyPTY.symbols.json" \
     "$api_work_dir/CmdyPTY.symbols.json"
 
 # One reviewed source-name migration is intentional: the old global
@@ -144,7 +163,7 @@ strip_reviewed_underline_key() {
 }
 
 strip_reviewed_underline_key \
-    "$baseline_dir/CmdyGPU.symbols.json" \
+    "$api_work_dir/baseline-CmdyGPU.symbols.json" \
     SwiftTermUnderlineStyleKey \
     "$api_work_dir/CmdyGPU-baseline-with-reviewed-key-removed.json"
 strip_reviewed_underline_key \
@@ -158,5 +177,39 @@ compare_exact \
     "$api_work_dir/CmdyGPU-current-with-reviewed-key-removed.json"
 compare_exact \
     'CmdyGPU Foundation extensions' \
-    "$baseline_dir/CmdyGPU@Foundation.symbols.json" \
+    "$api_work_dir/baseline-CmdyGPU@Foundation.symbols.json" \
     "$api_work_dir/CmdyGPU@Foundation.symbols.json"
+
+# Prove actual client operations for the properties whose backing storage moved
+# behind the native ABI. Writable reference key paths preserve their class
+# getter/setter semantics, including the optional closure's exact public type.
+cat > "$api_work_dir/RendererPropertyClient.swift" <<'SWIFT'
+import Foundation
+import CmdyGPU
+
+@MainActor
+func rendererPropertyClient(_ renderer: MetalTerminalRenderer) {
+    let booleans: [ReferenceWritableKeyPath<MetalTerminalRenderer, Bool>] = [
+        \.smoothCursorEnabled, \.hostCursorHidden, \.smoothScrollEnabled,
+    ]
+    let floats: [ReferenceWritableKeyPath<MetalTerminalRenderer, Float>] = [
+        \.cursorGlideSpeed, \.cursorGlideMaxDistance,
+    ]
+    for key in booleans { renderer[keyPath: key] = renderer[keyPath: key] }
+    for key in floats { renderer[keyPath: key] = renderer[keyPath: key] }
+    let callback: ReferenceWritableKeyPath<MetalTerminalRenderer, ((CGFloat) -> Void)?> = \.onScrollOffsetChanged
+    renderer[keyPath: callback] = renderer[keyPath: callback]
+    let presented: Int = MetalTerminalRenderer.framesPresented
+    let rebuilt: Int = MetalTerminalRenderer.rowsRebuilt
+    let reused: Int = MetalTerminalRenderer.rowsReused
+    MetalTerminalRenderer.framesPresented = presented
+    MetalTerminalRenderer.rowsRebuilt = rebuilt
+    MetalTerminalRenderer.rowsReused = reused
+    let _: String = MetalTerminalRenderer.userShaderPreamble
+}
+SWIFT
+swiftc -typecheck -target "$target_triple" -sdk "$sdk_path" \
+    -I "$renderer_bin/Modules" -I "$renderer_bin/CmdyNative.build" \
+    -I "$repo_root/Core/Sources/CmdyNative/include" \
+    "$api_work_dir/RendererPropertyClient.swift"
+echo "CmdyGPU renderer properties: compiler read/write and writable-key-path probes passed"

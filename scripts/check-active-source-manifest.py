@@ -28,11 +28,11 @@ from typing import Sequence
 SCHEMA_VERSION = 2
 MANIFEST_KIND = "cmdy-active-terminal-source-manifest"
 REVIEW_STATE = "unreviewed"
-POLICY_ID = "cmdy-active-terminal-source-policy-v2"
+POLICY_ID = "cmdy-active-terminal-source-policy-v5"
 POLICY_IMPLEMENTATION = "scripts/check-active-source-manifest.py"
 
 SOURCE_SUFFIXES = frozenset((
-    ".swift", ".metal",
+    ".swift", ".metal", ".zig", ".zon",
     ".c", ".m", ".mm", ".cc", ".cpp", ".cxx",
     ".s", ".S",
     ".h", ".H", ".hh", ".hp", ".hpp", ".h++", ".hxx",
@@ -40,16 +40,30 @@ SOURCE_SUFFIXES = frozenset((
     ".modulemap", ".apinotes",
 ))
 ACTIVE_ROOTS: tuple[tuple[str, tuple[str, ...]], ...] = (
+    # Retain the Swift reference roots in the governed set. Package.swift
+    # selects the native facades, but retaining a reference is not an exemption.
     ("Core/Sources/CmdyCore", (".swift",)),
+    ("Core/Sources/CmdyCoreZig", (".swift",)),
     ("Core/Sources/CmdyPTY", (".swift",)),
     ("Core/Sources/CmdyPTYShim", (".c", ".h")),
     ("Core/Sources/CmdyC", (".swift",)),
+    ("Core/Sources/CmdyCZig", (".swift",)),
+    ("Core/Sources/CmdyNative", (".c", ".h", ".modulemap")),
+    ("Core/Zig", (".zig", ".zon", ".metal")),
+    ("Core/Platform", (".m", ".c", ".h")),
+    ("Core/Plugins/VerifyNativeEngine", (".swift",)),
     ("Renderer/Sources/CmdyGPU", (".swift", ".metal")),
+    ("Renderer/Sources/CmdyGPUZig", (".swift", ".metal")),
     ("Kit/Sources/CmdyKit", (".swift",)),
     ("Identity/Sources/ProductIdentity", (".swift",)),
     ("Plugins/CmdySDK/Sources/CmdySDK", (".swift",)),
     ("Plugins/chromium/Support/Sources/ChromiumSupport", (".swift",)),
 )
+# Embedded inputs are bound byte-for-byte, including binary conformance data.
+SOURCE_DATA_ROOTS = ("Core/Zig/testdata",)
+GENERATED_NATIVE_STAMP = "Core/Sources/CmdyNative/include/cmdy_engine_build.h"
+NATIVE_BUILD_RECEIPT = "Core/.zig-build/manifest.json"
+NATIVE_BUILD_MODES = ("Debug", "ReleaseSafe", "ReleaseFast")
 REQUIRED_APP_SOURCES = (
     "App/CmdyCoreAdapter.swift",
     "App/CmdySnapshotShaper.swift",
@@ -59,6 +73,7 @@ REQUIRED_APP_SOURCES = (
 )
 SOURCE_PARENTS = (
     "Core/Sources",
+    "Core/Plugins",
     "Renderer/Sources",
     "Kit/Sources",
     "Identity/Sources",
@@ -92,6 +107,7 @@ RETIRED_MODULE_PATTERN = r"(?:SwiftTerm|Termite[A-Za-z0-9_]*)"
 IMPORT_SCAN_ROOTS = (
     "App",
     "Core/Sources",
+    "Core/Plugins",
     "Renderer/Sources",
     "Kit/Sources",
     "Identity/Sources",
@@ -107,9 +123,19 @@ PACKAGE_MANIFESTS = (
     "Plugins/CmdySDK/Package.swift",
     "Plugins/chromium/Support/Package.swift",
 )
+NATIVE_BUILD_INPUTS = (
+    "build.sh",
+    "scripts/bootstrap-zig.sh",
+    "Core/Tools/ZigEngine/build.py",
+    "Core/Tools/ZigEngine/source_inputs.py",
+    "Core/Tools/ZigEngine/apple_toolchain.py",
+    "Core/Tools/ZigEngine/verify.py",
+)
 PACKAGE_GRAPH_INPUTS = PACKAGE_MANIFESTS + (
     "Identity/Sources/ProductIdentity/Resources/product-identity.json",
-)
+    "App/Resources/Cmdy.sdef",
+    "package.sh",
+) + NATIVE_BUILD_INPUTS
 
 COMMENT_OR_STRING_RE = re.compile(
     r'(?s)/\*.*?\*/|//[^\n]*|""".*?"""|"(?:\\.|[^"\\])*"'
@@ -196,6 +222,13 @@ def policy_descriptor() -> dict[str, object]:
         "appSourceRule": "all-recursive-swift",
         "importScanRoots": list(IMPORT_SCAN_ROOTS),
         "modeRule": "git-regular-100644-or-100755",
+        "nativeBuildInputs": list(NATIVE_BUILD_INPUTS),
+        "generatedNativeStamp": {
+            "path": GENERATED_NATIVE_STAMP,
+            "receipt": NATIVE_BUILD_RECEIPT,
+            "modes": list(NATIVE_BUILD_MODES),
+            "rule": "optional-derived-header-excluded-after-exact-receipt-validation",
+        },
         "packageManifests": list(PACKAGE_MANIFESTS),
         "packageGraphInputs": list(PACKAGE_GRAPH_INPUTS),
         "policyId": POLICY_ID,
@@ -205,9 +238,40 @@ def policy_descriptor() -> dict[str, object]:
         "retiredModules": list(RETIRED_MODULES),
         "retiredRoots": list(RETIRED_ROOTS),
         "sourceParents": list(SOURCE_PARENTS),
+        "sourceDataRoots": list(SOURCE_DATA_ROOTS),
         "sourceSuffixes": sorted(SOURCE_SUFFIXES),
         "symlinkRule": "reject-in-governed-source-trees",
     }
+
+
+def _generated_native_stamp_issues(root: Path, path: Path) -> list[str]:
+    """Validate derived metadata without making source review machine-specific.
+
+    The archive verifier separately authenticates the receipt and archive. Here
+    exact bytes and constrained values ensure this exemption cannot hide C code.
+    A clean source export has neither the stamp nor the build receipt yet.
+    """
+    receipt_path = root / NATIVE_BUILD_RECEIPT
+    symlink = _first_symlink_component(root, receipt_path)
+    if symlink is not None:
+        return [f"native build receipt contains symlink component: {symlink}"]
+    try:
+        receipt = json.loads(receipt_path.read_bytes())
+        if not isinstance(receipt, dict):
+            raise ValueError("receipt must be an object")
+        key = receipt.get("source_key")
+        mode = receipt.get("optimize")
+        if (receipt.get("status") != "pass" or not isinstance(key, str)
+                or re.fullmatch(r"[0-9a-f]{64}", key) is None
+                or mode not in NATIVE_BUILD_MODES):
+            raise ValueError("invalid native build metadata")
+        expected = (f'#define CMDY_ZIG_SOURCE_KEY "{key}"\n'
+                    f'#define CMDY_ZIG_BUILD_MODE "{mode}"\n').encode("ascii")
+        if path.read_bytes() != expected:
+            raise ValueError("header differs from exact derived metadata")
+    except (OSError, ValueError):
+        return [f"invalid generated native build stamp: {GENERATED_NATIVE_STAMP}"]
+    return []
 
 
 def _governed_files(
@@ -222,9 +286,13 @@ def _governed_files(
         if path.is_symlink():
             issues.append(f"symlink in governed source tree: {relative}")
             continue
+        if relative == GENERATED_NATIVE_STAMP:
+            issues.extend(_generated_native_stamp_issues(root, path))
+            continue
         if not path.is_file():
             continue
-        if path.suffix in suffixes:
+        if (path.suffix in suffixes
+                or any(relative.startswith(data_root + "/") for data_root in SOURCE_DATA_ROOTS)):
             result.append(path)
         elif path.suffix in SOURCE_SUFFIXES:
             issues.append(

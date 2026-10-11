@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE dictionary SYSTEM "file://localhost/System/Library/DTDs/sdef.dtd">
+<dictionary title="CMDY Scripting Dictionary">
+  <!-- The published terminal/input-text event codes form a compatibility
+       subset of Ghostty's public scripting interface, not its implementation. -->
+  <suite name="CMDY Suite" code="Ghst" description="Read existing terminals and paste text without using the clipboard.">
+    <class name="application" code="capp" description="The CMDY application.">
+      <cocoa class="NSApplication"/>
+      <element type="terminal" access="r"><cocoa key="cmdyScriptTerminals"/></element>
+    </class>
+    <class name="terminal" code="Gtrm" plural="terminals" description="An existing terminal pane.">
+      <cocoa class="CmdyScriptTerminal"/>
+      <property name="id" code="ID  " type="text" access="r" description="Stable pane identifier."/>
+      <property name="name" code="pnam" type="text" access="r" description="The terminal window title."/>
+    </class>
+    <command name="input text" code="GhstInTx" description="Paste text to an existing terminal using its normal paste policy, without the clipboard, focus changes, or an added Return.">
+      <cocoa class="CmdyScriptInputTextCommand"/>
+      <direct-parameter type="text" description="The exact text to paste."/>
+      <parameter name="to" code="GItT" type="terminal" description="The existing target terminal.">
+        <cocoa key="terminal"/>
+      </parameter>
+    </command>
+  </suite>
+</dictionary>

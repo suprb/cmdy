@@ -139,6 +139,7 @@ public final class MetalTerminalRenderer: NSObject, MTKViewDelegate {
     private let dynamicBuffers: DynamicBufferRing
 
     private var rowCache: [Int: IndependentRowCacheEntry] = [:]
+    private var rowTextureResidency = RowTextureResidency()
     private var sharedTextRows: [IndependentSharedTextRowKey: Int] = [:]
     private var cacheUseClock: UInt64 = 0
     private let rowCacheBudget = 20 * 1_024 * 1_024
@@ -149,6 +150,10 @@ public final class MetalTerminalRenderer: NSObject, MTKViewDelegate {
     private var animationTimer: Timer?
     private var recoveryTimer: Timer?
     private var coalescedDrawTimer: Timer?
+    private var keyboardFeedbackTimer: Timer?
+    private var keyboardFeedbackDeadline: Double?
+    private var keyboardResponseDeadline: Double?
+    private var interactiveDrawRequests = InteractiveDrawRequests()
     private var framePacer = FrameBuildPacer()
     private let startTime = ProcessInfo.processInfo.systemUptime
     private var recentActivityUntil = 0.0
@@ -274,6 +279,7 @@ public final class MetalTerminalRenderer: NSObject, MTKViewDelegate {
         animationTimer?.invalidate()
         recoveryTimer?.invalidate()
         coalescedDrawTimer?.invalidate()
+        keyboardFeedbackTimer?.invalidate()
     }
 
     // MARK: Public controls
@@ -379,24 +385,61 @@ public final class MetalTerminalRenderer: NSObject, MTKViewDelegate {
     }
 
     public func cancelScrollAnimation() {
+        let hadMotion = scrollHeldPixels != 0 || scrollGlidePixels != 0
+            || scrollLastTime != 0
         scrollHeldPixels = 0
         scrollGlidePixels = 0
         scrollLastTime = 0
         onScrollOffsetChanged?(0)
+        guard hadMotion else { return }
         requestDraw()
         updateAnimationTimer()
     }
 
     public func noteActivity() {
-        let now = ProcessInfo.processInfo.systemUptime
+        noteActivity(at: ProcessInfo.processInfo.systemUptime)
+    }
+
+    /// App-internal input coordination, outside the stable renderer API.
+    /// Let a prompt echo supply the feedback frame instead of first presenting
+    /// the old snapshot. One nonrepeating fallback requests cursor feedback
+    /// within an interaction frame interval when the process produces no echo.
+    @_spi(CmdyApp) public func noteKeyboardInteraction() {
+        noteKeyboardInteraction(at: ProcessInfo.processInfo.systemUptime)
+    }
+
+    /// Focus and attachment changes retire input coordination without
+    /// cancelling unrelated composition requests or extending activity.
+    @_spi(CmdyApp) public func cancelKeyboardInteraction() {
+        cancelKeyboardResponse()
+    }
+
+    func noteKeyboardInteraction(at now: Double) {
+        recentDirectManipulationUntil = now + 0.15
+        keyboardResponseDeadline = recentDirectManipulationUntil
+        recordActivity(at: now)
+        updateAnimationTimer()
+        scheduleKeyboardFeedback(at: now)
+    }
+
+    private func noteActivity(at now: Double) {
+        // Cursor feedback may have already presented the old snapshot. Keep
+        // the first bounded response on the direct path after that fallback.
+        let respondsToKeyboard = keyboardResponseDeadline.map { now < $0 } ?? false
+        cancelKeyboardResponse()
+        recordActivity(at: now)
+        requestDraw(immediately: respondsToKeyboard)
+        updateAnimationTimer()
+    }
+
+    private func recordActivity(at now: Double) {
         lastCursorActivityTime = now
         recentActivityUntil = now + 12
-        requestDraw()
-        updateAnimationTimer()
     }
 
     public func invalidateRowCache() {
         rowCache.removeAll(keepingCapacity: true)
+        rowTextureResidency.removeAll()
         sharedTextRows.removeAll(keepingCapacity: true)
         requestDraw()
     }
@@ -411,13 +454,37 @@ public final class MetalTerminalRenderer: NSObject, MTKViewDelegate {
     // MARK: Draw
 
     public func draw(in view: MTKView) {
+        let traceStarted = RendererPerformanceTrace.now()
+        let traceSource = source.map { Int(bitPattern: ObjectIdentifier($0)) } ?? 0
+        guard let drawRequestGeneration = interactiveDrawRequests.beginDraw() else {
+            RendererPerformanceTrace.record(event: "draw.reentrant", started: traceStarted,
+                                            fields: ["source": traceSource])
+            redrawPending = true
+            return
+        }
+        var committedDrawGeneration: UInt64?
+        var traceOutcome = 0
+        defer {
+            interactiveDrawRequests.finishDraw(committed: committedDrawGeneration)
+            if interactiveDrawRequests.isPending,
+               interactiveDrawRequests.generation != drawRequestGeneration {
+                requestDraw()
+            }
+            RendererPerformanceTrace.record(event: "draw.total", started: traceStarted,
+                                            fields: ["source": traceSource,
+                                                     "outcome": traceOutcome,
+                                                     "frame": Int(traceStarted)])
+        }
         guard !frameInFlight else {
+            traceOutcome = 2
             redrawPending = true
             return
         }
         guard let source,
               let window = view.window,
-              window.occlusionState.contains(.visible) else {
+              window.occlusionState.contains(.visible),
+              !view.isHiddenOrHasHiddenAncestor else {
+            traceOutcome = 3
             updateAnimationTimer()
             return
         }
@@ -426,6 +493,10 @@ public final class MetalTerminalRenderer: NSObject, MTKViewDelegate {
         let pacingDelay = framePacer.delay(
             at: pacingNow, targetFPS: targetFrameRate(for: view))
         if pacingDelay > 0.000_25 {
+            traceOutcome = 4
+            RendererPerformanceTrace.record(event: "draw.paced", started: traceStarted,
+                                            fields: ["source": traceSource,
+                                                     "delayNanoseconds": Int(pacingDelay * 1_000_000_000)])
             redrawPending = true
             scheduleCoalescedDraw(after: pacingDelay)
             return
@@ -436,7 +507,11 @@ public final class MetalTerminalRenderer: NSObject, MTKViewDelegate {
         framePacer.markBuild(at: pacingNow)
 
         // The snapshot is deliberately the first source read for the frame.
+        let traceCaptureStarted = RendererPerformanceTrace.now()
         let snapshot = source.captureGrid()
+        RendererPerformanceTrace.record(event: "draw.captureGrid", started: traceCaptureStarted,
+                                        fields: ["source": traceSource, "frame": Int(traceStarted),
+                                                 "rows": snapshot.rows, "columns": snapshot.cols])
         cursorBlinkEligible = Self.cursorBlinkEligible(
             snapshot: snapshot, hostCursorHidden: hostCursorHidden)
         let scale = source.backingScaleFactor()
@@ -447,13 +522,22 @@ public final class MetalTerminalRenderer: NSObject, MTKViewDelegate {
               cellSize.width.isFinite, cellSize.height.isFinite,
               cellSize.width > 0, cellSize.height > 0,
               bounds.width > 0, bounds.height > 0,
-              view.drawableSize.width > 0, view.drawableSize.height > 0 else { return }
+              view.drawableSize.width > 0, view.drawableSize.height > 0 else {
+            traceOutcome = 5
+            return
+        }
 
+        let traceDrawableStarted = RendererPerformanceTrace.now()
         guard let drawable = view.currentDrawable,
               let viewPass = view.currentRenderPassDescriptor else {
+            traceOutcome = 6
+            RendererPerformanceTrace.record(event: "draw.missingDrawable", started: traceDrawableStarted,
+                                            fields: ["source": traceSource, "frame": Int(traceStarted)])
             scheduleDrawableRecovery()
             return
         }
+        RendererPerformanceTrace.record(event: "draw.drawable", started: traceDrawableStarted,
+                                        fields: ["source": traceSource, "frame": Int(traceStarted)])
         recoveryTimer?.invalidate()
         recoveryTimer = nil
 
@@ -489,6 +573,10 @@ public final class MetalTerminalRenderer: NSObject, MTKViewDelegate {
         let colorKeyForeground = IndependentRowRasterizer.packedColor(foreground)
         let colorKeyBackground = IndependentRowRasterizer.packedColor(background)
 
+        let traceRowsStarted = RendererPerformanceTrace.now()
+        let traceRebuiltBefore = Self.rowsRebuilt
+        let traceReusedBefore = Self.rowsReused
+        let revisionSource = source as? any SnapshotRowRevisionSource
         for request in rowRequests {
             let version = source.lineVersion(forRow: request.sourceRow)
             let mode = source.lineRenderMode(forRow: request.sourceRow)
@@ -510,60 +598,29 @@ public final class MetalTerminalRenderer: NSObject, MTKViewDelegate {
                 antialiasBlocks: source.antiAliasCustomBlockGlyphs,
                 bufferingMode: source.metalBufferingMode)
             let explicitlyDirty = dirtyRows?.contains(request.sourceRow) == true
-            if !explicitlyDirty, var cached = rowCache[request.cacheRow], cached.key == key {
-                cacheUseClock &+= 1
-                cached.lastUse = cacheUseClock
-                rowCache[request.cacheRow] = cached
-                visibleRows.append((request.displayIndex, request.sourceRow,
-                                    request.cacheRow, mode, cached))
-                Self.rowsReused += 1
-                continue
-            }
-
-            let info = source.lineInfo(forRow: request.sourceRow)
-            let sharedTextKey = IndependentSharedTextRowKey(
-                info: info, rowKey: key)
-            var sharedEntry: IndependentRowCacheEntry?
-            if !explicitlyDirty, let sharedTextKey {
-                if let sharedRow = sharedTextRows[sharedTextKey],
-                   let cached = rowCache[sharedRow],
-                   cached.sharedTextKey == sharedTextKey {
-                    sharedEntry = cached
-                } else if let fallback = rowCache.first(where: {
-                    $0.value.sharedTextKey == sharedTextKey
-                }) {
-                    sharedTextRows[sharedTextKey] = fallback.key
-                    sharedEntry = fallback.value
-                }
-            }
-            if var shared = sharedEntry {
-                cacheUseClock &+= 1
-                shared.key = key
-                shared.lastUse = cacheUseClock
-                storeRowCacheEntry(shared, at: request.cacheRow)
-                visibleRows.append((request.displayIndex, request.sourceRow,
-                                    request.cacheRow, mode, shared))
-                Self.rowsReused += 1
-                continue
-            }
-            if let entry = makeRowEntry(info: info, key: key,
-                                        sharedTextKey: sharedTextKey,
-                                        scaledFont: scaledFont,
-                                        foreground: foreground,
-                                        underlinePosition: source.underlinePosition(),
-                                        underlineThickness: source.underlineThickness(),
-                                        cellWidth: cellWidthPx,
-                                        cellHeight: cellHeightPx,
-                                        scale: scale) {
-                storeRowCacheEntry(entry, at: request.cacheRow)
+            if let entry = resolveRowEntry(
+                key: key, explicitlyDirty: explicitlyDirty,
+                info: source.lineInfo(forRow: request.sourceRow),
+                revision: revisionSource?.snapshotRowRevision(forRow: request.sourceRow),
+                scaledFont: scaledFont, foreground: foreground,
+                underlinePosition: source.underlinePosition(),
+                underlineThickness: source.underlineThickness(),
+                cellWidth: cellWidthPx, cellHeight: cellHeightPx, scale: scale) {
                 visibleRows.append((request.displayIndex, request.sourceRow,
                                     request.cacheRow, mode, entry))
-                Self.rowsRebuilt += 1
             }
         }
+        RendererPerformanceTrace.record(event: "draw.rows", started: traceRowsStarted,
+                                        fields: ["source": traceSource, "frame": Int(traceStarted),
+                                                 "rowRequests": rowRequests.count,
+                                                 "rebuilt": Self.rowsRebuilt - traceRebuiltBefore,
+                                                 "reused": Self.rowsReused - traceReusedBefore])
+        let traceMaintenanceStarted = RendererPerformanceTrace.now()
         trimRowCache(visibleRows: Set(visibleRows.map(\.cacheRow)),
                      visibleCount: max(snapshot.rows, visibleRows.count))
         pruneImageCaches(liveKittyIds: source.kittyLiveImageIds)
+        RendererPerformanceTrace.record(event: "draw.cacheMaintenance", started: traceMaintenanceStarted,
+                                        fields: ["source": traceSource, "frame": Int(traceStarted)])
 
         guard let commandBuffer = commandQueue.makeCommandBuffer() else { return }
         commandBuffer.label = "cmdy independent terminal frame"
@@ -619,6 +676,7 @@ public final class MetalTerminalRenderer: NSObject, MTKViewDelegate {
         let resolution = SIMD2(Float(view.drawableSize.width),
                                Float(view.drawableSize.height))
 
+        let traceEncodingStarted = RendererPerformanceTrace.now()
         encodeRows(visibleRows, encoder: encoder,
                    xOrigin: xOrigin, yOrigin: yOrigin,
                    cellWidth: cellWidthPx, cellHeight: cellHeightPx,
@@ -640,23 +698,162 @@ public final class MetalTerminalRenderer: NSObject, MTKViewDelegate {
             finalEncoder.endEncoding()
         }
 
+        RendererPerformanceTrace.record(event: "draw.encoding", started: traceEncodingStarted,
+                                        fields: ["source": traceSource, "frame": Int(traceStarted)])
+        let traceCommitStarted = RendererPerformanceTrace.now()
+        if RendererPerformanceTrace.enabled {
+            drawable.addPresentedHandler { presented in
+                let seconds = presented.presentedTime
+                RendererPerformanceTrace.record(event: "draw.presented", started: traceCommitStarted,
+                                                fields: ["source": traceSource,
+                                                         "frame": Int(traceStarted),
+                                                         "presentedNanoseconds": seconds.isFinite
+                                                            ? Int(seconds * 1_000_000_000) : 0])
+            }
+        }
         commandBuffer.present(drawable)
-        commandBuffer.addCompletedHandler { [weak self] _ in
+        commandBuffer.addCompletedHandler { [weak self] completed in
+            if RendererPerformanceTrace.enabled {
+                let gpuDuration = completed.gpuEndTime - completed.gpuStartTime
+                RendererPerformanceTrace.record(event: "draw.gpuComplete", started: traceCommitStarted,
+                                                fields: ["source": traceSource,
+                                                         "frame": Int(traceStarted),
+                                                         "gpuNanoseconds": gpuDuration.isFinite
+                                                            ? Int(max(0, gpuDuration) * 1_000_000_000) : 0])
+            }
             DispatchQueue.main.async {
                 guard let self else { return }
                 Self.framesPresented += 1
                 self.frameInFlight = false
-                if self.redrawPending {
+                if self.redrawPending || self.interactiveDrawRequests.isPending {
                     self.redrawPending = false
                     self.requestDraw()
                 }
             }
         }
         commandBuffer.commit()
+        traceOutcome = 1
+        RendererPerformanceTrace.record(event: "draw.commit", started: traceCommitStarted,
+                                        fields: ["source": traceSource, "frame": Int(traceStarted)])
+        committedDrawGeneration = drawRequestGeneration
+        cancelKeyboardFeedback()
         updateAnimationTimer()
     }
 
     // MARK: Row building and residency
+
+    /// Resolve a row independently of drawable acquisition so cache decisions
+    /// and the raster payload can also be verified without a visible window.
+    func resolveRowEntry(key: IndependentRowKey,
+                         explicitlyDirty: Bool,
+                         info makeInfo: @autoclosure () -> ViewLineInfo,
+                         revision makeRevision: @autoclosure () -> SnapshotRowRevision? = nil,
+                         scaledFont: NSFont,
+                         foreground: NSColor,
+                         underlinePosition: @autoclosure () -> CGFloat,
+                         underlineThickness: @autoclosure () -> CGFloat,
+                         cellWidth: CGFloat,
+                         cellHeight: CGFloat,
+                         scale: CGFloat) -> IndependentRowCacheEntry? {
+        if !explicitlyDirty, var cached = rowCache[key.absoluteRow], cached.key == key {
+            cacheUseClock &+= 1
+            cached.lastUse = cacheUseClock
+            rowCache[key.absoluteRow] = cached
+            Self.rowsReused += 1
+            return cached
+        }
+
+        func makeRasterInputs() -> IndependentRowRasterInputs {
+            IndependentRowRasterInputs(
+                cellWidth: cellWidth, cellHeight: cellHeight, scale: scale,
+                normalFont: scaledFont, foreground: IndependentRowRasterizer.rgba(foreground),
+                underlinePosition: underlinePosition(),
+                underlineThickness: underlineThickness())
+        }
+        let traceRevisionStarted = RendererPerformanceTrace.now()
+        let proposedRevision = makeRevision()
+        let revision = proposedRevision.flatMap {
+            $0.content == key.version && $0.content != 0 && $0.context != 0 ? $0 : nil
+        }
+        var checkedRasterInputs: IndependentRowRasterInputs?
+        if let revision {
+            let inputs = makeRasterInputs()
+            checkedRasterInputs = inputs
+            if var cached = rowCache[key.absoluteRow], cached.key == key,
+               cached.snapshotRevision == revision,
+               cached.sharedTextKey?.rasterInputs == inputs {
+                cacheUseClock &+= 1
+                cached.lastUse = cacheUseClock
+                rowCache[key.absoluteRow] = cached
+                Self.rowsReused += 1
+                RendererPerformanceTrace.record(event: "row.snapshotRevision",
+                    started: traceRevisionStarted,
+                    fields: ["row": key.absoluteRow, "reused": 1])
+                return cached
+            }
+        }
+        if proposedRevision != nil {
+            RendererPerformanceTrace.record(event: "row.snapshotRevision",
+                started: traceRevisionStarted,
+                fields: ["row": key.absoluteRow, "reused": 0])
+        }
+
+        let traceInfoStarted = RendererPerformanceTrace.now()
+        let info = makeInfo()
+        RendererPerformanceTrace.record(event: "row.info", started: traceInfoStarted,
+                                        fields: ["row": key.absoluteRow, "columns": key.cols,
+                                                 "explicitlyDirty": explicitlyDirty ? 1 : 0])
+        let traceKeyStarted = RendererPerformanceTrace.now()
+        let rasterInputs = checkedRasterInputs ?? makeRasterInputs()
+        let sharedTextKey = IndependentSharedTextRowKey(
+            info: info, rowKey: key, rasterInputs: rasterInputs)
+        RendererPerformanceTrace.record(event: "row.sharedKey", started: traceKeyStarted,
+                                        fields: ["row": key.absoluteRow,
+                                                 "shareable": sharedTextKey != nil ? 1 : 0])
+        let traceLookupStarted = RendererPerformanceTrace.now()
+        var sharedEntry: IndependentRowCacheEntry?
+        // A dirty flag invalidates the terminal-identity shortcut above. This
+        // key instead binds the freshly read text, attributes, and raster
+        // settings, so identical dirty rows can share immutable payloads too.
+        if let sharedTextKey {
+            if let sharedRow = sharedTextRows[sharedTextKey],
+               let cached = rowCache[sharedRow],
+               cached.sharedTextKey == sharedTextKey {
+                sharedEntry = cached
+            } else if let fallback = rowCache.first(where: {
+                $0.value.sharedTextKey == sharedTextKey
+            }) {
+                sharedTextRows[sharedTextKey] = fallback.key
+                sharedEntry = fallback.value
+            }
+        }
+        RendererPerformanceTrace.record(event: "row.sharedLookup", started: traceLookupStarted,
+                                        fields: ["row": key.absoluteRow,
+                                                 "reused": sharedEntry != nil ? 1 : 0])
+        if var shared = sharedEntry {
+            cacheUseClock &+= 1
+            shared.key = key
+            shared.snapshotRevision = revision
+            shared.lastUse = cacheUseClock
+            storeRowCacheEntry(shared, at: key.absoluteRow)
+            Self.rowsReused += 1
+            return shared
+        }
+        guard var entry = makeRowEntry(
+            info: info, key: key, sharedTextKey: sharedTextKey,
+            scaledFont: scaledFont, foreground: foreground,
+            underlinePosition: rasterInputs.underlinePosition,
+            underlineThickness: rasterInputs.underlineThickness,
+            cellWidth: cellWidth, cellHeight: cellHeight, scale: scale) else {
+            return nil
+        }
+        // Images, procedural items and unsupported attributes have no complete
+        // shared-text key, so they must retain the explicit-dirty fallback.
+        entry.snapshotRevision = sharedTextKey == nil ? nil : revision
+        storeRowCacheEntry(entry, at: key.absoluteRow)
+        Self.rowsRebuilt += 1
+        return entry
+    }
 
     private func makeRowEntry(info: ViewLineInfo,
                               key: IndependentRowKey,
@@ -668,9 +865,17 @@ public final class MetalTerminalRenderer: NSObject, MTKViewDelegate {
                               cellWidth: CGFloat,
                               cellHeight: CGFloat,
                               scale: CGFloat) -> IndependentRowCacheEntry? {
+        let traceEntryStarted = RendererPerformanceTrace.now()
+        defer {
+            RendererPerformanceTrace.record(event: "row.entry", started: traceEntryStarted,
+                                            fields: ["row": key.absoluteRow,
+                                                     "widthPixels": key.widthPx,
+                                                     "heightPixels": key.heightPx])
+        }
         reserveFrozenCustomGlyphs(
             in: info, cellWidth: cellWidth, cellHeight: cellHeight,
             scale: scale, antialias: key.antialiasBlocks)
+        let traceRasterStarted = RendererPerformanceTrace.now()
         guard let cpu = IndependentRowRasterizer.rasterize(
             info: info, cols: key.cols, width: key.widthPx, height: key.heightPx,
             cellWidth: cellWidth, cellHeight: cellHeight, scale: scale,
@@ -680,9 +885,23 @@ public final class MetalTerminalRenderer: NSObject, MTKViewDelegate {
             preset: key.preset, antialiasBlocks: key.antialiasBlocks) else {
             return nil
         }
-        let coverage = makeTexture(width: cpu.width, height: cpu.height,
-                                   format: .r8Unorm, bytes: cpu.coverage,
-                                   bytesPerRow: cpu.width)
+        RendererPerformanceTrace.record(event: "row.raster", started: traceRasterStarted,
+                                        fields: ["row": key.absoluteRow,
+                                                 "backgrounds": cpu.backgrounds.count,
+                                                 "glyphSeeds": cpu.glyphSeeds.count,
+                                                 "decorations": cpu.decorations.count])
+        // Blank coverage contributes no pixels, but still costs a texture and
+        // one glyph draw per tint span. Test the complete row so overhanging
+        // ink in a neighboring cell is preserved. DEC line modes can draw
+        // atlas glyphs independently of this bitmap, so retain their gate
+        // texture even when the row-local bitmap clips all of their pixels.
+        let needsCoverage = !cpu.glyphSeeds.isEmpty
+            || cpu.coverage.contains(where: { $0 != 0 })
+        let coverage = needsCoverage
+            ? makeTexture(width: cpu.width, height: cpu.height,
+                          format: .r8Unorm, bytes: cpu.coverage,
+                          bytesPerRow: cpu.width)
+            : nil
         let colorLayers = cpu.colorTiles.compactMap { tile -> IndependentColorLayer? in
             guard let texture = makeTexture(width: tile.width, height: tile.height,
                                             format: .bgra8Unorm,
@@ -788,17 +1007,28 @@ public final class MetalTerminalRenderer: NSObject, MTKViewDelegate {
 
     private func trimRowCache(visibleRows: Set<Int>, visibleCount: Int) {
         let rowLimit = max(1, visibleCount * 3)
-        while rowCache.count > rowLimit || rowCacheAllocatedBytes > rowCacheBudget {
-            let candidates = rowCache.filter { !visibleRows.contains($0.key) }
-            guard let victim = candidates.min(by: { $0.value.lastUse < $1.value.lastUse }) else {
-                break
-            }
-            removeRowCacheEntry(at: victim.key)
+        guard rowCache.count > rowLimit || rowCacheAllocatedBytes > rowCacheBudget else { return }
+        // Sort the eligible rows once. Rebuilding/filtering the full cache for
+        // every eviction made a large resize or memory-pressure trim quadratic.
+        let candidates = rowCache.compactMap { row, entry -> (row: Int, lastUse: UInt64)? in
+            visibleRows.contains(row) ? nil : (row, entry.lastUse)
+        }.sorted {
+            $0.lastUse == $1.lastUse ? $0.row < $1.row : $0.lastUse < $1.lastUse
+        }
+        for victim in candidates {
+            guard rowCache.count > rowLimit || rowCacheAllocatedBytes > rowCacheBudget else { break }
+            removeRowCacheEntry(at: victim.row)
         }
     }
 
     private func storeRowCacheEntry(_ entry: IndependentRowCacheEntry,
                                     at cacheRow: Int) {
+        // Retain first: replacing a row with the same shared texture should
+        // not temporarily drop its allocation and query Metal a second time.
+        rowTextureResidency.retain(entry)
+        if let previous = rowCache[cacheRow] {
+            rowTextureResidency.release(previous)
+        }
         if let previousKey = rowCache[cacheRow]?.sharedTextKey,
            sharedTextRows[previousKey] == cacheRow {
             sharedTextRows.removeValue(forKey: previousKey)
@@ -810,27 +1040,14 @@ public final class MetalTerminalRenderer: NSObject, MTKViewDelegate {
     }
 
     private func removeRowCacheEntry(at cacheRow: Int) {
-        guard let removed = rowCache.removeValue(forKey: cacheRow),
-              let sharedTextKey = removed.sharedTextKey,
+        guard let removed = rowCache.removeValue(forKey: cacheRow) else { return }
+        rowTextureResidency.release(removed)
+        guard let sharedTextKey = removed.sharedTextKey,
               sharedTextRows[sharedTextKey] == cacheRow else { return }
         sharedTextRows.removeValue(forKey: sharedTextKey)
     }
 
-    var rowCacheAllocatedBytes: Int {
-        var seen: Set<ObjectIdentifier> = []
-        var total = 0
-        for entry in rowCache.values {
-            if let texture = entry.coverageTexture,
-               seen.insert(ObjectIdentifier(texture as AnyObject)).inserted {
-                total += texture.allocatedSize
-            }
-            for layer in entry.colorLayers
-                where seen.insert(ObjectIdentifier(layer.texture as AnyObject)).inserted {
-                total += layer.texture.allocatedSize
-            }
-        }
-        return total
-    }
+    var rowCacheAllocatedBytes: Int { rowTextureResidency.allocatedBytes }
 
     var rowCacheAllocatedBytesForTesting: Int { rowCacheAllocatedBytes }
 
@@ -839,12 +1056,27 @@ public final class MetalTerminalRenderer: NSObject, MTKViewDelegate {
         visibleRows: Set<Int>,
         visibleCount: Int
     ) {
-        rowCache = entries
+        rowCache.removeAll(keepingCapacity: true)
+        rowTextureResidency.removeAll()
         sharedTextRows.removeAll(keepingCapacity: true)
+        for (row, entry) in entries { storeRowCacheEntry(entry, at: row) }
         trimRowCache(visibleRows: visibleRows, visibleCount: visibleCount)
     }
 
     var rowCacheCountForTesting: Int { rowCache.count }
+    var rowCacheRowsForTesting: Set<Int> { Set(rowCache.keys) }
+
+    func storeAndTrimRowCacheEntryForTesting(
+        _ entry: IndependentRowCacheEntry, at row: Int,
+        visibleRows: Set<Int>, visibleCount: Int
+    ) {
+        storeRowCacheEntry(entry, at: row)
+        trimRowCache(visibleRows: visibleRows, visibleCount: visibleCount)
+    }
+
+    func trimRowCacheForTesting(visibleRows: Set<Int>, visibleCount: Int) {
+        trimRowCache(visibleRows: visibleRows, visibleCount: visibleCount)
+    }
 
     // MARK: Composition
 
@@ -863,6 +1095,7 @@ public final class MetalTerminalRenderer: NSObject, MTKViewDelegate {
         // 1. Per-cell backgrounds plus the dynamic selection plane. Selection
         // spans are deliberately absent from the row cache: a drag changes
         // only these few quads, never CoreText or glyph rasterization.
+        let traceBackgroundsStarted = RendererPerformanceTrace.now()
         var backgrounds: [IndependentQuadVertex] = []
         var selections: [IndependentQuadVertex] = []
         let selectionSource = source as? any MetalSelectionRenderSource
@@ -898,8 +1131,13 @@ public final class MetalTerminalRenderer: NSObject, MTKViewDelegate {
         }
         backgrounds.append(contentsOf: selections)
         encodeSolid(vertices: backgrounds, encoder: encoder, resolution: resolution)
+        RendererPerformanceTrace.record(event: "draw.backgroundEncoding", started: traceBackgroundsStarted,
+                                        fields: ["rows": rows.count,
+                                                 "quads": backgrounds.count / 6,
+                                                 "selectionQuads": selections.count / 6])
 
         // 2. Grayscale/color glyphs.
+        let traceGlyphsStarted = RendererPerformanceTrace.now()
         for row in rows {
             encodeCoverage(row: row, encoder: encoder,
                            xOrigin: xOrigin, yOrigin: yOrigin,
@@ -912,6 +1150,8 @@ public final class MetalTerminalRenderer: NSObject, MTKViewDelegate {
                               resolution: resolution, flipped: false)
             }
         }
+        RendererPerformanceTrace.record(event: "draw.glyphEncoding", started: traceGlyphsStarted,
+                                        fields: ["rows": rows.count])
 
         // 3. Underlines, strikes, blocks, and other solid decorations.
         var decorations: [IndependentQuadVertex] = []
@@ -1688,7 +1928,8 @@ public final class MetalTerminalRenderer: NSObject, MTKViewDelegate {
     }
 
     private func shouldAnimate() -> Bool {
-        guard let view, view.window?.occlusionState.contains(.visible) == true else {
+        guard let view, view.window?.occlusionState.contains(.visible) == true,
+              !view.isHiddenOrHasHiddenAncestor else {
             return false
         }
         let now = ProcessInfo.processInfo.systemUptime
@@ -1710,6 +1951,10 @@ public final class MetalTerminalRenderer: NSObject, MTKViewDelegate {
     }
 
     private func updateAnimationTimer() {
+        if !hasVisibleView {
+            cancelKeyboardResponse()
+            interactiveDrawRequests.cancel()
+        }
         let animate = shouldAnimate()
         guard animate, let view else {
             // The activity window is an exact number of pulse cycles, but a
@@ -1721,8 +1966,10 @@ public final class MetalTerminalRenderer: NSObject, MTKViewDelegate {
                 timerActive: animationTimer != nil,
                 blinkEligible: cursorBlinkEligible,
                 caretFocused: source?.caretFocused == true,
-                viewVisible: self.view?.window?.occlusionState
-                    .contains(.visible) == true,
+                viewVisible: self.view.map {
+                    $0.window?.occlusionState.contains(.visible) == true
+                        && !$0.isHiddenOrHasHiddenAncestor
+                } ?? false,
                 now: now,
                 activeUntil: recentActivityUntil)
             animationTimer?.invalidate()
@@ -1765,9 +2012,11 @@ public final class MetalTerminalRenderer: NSObject, MTKViewDelegate {
         RunLoop.main.add(animationTimer!, forMode: .common)
     }
 
-    private func targetFrameRate(for view: MTKView) -> Double {
+    private func targetFrameRate(
+        for view: MTKView, at now: Double = ProcessInfo.processInfo.systemUptime
+    ) -> Double {
         let process = ProcessInfo.processInfo
-        if process.systemUptime < recentDirectManipulationUntil
+        if now < recentDirectManipulationUntil
             || SmoothScrollMotion.shouldSelfAnimate(glide: scrollGlidePixels) {
             let displayFPS = max(
                 1, view.window?.screen?.maximumFramesPerSecond
@@ -1801,11 +2050,14 @@ public final class MetalTerminalRenderer: NSObject, MTKViewDelegate {
 
     private func scheduleCoalescedDraw(after delay: Double) {
         guard coalescedDrawTimer == nil else { return }
+        let traceStarted = RendererPerformanceTrace.now()
         coalescedDrawTimer = Timer.scheduledTimer(
             withTimeInterval: max(0.001, delay), repeats: false
         ) { [weak self] _ in
             MainActor.assumeIsolated {
                 guard let self else { return }
+                RendererPerformanceTrace.record(event: "draw.pacingTimer", started: traceStarted,
+                                                fields: ["requestedNanoseconds": Int(delay * 1_000_000_000)])
                 self.coalescedDrawTimer = nil
                 self.requestDraw()
             }
@@ -1815,15 +2067,133 @@ public final class MetalTerminalRenderer: NSObject, MTKViewDelegate {
         }
     }
 
+    private var hasVisibleView: Bool {
+        guard let view else { return false }
+        return view.window?.occlusionState.contains(.visible) == true
+            && !view.isHiddenOrHasHiddenAncestor
+    }
+
+    private func scheduleKeyboardFeedback(at now: Double) {
+        // Preserve the first key's deadline so a stream of unacknowledged
+        // input cannot indefinitely postpone visible cursor feedback.
+        guard keyboardFeedbackTimer == nil, hasVisibleView, let view else { return }
+        let process = ProcessInfo.processInfo
+        let fps = Self.interactiveContentTargetFPS(
+            isKeyWindow: view.window?.isKeyWindow == true,
+            thermalState: process.thermalState,
+            lowPowerMode: process.isLowPowerModeEnabled,
+            maximumFramesPerSecond: view.window?.screen?.maximumFramesPerSecond
+                ?? view.preferredFramesPerSecond)
+        let interval = 1 / max(1, fps)
+        keyboardFeedbackDeadline = now + interval
+        keyboardFeedbackTimer = Timer.scheduledTimer(
+            withTimeInterval: interval, repeats: false
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                self.cancelKeyboardFeedback()
+                guard self.hasVisibleView else {
+                    self.keyboardResponseDeadline = nil
+                    return
+                }
+                self.requestDraw(immediately: true)
+            }
+        }
+        RunLoop.main.add(keyboardFeedbackTimer!, forMode: .common)
+    }
+
+    private func cancelKeyboardFeedback() {
+        keyboardFeedbackTimer?.invalidate()
+        keyboardFeedbackTimer = nil
+        keyboardFeedbackDeadline = nil
+    }
+
+    private func cancelKeyboardResponse() {
+        keyboardResponseDeadline = nil
+        cancelKeyboardFeedback()
+    }
+
     private func resetFramePacing() {
         framePacer.reset()
         coalescedDrawTimer?.invalidate()
         coalescedDrawTimer = nil
     }
 
-    private func requestDraw() {
+    private func requestDraw(immediately: Bool = false) {
         guard let view else { return }
+        if immediately {
+            RendererPerformanceTrace.record(event: "draw.keyboardRequest",
+                                            started: RendererPerformanceTrace.now(),
+                                            fields: ["source": source.map {
+                                                Int(bitPattern: ObjectIdentifier($0))
+                                            } ?? 0])
+            interactiveDrawRequests.request()
+            // The keyboard interaction may have raised the cadence since a
+            // previous output frame scheduled this timer. Reevaluate the
+            // existing pacer; do not discard its last-build timestamp.
+            coalescedDrawTimer?.invalidate()
+            coalescedDrawTimer = nil
+        }
+        if interactiveDrawRequests.isPending {
+            guard hasVisibleView else {
+                cancelKeyboardResponse()
+                interactiveDrawRequests.cancel()
+                return
+            }
+            if frameInFlight || interactiveDrawRequests.isDrawing {
+                redrawPending = true
+                return
+            }
+            guard interactiveDrawRequests.queueServiceIfNeeded(
+                blocked: coalescedDrawTimer != nil
+            ) else { return }
+            // Finish the publication callback (including overlay updates)
+            // before drawing. Never call MTKView.draw() from a draw callback.
+            let traceQueued = RendererPerformanceTrace.now()
+            let traceSource = source.map { Int(bitPattern: ObjectIdentifier($0)) } ?? 0
+            DispatchQueue.main.async { [weak self] in
+                RendererPerformanceTrace.record(event: "draw.manualQueueWait", started: traceQueued,
+                                                fields: ["source": traceSource])
+                self?.serviceInteractiveDraw()
+            }
+            return
+        }
         view.setNeedsDisplay(view.bounds)
+    }
+
+    private func serviceInteractiveDraw() {
+        guard interactiveDrawRequests.beginService() else { return }
+        guard let view, hasVisibleView else {
+            cancelKeyboardResponse()
+            interactiveDrawRequests.cancel()
+            return
+        }
+        guard !frameInFlight, !interactiveDrawRequests.isDrawing else {
+            redrawPending = true
+            return
+        }
+        // This manual draw services the same current source as an AppKit
+        // invalidation, so retire that duplicate before invoking the delegate.
+        // Invalidations issued during the draw remain pending for a later frame.
+        let traceStarted = RendererPerformanceTrace.now()
+        view.needsDisplay = false
+        view.draw()
+        RendererPerformanceTrace.record(event: "draw.manualService", started: traceStarted,
+                                        fields: ["source": source.map {
+                                            Int(bitPattern: ObjectIdentifier($0))
+                                        } ?? 0])
+    }
+
+    var animationTimerIsActiveForTesting: Bool { animationTimer?.isValid == true }
+    var animationTimerIntervalForTesting: Double? { animationTimer?.timeInterval }
+    var cursorActivityTimeForTesting: Double { lastCursorActivityTime }
+    var keyboardFeedbackDeadlineForTesting: Double? { keyboardFeedbackDeadline }
+    var keyboardFeedbackTimerForTesting: Timer? { keyboardFeedbackTimer }
+    var keyboardResponseDeadlineForTesting: Double? { keyboardResponseDeadline }
+    var interactiveDrawGenerationForTesting: UInt64 { interactiveDrawRequests.generation }
+
+    func targetFrameRateForTesting(at now: Double) -> Double? {
+        view.map { targetFrameRate(for: $0, at: now) }
     }
 
     private func scheduleDrawableRecovery() {

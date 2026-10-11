@@ -42,13 +42,17 @@ let package = Package(
             name: "CmdyApp",
             dependencies: [
                 .product(name: "CmdyCore", package: "Core"),
+                .product(name: "CmdyNative", package: "Core"),
                 .product(name: "CmdyPTY", package: "Core"),
                 .product(name: "CmdyGPU", package: "Renderer"),
                 .product(name: "CmdyKit", package: "Kit"),
                 .product(name: "ProductIdentity", package: "Identity"),
                 .product(name: "ChromiumSupport", package: "Support"),
             ],
-            path: "App"
+            path: "App",
+            // The scripting dictionary belongs at the app bundle root resource
+            // location. package.sh installs it for Cocoa scripting discovery.
+            exclude: ["Resources"]
         ),
         .testTarget(
             name: "RepositoryTests",

@@ -19,6 +19,7 @@ import dataclasses
 import hashlib
 import json
 import re
+import stat
 import subprocess
 import sys
 from collections import defaultdict
@@ -27,13 +28,14 @@ from typing import Sequence
 
 
 SCHEMA_VERSION = 1
+REPORT_SCHEMA_VERSION = 2
 DEFAULT_VENDOR_REF = "512b859268662b8e01f5923fabd7958e12e280df"
 DEFAULT_RETIRED_REF = "584624985809f6000a82d3b3b97e43ef885af572"
 DEFAULT_ALLOWLIST = "docs/independence/WORKING_TREE_PROVENANCE_ALLOWLIST.json"
 EXACT_TOKEN_THRESHOLD = 32
 STRUCTURAL_TOKEN_THRESHOLD = 80
 SOURCE_SUFFIXES = frozenset((
-    ".swift", ".metal",
+    ".swift", ".metal", ".zig", ".zon",
     ".c", ".m", ".mm", ".cc", ".cpp", ".cxx",
     ".s", ".S",
     ".h", ".H", ".hh", ".hp", ".hpp", ".h++", ".hxx",
@@ -42,22 +44,34 @@ SOURCE_SUFFIXES = frozenset((
 ))
 # Historical reference scope is intentionally frozen to the source types used
 # by the original comparison. Active coverage below is broader and mirrors the
-# release manifest's complete SwiftPM source policy.
+# release manifest's SwiftPM and externally compiled native source policy.
 REFERENCE_SOURCE_SUFFIXES = frozenset(
     (".swift", ".metal", ".c", ".h", ".m", ".mm")
 )
 
 ACTIVE_ROOTS: tuple[tuple[str, tuple[str, ...]], ...] = (
+    # Retain reference sources as well as the facades selected by Package.swift.
     ("Core/Sources/CmdyCore", (".swift",)),
+    ("Core/Sources/CmdyCoreZig", (".swift",)),
     ("Core/Sources/CmdyPTY", (".swift",)),
     ("Core/Sources/CmdyPTYShim", (".c", ".h")),
     ("Core/Sources/CmdyC", (".swift",)),
+    ("Core/Sources/CmdyCZig", (".swift",)),
+    ("Core/Sources/CmdyNative", (".c", ".h", ".modulemap")),
+    ("Core/Zig", (".zig", ".zon", ".metal")),
+    ("Core/Platform", (".m", ".c", ".h")),
+    ("Core/Plugins/VerifyNativeEngine", (".swift",)),
     ("Renderer/Sources/CmdyGPU", (".swift", ".metal")),
+    ("Renderer/Sources/CmdyGPUZig", (".swift", ".metal")),
     ("Kit/Sources/CmdyKit", (".swift",)),
     ("Identity/Sources/ProductIdentity", (".swift",)),
     ("Plugins/CmdySDK/Sources/CmdySDK", (".swift",)),
     ("Plugins/chromium/Support/Sources/ChromiumSupport", (".swift",)),
 )
+SOURCE_DATA_ROOTS = ("Core/Zig/testdata",)
+GENERATED_NATIVE_STAMP = "Core/Sources/CmdyNative/include/cmdy_engine_build.h"
+NATIVE_BUILD_RECEIPT = "Core/.zig-build/manifest.json"
+NATIVE_BUILD_MODES = ("Debug", "ReleaseSafe", "ReleaseFast")
 REQUIRED_APP_SEAM = (
     "App/CmdyCoreAdapter.swift",
     "App/CmdySnapshotShaper.swift",
@@ -80,6 +94,7 @@ RETIRED_APP_GLOBS = ("Termite*.swift", "SwiftTerm*.swift")
 RETIRED_MODULE_PATTERN = r"(?:SwiftTerm|Termite[A-Za-z0-9_]*)"
 SOURCE_PARENTS = (
     "Core/Sources",
+    "Core/Plugins",
     "Renderer/Sources",
     "Kit/Sources",
     "Identity/Sources",
@@ -89,6 +104,7 @@ SOURCE_PARENTS = (
 IMPORT_SCAN_ROOTS = (
     "App",
     "Core/Sources",
+    "Core/Plugins",
     "Renderer/Sources",
     "Kit/Sources",
     "Identity/Sources",
@@ -104,6 +120,19 @@ PACKAGE_MANIFESTS = (
     "Plugins/CmdySDK/Package.swift",
     "Plugins/chromium/Support/Package.swift",
 )
+NATIVE_BUILD_INPUTS = (
+    "build.sh",
+    "scripts/bootstrap-zig.sh",
+    "Core/Tools/ZigEngine/build.py",
+    "Core/Tools/ZigEngine/source_inputs.py",
+    "Core/Tools/ZigEngine/apple_toolchain.py",
+    "Core/Tools/ZigEngine/verify.py",
+)
+PACKAGE_GRAPH_INPUTS = PACKAGE_MANIFESTS + (
+    "Identity/Sources/ProductIdentity/Resources/product-identity.json",
+    "App/Resources/Cmdy.sdef",
+    "package.sh",
+) + NATIVE_BUILD_INPUTS
 REFERENCE_LAYOUT = {
     "vendor": (
         ("Vendor/SwiftTerm",),
@@ -265,6 +294,31 @@ def _first_symlink_component(root: Path, path: Path) -> str | None:
     return None
 
 
+def _generated_native_stamp_issues(root: Path, path: Path) -> list[str]:
+    """Exclude only exact derived metadata; the archive verifier binds its code."""
+    receipt_path = root / NATIVE_BUILD_RECEIPT
+    symlink = _first_symlink_component(root, receipt_path)
+    if symlink is not None:
+        return [f"native build receipt contains symlink component: {symlink}"]
+    try:
+        receipt = json.loads(receipt_path.read_bytes())
+        if not isinstance(receipt, dict):
+            raise ValueError("receipt must be an object")
+        key = receipt.get("source_key")
+        mode = receipt.get("optimize")
+        if (receipt.get("status") != "pass" or not isinstance(key, str)
+                or re.fullmatch(r"[0-9a-f]{64}", key) is None
+                or mode not in NATIVE_BUILD_MODES):
+            raise ValueError("invalid native build metadata")
+        expected = (f'#define CMDY_ZIG_SOURCE_KEY "{key}"\n'
+                    f'#define CMDY_ZIG_BUILD_MODE "{mode}"\n').encode("ascii")
+        if path.read_bytes() != expected:
+            raise ValueError("header differs from exact derived metadata")
+    except (OSError, ValueError):
+        return [f"invalid generated native build stamp: {GENERATED_NATIVE_STAMP}"]
+    return []
+
+
 def _governed_files(
     root: Path,
     directory: Path,
@@ -277,9 +331,13 @@ def _governed_files(
         if path.is_symlink():
             issues.append(f"symlink in governed source tree: {relative}")
             continue
+        if relative == GENERATED_NATIVE_STAMP:
+            issues.extend(_generated_native_stamp_issues(root, path))
+            continue
         if not path.is_file():
             continue
-        if path.suffix in suffixes:
+        if (path.suffix in suffixes
+                or any(relative.startswith(data_root + "/") for data_root in SOURCE_DATA_ROOTS)):
             result.append(path)
         elif path.suffix in SOURCE_SUFFIXES:
             issues.append(
@@ -368,12 +426,43 @@ def discover_active_sources(root: Path) -> tuple[list[Document], list[str]]:
             issues.append(f"active source must not be a symlink: {relative}")
             continue
         raw = path.read_bytes()
+        # Embedded fixture bytes remain part of the hashed review set, but a
+        # binary payload has no source tokens to compare with historical code.
+        text = raw.decode("utf-8", errors="replace") if path.suffix in SOURCE_SUFFIXES else ""
         documents.append(Document(
             path=relative,
-            text=raw.decode("utf-8", errors="replace"),
+            text=text,
             sha256=sha256_bytes(raw),
         ))
     return documents, sorted(set(issues))
+
+
+def discover_trust_files(root: Path) -> tuple[list[dict[str, object]], list[str]]:
+    """Bind the package graph and the native archive build/verification inputs."""
+    root = root.resolve()
+    entries: list[dict[str, object]] = []
+    issues: list[str] = []
+    for relative in sorted(PACKAGE_GRAPH_INPUTS):
+        path = root / relative
+        symlink = _first_symlink_component(root, path)
+        if symlink is not None:
+            issues.append(f"package-graph input contains symlink component: {symlink}")
+            continue
+        if not path.is_file():
+            issues.append(f"missing package-graph input: {relative}")
+            continue
+        metadata = path.lstat()
+        if not stat.S_ISREG(metadata.st_mode):
+            issues.append(f"package-graph input must be a regular file: {relative}")
+            continue
+        raw = path.read_bytes()
+        entries.append({
+            "path": relative,
+            "mode": "100755" if metadata.st_mode & 0o111 else "100644",
+            "size": len(raw),
+            "sha256": sha256_bytes(raw),
+        })
+    return entries, sorted(set(issues))
 
 
 def retired_source_issues(root: Path, active: Sequence[Document]) -> list[str]:
@@ -711,7 +800,8 @@ def build_report(
     structural_threshold: int = STRUCTURAL_TOKEN_THRESHOLD,
 ) -> dict[str, object]:
     active, discovery_issues = discover_active_sources(root)
-    issues = discovery_issues + retired_source_issues(root, active)
+    trust_files, trust_issues = discover_trust_files(root)
+    issues = discovery_issues + trust_issues + retired_source_issues(root, active)
     references: dict[str, dict[str, object]] = {}
     all_matches: list[Match] = []
     reference_specs = {
@@ -733,7 +823,7 @@ def build_report(
     ok = not issues and not unresolved
 
     report: dict[str, object] = {
-        "schemaVersion": SCHEMA_VERSION,
+        "schemaVersion": REPORT_SCHEMA_VERSION,
         "thresholds": {
             "exactTokens": exact_threshold,
             "structuralTokens": structural_threshold,
@@ -741,6 +831,7 @@ def build_report(
         "activeSources": [
             {"path": item.path, "sha256": item.sha256} for item in active
         ],
+        "trustFiles": trust_files,
         "references": references,
         "matches": [
             {

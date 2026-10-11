@@ -38,14 +38,31 @@ public struct WorkspaceLaunchHint: Codable, Equatable, Sendable {
 
     public init?(tool: Tool, sessionIdentifier: String) {
         let value = sessionIdentifier.trimmingCharacters(in: .whitespacesAndNewlines)
-        let allowed = CharacterSet.alphanumerics.union(
+        let alphanumeric = CharacterSet(charactersIn: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+        let allowed = alphanumeric.union(
             CharacterSet(charactersIn: "-_.:"))
         guard !value.isEmpty,
+              value.unicodeScalars.first.map(alphanumeric.contains) == true,
               value.utf8.count <= 160,
-              value.unicodeScalars.allSatisfy(allowed.contains)
+              value.unicodeScalars.allSatisfy(allowed.contains),
+              // Pi treats a .jsonl argument as a session-file path even when
+              // there is no slash. Workspace hints contain identifiers only.
+              tool != .pi || !value.lowercased().hasSuffix(".jsonl")
         else { return nil }
         self.tool = tool
         self.sessionIdentifier = value
+    }
+
+    public init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        let tool = try values.decode(Tool.self, forKey: .tool)
+        let identifier = try values.decode(String.self, forKey: .sessionIdentifier)
+        guard let hint = Self(tool: tool, sessionIdentifier: identifier) else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .sessionIdentifier, in: values,
+                debugDescription: "Invalid agent session identifier")
+        }
+        self = hint
     }
 }
 
@@ -172,6 +189,37 @@ public struct SavedWorkspace: Codable, Equatable, Identifiable, Sendable {
         }
         self.presentation = presentation
         self.launchHints = launchHints
+    }
+
+    public init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        schemaVersion = try values.decode(Int.self, forKey: .schemaVersion)
+        id = try values.decode(UUID.self, forKey: .id)
+        name = try values.decode(String.self, forKey: .name)
+        createdAt = try values.decode(Date.self, forKey: .createdAt)
+        updatedAt = try values.decode(Date.self, forKey: .updatedAt)
+        layouts = try values.decode([WorkspaceJSONValue].self, forKey: .layouts)
+        presentation = try values.decode(WorkspacePresentation.self, forKey: .presentation)
+        launchHints = [:]
+
+        // Hints are optional recovery metadata. An old, malformed, or unknown
+        // hint must not make the user's layout and transcript unrecoverable,
+        // nor discard valid hints belonging to other panes.
+        if let hints = try? values.nestedContainer(
+            keyedBy: LaunchHintKey.self, forKey: .launchHints) {
+            for key in hints.allKeys {
+                if let hint = try? hints.decode(WorkspaceLaunchHint.self, forKey: key) {
+                    launchHints[key.stringValue] = hint
+                }
+            }
+        }
+    }
+
+    private struct LaunchHintKey: CodingKey {
+        let stringValue: String
+        var intValue: Int? { nil }
+        init?(stringValue: String) { self.stringValue = stringValue }
+        init?(intValue: Int) { return nil }
     }
 
     /// Layout dictionaries ready for `TerminalWindowController(session:)`.

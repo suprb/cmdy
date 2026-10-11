@@ -17,6 +17,8 @@ enum SelfTest {
         }
 
         CmdySurfaceContractHarness.run(check)
+        CmdyShaperProceduralColorHarness.run(check)
+        CmdyShaperPendingRunHarness.run(check)
         CmdyCellImageHarness.run(check)
 
         // OSC 133 payload parsing
@@ -205,8 +207,8 @@ enum SelfTest {
             charactersIgnoringModifiers: "", isARepeat: false, keyCode: 53)!
         dismissedPanel.keyDown(with: escape)
         NotificationCenter.default.post(name: .cmdyPreferencesChanged, object: nil)
-        check(panelPane.surface.bottomContentInset == 0,
-              "inline panel: dismissed preference callbacks cannot restore stale height")
+        check(panelPane.surface.bottomContentInset == Preferences.shared.contentMargin,
+              "inline panel: dismissal preserves the edge margin without restoring stale panel height")
         let controlBar = panelPane.presentExtensionControlBar()
         controlBar.configure(
             actions: [ExtensionControlBarAction(id: "annotate", title: "[ annotate ]")],
@@ -460,6 +462,7 @@ enum SelfTest {
                 modifiers: [.option], kittyKeyboardFlags: 1), as: UTF8.self)
                 == "\u{1b}[13;3u",
             "keybindings: enhanced option-return uses CSI-u")
+        runTerminalInputChecks(check)
         check(
             AppDelegate.scrollSpeedOptions.contains {
                 $0.1 == Double(Preferences.shared.scrollSpeed)
@@ -551,9 +554,24 @@ enum SelfTest {
                                                      effectiveRange: nil) as? NSColor
         let failedBackground = failedRun?.attribute(.backgroundColor, at: 0,
                                                      effectiveRange: nil) as? NSColor
-        check(failedForeground?.isEqual(failedSurface.failedBlockForegroundColor) == true,
+        // Captured styles resolve semantic colors to immutable sRGB values.
+        // Compare every rendered channel under the same surface appearance;
+        // NSDynamicSystemColor object equality is not pixel equality.
+        func resolvedFailureColorMatches(_ actual: NSColor?, _ expected: NSColor) -> Bool {
+            var matches = false
+            failedSurface.effectiveAppearance.performAsCurrentDrawingAppearance {
+                guard let actual = actual?.usingColorSpace(.sRGB),
+                      let expected = expected.usingColorSpace(.sRGB) else { return }
+                matches = actual.redComponent == expected.redComponent
+                    && actual.greenComponent == expected.greenComponent
+                    && actual.blueComponent == expected.blueComponent
+                    && actual.alphaComponent == expected.alphaComponent
+            }
+            return matches
+        }
+        check(resolvedFailureColorMatches(failedForeground, failedSurface.failedBlockForegroundColor),
               "failed row: text uses failure color")
-        check(failedBackground?.isEqual(failedSurface.failedBlockBackgroundColor) == true,
+        check(resolvedFailureColorMatches(failedBackground, failedSurface.failedBlockBackgroundColor),
               "failed row: full background uses failure color")
 
         check(resizeOverlay.subviews.compactMap { $0 as? NSButton }.isEmpty
@@ -852,10 +870,11 @@ enum SelfTest {
             "The diagnostic hint says signing requires a team.",
             evidence: "Signing requires a development team."),
               "error assistant: leaked prompt vocabulary is rejected")
-        check(ErrorAssistant.isNaturalLanguageRequest("what time is it")
-                && !ErrorAssistant.isNaturalLanguageRequest("git status")
-                && !ErrorAssistant.isNaturalLanguageRequest("echo hello?"),
-              "assistant router distinguishes natural-language requests")
+        let shellLikeNames = ["where git", "who -a", "help set", "show logs",
+                              "please deploy", "what time is it", "git status",
+                              "echo hello?", "where() { command -v \"$@\"; }"]
+        check(shellLikeNames.allSatisfy { TerminalPane.assistantRequest(from: $0) == nil },
+              "assistant leaves builtins, aliases, functions, and unprefixed input to the shell")
         check(ErrorAssistant.deterministicCommand(for: "What time is it?") == "date"
                 && ErrorAssistant.deterministicCommand(for: "where am I") == "pwd",
               "assistant router keeps universal requests deterministic")
@@ -878,12 +897,18 @@ enum SelfTest {
                 && ErrorAssistant.validatedFixCommand(
                     "rm -rf build", original: "make", evidence: "error: build failed") == nil,
               "assistant exposes only grounded non-destructive fixes")
-        check(TerminalPane.assistantRequest(from: "what time is it") == "what time is it"
-                && TerminalPane.assistantRequest(from: "# convert this to json")
+        check(TerminalPane.assistantRequest(from: "# convert this to json")
                     == "convert this to json"
+                && TerminalPane.assistantRequest(from: "  # what time is it  ") == "what time is it"
+                && TerminalPane.assistantRequest(from: "#") == nil
+                && TerminalPane.assistantRequest(from: "# first\nsecond") == nil
                 && TerminalPane.assistantRequest(from: "? convert this to json") == nil
                 && TerminalPane.assistantRequest(from: "git status") == nil,
-              "assistant routes clear natural language without a prefix")
+              "assistant requires an explicit single-line request")
+        let shellFailure = ErrorAssistant.deterministicExplanation(
+            command: "where missing", output: "missing not found", exitCode: 1, cwd: nil)
+        check(!shellFailure.contains("sentence") && !shellFailure.contains("translate"),
+              "automatic error help does not reinterpret a shell command as natural language")
         check(IntegrationDoctor.matches("setup the browser MCP")
                 && IntegrationDoctor.matches("fix sim mirror permissions")
                 && IntegrationDoctor.matches("check Bridge integration")
@@ -973,5 +998,195 @@ enum SelfTest {
 
         print(failures == 0 ? "\nALL PASS" : "\n\(failures) FAILURE(S)")
         exit(failures == 0 ? 0 : 1)
+    }
+
+    private static func runTerminalInputChecks(_ check: (Bool, String) -> Void) {
+        func flushInput() { RunLoop.current.run(until: Date().addingTimeInterval(0.025)) }
+        func key(_ text: String, code: UInt16, window: NSWindow?,
+                 modifiers: NSEvent.ModifierFlags = [], unmodified: String? = nil) -> NSEvent {
+            NSEvent.keyEvent(
+                with: .keyDown, location: .zero, modifierFlags: modifiers,
+                timestamp: 0, windowNumber: window?.windowNumber ?? 0, context: nil,
+                characters: text, charactersIgnoringModifiers: unmodified ?? text,
+                isARepeat: false, keyCode: code)!
+        }
+
+        let controller = TerminalWindowController(cwd: "/tmp", startShells: false)
+        let pane = controller.panes[0]
+        let surface = pane.surface as! CmdyTerminalSurface
+        let window = controller.window!
+        defer { pane.shutdown(); window.close() }
+        var sent: [UInt8] = []
+        let observeInput = surface.onSendToProcess
+        surface.onSendToProcess = { bytes in observeInput?(bytes); sent.append(contentsOf: bytes) }
+        var requests: [String] = []
+        pane.onAskRequested = { _, request in requests.append(request) }
+        let bar = pane.presentExtensionControlBar()
+        var submitted: String?
+        bar.configure(actions: [], placeholder: "URL")
+        bar.onSubmit = { submitted = $0 }
+        surface.feed(text: "\u{1b}]133;A\u{7}$ \u{1b}]133;B\u{7}")
+        flushInput()
+        bar.focusInput()
+        for character in "# field request" {
+            let event = key(String(character), code: 0, window: window)
+            if let routed = pane.handleTerminalKeyEvent(event) { bar.keyDown(with: routed) }
+        }
+        let enter = key("\r", code: 36, window: window)
+        if let routed = pane.handleTerminalKeyEvent(enter) { bar.keyDown(with: routed) }
+        flushInput()
+        check(submitted == "# field request" && requests.isEmpty && sent.isEmpty,
+              "input ownership: control-bar typing and Return stay out of shell hooks")
+        pane.dismissExtensionControlBar(bar)
+        pane.focus()
+
+        // A stale/replaced draft cannot turn a TUI's Return into a shell Ask.
+        surface.feed(text: "\u{1b}[?1049h")
+        pane.replacePromptInput(with: "# tui request")
+        flushInput()
+        sent.removeAll()
+        if let routed = pane.handleTerminalKeyEvent(enter) { surface.keyDown(with: routed) }
+        flushInput()
+        check(requests.isEmpty && sent == [0x0D],
+              "input ownership: alternate-screen Return reaches the application")
+        surface.feed(text: "\u{1b}[?1049l\r\n\u{1b}]133;A\u{7}$ \u{1b}]133;B\u{7}")
+        flushInput()
+        sent.removeAll()
+
+        // The physical romanization key is not a committed shell character.
+        _ = pane.handleTerminalKeyEvent(key("n", code: 45, window: window))
+        let beforeComposition = pane.workspaceResumeInputRevision
+        surface.setMarkedText("に", selectedRange: NSRange(location: 1, length: 0),
+                              replacementRange: NSRange(location: NSNotFound, length: 0))
+        let compositionEnter = pane.handleTerminalKeyEvent(enter)
+        check(compositionEnter != nil && requests.isEmpty && sent.isEmpty,
+              "input ownership: IME Return is left to the input method")
+        check(pane.closeState.hasDraftInput && !pane.canSafelyStageAtEmptyPrompt
+                && pane.workspaceResumeInputRevision > beforeComposition,
+              "IME: preedit protects close and invalidates an earlier Resume handoff")
+        surface.insertText("# 日本", replacementRange: surface.markedRange())
+        _ = pane.handleTerminalKeyEvent(enter)
+        flushInput()
+        check(requests == ["日本"] && String(decoding: sent, as: UTF8.self) == "# 日本\u{15}",
+              "input ownership: composed text updates the shell draft exactly once")
+
+        let pasteController = TerminalWindowController(cwd: "/tmp", startShells: false)
+        let pastePane = pasteController.panes[0]
+        let pasteSurface = pastePane.surface as! CmdyTerminalSurface
+        let pasteWindow = pasteController.window!
+        defer { pastePane.shutdown(); pasteWindow.close() }
+        pastePane.focus()
+        pasteSurface.feed(text: "first\r\nsecond\u{1b}[?2004h")
+        flushInput()
+        pasteSurface.setSelectionForTesting(
+            anchor: .init(row: 0, col: 0), active: .init(row: 1, col: 5))
+        let selectedPaste = pasteSurface.selectedText()
+        var pasteBytes: [UInt8] = []
+        var pasteInputs: [String] = []
+        var pasteCommits: [String] = []
+        pasteSurface.onSendToProcess = { pasteBytes.append(contentsOf: $0) }
+        pasteSurface.onTextInputCommitted = { pasteCommits.append($0) }
+        pasteSurface.onPasteRequest = { pasteInputs.append($0); return "handled\ntext" }
+        let delegate = AppDelegate()
+        let bindings = StandardKeybindings(delegate: delegate, importedMappings: [:])
+        defer { withExtendedLifetime(delegate) { bindings.invalidate() } }
+        let pasteSelection = key("v", code: 9, window: pasteWindow, modifiers: [.command, .shift])
+        let pasteRouted = bindings.handle(pasteSelection)
+        flushInput()
+        check(selectedPaste.hasPrefix("first") && selectedPaste.hasSuffix("\nsecond")
+                && pasteRouted && pasteInputs == [selectedPaste] && pasteCommits.isEmpty
+                && String(decoding: pasteBytes, as: UTF8.self) == "\u{1b}[200~handled\ntext\u{1b}[201~",
+              "selection paste: real shortcut applies policy and bracketed-paste framing")
+        pasteBytes.removeAll()
+        pasteSurface.onPasteRequest = { _ in nil }
+        _ = bindings.handle(pasteSelection)
+        flushInput()
+        check(pasteBytes.isEmpty, "selection paste: a cancelled paste sends no bytes")
+
+        let foreignWindow = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 200, height: 100),
+                                     styleMask: [.titled], backing: .buffered, defer: false)
+        foreignWindow.isReleasedWhenClosed = false
+        defer { foreignWindow.close() }
+        let foreignDelete = key("\u{7f}", code: 51, window: foreignWindow, modifiers: [.command])
+        check(pastePane.isTerminalFocused
+                && StandardKeybindings.terminalController(eventWindow: foreignWindow, keyWindow: pasteWindow) == nil
+                && StandardKeybindings.terminalController(eventWindow: nil, keyWindow: pasteWindow) === pasteController
+                && !bindings.handle(foreignDelete) && pasteBytes.isEmpty,
+              "input ownership: a foreign window cannot edit the retained terminal responder")
+
+        var commits: [String] = []
+        pasteSurface.onTextInputCommitted = { commits.append($0) }
+        pasteSurface.setMarkedText("日本🙂", selectedRange: NSRange(location: 2, length: 2),
+                                   replacementRange: NSRange(location: NSNotFound, length: 0))
+        let marked = pasteSurface.markedTextPresentationForTesting
+        let candidate = pasteSurface.firstRect(forCharacterRange: NSRange(location: 2, length: 0),
+                                               actualRange: nil)
+        check(pasteSurface.hasMarkedText() && pasteSurface.markedRange().length == 4
+                && pasteSurface.selectedRange() == NSRange(location: 2, length: 2)
+                && marked?.text == "日本🙂" && candidate.width > 0 && candidate.height > 0
+                && pasteBytes.isEmpty && commits.isEmpty,
+              "IME: marked Unicode text is visible with candidate geometry and no PTY bytes")
+        pasteSurface.feed(text: "\r\noutput while composing")
+        flushInput()
+        let moved = pasteSurface.markedTextPresentationForTesting
+        check(moved?.frame != marked?.frame && moved?.text == "日本🙂",
+              "IME: preedit follows the cursor when terminal output moves it")
+        pasteSurface.insertText(NSAttributedString(string: "日本🙂"),
+                                replacementRange: pasteSurface.markedRange())
+        flushInput()
+        check(!pasteSurface.hasMarkedText() && pasteSurface.markedTextPresentationForTesting == nil
+                && commits == ["日本🙂"] && String(decoding: pasteBytes, as: UTF8.self) == "日本🙂",
+              "IME: commit emits Unicode once without submitting a command")
+        pasteBytes.removeAll()
+        let beforeCancellation = pastePane.workspaceResumeInputRevision
+        pasteSurface.setMarkedText("discard", selectedRange: NSRange(location: 7, length: 0),
+                                   replacementRange: NSRange(location: NSNotFound, length: 0))
+        NotificationCenter.default.post(name: NSWindow.didResignKeyNotification, object: pasteWindow)
+        flushInput()
+        check(!pasteSurface.hasMarkedText() && pasteBytes.isEmpty
+                && pastePane.workspaceResumeInputRevision > beforeCancellation,
+              "IME: changing windows cancels composition without typing into the old pane")
+        pasteSurface.setMarkedText("discard", selectedRange: NSRange(location: 7, length: 0),
+                                   replacementRange: NSRange(location: NSNotFound, length: 0))
+        let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 100, height: 22))
+        pastePane.addSubview(field)
+        _ = pasteWindow.makeFirstResponder(field)
+        flushInput()
+        check(!pasteSurface.hasMarkedText() && pasteBytes.isEmpty,
+              "IME: focusing a native field cancels preedit without committing it")
+        field.removeFromSuperview()
+        pastePane.focus()
+        pasteSurface.setMarkedText("interrupt", selectedRange: NSRange(location: 9, length: 0),
+                                   replacementRange: NSRange(location: NSNotFound, length: 0))
+        pasteSurface.handleUnhandledCompositionKey(key("\r", code: 36, window: pasteWindow))
+        check(pasteSurface.hasMarkedText() && pasteBytes.isEmpty,
+              "IME: an unhandled candidate Return does not submit to the terminal")
+        pasteSurface.handleUnhandledCompositionKey(
+            key("\u{3}", code: 8, window: pasteWindow, modifiers: [.control], unmodified: "c"))
+        flushInput()
+        check(!pasteSurface.hasMarkedText() && pasteBytes == [0x03] && commits == ["日本🙂"],
+              "IME: an unhandled Ctrl-C cancels preedit and sends exactly one interrupt")
+        pasteBytes.removeAll()
+        pasteSurface.feed(text: "\u{1b}[\(pasteSurface.engine.cols)G")
+        flushInput()
+        let cursorRange = NSRange(location: 0, length: 0)
+        let unmarkedCursor = pasteSurface.firstRect(forCharacterRange: cursorRange, actualRange: nil)
+        pasteSurface.setMarkedText(String(repeating: "candidate", count: 20),
+                                   selectedRange: cursorRange,
+                                   replacementRange: NSRange(location: NSNotFound, length: 0))
+        pasteSurface.unmarkText()
+        check(pasteSurface.firstRect(forCharacterRange: cursorRange, actualRange: nil) == unmarkedCursor,
+              "IME: cancelling long preedit restores the cursor anchor near the right edge")
+        pasteSurface.optionAsMetaKey = true
+        pasteSurface.keyDown(with: key("å", code: 0, window: pasteWindow,
+                                       modifiers: [.option], unmodified: "a"))
+        pasteSurface.keyDown(with: key("\u{3}", code: 8, window: pasteWindow,
+                                       modifiers: [.control], unmodified: "c"))
+        pasteSurface.feed(text: "\u{1b}[>1u")
+        pasteSurface.keyDown(with: key("\r", code: 36, window: pasteWindow, modifiers: [.shift]))
+        flushInput()
+        check(pasteBytes == [0x1B, 0x61, 0x03] + Array("\u{1b}[13;2u".utf8)
+                && commits == ["日本🙂"],
+              "IME: Meta, control, and enhanced Return keep terminal key encoding")
     }
 }

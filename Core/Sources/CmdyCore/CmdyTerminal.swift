@@ -38,7 +38,7 @@ public final class CmdyTerminal: VTParserDelegate {
     // Screens
     let normalBuffer: ScreenBuffer
     let altBuffer: ScreenBuffer
-    public internal(set) var isAlternateBuffer = false {
+    private var storedIsAlternateBuffer = false {
         willSet {
             if newValue != isAlternateBuffer {
                 captureReverseIndexBufferDeparture()
@@ -49,6 +49,10 @@ public final class CmdyTerminal: VTParserDelegate {
                 bufferActivationSerial &+= 1
             }
         }
+    }
+    public internal(set) var isAlternateBuffer: Bool {
+        get { storedIsAlternateBuffer }
+        set { storedIsAlternateBuffer = newValue }
     }
     var buffer: ScreenBuffer { isAlternateBuffer ? altBuffer : normalBuffer }
 
@@ -61,10 +65,32 @@ public final class CmdyTerminal: VTParserDelegate {
     }
 
     // Modes
+    // Cache the modes used together in common print guards. The stored
+    // public properties have private setters so only the mutations below
+    // can change a mode, updating its guard bit before returning.
+    private var printModeBits: UInt8 = 0x01
+    private var ordinaryPrintModesEnabled: Bool { printModeBits & 0x07 == 0x01 }
+    private var marginWrapModesEnabled: Bool { printModeBits & 0x05 == 0x05 }
+
+    func setAutoWrapMode(_ enabled: Bool) {
+        autoWrap = enabled
+        if enabled { printModeBits |= 0x01 } else { printModeBits &= ~UInt8(0x01) }
+    }
+
+    func setInsertMode(_ enabled: Bool) {
+        insertMode = enabled
+        if enabled { printModeBits |= 0x02 } else { printModeBits &= ~UInt8(0x02) }
+    }
+
+    func setMarginMode(_ enabled: Bool) {
+        marginMode = enabled
+        if enabled { printModeBits |= 0x04 } else { printModeBits &= ~UInt8(0x04) }
+    }
+
     public internal(set) var applicationCursorKeys = false     // DECCKM
     public internal(set) var originMode = false                // DECOM
-    public internal(set) var autoWrap = true                   // DECAWM
-    public internal(set) var insertMode = false                // IRM
+    public private(set) var autoWrap = true                   // DECAWM
+    public private(set) var insertMode = false                // IRM
     public internal(set) var lineFeedMode = false              // LNM
     public internal(set) var cursorHidden = false              // DECTCEM off
     public internal(set) var reverseVideo = false              // DECSCNM
@@ -76,7 +102,7 @@ public final class CmdyTerminal: VTParserDelegate {
     public internal(set) var mouseProtocol: MouseProtocolEncoding = .x10
     public internal(set) var synchronizedUpdates = false       // 2026
     public internal(set) var allow80To132 = true                // xterm ?40
-    public internal(set) var marginMode = false                 // DECLRMM ?69
+    public private(set) var marginMode = false                 // DECLRMM ?69
     public internal(set) var reverseWraparound = false           // xterm ?45
 
     var usingMargins: Bool { originMode && marginMode }
@@ -136,6 +162,10 @@ public final class CmdyTerminal: VTParserDelegate {
     var glLevel = 0
 
     let parser = VTParser()
+    // Two runtime property answers, packed inline: scalar << 1 | isEmoji.
+    // The all-ones sentinel cannot match a valid Unicode scalar. No table,
+    // allocation, or Unicode-version assumption replaces the runtime lookup.
+    private var emojiPropertyCache = UInt64.max
 
     public init(cols: Int, rows: Int, scrollback: Int = 10_000) {
         normalBuffer = ScreenBuffer(cols: cols, rows: rows, hasScrollback: true,
@@ -157,7 +187,7 @@ public final class CmdyTerminal: VTParserDelegate {
 
     public func feed(_ bytes: ArraySlice<UInt8>) {
         recorder?.record(bytes)
-        parser.feed(bytes)
+        parser.feed(bytes, owningTerminal: self)
         synchronizeBlockRowsToScrollback()
         delegate?.contentChanged(self)
     }
@@ -341,12 +371,227 @@ public final class CmdyTerminal: VTParserDelegate {
         markDirty(absoluteRow: buffer.yBase + buffer.y)
     }
 
+    #if CMDY_UNICODE_BATCH_DIAGNOSTICS
+    // Omitted from the release measurement binary. The private diagnostic
+    // build records actual run lengths without a runtime instrumentation flag.
+    var ordinaryUnicodeBatchLengths: [Int] = []
+    #endif
+
+    /// Independent bases that fit on the current row share one storage write.
+    /// Row transitions and cluster followers keep the scalar insertion path;
+    /// after its callbacks, parser state is checked before consuming more bytes.
+    func parserPrintOrdinaryUnicode(
+        _ bytes: ArraySlice<UInt8>, first: UnicodeScalar,
+        firstByteCount: Int, sourceParser: VTParser? = nil,
+        requiresDelegateIdentity: Bool = false
+    ) -> Int {
+        let firstMetadata = scalarPrintMetadata(first)
+        var includesFirst = false
+        if firstMetadata.permitsOrdinaryUnicodeBatch,
+           ordinaryPrintModesEnabled,
+           reverseIndexOwnerRefreshWitness == nil,
+           rejectedWidePresentationOwnerWitness == nil,
+           pendingWrapOwnerWitness == nil {
+            let current = buffer
+            includesFirst = current.x >= 0 && current.x < current.cols &&
+                current.y >= 0 && current.y < current.rows &&
+                !current.wrapPending && firstMetadata.width <= current.cols - current.x &&
+                (sourceParser?.canContinueOrdinaryUnicodeBatch(
+                    for: self, requiresDelegateIdentity: requiresDelegateIdentity) ?? true)
+        }
+        if !includesFirst {
+            printScalar(first, metadata: firstMetadata)
+            markDirty(absoluteRow: buffer.yBase + buffer.y)
+            guard firstMetadata.permitsOrdinaryUnicodeBatch,
+                  ordinaryPrintModesEnabled,
+                  reverseIndexOwnerRefreshWitness == nil else { return firstByteCount }
+            // The first insertion may reenter through scrolling or image release.
+            // Leave every following byte to the actual invoking parser if that
+            // callback changed its state or standalone delegate. Direct hook
+            // calls have no parser continuation to validate.
+            if let sourceParser,
+               !sourceParser.canContinueOrdinaryUnicodeBatch(
+                    for: self, requiresDelegateIdentity: requiresDelegateIdentity) {
+                return firstByteCount
+            }
+        }
+        let buf = buffer
+        let startColumn = buf.x
+        guard startColumn >= 0, startColumn < buf.cols,
+              buf.y >= 0, buf.y < buf.rows, !buf.wrapPending else { return firstByteCount }
+        let available = buf.cols - startColumn
+        return withUnsafeTemporaryAllocation(of: OrdinaryUnicodeCell.self, capacity: 65) { storage in
+            var source = bytes.startIndex + firstByteCount
+            var count = includesFirst ? 1 : 0
+            var columns = includesFirst ? firstMetadata.width : 0
+            if includesFirst {
+                storage.baseAddress!.initialize(to: OrdinaryUnicodeCell(
+                    scalar: first.value, width: Int8(firstMetadata.width)))
+            }
+            let limit = includesFirst ? 65 : 64
+            while source < bytes.endIndex, count < limit {
+                let scalar: UnicodeScalar
+                let byteCount: Int
+                let width: Int
+                let byte = bytes[source]
+                if byte >= 0x20, byte <= 0x7E {
+                    scalar = UnicodeScalar(byte)
+                    byteCount = 1
+                    width = 1
+                } else {
+                    guard let decoded = VTParser.contiguousUTF8(bytes, at: source) else { break }
+                    let ordinaryWidth = UnicodeUtil.columnWidth(rune: decoded.scalar)
+                    // The unchanged first-scalar guard established a fresh
+                    // independent base. Every interior member likewise has
+                    // no cluster extras, so an emoji base cannot complete a
+                    // preceding ZWJ sequence here. Followers still stop the run.
+                    guard (ordinaryWidth == 1 || ordinaryWidth == 2),
+                          Self.clusterRole(for: decoded.scalar, configuredWidth: ordinaryWidth) == .ordinary else { break }
+                    scalar = decoded.scalar
+                    byteCount = decoded.count
+                    width = ordinaryWidth
+                }
+                guard columns + width <= available else { break }
+                storage.baseAddress!.advanced(by: count).initialize(
+                    to: OrdinaryUnicodeCell(scalar: scalar.value, width: Int8(width)))
+                count += 1
+                columns += width
+                source += byteCount
+            }
+            guard count > 0 else { return firstByteCount }
+            let row = buf.yBase + buf.y
+            let line = buf.liveLine(buf.y)
+            let final = storage[count - 1]
+            let finalColumn = startColumn + columns - Int(final.width)
+            // Earlier members write disjoint preceding columns. Capture the
+            // final original lead before its same-column wide/stub clearing,
+            // exactly as insertCellDirect does for selector relocation.
+            let displacedCell = line[finalColumn]
+            line.writeOrdinaryUnicode(
+                UnsafeBufferPointer(start: storage.baseAddress, count: count),
+                at: startColumn, columns: columns,
+                attribute: currentAttribute, linkId: activeLinkId,
+                eraseAttribute: eraseAttribute, stubAttribute: Self.stubAttribute)
+            if includesFirst {
+                // This path neither advances a row nor releases a retained Line
+                // witness. Publish the same independent-base state as scalar
+                // insertion before returning to the parser or any host callback.
+                selectorExpansionSettledPhysicalPending = nil
+                pendingCursorUpMoved = false
+                noWrapParkedAfterPrint = false
+                lastPrintWrappedFromRightOfMargin = false
+                finishPrintReverseIndexOwnerRefresh(
+                    preservingDisplacedOwner: false,
+                    printedOwnerRow: row, printedOwnerColumn: finalColumn)
+                backwardColumnAttachmentWitness = nil
+                presentationSelectorAuthority = .available
+                selectorOwnerAdvancedByRelativeMotion = false
+                selectorRelocationTracksWidthChange = false
+                markDirty(absoluteRow: row)
+            }
+            buf.x = startColumn + columns
+            buf.wrapPending = buf.x == buf.cols
+            lastWrite = (row: row, x: finalColumn, cols: buf.cols, rows: buf.rows)
+            lastPrintedScalar = UnicodeScalar(final.scalar)
+            lastWriteDisplacedCell = DisplacedCell(
+                row: row, column: finalColumn, cols: buf.cols, rows: buf.rows,
+                cell: displacedCell)
+            // Later bases do not inherit the first scalar's possible arrival
+            // at a fresh row. A contained first base never advanced a row.
+            lastPrintAdvancedToFreshRow = false
+            lastPrintAdvancedFromCurrentPendingOwner = false
+            refreshPendingWrapOwnerWitness(line: line, leadColumn: finalColumn)
+            #if CMDY_UNICODE_BATCH_DIAGNOSTICS
+            let additionalBases = count - (includesFirst ? 1 : 0)
+            if additionalBases > 0 { ordinaryUnicodeBatchLengths.append(additionalBases) }
+            #endif
+            return source - bytes.startIndex
+        }
+    }
+
+    /// Only immutable facts about this scalar. No buffer, cursor, attribute,
+    /// or continuation owner is captured across first-scalar insertion/reentry.
+    private struct ScalarPrintMetadata {
+        let width: Int
+        let role: ScalarClusterRole
+        let isEmojiComponent: Bool
+
+        var permitsOrdinaryUnicodeBatch: Bool {
+            (width == 1 || width == 2) && role == .ordinary && !isEmojiComponent
+        }
+    }
+
+    private func scalarPrintMetadata(_ scalar: UnicodeScalar) -> ScalarPrintMetadata {
+        let width = UnicodeUtil.columnWidth(rune: scalar)
+        guard width >= 0 else {
+            // printScalar rejects this width before consulting either field.
+            return ScalarPrintMetadata(width: width, role: .ordinary, isEmojiComponent: false)
+        }
+        let role = Self.clusterRole(for: scalar, configuredWidth: width)
+        return ScalarPrintMetadata(
+            width: width, role: role,
+            isEmojiComponent: role == .ordinary && cachedIsEmojiZWJComponent(scalar))
+    }
+
     public func parserPrintASCII(_ bytes: ArraySlice<UInt8>) {
+        guard !bytes.isEmpty else { return }
+        guard ordinaryPrintModesEnabled else {
+            parserPrintASCIIWithTransitions(bytes)
+            return
+        }
+        let buf = buffer
+        let column = buf.x
+        let columns = buf.cols
+        guard column >= 0, column < columns,
+              bytes.count <= columns - column else {
+            parserPrintASCIIWithTransitions(bytes)
+            return
+        }
+
+        // A contained run cannot advance or scroll a row. Keeping the full
+        // transition body out of this path also keeps its mutable screen
+        // accesses out of the common short-run preamble. An addressable
+        // column remains eligible even when wrapPending is stale.
+        let preservesDisplacedReverseIndexOwner =
+            reverseIndexOwnerRefreshIsDisplaced()
+        pendingCursorUpMoved = false
+        noWrapParkedAfterPrint = false
+        let absoluteRow = buf.yBase + buf.y
+        let line = buf.liveLine(buf.y)
+        line.writeASCII(bytes, at: column,
+                        attribute: currentAttribute, linkId: activeLinkId)
+        let endColumn = column + bytes.count
+        buf.x = endColumn
+        buf.wrapPending = endColumn == columns
+        lastWrite = (row: absoluteRow, x: endColumn - 1,
+                     cols: columns, rows: buf.rows)
+        lastPrintAdvancedToFreshRow = false
+        lastPrintAdvancedFromCurrentPendingOwner = false
+        markDirty(absoluteRow: absoluteRow)
+
+        if let byte = bytes.last {
+            finishPrintReverseIndexOwnerRefresh(
+                preservingDisplacedOwner:
+                    preservesDisplacedReverseIndexOwner,
+                printedOwnerRow: lastWrite.row,
+                printedOwnerColumn: lastWrite.x)
+            backwardColumnAttachmentWitness = nil
+            lastPrintedScalar = UnicodeScalar(byte)
+            presentationSelectorAuthority = .available
+            refreshPendingWrapOwnerWitnessFromLastCluster()
+        }
+    }
+
+    // Keep the original state machine available as the test oracle. This
+    // boundary prevents the optimizer from hoisting scroll-only accesses
+    // into calls that overwrite a contained run on the current row.
+    @inline(never)
+    func parserPrintASCIIWithTransitions(_ bytes: ArraySlice<UInt8>) {
         guard !bytes.isEmpty else { return }
 
         // Insert mode and horizontal margins reshape cells rather than merely
         // replacing them. Keep those uncommon paths on the scalar oracle.
-        guard autoWrap, !insertMode, !marginMode, buffer.x >= 0 else {
+        guard ordinaryPrintModesEnabled, buffer.x >= 0 else {
             for byte in bytes { parserPrint(UnicodeScalar(byte)) }
             return
         }
@@ -489,12 +734,18 @@ public final class CmdyTerminal: VTParserDelegate {
     public func parserPrintASCIILines(_ bytes: ArraySlice<UInt8>) {
         var index = bytes.startIndex
         var alreadyWritten = false
+        var scannedNextEnd: Int?
 
         while index < bytes.endIndex {
             let contentStart = index
-            while index < bytes.endIndex, bytes[index] >= 0x20, bytes[index] <= 0x7E {
-                index = bytes.index(after: index)
+            if let scannedNextEnd {
+                index = scannedNextEnd
+            } else {
+                while index < bytes.endIndex, bytes[index] >= 0x20, bytes[index] <= 0x7E {
+                    index = bytes.index(after: index)
+                }
             }
+            scannedNextEnd = nil
             let contentEnd = index
             guard contentEnd > contentStart else { return }
             guard index < bytes.endIndex else { return }
@@ -513,11 +764,15 @@ public final class CmdyTerminal: VTParserDelegate {
             }
             let hasNext = nextEnd > nextStart
                 && nextEnd < bytes.endIndex && bytes[nextEnd] == 0x0D
+            // The lookahead already located this record's printable range.
+            // Keep it for the next iteration, whether or not scrolling can
+            // populate the row before executing its controls.
+            scannedNextEnd = hasNext ? nextEnd : nil
 
             let beforeRow = buffer.yBase + buffer.y
             let beforeBase = buffer.yBase
             executeControl(0x0D)
-            let canAppendPopulatedLine = hasNext && autoWrap && !insertMode && !marginMode
+            let canAppendPopulatedLine = hasNext && ordinaryPrintModesEnabled
                 && buffer.y == buffer.scrollBottom
                 && buffer.canScrollFullScreenIntoScrollback
                 && bytes.distance(from: nextStart, to: nextEnd) <= buffer.cols
@@ -579,6 +834,14 @@ public final class CmdyTerminal: VTParserDelegate {
     }
 
     public func parserCSI(final: UInt8, params: [Int], collect: [UInt8]) {
+        // SGR only changes the pen. Keep the same current-row damage hint,
+        // including ignored private/intermediate forms, without cursor or
+        // screen-shift bookkeeping. No cell or cluster owner changes here.
+        if final == UInt8(ascii: "m") {
+            if collect.isEmpty { applySGR(params) }
+            markDirty(absoluteRow: buffer.yBase + buffer.y)
+            return
+        }
         let beforeRow = buffer.yBase + buffer.y
         dispatchCSI(final: final, params: params, collect: collect)
         // Row-shifting / screen-clearing commands invalidate broadly. But NOT
@@ -1340,7 +1603,7 @@ public final class CmdyTerminal: VTParserDelegate {
     private struct LastCluster {
         let row: Int
         let leadColumn: Int
-        let cell: Cell
+        var cell: Cell
         let line: Line
         let cursorFollowsLead: Bool
     }
@@ -1563,13 +1826,17 @@ public final class CmdyTerminal: VTParserDelegate {
     }
 
     func printScalar(_ scalar: UnicodeScalar) {
-        let width = UnicodeUtil.columnWidth(rune: scalar)
+        printScalar(scalar, metadata: nil)
+    }
+
+    private func printScalar(_ scalar: UnicodeScalar, metadata: ScalarPrintMetadata?) {
+        let width = metadata?.width ?? UnicodeUtil.columnWidth(rune: scalar)
         guard width >= 0 else {
             invalidateClusterContinuation()
             return
         }
 
-        let role = Self.clusterRole(for: scalar, configuredWidth: width)
+        let role = metadata?.role ?? Self.clusterRole(for: scalar, configuredWidth: width)
         let restoredReverseIndexOwner = role != .ordinary &&
             restoreReverseIndexOwnerRefreshWitnessForFollower()
         if role != .ordinary,
@@ -1581,7 +1848,9 @@ public final class CmdyTerminal: VTParserDelegate {
             return
         }
         if role == .ordinary,
-           appendOrdinaryAfterJoiner(scalar, configuredWidth: width) {
+           appendOrdinaryAfterJoiner(
+               scalar, configuredWidth: width,
+               isEmojiComponent: metadata?.isEmojiComponent ?? cachedIsEmojiZWJComponent(scalar)) {
             rebaseActiveReverseIndexOwnerRefreshWitness()
             return
         }
@@ -1621,6 +1890,30 @@ public final class CmdyTerminal: VTParserDelegate {
         }
     }
 
+    /// Runtime Unicode properties are immutable for the process lifetime.
+    /// Publish only a completed answer; no callback runs while updating this
+    /// cache, so nested terminal feeds can safely reuse or evict either entry.
+    func emojiPropertyForClustering(_ scalar: UnicodeScalar) -> Bool {
+        let key = scalar.value << 1
+        let cache = emojiPropertyCache
+        let newest = UInt32(truncatingIfNeeded: cache)
+        if newest & ~UInt32(1) == key { return newest & 1 != 0 }
+        let previous = UInt32(truncatingIfNeeded: cache >> 32)
+        if previous & ~UInt32(1) == key { return previous & 1 != 0 }
+        let result = scalar.properties.isEmoji
+        emojiPropertyCache = (cache << 32) | UInt64(key) | (result ? 1 : 0)
+        return result
+    }
+
+    private func cachedIsEmojiZWJComponent(_ scalar: UnicodeScalar) -> Bool {
+        switch scalar.value {
+        case 0x23, 0x2A, 0x30...0x39:
+            return false
+        default:
+            return emojiPropertyForClustering(scalar)
+        }
+    }
+
     private static func isEmojiZWJComponent(_ scalar: UnicodeScalar) -> Bool {
         guard scalar.properties.isEmoji else { return false }
         switch scalar.value {
@@ -1633,18 +1926,25 @@ public final class CmdyTerminal: VTParserDelegate {
 
     private func appendOrdinaryAfterJoiner(
         _ scalar: UnicodeScalar,
-        configuredWidth: Int
+        configuredWidth: Int,
+        isEmojiComponent: Bool
     ) -> Bool {
-        guard let cluster = validatedLastCluster(),
-              let extras = cluster.cell.clusterExtras,
-              extras.last == 0x200D,
-              extras.dropLast().last != 0x200D,
-              Self.isEmojiZWJComponent(scalar),
-              let lead = UnicodeScalar(cluster.cell.scalar),
-              !UnicodeUtil.isRegionalIndicator(lead),
-              !extras.contains(0x20E3),
-              Self.isEmojiZWJComponent(lead) else {
+        // A non-emoji scalar cannot finish an emoji ZWJ sequence. Reject it
+        // before loading the prior cell and its retained cluster metadata.
+        guard isEmojiComponent,
+              var cluster = validatedLastCluster() else {
             return false
+        }
+        do {
+            guard let extras = cluster.cell.clusterExtras,
+                  extras.last == 0x200D,
+                  extras.dropLast().last != 0x200D,
+                  let lead = UnicodeScalar(cluster.cell.scalar),
+                  !UnicodeUtil.isRegionalIndicator(lead),
+                  !extras.contains(0x20E3),
+                  cachedIsEmojiZWJComponent(lead) else {
+                return false
+            }
         }
         let canRestoreSelectorAuthority =
             presentationSelectorAuthority == .suspended ||
@@ -1653,9 +1953,9 @@ public final class CmdyTerminal: VTParserDelegate {
         let restoresSelectorAuthority =
             canRestoreSelectorAuthority &&
             UnicodeUtil.isEmojiVs16Base(rune: scalar)
+        let requestedWidth = Int(cluster.cell.width)
         let appended = append(
-            scalar, to: cluster,
-            requestedWidth: Int(cluster.cell.width))
+            scalar, to: &cluster, requestedWidth: requestedWidth)
         if appended, restoresSelectorAuthority {
             presentationSelectorAuthority = .available
         }
@@ -1667,28 +1967,30 @@ public final class CmdyTerminal: VTParserDelegate {
         role: ScalarClusterRole,
         configuredWidth: Int
     ) -> Bool {
-        guard let cluster = validatedLastCluster() else { return false }
+        guard var cluster = validatedLastCluster() else { return false }
 
         switch role {
         case .regionalIndicator:
-            let extras = cluster.cell.clusterExtras ?? []
-            guard UnicodeUtil.isRegionalIndicator(
-                UnicodeScalar(cluster.cell.scalar) ?? UnicodeScalar(0)!),
-                !extras.contains(0x200D)
-            else { return false }
-            let alreadyPaired = extras.contains { value in
-                guard let scalar = UnicodeScalar(value) else { return false }
-                return UnicodeUtil.isRegionalIndicator(scalar)
+            do {
+                let extras = cluster.cell.clusterExtras ?? []
+                guard UnicodeUtil.isRegionalIndicator(
+                    UnicodeScalar(cluster.cell.scalar) ?? UnicodeScalar(0)!),
+                    !extras.contains(0x200D)
+                else { return false }
+                let alreadyPaired = extras.contains { value in
+                    guard let scalar = UnicodeScalar(value) else { return false }
+                    return UnicodeUtil.isRegionalIndicator(scalar)
+                }
+                guard !alreadyPaired else { return false }
             }
-            guard !alreadyPaired else { return false }
-            return append(scalar, to: cluster, requestedWidth: 2)
+            return append(scalar, to: &cluster, requestedWidth: 2)
 
         case .emojiVariation:
             guard presentationSelectorAuthority == .available else {
                 return true
             }
             guard let lead = UnicodeScalar(cluster.cell.scalar) else { return false }
-            guard lead.properties.isEmoji else { return false }
+            guard emojiPropertyForClustering(lead) else { return false }
             if Self.hasTrailingPresentationSelector(cluster.cell) {
                 presentationSelectorAuthority = .blocked
                 return true
@@ -1750,7 +2052,7 @@ public final class CmdyTerminal: VTParserDelegate {
                 buffer.x == buffer.cols - 1 &&
                 !buffer.wrapPending
             let appended = append(
-                scalar, to: cluster, requestedWidth: width,
+                scalar, to: &cluster, requestedWidth: width,
                 cursorTracksWidthChange:
                     followsRelativeMotion || relocationTracksWidthChange ||
                     repositionedStrictlyLeft)
@@ -1784,7 +2086,7 @@ public final class CmdyTerminal: VTParserDelegate {
                 return true
             }
             guard let lead = UnicodeScalar(cluster.cell.scalar),
-                  lead.properties.isEmoji else { return false }
+                  emojiPropertyForClustering(lead) else { return false }
             if Self.hasTrailingPresentationSelector(cluster.cell) {
                 presentationSelectorAuthority = .blocked
                 return true
@@ -1795,16 +2097,16 @@ public final class CmdyTerminal: VTParserDelegate {
                 presentationSelectorAuthority = .blocked
                 return true
             }
-            let appended = append(scalar, to: cluster, requestedWidth: 1)
+            let appended = append(scalar, to: &cluster, requestedWidth: 1)
             if appended {
                 presentationSelectorAuthority = .blocked
             }
             return appended
 
         case .joiner, .variation, .zeroWidth:
+            let requestedWidth = max(1, Int(cluster.cell.width))
             let appended = append(
-                scalar, to: cluster,
-                requestedWidth: max(1, Int(cluster.cell.width)))
+                scalar, to: &cluster, requestedWidth: requestedWidth)
             if appended, presentationSelectorAuthority == .available {
                 presentationSelectorAuthority = .suspended
             }
@@ -1915,6 +2217,31 @@ public final class CmdyTerminal: VTParserDelegate {
         return true
     }
 
+    /// The cursor witnesses below need identity and geometry, not retained Cell
+    /// contents. Keep the same validity rules as validatedLastCluster while
+    /// projecting only scalar/width from each read. No caller code runs here.
+    private func validatedLastClusterGeometry() -> (row: Int, leadColumn: Int, width: Int8)? {
+        let buf = buffer
+        guard lastWrite.rows == buf.rows,
+              lastWrite.cols == buf.cols,
+              lastWrite.x >= 0,
+              lastWrite.x < buf.cols,
+              let expectedScalar = lastPrintedScalar,
+              let line = buf.line(absolute: lastWrite.row) else {
+            return nil
+        }
+        var lead = lastWrite.x
+        var geometry = line.scalarAndWidth(at: lead)
+        while lead > 0, geometry.width == 0 {
+            lead -= 1
+            geometry = line.scalarAndWidth(at: lead)
+        }
+        guard geometry.width > 0, geometry.scalar == expectedScalar.value else {
+            return nil
+        }
+        return (lastWrite.row - buf.yBase, lead, geometry.width)
+    }
+
     private func validatedLastCluster() -> LastCluster? {
         let buf = buffer
         guard lastWrite.rows == buf.rows,
@@ -1973,6 +2300,10 @@ public final class CmdyTerminal: VTParserDelegate {
     }
 
     private func refreshPendingWrapOwnerWitnessFromLastCluster() {
+        guard buffer.wrapPending else {
+            pendingWrapOwnerWitness = nil
+            return
+        }
         guard let cluster = validatedLastCluster() else {
             pendingWrapOwnerWitness = nil
             return
@@ -2003,27 +2334,30 @@ public final class CmdyTerminal: VTParserDelegate {
 
     private func append(
         _ scalar: UnicodeScalar,
-        to cluster: LastCluster,
+        to cluster: inout LastCluster,
         requestedWidth: Int,
         cursorTracksWidthChange: Bool = false
     ) -> Bool {
-        var cell = cluster.cell
-        var extras = cell.clusterExtras ?? []
-        extras.append(scalar.value)
-        cell.clusterExtras = extras
-
         let geometry = printingColumns(for: cluster.leadColumn)
         let physicalColumns = 0...(buffer.cols - 1)
         let targetWidth = min(2, max(1, requestedWidth))
-        let oldWidth = Int(cell.width)
+        let oldWidth = Int(cluster.cell.width)
         var appliedWidth = oldWidth
         if targetWidth == 2, cluster.leadColumn < physicalColumns.upperBound {
             appliedWidth = 2
         } else if targetWidth == 1 {
             appliedWidth = 1
         }
-        cell.width = Int8(appliedWidth)
-        cluster.line[cluster.leadColumn] = cell
+        let attribute = cluster.cell.attribute
+        let linkId = cluster.cell.linkId
+        // This capture is local to one synchronous print operation. All
+        // eligibility and width decisions have completed without callbacks or
+        // line mutation. Release its array alias before mutating the line's
+        // copy; retained snapshots and continuation witnesses keep their own
+        // aliases and therefore still cause ordinary nested array COW.
+        cluster.cell.clusterExtras = nil
+        cluster.line.appendClusterScalar(
+            scalar.value, at: cluster.leadColumn, width: Int8(appliedWidth))
 
         if appliedWidth > oldWidth {
             clearGlyphIntersecting(
@@ -2031,7 +2365,7 @@ public final class CmdyTerminal: VTParserDelegate {
                 bounds: physicalColumns)
             cluster.line[cluster.leadColumn + 1] = Cell(
                 scalar: 0, width: 0,
-                attribute: cell.attribute, linkId: cell.linkId)
+                attribute: attribute, linkId: linkId)
         }
         // Presentation-width shrink changes the lead cell's logical width
         // without rewriting the already materialized continuation.  That
@@ -2095,7 +2429,7 @@ public final class CmdyTerminal: VTParserDelegate {
     }
 
     func recordSelectorOwnerRelativeForwardMotion(from oldX: Int) {
-        guard validatedLastCluster() != nil else {
+        guard validatedLastClusterGeometry() != nil else {
             clearSelectorOwnerRelativeForwardMotion()
             return
         }
@@ -2110,7 +2444,7 @@ public final class CmdyTerminal: VTParserDelegate {
     /// strictly left of the retained lead establishes the relocation witness.
     /// A boundary no-op preserves the prior history.
     func recordSelectorOwnerRelativeBackwardMotion(from oldX: Int, oldY: Int) {
-        guard let cluster = validatedLastCluster() else {
+        guard let cluster = validatedLastClusterGeometry() else {
             clearSelectorOwnerRelativeForwardMotion()
             return
         }
@@ -2118,7 +2452,7 @@ public final class CmdyTerminal: VTParserDelegate {
         if cluster.row == buffer.y {
             if buffer.x < cluster.leadColumn {
                 selectorRelocationTracksWidthChange = true
-            } else if buffer.x <= cluster.leadColumn + Int(cluster.cell.width) {
+            } else if buffer.x <= cluster.leadColumn + Int(cluster.width) {
                 // Returning to the owner or its ordinary post-write position
                 // consumes any earlier offset correction. If the cursor is
                 // still farther right, keep the prior absolute/relative
@@ -2133,7 +2467,7 @@ public final class CmdyTerminal: VTParserDelegate {
         // motion no-op and cannot erase an earlier owner-relative trajectory.
         guard buffer.x != oldX || buffer.y != oldY else { return }
         selectorOwnerAdvancedByRelativeMotion = false
-        guard let cluster = validatedLastCluster() else {
+        guard let cluster = validatedLastClusterGeometry() else {
             selectorRelocationTracksWidthChange = false
             return
         }
@@ -2154,13 +2488,13 @@ public final class CmdyTerminal: VTParserDelegate {
         guard buffer.yBase + buffer.y != oldAbsoluteRow else { return }
         selectorOwnerAdvancedByRelativeMotion = false
         selectorRelocationTracksWidthChange =
-            validatedLastCluster() != nil
+            validatedLastClusterGeometry() != nil
     }
 
     func recordSelectorOwnerStrictLeftReposition(from oldX: Int, oldY: Int) {
         guard buffer.x != oldX || buffer.y != oldY else { return }
         selectorOwnerAdvancedByRelativeMotion = false
-        guard let cluster = validatedLastCluster() else {
+        guard let cluster = validatedLastClusterGeometry() else {
             selectorRelocationTracksWidthChange = false
             return
         }
@@ -2505,7 +2839,7 @@ public final class CmdyTerminal: VTParserDelegate {
             lastWrite.rows == buffer.rows &&
             lastWrite.cols == buffer.cols &&
             lastWrite.row != buffer.yBase + row &&
-            validatedLastCluster() != nil
+            validatedLastClusterGeometry() != nil
         if unaffectedHistoricalOwnerIsStillValid {
             // The coordinate-refresh helper has already established that the
             // retained owner lies outside DECFI's shifted row rectangle. A
@@ -2603,7 +2937,7 @@ public final class CmdyTerminal: VTParserDelegate {
 
         buf.y = min(buf.rows - 1, max(0, buf.y))
         var columns = printingColumns(for: buf.x)
-        let startedSettledRightOfMargin = marginMode && autoWrap &&
+        let startedSettledRightOfMargin = marginWrapModesEnabled &&
             !buf.wrapPending && buf.x > columns.upperBound && buf.x < buf.cols
         var advancedToFreshRow = false
         var advancedAtScrollBottom = false
@@ -2781,9 +3115,9 @@ public final class CmdyTerminal: VTParserDelegate {
         _ source: Cell,
         in buf: ScreenBuffer
     ) -> Bool {
+        guard !autoWrap else { return false }
         let columns = printingColumns(for: buf.x)
-        guard !autoWrap,
-              buf.cols > 0,
+        guard buf.cols > 0,
               buf.rows > 0,
               buf.x >= columns.upperBound,
               buf.x <= buf.cols,
@@ -2909,7 +3243,7 @@ public final class CmdyTerminal: VTParserDelegate {
         // the stored rectangle once but leaves the physical cursor row alone.
         // This is distinct from pending wrap and from a no-wrap parked cursor.
         let scrollsStoredRegionBeforeInPlaceWrap =
-            marginMode && autoWrap && !buf.wrapPending &&
+            marginWrapModesEnabled && !buf.wrapPending &&
             buf.marginRight < buf.cols - 1 &&
             buf.x == buf.cols - 1 &&
             buf.y > buf.scrollBottom

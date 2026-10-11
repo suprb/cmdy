@@ -2,35 +2,6 @@ import AppKit
 import ProductIdentity
 import CmdyKit
 
-/// Native AppKit scrolling and hit behavior without a permanent gutter.
-/// Only the system-drawn scrubber is visible over the terminal surface.
-private final class TerminalScroller: NSScroller {
-    var onInteraction: (() -> Void)?
-
-    override func draw(_ dirtyRect: NSRect) {
-        drawKnob()
-    }
-
-    override func mouseEntered(with event: NSEvent) {
-        onInteraction?()
-        super.mouseEntered(with: event)
-    }
-
-    override func mouseDown(with event: NSEvent) {
-        onInteraction?()
-        super.mouseDown(with: event)
-    }
-
-    override func updateTrackingAreas() {
-        super.updateTrackingAreas()
-        trackingAreas.forEach(removeTrackingArea)
-        addTrackingArea(NSTrackingArea(
-            rect: .zero,
-            options: [.mouseEnteredAndExited, .activeInKeyWindow, .inVisibleRect],
-            owner: self))
-    }
-}
-
 /// Compact controls that belong to one split rather than to the window. The
 /// handle deliberately uses a pan recognizer instead of AppKit's pasteboard
 /// drag API: WindowDock moves the existing TerminalPane (and therefore its
@@ -328,6 +299,7 @@ final class TerminalPane: DropView, InlinePanelHost, ExtensionSurfaceHost,
                           ExtensionControlBarHost, NSMenuDelegate {
 
     let surface: TerminalPaneHost
+    private var shaderUpdateTask: Task<Void, Never>?
     let blockStore = BlockStore()
     var extensionControlBarTargetID: String { paneId }
     private let blockOverlay = BlockOverlayView()
@@ -347,11 +319,55 @@ final class TerminalPane: DropView, InlinePanelHost, ExtensionSurfaceHost,
     /// Where the user's input begins (OSC 133;B = prompt end) — the anchor for
     /// ghost-text: typed = row text from this column to the cursor.
     private var inputStart: (row: Int, col: Int)?
+    private var emptyPromptReflowInputRevision: UInt64?
+    private(set) var workspaceResumeInputRevision: UInt64 = 0
     private var ghostSuffix: String?
     private var keyTimes: [CFAbsoluteTime] = []   // rolling window for typing rate
 
     /// Stable identity for the plugin API.
     let paneId = UUID().uuidString
+    /// Explicitly supplied session metadata; never inferred from credentials
+    /// or terminal output. The live pane retains it when moved between windows.
+    var workspaceLaunchHint: WorkspaceLaunchHint?
+    var workspaceResumePaletteOrigin: WorkspaceResumePaletteOrigin?
+    var hasRestoredTranscript = false
+    var canSafelyStageAtEmptyPrompt: Bool {
+        guard hasLocallyConfirmedEmptyPrompt else { return false }
+        let processes = SessionProcessInspector.inspect(shellPID: surface.shellPid)
+        return !processes.isUnknown && processes.runningPrograms.isEmpty
+    }
+
+    /// A palette dismissal can reflow a known empty prompt before the shell
+    /// redraw supplies its new OSC 133;B anchor. This permits waiting only;
+    /// insertion still requires canSafelyStageAtEmptyPrompt in full.
+    var canAwaitWorkspaceResumePromptAfterReflow: Bool {
+        guard inputStart == nil,
+              emptyPromptReflowInputRevision == workspaceResumeInputRevision,
+              surface.shellPid > 0, !isComposingText, promptDraftIsReliable, promptDraft.isEmpty,
+              !blockStore.isRunning, !surface.engine.isCurrentBufferAlternate,
+              extensionSurfaceView == nil, commandAssistanceID == nil else { return false }
+        let processes = SessionProcessInspector.inspect(shellPID: surface.shellPid)
+        return !processes.isUnknown && processes.runningPrograms.isEmpty
+    }
+
+    private var hasLocallyConfirmedEmptyPrompt: Bool {
+        guard surface.shellPid > 0, inputStart != nil, !isComposingText,
+              promptDraftIsReliable, promptDraft.isEmpty,
+              semanticCurrentInputText() == "",
+              extensionSurfaceView == nil, commandAssistanceID == nil else { return false }
+        // Routed keybindings and external PTY writes can move the cursor
+        // without updating our draft. Text after it must also be empty.
+        let term = surface.engine
+        var row = term.scrollInvariantCursorRow
+        var column = min(term.cursorColumn, term.cols)
+        repeat {
+            guard let suffix = term.scrollbackLineText(row: row, columns: column..<term.cols),
+                  suffix.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return false }
+            row += 1
+            column = 0
+        } while term.isBufferRowWrapped(row)
+        return true
+    }
     /// tty name of this pane's shell (e.g. "ttys004"), resolved once.
     private(set) lazy var ttyName: String? = {
         let pid = surface.shellPid
@@ -409,9 +425,14 @@ final class TerminalPane: DropView, InlinePanelHost, ExtensionSurfaceHost,
     /// starts when restoring a session.
     var pendingRestoreText: String?
 
-    init(cwd: String?) {
+    /// True while this pane holds a login shell started before its window.
+    private var shellPrelaunched = false
+
+    init(cwd: String?, prelaunchedModel: TerminalModel? = nil) {
         initialCwd = cwd
-        surface = TerminalEngineFactory.makePaneHost(frame: NSRect(x: 0, y: 0, width: 400, height: 300))
+        shellPrelaunched = prelaunchedModel != nil
+        surface = TerminalEngineFactory.makePaneHost(
+            frame: NSRect(x: 0, y: 0, width: 400, height: 300), adopting: prelaunchedModel)
         super.init(frame: .zero)
 
         surface.view.translatesAutoresizingMaskIntoConstraints = false
@@ -508,6 +529,12 @@ final class TerminalPane: DropView, InlinePanelHost, ExtensionSurfaceHost,
             self.rows = newRows
             self.onStateChanged?(self)
         }
+        surface.onSendToProcess = { [weak self] bytes in
+            guard let self, !bytes.isEmpty else { return }
+            // Includes imported keybindings and external writes that bypass
+            // draft tracking. Any PTY input cancels a pending Resume handoff.
+            self.workspaceResumeInputRevision &+= 1
+        }
         surface.onBell = { [weak self] in
             self?.requestAttention(text: "")
         }
@@ -575,6 +602,17 @@ final class TerminalPane: DropView, InlinePanelHost, ExtensionSurfaceHost,
             case .cancel: return nil
             }
         }
+        surface.onTextInputCommitted = { [weak self] text in
+            self?.notePromptInsertion(text)
+        }
+        surface.onTextCompositionStarted = { [weak self] in
+            guard let self else { return }
+            self.hasUserActivity = true
+            // Cancelling preedit must not revive a pending Resume insertion.
+            // It may begin and end between the handoff's bounded polls.
+            self.workspaceResumeInputRevision &+= 1
+            self.emptyPromptReflowInputRevision = nil
+        }
         surface.onTerminalMouseDown = { [weak self] in
             guard let self else { return }
             if self.inlinePanelTakesFocus {
@@ -620,125 +658,138 @@ final class TerminalPane: DropView, InlinePanelHost, ExtensionSurfaceHost,
         // Key monitor: SID keypress blips, and Tab/→ accepting the ghost suggestion
         // (only intercepted while a suggestion is visible and this pane has focus).
         TerminalPaneKeyRouter.shared.register(self) { [weak self] event in
-            guard let self, event.window === self.window, self.isFocused else { return event }
-            let modifiers = event.modifierFlags
-                .intersection([.command, .option, .control, .shift])
-            if self.isTerminalFocused,
-               !modifiers.contains(.command),
-               event.characters?.isEmpty == false {
-                self.hasUserActivity = true
-            }
-            if modifiers == [.command],
-               event.charactersIgnoringModifiers?.lowercased() == "l",
-               let bar = self.extensionControlBar, !bar.isHidden {
-                bar.focusInput()
+            guard let self else { return event }
+            return self.handleTerminalKeyEvent(event)
+        }
+    }
+
+    /// The app's local key monitor calls this before the first responder.
+    /// Keeping the routing boundary explicit also permits headless regressions.
+    func handleTerminalKeyEvent(_ event: NSEvent) -> NSEvent? {
+        guard event.window === window, isFocused else { return event }
+        // Marked text belongs to the input method, including Return, Tab,
+        // Escape, and cursor keys used to choose a composition candidate.
+        if isTerminalFocused, isComposingText { return event }
+        let modifiers = event.modifierFlags
+            .intersection([.command, .option, .control, .shift])
+        if self.isTerminalFocused,
+           !modifiers.contains(.command),
+           event.characters?.isEmpty == false {
+            self.hasUserActivity = true
+        }
+        if modifiers == [.command],
+           event.charactersIgnoringModifiers?.lowercased() == "l",
+           let bar = self.extensionControlBar, !bar.isHidden {
+            bar.focusInput()
+            return nil
+        }
+        // Native fields and extension controls are pane descendants, but
+        // their typing, navigation, and Return must never enter shell hooks.
+        guard isTerminalFocused else { return event }
+        if modifiers.isEmpty, event.keyCode == 125,
+           self.inlinePanel == nil, self.extensionSurfaceView == nil,
+           !self.blockStore.isRunning,
+           !self.surface.engine.isCurrentBufferAlternate,
+           let input = self.currentInputText(),
+           input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+           let bar = self.extensionControlBar, !bar.isHidden {
+            bar.focusFirstAction()
+            return nil
+        }
+        if modifiers.isEmpty, [36, 76].contains(event.keyCode),
+           self.isTerminalFocused, self.inlinePanel == nil {
+            PluginManager.shared.feedbackPromptDidSubmit(in: self.paneId)
+        }
+        // Activity telemetry for reactive shaders (ripple, typing energy).
+        let now = CFAbsoluteTimeGetCurrent()
+        self.surface.activityKeypressTime = now
+        self.keyTimes.append(now)
+        self.keyTimes.removeAll { now - $0 > 2 }
+        self.surface.activityTypingRate = Float(self.keyTimes.count) / 2.0
+        if Preferences.shared.sounds, !event.isARepeat {
+            Retrobleeps.keyBlip()
+        }
+        if ![36, 76].contains(event.keyCode) {
+            self.trackPromptDraft(event)
+        }
+        if self.commandAssistanceID != nil {
+            if event.keyCode == 53 {   // esc
+                self.dismissCommandAssistance()
                 return nil
-            }
-            if modifiers.isEmpty, event.keyCode == 125,
-               self.inlinePanel == nil, self.extensionSurfaceView == nil,
-               !self.blockStore.isRunning,
-               !self.surface.engine.isCurrentBufferAlternate,
-               let input = self.currentInputText(),
-               input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-               let bar = self.extensionControlBar, !bar.isHidden {
-                bar.focusFirstAction()
-                return nil
-            }
-            if modifiers.isEmpty, [36, 76].contains(event.keyCode),
-               self.isTerminalFocused, self.inlinePanel == nil {
-                PluginManager.shared.feedbackPromptDidSubmit(in: self.paneId)
-            }
-            // Activity telemetry for reactive shaders (ripple, typing energy).
-            let now = CFAbsoluteTimeGetCurrent()
-            self.surface.activityKeypressTime = now
-            self.keyTimes.append(now)
-            self.keyTimes.removeAll { now - $0 > 2 }
-            self.surface.activityTypingRate = Float(self.keyTimes.count) / 2.0
-            if Preferences.shared.sounds, !event.isARepeat {
-                Retrobleeps.keyBlip()
-            }
-            if ![36, 76].contains(event.keyCode) {
-                self.trackPromptDraft(event)
-            }
-            if self.commandAssistanceID != nil {
-                if event.keyCode == 53 {   // esc
-                    self.dismissCommandAssistance()
-                    return nil
-                }
-                if [36, 76].contains(event.keyCode),
-                   event.modifierFlags.contains(.command) {
-                    if !self.acceptCommandAssistance() { NSSound.beep() }
-                    return nil
-                }
-                if [36, 76].contains(event.keyCode) {
-                    self.dismissCommandAssistance(refocus: false)
-                } else if event.modifierFlags
-                    .intersection([.command, .control, .option]).isEmpty,
-                          let chars = event.characters, !chars.isEmpty,
-                          !chars.unicodeScalars.contains(where: {
-                              CharacterSet.controlCharacters.contains($0)
-                          }) {
-                    // Normal typing wins immediately; assistance never traps
-                    // the prompt or forces a modal interaction.
-                    self.dismissCommandAssistance(refocus: false)
-                }
             }
             if [36, 76].contains(event.keyCode),
-               modifiers.isEmpty,
-               self.inlinePanel == nil,
-               let command = self.currentInputText() {
-                if IntegrationDoctor.interceptAgentLaunch(command, in: self) {
-                    return nil
-                }
-                if let request = Self.assistantRequest(from: command),
-                   let onAskRequested = self.onAskRequested {
+               event.modifierFlags.contains(.command) {
+                if !self.acceptCommandAssistance() { NSSound.beep() }
+                return nil
+            }
+            if [36, 76].contains(event.keyCode) {
+                self.dismissCommandAssistance(refocus: false)
+            } else if event.modifierFlags
+                .intersection([.command, .control, .option]).isEmpty,
+                      let chars = event.characters, !chars.isEmpty,
+                      !chars.unicodeScalars.contains(where: {
+                          CharacterSet.controlCharacters.contains($0)
+                      }) {
+                // Normal typing wins immediately; assistance never traps
+                // the prompt or forces a modal interaction.
+                self.dismissCommandAssistance(refocus: false)
+            }
+        }
+        if [36, 76].contains(event.keyCode),
+           modifiers.isEmpty,
+           self.inlinePanel == nil,
+           let command = self.currentInputText() {
+            if IntegrationDoctor.interceptAgentLaunch(command, in: self) {
+                return nil
+            }
+            if let request = Self.assistantRequest(from: command),
+               let onAskRequested = self.onAskRequested {
+                self.promptDraft = ""
+                self.promptDraftIsReliable = true
+                self.surface.send(txt: "\u{15}")
+                onAskRequested(self, request)
+                return nil
+            }
+            let decision = PluginManager.shared.decide(.command, payload: [
+                "pane": self.paneId,
+                "cwd": self.currentCwd ?? "",
+                "command": command,
+            ])
+            switch decision.action {
+            case .continue:
+                self.rememberSubmittedAgentResume(command)
+                self.promptDraftIsReliable = false
+            case .cancel:
+                // An empty replacement means the extension handled the
+                // intent itself (for example Browser navigation), so clear
+                // the prompt instead of leaving a command that can repeat.
+                if decision.value == "" {
                     self.promptDraft = ""
                     self.promptDraftIsReliable = true
                     self.surface.send(txt: "\u{15}")
-                    onAskRequested(self, request)
-                    return nil
                 }
-                let decision = PluginManager.shared.decide(.command, payload: [
-                    "pane": self.paneId,
-                    "cwd": self.currentCwd ?? "",
-                    "command": command,
-                ])
-                switch decision.action {
-                case .continue:
-                    self.promptDraftIsReliable = false
-                case .cancel:
-                    // An empty replacement means the extension handled the
-                    // intent itself (for example Browser navigation), so clear
-                    // the prompt instead of leaving a command that can repeat.
-                    if decision.value == "" {
-                        self.promptDraft = ""
-                        self.promptDraftIsReliable = true
-                        self.surface.send(txt: "\u{15}")
-                    }
-                    if let reason = decision.reason, !reason.isEmpty {
-                        Notifier.post(title: "Command cancelled", body: reason)
-                    }
-                    return nil
-                case .replace:
-                    guard let replacement = decision.value else { return event }
-                    self.replacePromptInput(with: replacement, submit: true)
-                    return nil
+                if let reason = decision.reason, !reason.isEmpty {
+                    Notifier.post(title: "Command cancelled", body: reason)
                 }
-            } else if [36, 76].contains(event.keyCode) {
-                self.promptDraftIsReliable = false
+                return nil
+            case .replace:
+                guard let replacement = decision.value else { return event }
+                self.replacePromptInput(with: replacement, submit: true)
+                return nil
             }
-            guard self.inlinePanel == nil,   // panel owns the keyboard while open
-                  let suffix = self.ghostSuffix, !suffix.isEmpty,
-                  Self.isGhostAcceptanceKey(
-                    keyCode: event.keyCode,
-                    modifiers: event.modifierFlags)
-            else { return event }
-            if self.promptDraftIsReliable { self.promptDraft += suffix }
-            self.surface.send(txt: suffix)
-            self.setGhost(nil)
-            return nil
+        } else if [36, 76].contains(event.keyCode), self.isTerminalFocused {
+            self.promptDraftIsReliable = false
         }
-
+        guard self.inlinePanel == nil,   // panel owns the keyboard while open
+              let suffix = self.ghostSuffix, !suffix.isEmpty,
+              Self.isGhostAcceptanceKey(
+                keyCode: event.keyCode,
+                modifiers: event.modifierFlags)
+        else { return event }
+        if self.promptDraftIsReliable { self.promptDraft += suffix }
+        self.surface.send(txt: suffix)
+        self.setGhost(nil)
+        return nil
     }
 
     required init?(coder: NSCoder) { fatalError("not supported") }
@@ -756,6 +807,13 @@ final class TerminalPane: DropView, InlinePanelHost, ExtensionSurfaceHost,
     }
 
     func startShell() {
+        if shellPrelaunched {
+            // InitialShellPrelaunch already started this pane's login shell;
+            // the window is now placed, so give it the settled geometry.
+            shellPrelaunched = false
+            (surface as? CmdyTerminalSurface)?.releaseGridHold()
+            return
+        }
         let shell = ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh"
         let env = ShellIntegration.makeEnvironment(
             shellPath: shell,
@@ -1055,7 +1113,7 @@ final class TerminalPane: DropView, InlinePanelHost, ExtensionSurfaceHost,
             && inlinePanel == nil && !windowInlinePanelPresented
             && extensionSurfaceView == nil
         let wasHidden = scrollIndicator.isHidden
-        scrollIndicator.isHidden = !canShow
+        if wasHidden == canShow { scrollIndicator.isHidden = !canShow }
         guard canShow else {
             scrollFadeWorkItem?.cancel()
             scrollFadeWorkItem = nil
@@ -1063,9 +1121,8 @@ final class TerminalPane: DropView, InlinePanelHost, ExtensionSurfaceHost,
             return
         }
         let total = max(1, surface.engine.bufferLineCount)
-        scrollIndicator.knobProportion = min(1, CGFloat(surface.engine.rows) / CGFloat(total))
-        scrollIndicator.doubleValue = surface.scrollPosition
-        scrollIndicator.needsDisplay = true
+        scrollIndicator.updateGeometry(position: surface.scrollPosition,
+            proportion: min(1, CGFloat(surface.engine.rows) / CGFloat(total)))
         if reveal || wasHidden { revealScrollIndicator() }
     }
 
@@ -1140,11 +1197,14 @@ final class TerminalPane: DropView, InlinePanelHost, ExtensionSurfaceHost,
     static func assistantRequest(from input: String) -> String? {
         let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, !trimmed.contains("\n") else { return nil }
+        // Shell input belongs to the shell, including aliases and functions
+        // named where, who, help, or show. Only the explicit # entry point
+        // invokes Compose; ⇧⌘K opens the same assistant without a prefix.
         if trimmed.hasPrefix("#") {
             let request = trimmed.dropFirst().trimmingCharacters(in: .whitespacesAndNewlines)
             return request.isEmpty ? nil : request
         }
-        return ErrorAssistant.isNaturalLanguageRequest(trimmed) ? trimmed : nil
+        return nil
     }
 
     // MARK: - Extension surfaces
@@ -1229,6 +1289,11 @@ final class TerminalPane: DropView, InlinePanelHost, ExtensionSurfaceHost,
     private func snapshotBlockAnchors() {
         let term = surface.engine
         guard !term.isCurrentBufferAlternate else { reflowTable = nil; return }
+        if inputStart != nil {
+            // Only local prompt evidence belongs on the resize hot path.
+            emptyPromptReflowInputRevision = hasLocallyConfirmedEmptyPrompt
+                ? workspaceResumeInputRevision : nil
+        }
         reflowCols = term.cols
         let table = Self.logicalTable(term)
         reflowTable = table
@@ -1375,6 +1440,9 @@ final class TerminalPane: DropView, InlinePanelHost, ExtensionSurfaceHost,
     /// True only when the VT surface owns keys. Inline panels and native
     /// extension surfaces are descendants too, but must keep their shortcuts.
     var isTerminalFocused: Bool { window?.firstResponder === surface.view }
+    var isComposingText: Bool {
+        (surface.view as? NSTextInputClient)?.hasMarkedText() == true
+    }
     var isCommandAssistanceVisible: Bool { commandAssistanceID != nil }
 
     func focus() { window?.makeFirstResponder(surface.view) }
@@ -1544,6 +1612,7 @@ final class TerminalPane: DropView, InlinePanelHost, ExtensionSurfaceHost,
         let leftInset = p.contentMargin
         surface.leftContentInset = leftInset
         surface.rightContentInset = leftInset
+        surface.minimumBottomContentInset = leftInset
         surface.showsScroller = true
         let font = fontOverride.map {
             TerminalAppearanceFontCatalog.resolvedFont(
@@ -1577,21 +1646,24 @@ final class TerminalPane: DropView, InlinePanelHost, ExtensionSurfaceHost,
         refreshScrollIndicator()
         surface.optionAsMetaKey = p.optionAsMeta
 
-        // GPU-only: Metal is cmdy's identity, not a preference.
+        surface.onRendererError = { message in
+            Notifier.post(title: "renderer error", body: String(message.prefix(240)))
+        }
         do { try surface.setUseMetal(true) }
         catch { NSLog("cmdy: Metal renderer unavailable: \(error)") }
-        // User shaders compile at runtime; errors surface as a notification
-        // so the edit-save-look loop works without a console.
-        if shaderMode == -1, let src = UserShaders.source(named: shaderName) {
-            if let error = surface.setUserShader(src) {
+        surface.shaderMode = shaderMode
+        // Compile on the render owner. A superseded settings task must not
+        // report stale errors or switch the latest selected shader mode.
+        shaderUpdateTask?.cancel()
+        let shaderSource = shaderMode == -1 ? UserShaders.source(named: shaderName) : nil
+        shaderUpdateTask = Task { @MainActor [weak surface] in
+            guard let surface, !Task.isCancelled else { return }
+            if let error = await surface.setUserShader(shaderSource), !Task.isCancelled {
                 NSLog("cmdy: user shader failed: %@", error)
                 Notifier.post(title: "shader error",
                               body: String(error.split(separator: "\n").first ?? "compile failed"))
             }
-        } else {
-            surface.setUserShader(nil)
         }
-        surface.shaderMode = shaderMode
         surface.smoothCursor = p.smoothCursor
         surface.cursorGlideSpeed = p.cursorGlideSpeed
         surface.cursorGlideMaxDistance = p.cursorGlideMaxDistance
@@ -1615,6 +1687,7 @@ final class TerminalPane: DropView, InlinePanelHost, ExtensionSurfaceHost,
         case "A": blockStore.promptStarted(row: row)
         case "C":
             hasUserActivity = true
+            emptyPromptReflowInputRevision = nil
             promptDraft = ""
             promptDraftIsReliable = false
             if commandAssistanceID != nil { dismissCommandAssistance(refocus: false) }
@@ -1643,6 +1716,7 @@ final class TerminalPane: DropView, InlinePanelHost, ExtensionSurfaceHost,
             }
         case "B":
             // Prompt just ended: user input starts here (ghost-text anchor).
+            emptyPromptReflowInputRevision = nil
             inputStart = (row, surface.engine.cursorColumn)
             promptDraft = ""
             promptDraftIsReliable = true
@@ -1655,6 +1729,7 @@ final class TerminalPane: DropView, InlinePanelHost, ExtensionSurfaceHost,
     /// semantic OSC 133 input range; alternate-screen applications and running
     /// commands never enter the hook path.
     private func currentInputText() -> String? {
+        guard !blockStore.isRunning, !surface.engine.isCurrentBufferAlternate else { return nil }
         let semantic = semanticCurrentInputText()
         if promptDraftIsReliable {
             // An external integration can write directly to the PTY without
@@ -1685,7 +1760,8 @@ final class TerminalPane: DropView, InlinePanelHost, ExtensionSurfaceHost,
 
     private func notePromptInsertion(_ text: String) {
         if !text.isEmpty { hasUserActivity = true }
-        guard promptDraftIsReliable else { return }
+        guard !blockStore.isRunning, !surface.engine.isCurrentBufferAlternate,
+              promptDraftIsReliable else { return }
         guard !text.contains("\n"), !text.contains("\r") else {
             promptDraftIsReliable = false
             return
@@ -1700,6 +1776,7 @@ final class TerminalPane: DropView, InlinePanelHost, ExtensionSurfaceHost,
 
     func replacePromptInput(with text: String, submit: Bool = false) {
         if submit || !text.isEmpty { hasUserActivity = true }
+        if submit { rememberSubmittedAgentResume(text) }
         promptDraft = submit ? "" : text
         promptDraftIsReliable = !submit
         surface.send(txt: "\u{15}" + text + (submit ? "\r" : ""))
@@ -1715,9 +1792,9 @@ final class TerminalPane: DropView, InlinePanelHost, ExtensionSurfaceHost,
         surface.send(txt: "\u{15}" + text)
     }
 
-    /// Keep a race-free draft for ordinary linear typing. Editing operations
-    /// that can move or transform the line deliberately fall back to OSC 133
-    /// plus the terminal model instead of guessing at shell behavior.
+    /// Track edits that affect a known draft. Printable input arrives only
+    /// through the native committed-text callback, never from physical keys.
+    /// Other editing operations fall back to OSC 133 and the terminal model.
     private func trackPromptDraft(_ event: NSEvent) {
         guard inlinePanel == nil, promptDraftIsReliable else { return }
         let flags = event.modifierFlags.intersection([.command, .control, .option])
@@ -1740,34 +1817,35 @@ final class TerminalPane: DropView, InlinePanelHost, ExtensionSurfaceHost,
             // The surface's paste callback records the actual post-plugin text.
             return
         }
+        let usesNativeTextInput = !flags.contains(.command) && !flags.contains(.control)
+            && (!flags.contains(.option) || !surface.optionAsMetaKey)
         if [48, 53, 115, 116, 117, 119, 121, 123, 124, 125, 126].contains(event.keyCode)
-            || !flags.isEmpty {
+            || !usesNativeTextInput {
             promptDraftIsReliable = false
             return
         }
-        guard let chars = event.characters, !chars.isEmpty,
-              !chars.unicodeScalars.contains(where: {
-                  CharacterSet.controlCharacters.contains($0)
-              }) else { return }
-        promptDraft += chars
     }
 
-    /// A newly opened shell with only its prompt/banner is safe to discard.
-    /// Commands, typed input, alternate-screen apps, images, or native terminal
-    /// surfaces retain the existing close confirmation.
-    var isDisposableEmptySession: Bool {
-        guard !hasUserActivity,
-              blockStore.blocks.isEmpty,
-              !blockStore.isRunning,
-              !surface.engine.isCurrentBufferAlternate,
-              surface.engine.kittyImageCount == 0,
-              inlinePanel == nil,
-              extensionSurfaceView == nil,
-              commandAssistanceID == nil
-        else { return false }
+    /// Used shells at an empty prompt are just as safe to close as new ones.
+    /// Process inspection also covers background jobs and disabled integration.
+    var closeState: SessionCloseState {
+        let processes = SessionProcessInspector.inspect(shellPID: surface.shellPid)
         let input = currentInputText() ?? promptDraft
-        return input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        return SessionCloseState(
+            runningCommand: blockStore.isRunning
+                ? (blockStore.blocks.last?.commandText ?? "") : nil,
+            runningProcesses: processes.runningPrograms,
+            processStateUnknown: processes.isUnknown,
+            isAlternateScreen: surface.engine.isCurrentBufferAlternate,
+            hasDraftInput: isComposingText
+                || !input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                || (!promptDraftIsReliable
+                    && !promptDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty),
+            hasActiveSurface: inlinePanel != nil || extensionSurfaceView != nil
+                || commandAssistanceID != nil)
     }
+
+    var isDisposableEmptySession: Bool { !closeState.requiresConfirmation }
 
     // MARK: - Ghost-text autocomplete
 

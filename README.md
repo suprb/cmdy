@@ -33,9 +33,7 @@ open cmdy.app
 Read the complete [build and Browser release guide](BUILDING.md), then the
 [architecture guide](docs/ARCHITECTURE.md) before changing a layer and
 [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request. Maintainers
-should use [RELEASING.md](RELEASING.md) for signed builds and the
-[open-source release checklist](docs/OPEN_SOURCE_RELEASE_CHECKLIST.md) for the
-first public launch. Security reports follow [SECURITY.md](SECURITY.md).
+should use [RELEASING.md](RELEASING.md) for signed builds. Security reports follow [SECURITY.md](SECURITY.md).
 
 ## Platform
 
@@ -111,8 +109,13 @@ without becoming overlapping authoring systems. Read [Build cmdy Extensions](EXT
 - **Live reload**: save the file and every open terminal updates instantly
 - **Two-way sync**: menu/palette changes are written back into the file in
   place (comments preserved) — what you pick is what comes back after relaunch
-- `Settings…` (⌘,) opens it (writing a commented template on first use); the
-  View-menu pickers show their current value in the title ("Font — Geist Mono")
+- `Settings…` (⌘,) opens native controls for appearance, terminal behavior,
+  recovery, and assistance. **Open Config File** keeps the text workflow available.
+  Settings shows config errors and distinguishes application defaults from the
+  focused pane/tab overrides, with actions to return to inherited defaults.
+- The optional Anthropic API key is stored in macOS Keychain. Legacy config and
+  preferences keys migrate only after secure storage succeeds; the config's
+  remaining comments and settings are preserved.
 
 **Text editor**
 - cmdy includes a focused native editor for config, Markdown, source, and
@@ -175,24 +178,37 @@ without becoming overlapping authoring systems. Read [Build cmdy Extensions](EXT
 **Smart input**
 - **Ghost-text autocomplete**: fish-style dimmed suggestion from your history
   (~/.zsh_history + everything you run), drawn inline at the cursor — accept with →
-- **Session restore**: quit and relaunch, and every window, split, working directory
-  and recent scrollback comes back (`restore-session`)
+- **Session recovery**: windows, splits, directories, and recent scrollback are
+  checkpointed during use and on quit (`restore-session`). Recovery keeps a
+  previous good snapshot and reports when it must use it. Transcript files are
+  owner-only; restoring starts fresh shells, so previous processes are not running.
 - **Named Workspaces**: File → Workspaces can save a new snapshot, update it,
   reopen it beside the current windows, rename it, or delete it. Workspaces keep
   tab groups, split geometry, Window Grid, pane appearance, directories, and
   capped scrollback without copying credentials or implicit commands
+- **Agent session resumption**: use **File → Workspaces → Remember Agent Session…**
+  with an ID supplied by Codex, Claude Code, or Pi. Explicit `codex resume ID`,
+  `claude --resume ID`, and `pi --session ID` commands also remember that ID.
+  Restored panes show transcript/session state. **Resume** in the palette or
+  Inspector inserts the supported command into a known empty prompt; Return
+  remains the step that runs it. Existing prompt input is preserved.
+- Closing a pane/window or quitting checks active commands, child processes,
+  unsubmitted input, and unsaved documents. Completed commands alone do not
+  cause a close warning.
 
 **Command palette** (⌘⇧P)
-- Fuzzy search over every action, theme, font, cursor style, toggle — and the current
-  pane's recent commands (re-run straight from the palette)
+- Search actions and settings by name, including their section names and common
+  synonyms. Results keep their context, such as `Ghost Text → Off`.
+- Recently used actions appear first. Recent shell commands live in **Shell
+  History**, where selecting **Run** executes the command immediately.
 - Settings preview as you move. Return keeps a setting without closing its section,
   Escape goes back (or closes at the root), and one-shot actions run and close
 
 **Command intelligence**
-- **Ask from the prompt** — type `what time is it` and press Return. Clear
-  natural-language requests route to cmdy instead of zsh; ⌘Return inserts
-  the proposed command and ordinary Return runs it. Prefix an ambiguous request
-  with `#` only when you explicitly want cmdy to translate it.
+- **Ask from the prompt** — type `# what time is it` and press Return, or open
+  Compose with ⌘⇧K. ⌘Return inserts the proposed command for review; ordinary
+  Return runs the inserted command. Input without `#` always goes to the shell,
+  including aliases and functions named `where`, `who`, `help`, or `show`.
 - **Automatic error help** — on by default; set `automatic-error-help = false`
   to disable it. A failed
   command gets a soft text-only explanation directly below its output, before the next
@@ -220,6 +236,8 @@ without becoming overlapping authoring systems. Read [Build cmdy Extensions](EXT
   use `cmdy action install-starters`, `new`, `validate`, `list`, and `run`
 - Actions execute through real pane input, so commands remain visible and keep
   ordinary stdout, command blocks, history, and Extension hooks
+- [AppleScript input](docs/AUTOMATION.md) targets an existing pane by its stable
+  ID and uses the normal paste policy without the system clipboard
 
 **Channels** — selected work in, reviewed results out
 ([CHANNELS.md](CHANNELS.md))
@@ -313,17 +331,15 @@ Registry: `github.com/suprb/cmdy-registry`
 
 None of the first-party Extensions are compiled into the app — they're external
 processes built purely on the public SDK, exactly like a third party would ship
-them. They're bundled as **examples of what the SDK can carry**, not as features
-of the terminal; remove or disable any of them like any other Extension:
+them. They're **examples of what the SDK can carry**, not features of the
+terminal; remove or disable any of them like any other Extension.
 
-```sh
-./plugins.sh    # builds Plugins/{detox,bridge,swarm,sim} (+ Browser/chromium
-                # only for an explicitly ad-hoc source build) and installs into
-                # ~/.config/cmdy/extensions/ (manifest.json + executable).
-                # Bridge and Sim (plus an ad-hoc local Browser) register MCP shims with
-                # installed Claude Code and Codex clients so an agent in ANY
-                # directory can drive them (user scope; restart the agent).
-```
+Browser lives here in `Plugins/chromium` because it ships as a signed app edition;
+the other first-party Extensions are developed in a separate repository and
+install into `~/.config/cmdy/extensions/`. Bridge and Sim (plus a
+local Browser) register MCP shims with installed Claude Code and Codex clients
+so an agent in any directory can drive them. Third parties build Extensions with
+the public SDK in `Plugins/CmdySDK` and the samples in `Examples/Extensions`.
 
 Before an interactive `claude`, `codex`, or `pi` launch, cmdy checks every
 enabled first-party integration. The same preflight runs when a local Browser, Sim /
@@ -374,11 +390,14 @@ ABI remains a deliberately small, single-threaded, macOS-only spike. See
 Run directly without assembling an app bundle:
 
 ```sh
-swift build -c release && .build/release/cmdy
+./build.sh -c release
+.build/release/cmdy
 ```
 
 cmdy runs unsandboxed because it spawns a PTY. `./package.sh` remains the
 authoritative local app-bundle build.
+`build.sh` prepares the pinned Zig 0.15.2 compiler and native engine before
+SwiftPM. Set `CMDY_ZIG` to use an existing copy of that compiler.
 
 The packaged app checks GitHub's latest stable Release at most every 12 hours.
 When a newer numeric version exists, cmdy automatically downloads the matching
@@ -402,8 +421,8 @@ release is complete only after its activation URL and checksum are landed in
 
 ### Product identity and future renames
 
-For the complete name, logo, repository, migration, packaging, notarization,
-and rollback procedure, follow [Rebranding cmdy safely](docs/REBRANDING.md).
+The complete name, logo, repository, migration, packaging, notarization, and
+rollback runbook is maintained privately.
 
 The canonical public name lives in exactly one manifest:
 
@@ -434,24 +453,8 @@ preferences, Accessibility permissions, install receipts, and update identity.
 
 ## Website
 
-The public home, documentation, and Marketplace pages are a React/Vite project
-in `site/`. Durable static inputs live in `site/public/`; each production build
-replaces the ignored local `site/dist/` directory with a clean generated
-artifact. GitHub Pages performs the same verified build during deployment. The
-three public routes remain `index.html`, `docs.html`, and `marketplace.html`.
-
-```sh
-cd site
-npm ci
-npm run dev       # http://127.0.0.1:4173
-npm run build     # type-checks, then cleanly regenerates ./dist
-```
-
-Full-length recording masters stay local under the ignored `site/media/`
-directory; only optimized public clips are committed. Selected terminal UI
-patterns are adapted from
-[SRCL / Sacred Computer](https://github.com/internet-development/www-sacred)
-under MIT; see `site/THIRD_PARTY_NOTICES.md`.
+The public home, documentation, and Marketplace pages are maintained
+separately.
 
 **Error explanations** always have a private built-in fallback. Command translation,
 Compose, and fix proposals prefer Apple Intelligence on-device, then use Anthropic
@@ -540,7 +543,7 @@ replace macOS or existing cmdy shortcuts and have Undo and Reset. See the
 | ⌘⇧E | Explain last (AI) | ⌘⇧X | Fix last failed (AI) |
 | `# request` + ↩ | Propose a command | ⌘↩ | Insert proposed command |
 | → | Accept ghost suggestion | ⌘K | Clear |
-| ⌘, | Settings (config file) | ⌘+ / ⌘- / ⌘0 | Font size |
+| ⌘, | Settings | ⌘+ / ⌘- / ⌘0 | Font size |
 | ⌃⇧Tab / ⌃Tab | Previous / next tab | ⌘1…⌘8 / ⌘9 | Tab by index / last tab |
 | ⌘⇧[ / ⌘⇧] | Previous / next tab | ⌘⌥W | Close current tab |
 | ⌘⇧W / ⌘⌥⇧W | Close tab group / all windows | ⌘Z / ⌘⇧Z | Undo / redo recent close |
@@ -576,27 +579,32 @@ the companion-app chapter.
 
 ## Architecture
 
-Ghostty-shaped: a platform-free core, packages around it, a thin app shell.
+A Zig terminal and rendering library with a native Swift macOS shell.
 
 ```
 cmdy/
-├─ Core/       CmdyCore — the VT engine, pure Swift (parser · buffer ·
-│              reflow · BLOCKS and INSETS as native structures · record/replay)
+├─ Core/       Zig VT engine, fonts, shaping, caches and Metal rendering
+│              + CmdyCore Swift API (parser · buffer ·
+│              reflow · BLOCKS and INSETS as native structures · replay)
 │              + CmdyPTY (fork/exec + read loop) + lib_cmdy (internal C ABI experiment + demo)
-├─ Renderer/   CmdyGPU — the Metal two-pass pipeline, 68-shader gallery,
-│              user-shader runtime; consumes any engine via MetalRenderSource
+├─ Renderer/   CmdyGPU — Swift value adapters and MTKView attachment for the
+│              native renderer; consumes any engine via MetalRenderSource
 ├─ Kit/        CmdyKit — inline panels, Surfaces, palette, config engine,
 │              capability-scoped Extension bus, sessions, themes, bundled fonts
 ├─ App/        the shell: windows/tabs/splits, menus, panes, engine surfaces
-├─ Plugins/    CmdySDK + detox + bridge + swarm + sim (external Extensions),
-│              chromium host-component source, and the parked appdock
-├─ site/       React/Vite source for the public home, docs, and Marketplace;
-│              generated Pages output lives in the ignored site/dist/
+├─ Plugins/    CmdySDK (public Extension SDK) + chromium (Browser source for
+│              the separately signed app edition)
 └─ Tests/      parked differential oracle (Tests/ORACLE.md, DIVERGENCES.md) ·
                replay corpus · TUI-zoo driver · perf-gate.sh (frame budgets)
 ```
 
-CmdyCore is the engine — grown against a vendored SwiftTerm oracle
+The normal app calls the Zig engine and renderer through a C ABI. Zig owns font
+preparation, cell shaping, rasterization, image and glyph caches, frame scheduling,
+and Metal command encoding. Swift retains the macOS UI, public value adapters,
+Foundation search/regex and recording file I/O; small Objective-C functions call
+Apple framework APIs. GPU shaders remain Metal Shading Language.
+The previous Swift engine and renderer are retained as reference source and
+excluded from the normal package graph. The engine was grown against a vendored SwiftTerm oracle
 (differential-tested byte for byte, 79 fixtures + recorded sessions + seeded
 fuzzing) until the reference could be deleted; every divergence ever found
 is locked into `Tests/corpus/regressions/` and replayed by the Core tests.
@@ -621,6 +629,17 @@ binary (`Tests/ORACLE.md`); its last 3.8-day soak found zero core bugs
 an isolated instance driven over the Extension API, asserting frame budgets
 (idle = 0 frames, a prompt edit rebuilds 1 row, shaders ride their fps bands).
 
+The v18 full-parity report (maintained in the project's private notes) compares
+cmdy with Ghostty 1.3.1 on 140 gated metrics (input latency, scroll,
+paste, resize, startup, output throughput, memory and idle CPU) on AC and
+battery power, with matched settings and with cmdy's defaults. Under the
+unchanged policy in `Tests/parity-policy.json` (95% paired-block bootstrap,
+maximum ratio 1.0), cmdy is faster or smaller on all 140. Typical cmdy medians
+on a MacBook Pro (M1 Max, 120 Hz): keystroke to screen 10.1 ms, launch to first
+complete frame 0.33 s, resize 49 ms, idle memory 68 MB, idle CPU 0.09% of one
+core. These are recorded scenarios on one machine, not a guarantee for every
+workload; the report lists the instrument-limited and retained items.
+
 ## Roadmap
 
 cmdy's thesis: a fast GPU terminal can expose a programmable policy and interface
@@ -642,8 +661,4 @@ field testing and community connectors, not an Automations layer. Other future
 work remains additive: richer Surface adapters, remote
 forwarding that preserves SSH portability, record/replay, configurable keybindings,
 live session sharing, stronger OS sandbox profiles, and continued PTY/Metal
-throughput work. The deliberate replacement of the remaining SwiftTerm-derived
-implementation is tracked in
-[`docs/roadmap/INDEPENDENT_TERMINAL_STACK.md`](docs/roadmap/INDEPENDENT_TERMINAL_STACK.md),
-with the current file-level inventory in
-[`docs/roadmap/SWIFTTERM_PROVENANCE_AUDIT.md`](docs/roadmap/SWIFTTERM_PROVENANCE_AUDIT.md).
+throughput work.

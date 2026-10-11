@@ -53,7 +53,17 @@ final class WindowDock {
     private var lastEventTick = CFAbsoluteTimeGetCurrent()
     private var lastOrigins: [Int: NSPoint] = [:]
     private var lastPhantomOrigin: NSPoint?
-    private var wasDown = false
+    private var wasDown = false {
+        didSet {
+            guard wasDown != oldValue else { return }
+            if wasDown {
+                startReleaseWatchdog()
+            } else {
+                releaseWatchdog?.invalidate()
+                releaseWatchdog = nil
+            }
+        }
+    }
     /// A native tab preview is not itself a dockable window, so later ticks
     /// cannot identify the payload from the mover alone. Remember whether the
     /// gesture began in a real terminal/editor and reject every other window
@@ -221,9 +231,17 @@ final class WindowDock {
         // Keep the overlay out of the WindowServer until a real docking drag.
         // Even a transparent ordered utility window makes Mission Control
         // calculate a pathological overview on current macOS releases.
-        let o = DockOverlayWindow()
-        o.park()
-        overlay = o
+        // Building it costs a window's worth of AppKit setup, so it is made
+        // after launch has presented the first terminal frame; a drag before
+        // then creates it on demand.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak self] in
+            MainActor.assumeIsolated {
+                guard let self, self.overlay == nil else { return }
+                let o = DockOverlayWindow()
+                o.park()
+                self.overlay = o
+            }
+        }
 
         guard localMouseMonitor == nil else { return }
         let mouseMask: NSEvent.EventTypeMask = [
@@ -240,6 +258,12 @@ final class WindowDock {
         ) { [weak self] event in
             self?.handleMouseEvent(event)
         }
+    }
+
+    /// Recover a missed mouse-up only while a drag can still be active. The
+    /// mouse, sidebar and pane paths all share `wasDown`, including cancellation.
+    private func startReleaseWatchdog() {
+        guard releaseWatchdog == nil else { return }
         let watchdog = Timer(timeInterval: 0.1, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated {
                 guard let self, self.wasDown else { return }

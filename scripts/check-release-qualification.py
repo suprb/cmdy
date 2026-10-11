@@ -559,6 +559,8 @@ def validate_provenance(
     root: Path, value: object, manifest: dict[str, object],
 ) -> None:
     report, _path = load_ref_json(root, value, "publication.source.provenanceReport")
+    if expect_int(report.get("schemaVersion"), "provenance schemaVersion") != 2:
+        raise QualificationError("provenance report must bind native build inputs with schemaVersion 2")
     summary = expect_keys(report.get("summary"), {
         "activeSourceCount", "classifiedMatchCount", "issueCount", "matchCount",
         "ok", "unresolvedMatchCount",
@@ -590,6 +592,24 @@ def validate_provenance(
     }
     if provenance_sources != manifest_sources:
         raise QualificationError("provenance report does not bind the active-source manifest")
+
+    def trust_entries(value: object, label: str) -> dict[str, dict[str, object]]:
+        entries: dict[str, dict[str, object]] = {}
+        for item in expect_list(value, label):
+            entry = expect_keys(item, {"mode", "path", "sha256", "size"}, label)
+            path = safe_relative_path(entry["path"], f"{label}.path")
+            if path in entries:
+                raise QualificationError(f"duplicate {label} path: {path}")
+            expect_sha(entry["sha256"], f"{label}.sha256")
+            expect_int(entry["size"], f"{label}.size")
+            if entry["mode"] not in ("100644", "100755"):
+                raise QualificationError(f"invalid {label} mode: {path}")
+            entries[path] = entry
+        return entries
+
+    if trust_entries(report.get("trustFiles"), "provenance trustFiles") != trust_entries(
+            manifest.get("trustFiles"), "active manifest trustFiles"):
+        raise QualificationError("provenance report does not bind package-graph trust files")
 
 
 def validate_core_evidence(

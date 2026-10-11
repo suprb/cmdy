@@ -15,6 +15,8 @@ final class FindBar: NSView, NSSearchFieldDelegate {
     private var regex = false
     private weak var caseMenuItem: NSMenuItem?
     private weak var regexMenuItem: NSMenuItem?
+    private var counterColor = NSColor.secondaryLabelColor
+    private var noMatches = false
 
     /// Current options, assembled from the toggle buttons.
     var options: TermSearchOptions {
@@ -109,6 +111,8 @@ final class FindBar: NSView, NSSearchFieldDelegate {
         window?.makeFirstResponder(field)
         field.selectText(nil)
         counter.stringValue = ""
+        noMatches = false
+        counter.textColor = counterColor
         if !field.stringValue.isEmpty { onSearch?(field.stringValue, true) }
     }
 
@@ -122,18 +126,21 @@ final class FindBar: NSView, NSSearchFieldDelegate {
     func indicate(found: Bool, index: Int, total: Int) {
         if total == 0 {
             counter.stringValue = field.stringValue.isEmpty ? "" : "0/0"
+            noMatches = !field.stringValue.isEmpty
             counter.textColor = .systemRed
         } else {
             counter.stringValue = index > 0 ? "\(index)/\(total)" : "\(total)"
-            counter.textColor = .secondaryLabelColor
+            noMatches = false
+            counter.textColor = counterColor
         }
     }
 
     func applyTheme(_ theme: Theme, onBorder: Bool) {
         let foreground = theme.ns(theme.foreground)
         layer?.backgroundColor = theme.ns(theme.background)
-            .withAlphaComponent(onBorder ? 0.92 : 0.62).cgColor
-        counter.textColor = foreground.withAlphaComponent(0.58)
+            .withAlphaComponent(onBorder ? 0.92 : 1).cgColor
+        counterColor = foreground
+        counter.textColor = noMatches ? .systemRed : counterColor
         for button in [previousButton, nextButton, closeButton] {
             button.contentTintColor = foreground.withAlphaComponent(0.72)
         }

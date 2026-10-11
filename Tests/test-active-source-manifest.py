@@ -110,7 +110,10 @@ class ActiveSourceManifestTests(unittest.TestCase):
         self.assertEqual(first, loaded)
         self.assertEqual(raw, manifest_gate.canonical_bytes(first))
         self.assertEqual(first["reviewState"], "unreviewed")
-        self.assertEqual(first["sourceCount"], 15)
+        self.assertEqual(
+            first["sourceCount"],
+            len(manifest_gate.ACTIVE_ROOTS) + len(manifest_gate.REQUIRED_APP_SOURCES) + 1,
+        )
         self.assertEqual(first["trustFileCount"], len(manifest_gate.PACKAGE_GRAPH_INPUTS))
         self.assertEqual(
             [entry["path"] for entry in first["trustFiles"]],
@@ -191,6 +194,170 @@ class ActiveSourceManifestTests(unittest.TestCase):
                 ):
                     manifest_gate.build_manifest(root)
 
+    def test_scripting_dictionary_and_packaging_are_bound(self) -> None:
+        temporary, root = self.fixture()
+        self.addCleanup(temporary.cleanup)
+        expected, _ = self.write_manifest(root)
+        for relative in ("App/Resources/Cmdy.sdef", "package.sh"):
+            with self.subTest(relative=relative):
+                path = root / relative
+                original = path.read_bytes()
+                path.write_bytes(original + b"\nchanged scripting route\n")
+                issues = manifest_gate.comparison_issues(expected, manifest_gate.build_manifest(root))
+                self.assertIn(f"trust file sha256 changed: {relative}", issues)
+                path.unlink()
+                with self.assertRaisesRegex(manifest_gate.ManifestError, "missing package-graph input"):
+                    manifest_gate.build_manifest(root)
+                path.write_bytes(original)
+
+    def test_native_sources_and_embedded_bytes_are_bound(self) -> None:
+        temporary, root = self.fixture()
+        self.addCleanup(temporary.cleanup)
+        additions = {
+            "Core/Sources/CmdyNative/include/engine.h": b"void engine(void);\n",
+            "Core/Zig/nested/parser.zig": b"pub const Parser = struct {};\n",
+            "Core/Zig/config.zon": b".{ .limit = 32 }\n",
+            "Core/Zig/shaders/compositor.metal": b"kernel void compositor() {}\n",
+            "Core/Platform/platform_gpu.h": b"void platform_gpu(void);\n",
+            "Core/Zig/testdata/nested/conformance.bin": bytes(range(256)),
+        }
+        for relative, content in additions.items():
+            path = root / relative
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(content)
+        expected, _ = self.write_manifest(root)
+        source_paths = {item["path"] for item in expected["sources"]}
+        bound_paths = (*additions,
+            "Core/Sources/CmdyCoreZig/Active.swift",
+            "Core/Sources/CmdyCZig/Active.swift",
+            "Core/Sources/CmdyNative/Active.c",
+            "Core/Zig/Active.zig",
+            "Core/Plugins/VerifyNativeEngine/Active.swift",
+            "Core/Platform/Active.m",
+            "Renderer/Sources/CmdyGPUZig/Active.swift",
+        )
+        for relative in bound_paths:
+            with self.subTest(relative=relative):
+                self.assertIn(relative, source_paths)
+                path = root / relative
+                original = path.read_bytes()
+                path.write_bytes(original + b"\nchanged\n")
+                issues = manifest_gate.comparison_issues(
+                    expected, manifest_gate.build_manifest(root),
+                )
+                self.assertIn(f"active source sha256 changed: {relative}", issues)
+                path.write_bytes(original)
+        provenance, issues = historical_gate.discover_active_sources(root)
+        self.assertEqual(issues, [])
+        self.assertEqual({item.path for item in provenance}, source_paths)
+        self.assertEqual(
+            next(item.text for item in provenance if item.path.endswith("conformance.bin")),
+            "",
+        )
+
+    def test_native_archive_build_inputs_are_bound(self) -> None:
+        temporary, root = self.fixture()
+        self.addCleanup(temporary.cleanup)
+        expected, _ = self.write_manifest(root)
+        self.assertEqual(set(manifest_gate.NATIVE_BUILD_INPUTS), {
+            "build.sh", "scripts/bootstrap-zig.sh",
+            "Core/Tools/ZigEngine/build.py", "Core/Tools/ZigEngine/verify.py",
+            "Core/Tools/ZigEngine/source_inputs.py",
+            "Core/Tools/ZigEngine/apple_toolchain.py",
+        })
+        for relative in manifest_gate.NATIVE_BUILD_INPUTS:
+            with self.subTest(relative=relative):
+                path = root / relative
+                original = path.read_bytes()
+                path.write_bytes(original + b"# changed toolchain/build logic\n")
+                issues = manifest_gate.comparison_issues(
+                    expected, manifest_gate.build_manifest(root),
+                )
+                self.assertIn(f"trust file sha256 changed: {relative}", issues)
+                path.write_bytes(original)
+                path.unlink()
+                with self.assertRaisesRegex(manifest_gate.ManifestError, "missing package-graph input"):
+                    manifest_gate.build_manifest(root)
+                path.symlink_to(root / "App/Extra.swift")
+                with self.assertRaisesRegex(manifest_gate.ManifestError, "symlink component"):
+                    manifest_gate.build_manifest(root)
+                path.unlink()
+                path.write_bytes(original)
+
+    def test_swift_only_manifest_cannot_cover_native_graph(self) -> None:
+        temporary, root = self.fixture()
+        self.addCleanup(temporary.cleanup)
+        value, path = self.write_manifest(root)
+        value["trustFiles"] = [
+            item for item in value["trustFiles"]
+            if item["path"] not in manifest_gate.NATIVE_BUILD_INPUTS
+        ]
+        value["trustFileCount"] = len(value["trustFiles"])
+        value["policy"]["descriptor"]["policyId"] = "cmdy-active-terminal-source-policy-v2"
+        path.write_bytes(manifest_gate.canonical_bytes(value))
+        with self.assertRaisesRegex(manifest_gate.ManifestError, "trustFiles must be exactly"):
+            manifest_gate.load_manifest(path, root)
+
+    def write_native_stamp(self, root: Path, *, key: str = "a" * 64, mode: str = "ReleaseFast") -> tuple[Path, Path]:
+        receipt = root / manifest_gate.NATIVE_BUILD_RECEIPT
+        receipt.parent.mkdir(parents=True, exist_ok=True)
+        receipt.write_text(json.dumps({"status": "pass", "source_key": key, "optimize": mode}))
+        stamp = root / manifest_gate.GENERATED_NATIVE_STAMP
+        stamp.parent.mkdir(parents=True, exist_ok=True)
+        stamp.write_text(
+            f'#define CMDY_ZIG_SOURCE_KEY "{key}"\n'
+            f'#define CMDY_ZIG_BUILD_MODE "{mode}"\n',
+        )
+        return stamp, receipt
+
+    def test_generated_stamp_is_portable_but_cannot_hide_source(self) -> None:
+        temporary, root = self.fixture()
+        self.addCleanup(temporary.cleanup)
+        expected, _ = self.write_manifest(root)
+        for mode, key in (("ReleaseFast", "a" * 64), ("Debug", "b" * 64)):
+            self.write_native_stamp(root, key=key, mode=mode)
+            self.assertEqual(expected, manifest_gate.build_manifest(root))
+            documents, issues = historical_gate.discover_active_sources(root)
+            self.assertEqual(issues, [])
+            self.assertNotIn(manifest_gate.GENERATED_NATIVE_STAMP, {item.path for item in documents})
+        # The exemption is one exact path, not every header with this basename.
+        other = root / "Core/Sources/CmdyNative/other/cmdy_engine_build.h"
+        other.parent.mkdir()
+        other.write_text("void other(void);\n")
+        issues = manifest_gate.comparison_issues(expected, manifest_gate.build_manifest(root))
+        self.assertIn(f"unexpected active source: {other.relative_to(root).as_posix()}", issues)
+
+    def test_derived_stamp_validation_fails_closed_in_both_gates(self) -> None:
+        for scenario in ("extra-code", "wrong-mode", "bad-key", "failed-receipt", "missing-receipt", "linked-receipt", "linked-stamp", "directory-stamp"):
+            with self.subTest(scenario=scenario):
+                temporary, root = self.fixture()
+                self.addCleanup(temporary.cleanup)
+                stamp, receipt = self.write_native_stamp(root)
+                if scenario == "extra-code":
+                    stamp.write_bytes(stamp.read_bytes() + b"void injected(void) {}\n")
+                elif scenario == "wrong-mode":
+                    self.write_native_stamp(root, mode="uncontrolled")
+                elif scenario == "bad-key":
+                    self.write_native_stamp(root, key='x"\nvoid injected(void); //')
+                elif scenario == "failed-receipt":
+                    value = json.loads(receipt.read_text())
+                    value["status"] = "fail"
+                    receipt.write_text(json.dumps(value))
+                elif scenario in ("missing-receipt", "linked-receipt"):
+                    receipt.unlink()
+                    if scenario == "linked-receipt":
+                        receipt.symlink_to(root / "App/Extra.swift")
+                else:
+                    stamp.unlink()
+                    if scenario == "linked-stamp":
+                        stamp.symlink_to(root / "App/Extra.swift")
+                    else:
+                        stamp.mkdir()
+                with self.assertRaises(manifest_gate.ManifestError):
+                    manifest_gate.build_manifest(root)
+                _, issues = historical_gate.discover_active_sources(root)
+                self.assertTrue(issues, scenario)
+
     def test_platform_terminal_sources_are_bound(self) -> None:
         temporary, root = self.fixture()
         self.addCleanup(temporary.cleanup)
@@ -206,7 +373,7 @@ class ActiveSourceManifestTests(unittest.TestCase):
         )
 
     def test_unapproved_source_suffix_in_governed_root_fails(self) -> None:
-        for suffix in (".mm", ".cpp", ".S", ".h++", ".modulemap"):
+        for suffix in (".mm", ".cpp", ".S", ".h++", ".modulemap", ".zig", ".zon"):
             with self.subTest(suffix=suffix):
                 temporary, root = self.fixture()
                 self.addCleanup(temporary.cleanup)
@@ -217,6 +384,19 @@ class ActiveSourceManifestTests(unittest.TestCase):
                     "unapproved source suffix in governed source tree: .*Injected",
                 ):
                     manifest_gate.build_manifest(root)
+
+    def test_uncovered_native_and_plugin_roots_fail(self) -> None:
+        for relative in ("Core/Sources/HiddenNative/hidden.zig", "Core/Plugins/HiddenPlugin/plugin.swift"):
+            with self.subTest(relative=relative):
+                temporary, root = self.fixture()
+                self.addCleanup(temporary.cleanup)
+                path = root / relative
+                path.parent.mkdir(parents=True)
+                path.write_text("// untracked source\n")
+                with self.assertRaisesRegex(manifest_gate.ManifestError, "uncovered active source root"):
+                    manifest_gate.build_manifest(root)
+                _, issues = historical_gate.discover_active_sources(root)
+                self.assertTrue(any("uncovered active source root" in item for item in issues))
 
     def test_symlink_and_uncovered_source_root_fail(self) -> None:
         temporary, root = self.fixture()

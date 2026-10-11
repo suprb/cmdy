@@ -61,6 +61,21 @@ public extension VTParserDelegate {
     }
 }
 
+// Private concrete adapters keep one byte loop while allowing the terminal's
+// own feed call to bypass weak protocol dispatch. The public parser adapter
+// still resolves its weak delegate at every original callback boundary.
+private protocol VTParserGroundOutput {
+    static var handlesDirectGroundControls: Bool { get }
+    func printASCII(_ bytes: ArraySlice<UInt8>)
+    func printASCIIAndCRLF(_ bytes: ArraySlice<UInt8>)
+    func printASCIILines(_ bytes: ArraySlice<UInt8>)
+    func printContiguousUnicode(
+        _ bytes: ArraySlice<UInt8>, index: inout Int,
+        first: UnicodeScalar, firstByteCount: Int, batches: Bool)
+    func executeGroundControl(_ byte: UInt8)
+    func dispatchCSI(_ final: UInt8, in parser: VTParser)
+}
+
 public final class VTParser {
     enum State {
         case ground
@@ -100,20 +115,59 @@ public final class VTParser {
     static let maxIntermediates = 16
 
     // UTF-8 assembly (ground state)
-    private var utf8Pending: [UInt8] = []
-    private var utf8Expected = 0
+    private struct PendingUTF8 {
+        var bytes: UInt32 = 0
+        var count = 0
+        var expected = 0
+
+        init() {}
+
+        init(lead: UInt8, expected: Int) {
+            bytes = UInt32(lead)
+            count = 1
+            self.expected = expected
+        }
+
+        mutating func append(_ byte: UInt8) {
+            bytes |= UInt32(byte) << (count * 8)
+            count += 1
+        }
+
+        subscript(index: Int) -> UInt8 {
+            UInt8(truncatingIfNeeded: bytes >> (index * 8))
+        }
+    }
+
+    // UTF-8 has at most four bytes. Value storage avoids allocating tiny
+    // arrays per scalar while preserving chunk boundaries and reentrancy.
+    private var utf8Pending = PendingUTF8()
 
     // Internal test switch: the scalar path remains available as a semantic
     // oracle for the coalesced printable-ASCII path.
     var coalescesPrintableASCII = true
+    // Keep byte-wise UTF-8 assembly available as a semantic test oracle.
+    var decodesContiguousUTF8 = true
+    // Internal engine oracle switch; custom parser delegates keep scalar
+    // callbacks regardless of this setting.
+    var batchesOrdinaryUnicode = true
+    // Keep the byte-state path as a test oracle for coalesced CSI prefixes.
+    var coalescesCSIParameters = true
+
+    // A first engine scalar may call back into this parser. Query only after
+    // that insertion returns; no state borrow is held across the callback.
+    func canContinueOrdinaryUnicodeBatch(
+        for terminal: CmdyTerminal, requiresDelegateIdentity: Bool
+    ) -> Bool {
+        guard utf8Pending.expected == 0, case .ground = state else { return false }
+        return !requiresDelegateIdentity || delegate === terminal
+    }
 
     public init() {}
 
     public func reset() {
         state = .ground
         clearSequence()
-        utf8Pending.removeAll()
-        utf8Expected = 0
+        utf8Pending = PendingUTF8()
     }
 
     private func clearSequence() {
@@ -122,15 +176,112 @@ public final class VTParser {
         collect.removeAll(keepingCapacity: true)
     }
 
+    private struct DelegateOutput: VTParserGroundOutput {
+        let parser: VTParser
+        static var handlesDirectGroundControls: Bool { false }
+
+        @inline(__always) func printASCII(_ bytes: ArraySlice<UInt8>) {
+            parser.delegate?.parserPrintASCII(bytes)
+        }
+        @inline(__always) func printASCIIAndCRLF(_ bytes: ArraySlice<UInt8>) {
+            parser.delegate?.parserPrintASCIIAndCRLF(bytes)
+        }
+        @inline(__always) func printASCIILines(_ bytes: ArraySlice<UInt8>) {
+            parser.delegate?.parserPrintASCIILines(bytes)
+        }
+        @inline(__always) func printContiguousUnicode(
+            _ bytes: ArraySlice<UInt8>, index: inout Int,
+            first: UnicodeScalar, firstByteCount: Int, batches: Bool
+        ) {
+            // Preserve the standalone parser's per-callback weak lookup and
+            // concrete-engine cast. The scalar index advances before its
+            // callback; a batched index advances after the engine returns.
+            if batches, let terminal = parser.delegate as? CmdyTerminal {
+                index += terminal.parserPrintOrdinaryUnicode(
+                    bytes[index...], first: first,
+                    firstByteCount: firstByteCount,
+                    sourceParser: parser, requiresDelegateIdentity: true)
+            } else {
+                index += firstByteCount
+                parser.delegate?.parserPrint(first)
+            }
+        }
+        @inline(__always) func executeGroundControl(_ byte: UInt8) {
+            parser.delegate?.parserExecute(byte)
+        }
+        @inline(__always) func dispatchCSI(_ final: UInt8, in parser: VTParser) {
+            parser.dispatchCSI(final)
+        }
+    }
+
+    private struct OwnerOutput: VTParserGroundOutput {
+        let terminal: CmdyTerminal
+        static var handlesDirectGroundControls: Bool { true }
+
+        @inline(__always) func printASCII(_ bytes: ArraySlice<UInt8>) {
+            terminal.parserPrintASCII(bytes)
+        }
+        @inline(__always) func printASCIIAndCRLF(_ bytes: ArraySlice<UInt8>) {
+            terminal.parserPrintASCIIAndCRLF(bytes)
+        }
+        @inline(__always) func printASCIILines(_ bytes: ArraySlice<UInt8>) {
+            terminal.parserPrintASCIILines(bytes)
+        }
+        @inline(__always) func printContiguousUnicode(
+            _ bytes: ArraySlice<UInt8>, index: inout Int,
+            first: UnicodeScalar, firstByteCount: Int, batches: Bool
+        ) {
+            // The owning feed already retains this terminal. Do not acquire
+            // another weak/cast lifetime for each complete UTF-8 scalar/run.
+            if batches {
+                index += terminal.parserPrintOrdinaryUnicode(
+                    bytes[index...], first: first,
+                    firstByteCount: firstByteCount, sourceParser: terminal.parser)
+            } else {
+                index += firstByteCount
+                terminal.parserPrint(first)
+            }
+        }
+        @inline(__always) func executeGroundControl(_ byte: UInt8) {
+            terminal.parserExecute(byte)
+        }
+        @inline(__always) func dispatchCSI(_ final: UInt8, in parser: VTParser) {
+            guard final == 0x6D else {
+                parser.dispatchCSI(final)
+                return
+            }
+            // The kept prefix scanner has already published params/collect.
+            // Match dispatchCSI's state publication before the engine call.
+            parser.state = .ground
+            terminal.parserCSI(final: final, params: parser.params, collect: parser.collect)
+        }
+    }
+
     public func feed(_ bytes: ArraySlice<UInt8>) {
+        feed(bytes, output: DelegateOutput(parser: self))
+    }
+
+    // Only CmdyTerminal.feed supplies this parser's owning terminal. That
+    // caller already keeps self alive through its post-parser host events.
+    // A standalone public parser with a terminal delegate does not qualify.
+    // Engine calls may reenter through blocks, host hooks, or image payload
+    // deallocation; only the dispatch target is invariant, never parser state.
+    func feed(_ bytes: ArraySlice<UInt8>, owningTerminal terminal: CmdyTerminal) {
+        precondition(terminal.parser === self)
+        feed(bytes, output: OwnerOutput(terminal: terminal))
+    }
+
+    @inline(__always)
+    private func feed<Output: VTParserGroundOutput>(
+        _ bytes: ArraySlice<UInt8>, output: Output
+    ) {
         var index = bytes.startIndex
         while index < bytes.endIndex {
-            if coalescesPrintableASCII, utf8Expected == 0,
+            if coalescesPrintableASCII, utf8Pending.expected == 0,
                case .ground = state,
                bytes[index] >= 0x20, bytes[index] <= 0x7E {
                 let start = index
-                repeat { index = bytes.index(after: index) }
-                while index < bytes.endIndex && bytes[index] >= 0x20 && bytes[index] <= 0x7E
+                index = printableASCIIEnd(bytes, from: index)
                 if index < bytes.endIndex, bytes[index] == 0x0D {
                     let next = bytes.index(after: index)
                     if next < bytes.endIndex, bytes[next] == 0x0A {
@@ -140,11 +291,7 @@ public final class VTParser {
                         var scan = afterFirst
                         while scan < bytes.endIndex,
                               bytes[scan] >= 0x20, bytes[scan] <= 0x7E {
-                            scan = bytes.index(after: scan)
-                            while scan < bytes.endIndex
-                                    && bytes[scan] >= 0x20 && bytes[scan] <= 0x7E {
-                                scan = bytes.index(after: scan)
-                            }
+                            scan = printableASCIIEnd(bytes, from: scan)
                             guard scan < bytes.endIndex, bytes[scan] == 0x0D else { break }
                             let lf = bytes.index(after: scan)
                             guard lf < bytes.endIndex, bytes[lf] == 0x0A else { break }
@@ -153,19 +300,48 @@ public final class VTParser {
                             scan = batchEnd
                         }
                         if batchLines > 1 {
-                            delegate?.parserPrintASCIILines(bytes[start..<batchEnd])
+                            output.printASCIILines(bytes[start..<batchEnd])
                             index = batchEnd
                             continue
                         }
-                        delegate?.parserPrintASCIIAndCRLF(bytes[start..<index])
+                        output.printASCIIAndCRLF(bytes[start..<index])
                         index = afterFirst
                         continue
                     }
                 }
-                delegate?.parserPrintASCII(bytes[start..<index])
-            } else {
-                step(bytes[index])
+                output.printASCII(bytes[start..<index])
+            } else if bytes[index] >= 0xC2, bytes[index] <= 0xF4,
+                      decodesContiguousUTF8, utf8Pending.expected == 0,
+                      case .ground = state,
+                      let decoded = Self.contiguousUTF8(bytes, at: index) {
+                // The local decoder has no parser state to reset. Reentrant
+                // callbacks can establish new partial input or change state,
+                // which the next loop iteration observes normally.
+                output.printContiguousUnicode(
+                    bytes, index: &index, first: decoded.scalar,
+                    firstByteCount: decoded.count, batches: batchesOrdinaryUnicode)
+            } else if bytes[index] == 0x1B, coalescesCSIParameters,
+                      utf8Pending.expected == 0, case .ground = state,
+                      let prefix = consumeCSIParameterPrefix(bytes, at: index) {
+                index = prefix.end
+                // Publish ground before the callback, just as dispatch from
+                // the byte machine does. Reentry may change all parser state.
+                if let final = prefix.final { output.dispatchCSI(final, in: self) }
+            } else if Output.handlesDirectGroundControls,
+                      bytes[index] == 0x0D || bytes[index] == 0x0A,
+                      utf8Pending.expected == 0, case .ground = state {
+                output.executeGroundControl(bytes[index])
                 index = bytes.index(after: index)
+            } else {
+                if coalescesCSIParameters, case .csiParam = state,
+                   bytes[index] >= 0x30, bytes[index] <= 0x39,
+                   bytes.endIndex - index > 1,
+                   bytes[index + 1] >= 0x30, bytes[index + 1] <= 0x39 {
+                    index = consumeCSIParameterDigits(bytes, at: index)
+                } else {
+                    step(bytes[index])
+                    index = bytes.index(after: index)
+                }
             }
         }
     }
@@ -235,8 +411,7 @@ public final class VTParser {
     private func enterEscape() {
         // An escape sequence CANCELS a pending UTF-8 assembly, silently
         // (the reference parser's printStateReset clears its putback).
-        utf8Pending.removeAll()
-        utf8Expected = 0
+        utf8Pending = PendingUTF8()
         clearSequence()
         state = .escape
     }
@@ -244,7 +419,7 @@ public final class VTParser {
     // MARK: Ground — printables + UTF-8 + C0
 
     private func stepGround(_ b: UInt8) {
-        if utf8Expected > 0 {
+        if utf8Pending.expected > 0 {
             if b == 0x1B { enterEscape(); return }
             if b < 0x20 {
                 // C0 during assembly executes; the assembly persists
@@ -256,7 +431,7 @@ public final class VTParser {
             // at completion sorts valid from junk (junk → Latin-1 lead, the
             // consumed tail dropped — reference-engine fallback).
             utf8Pending.append(b)
-            if utf8Pending.count == utf8Expected {
+            if utf8Pending.count == utf8Pending.expected {
                 flushUTF8()
             }
             return
@@ -274,16 +449,39 @@ public final class VTParser {
             // the C1 range still reaches `parserPrint` through `flushUTF8`.
             return
         case 0xC2...0xDF:
-            utf8Pending = [b]; utf8Expected = 2
+            utf8Pending = PendingUTF8(lead: b, expected: 2)
         case 0xE0...0xEF:
-            utf8Pending = [b]; utf8Expected = 3
+            utf8Pending = PendingUTF8(lead: b, expected: 3)
         case 0xF0...0xF4:
-            utf8Pending = [b]; utf8Expected = 4
+            utf8Pending = PendingUTF8(lead: b, expected: 4)
         default:
             // Not a valid UTF-8 lead: interpret as Latin-1 (the reference
             // engine prints UnicodeScalar(byte) for junk input).
             delegate?.parserPrint(UnicodeScalar(b))
         }
+    }
+
+    /// Complete valid scalars avoid the per-byte ground-state transitions.
+    /// Incomplete or malformed input retains the ordinary assembly path,
+    /// including its exact C0/ESC and malformed-tail consumption semantics.
+    @inline(__always)
+    static func contiguousUTF8(
+        _ bytes: ArraySlice<UInt8>, at index: Int
+    ) -> (scalar: UnicodeScalar, count: Int)? {
+        let lead = bytes[index]
+        let count: Int
+        switch lead {
+        case 0xC2...0xDF: count = 2
+        case 0xE0...0xEF: count = 3
+        case 0xF0...0xF4: count = 4
+        default: return nil
+        }
+        guard bytes.endIndex - index >= count else { return nil }
+        var pending = PendingUTF8(lead: lead, expected: count)
+        for offset in 1..<count { pending.append(bytes[index + offset]) }
+        guard case .scalar(let value) = decodePendingUTF8(pending),
+              let scalar = UnicodeScalar(value) else { return nil }
+        return (scalar, count)
     }
 
     private enum PendingUTF8Result {
@@ -292,8 +490,9 @@ public final class VTParser {
         case empty
     }
 
-    private static func decodePendingUTF8(_ bytes: [UInt8]) -> PendingUTF8Result {
-        guard let lead = bytes.first else { return .empty }
+    private static func decodePendingUTF8(_ bytes: PendingUTF8) -> PendingUTF8Result {
+        guard bytes.count > 0 else { return .empty }
+        let lead = bytes[0]
 
         func continuation(_ index: Int) -> UInt8? {
             guard index < bytes.count else { return nil }
@@ -339,8 +538,7 @@ public final class VTParser {
 
     private func flushUTF8() {
         let pending = utf8Pending
-        utf8Pending.removeAll(keepingCapacity: true)
-        utf8Expected = 0
+        utf8Pending = PendingUTF8()
 
         let value: UInt32
         switch Self.decodePendingUTF8(pending) {
@@ -410,9 +608,77 @@ public final class VTParser {
 
     // MARK: CSI
 
+    private struct CSIParameterPrefix {
+        let end: Int
+        let final: UInt8?
+    }
+
+    /// Parse the ordinary decimal/semicolon prefix once. Extended, partial,
+    /// interrupted and long input resumes the original machine from that same
+    /// parameter state, without rescanning the bytes already consumed. Limits
+    /// bound temporary storage and work; they do not limit accepted sequences.
+    private func consumeCSIParameterPrefix(_ bytes: ArraySlice<UInt8>, at start: Int) -> CSIParameterPrefix? {
+        guard bytes.endIndex - start >= 2, bytes[start + 1] == 0x5B else { return nil }
+        return withUnsafeTemporaryAllocation(of: Int.self, capacity: 32) { values in
+            var index = start + 2
+            let limit = start + min(bytes.endIndex - start, 256)
+            var count = 0
+            var value = 0
+            var hasParameterByte = false
+            var final: UInt8?
+            while index < limit {
+                let byte = bytes[index]
+                if byte >= 0x30, byte <= 0x39 {
+                    value = min(0xFFFF, value * 10 + Int(byte - 0x30))
+                    hasParameterByte = true
+                } else if byte == 0x3B {
+                    guard count + 1 < values.count else { break }
+                    values.baseAddress!.advanced(by: count).initialize(to: value)
+                    count += 1
+                    value = 0
+                    hasParameterByte = true
+                } else if byte >= 0x40, byte <= 0x7E {
+                    final = byte
+                    index += 1
+                    break
+                } else {
+                    // This byte has not been consumed. Its original handler
+                    // will see exactly the entry/parameter state built below.
+                    break
+                }
+                index += 1
+            }
+            values.baseAddress!.advanced(by: count).initialize(to: value)
+            count += 1
+            params.removeAll(keepingCapacity: true)
+            params.append(contentsOf: UnsafeBufferPointer(
+                start: values.baseAddress, count: count))
+            collect.removeAll(keepingCapacity: true)
+            state = hasParameterByte ? .csiParam : .csiEntry
+            // No delegate call or parser reentry spans the temporary borrow.
+            return CSIParameterPrefix(end: index, final: final)
+        }
+    }
+
     private func dispatchCSI(_ final: UInt8) {
         state = .ground
         delegate?.parserCSI(final: final, params: params, collect: collect)
+    }
+
+    /// Decimal runs contain no callbacks or state transitions. Keep the open
+    /// parameter local until the next non-digit, then publish it before the
+    /// byte machine handles that interruption. Retain the prefix scan's bound.
+    private func consumeCSIParameterDigits(_ bytes: ArraySlice<UInt8>, at start: Int) -> Int {
+        let slot = params.count - 1
+        var value = params[slot]
+        var index = start
+        let limit = start + min(256, bytes.endIndex - start)
+        while index < limit, bytes[index] >= 0x30, bytes[index] <= 0x39 {
+            value = min(0xFFFF, value * 10 + Int(bytes[index] - 0x30))
+            index += 1
+        }
+        params[slot] = value
+        return index
     }
 
     private func stepCSIEntry(_ b: UInt8) {

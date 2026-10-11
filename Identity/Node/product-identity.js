@@ -16,7 +16,7 @@ function environmentPrefix(value) {
 
 function loadManifest() {
   const candidates = [
-    // Installed beside an MCP shim by plugins.sh.
+    // Installed beside an MCP shim by the first-party Extension installer.
     path.join(__dirname, 'product-identity.json'),
     // Source checkout.
     path.join(

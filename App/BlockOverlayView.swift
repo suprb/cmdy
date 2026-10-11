@@ -103,7 +103,15 @@ final class BlockOverlayView: NSView {
     /// Ghost text and command assistance still use AppKit because they contain
     /// shaped text, but are normally absent while browsing history.
     func refreshIfNeeded() {
-        guard let term = surface?.engine, let store = store else { return }
+        guard let store = store else { return }
+        // Once old separators are hidden, an empty overlay has no geometry to
+        // refresh. Invalidate the cache so returning content uses current metrics.
+        if store.blocks.isEmpty, ghost == nil, commandAssistance == nil,
+           separatorLayers.allSatisfy({ $0.isHidden }) {
+            lastCount = -1
+            return
+        }
+        guard let term = surface?.engine else { return }
         let top = term.currentTopRow
         let count = store.blocks.count
         let rows = term.rows

@@ -8,24 +8,31 @@ import CmdyKit
 /// unchanged apart from emitting semantic prompt markers.
 enum ShellIntegration {
 
-    /// Remove zdotdirs left behind by dead product processes (crashes / force
-    /// quits) — each directory name embeds the pid that created it.
-    static func cleanupStaleDirectories() {
+    private static let cleanupQueue = DispatchQueue(
+        label: "com.cmdy.shell.stale-directory-cleanup", qos: .utility)
+
+    /// Static initialization schedules at most one scan in this process. Cleanup
+    /// does not need the first window or shell to wait for filesystem enumeration.
+    private static let cleanupScheduled: Void = {
         let tmp = FileManager.default.temporaryDirectory
-        guard let entries = try? FileManager.default.contentsOfDirectory(
-            at: tmp, includingPropertiesForKeys: nil) else { return }
         let myPid = ProcessInfo.processInfo.processIdentifier
-        let prefixes = [ProductIdentity.current.slug]
-            + ProductIdentity.current.legacySlugs
-        for url in entries where prefixes.contains(where: {
-            url.lastPathComponent.hasPrefix("\($0)-zdotdir-")
-        }) {
-            let parts = url.lastPathComponent.split(separator: "-")
-            guard parts.count >= 3, let pid = Int32(parts[2]), pid != myPid else { continue }
-            if kill(pid, 0) == -1 && errno == ESRCH {   // process is gone
-                try? FileManager.default.removeItem(at: url)
+        let prefixes = ([ProductIdentity.current.slug] + ProductIdentity.current.legacySlugs)
+            .map { "\($0)-zdotdir-" }
+        cleanupQueue.async {
+            autoreleasepool {
+                let started = CmdyPerformanceTrace.now()
+                StaleShellDirectoryCleanup.removeStaleDirectories(
+                    in: tmp, prefixes: prefixes, currentPID: myPid)
+                CmdyPerformanceTrace.record(event: "startup.shell-cleanup", started: started,
+                    fields: ["mainThread": Thread.isMainThread ? 1 : 0])
             }
         }
+    }()
+
+    /// Remove zdotdirs left by dead product processes, retaining the original
+    /// PID checks and current-process exclusion. No UI work runs on this queue.
+    static func scheduleStaleDirectoryCleanup() {
+        _ = cleanupScheduled
     }
 
     /// Returns the environment array ("KEY=VALUE" strings) for the shell.

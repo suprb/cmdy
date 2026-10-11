@@ -108,6 +108,7 @@ public enum CMDYKeybindingAction: String, CaseIterable, Codable, Hashable, Senda
     case startSearch, searchSelection, endSearch, searchNext, searchPrevious
     case inspector
     case writeScreenCopy, writeScreenPaste, writeScreenOpen
+    case writeScrollbackPaste
 
     public var displayName: String {
         rawValue
@@ -533,6 +534,8 @@ public enum CMDYKeybindingImporter {
                 "copy": .writeScreenCopy, "paste": .writeScreenPaste, "open": .writeScreenOpen,
             ]
             if let action = map[argument] { return .success(.action(action)) }
+        case "write_scrollback_file":
+            if argument == "paste" { return .success(.action(.writeScrollbackPaste)) }
         case "inspector":
             if argument.isEmpty || argument == "toggle" { return .success(.action(.inspector)) }
         case "goto_tab":

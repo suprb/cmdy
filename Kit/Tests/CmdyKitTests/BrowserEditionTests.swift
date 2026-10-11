@@ -1037,6 +1037,16 @@ final class BrowserEditionTests: XCTestCase {
     }
 
     func testEditingMigratesRetiredBannerAndPreservesCustomSettings() throws {
+        // App/main.swift registers these before loading config. Standalone
+        // XCTest must do the same: otherwise the template's bundled default
+        // font is correctly rejected as unavailable and migration is deferred.
+        let fonts = FontLoader.registerBundledFonts()
+        XCTAssertTrue(fonts.contains { $0.fontName == Preferences.defaultFontName },
+                      "The test resource bundle must contain the default font.")
+        XCTAssertTrue(ConfigFile.validationIssues(for: [
+            "font-family": Preferences.defaultFontName,
+        ]).isEmpty, "The bundled default font must resolve after registration.")
+
         let fm = FileManager.default
         let root = fm.temporaryDirectory.appendingPathComponent(
             "cmdy-banner-migration-\(UUID().uuidString)", isDirectory: true)
@@ -1056,10 +1066,19 @@ final class BrowserEditionTests: XCTestCase {
         try original.write(to: ConfigFile.url, atomically: true, encoding: .utf8)
         _ = ConfigFile.prepareForEditing()
 
+        let diagnostics = ConfigFile.issues.map { "\($0.key): \($0.message)" }
+            + [ConfigFile.persistenceError, Preferences.shared.credentialError].compactMap { $0 }
+        guard diagnostics.isEmpty else {
+            XCTFail("Config migration was blocked: \(diagnostics.joined(separator: "; "))")
+            return
+        }
+        let backupURL = ConfigFile.url.appendingPathExtension("bak")
+        guard fm.fileExists(atPath: backupURL.path) else {
+            XCTFail("A valid config with a retired banner must produce a migration backup.")
+            return
+        }
         let migrated = try String(contentsOf: ConfigFile.url, encoding: .utf8)
-        let backup = try String(
-            contentsOf: ConfigFile.url.appendingPathExtension("bak"),
-            encoding: .utf8)
+        let backup = try String(contentsOf: backupURL, encoding: .utf8)
         XCTAssertNil(ConfigFile.parse(migrated)["banner"])
         XCTAssertEqual(
             ConfigFile.parse(migrated)["custom-release-note"], "preserved")

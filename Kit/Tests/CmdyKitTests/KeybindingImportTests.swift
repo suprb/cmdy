@@ -5,6 +5,21 @@ import XCTest
 final class KeybindingImportTests: XCTestCase {
     private let noReservedShortcuts = Set<CMDYKeybindingShortcut>()
 
+    func testScrollbackPasteActionImportsAndRoundTripsWithoutExecutingIt() throws {
+        let fixture = """
+        keybind = ctrl+shift+2=write_scrollback_file:paste
+        keybind = ctrl+shift+4=write_scrollback_file:unknown
+        """
+        let result = try preview(fixture, source: .ghostty)
+        XCTAssertEqual(result.readyCount, 1)
+        XCTAssertEqual(result.unsupportedCount, 1)
+        assert(result.candidates[0], shortcut: "ctrl+shift+2", command: .action(.writeScrollbackPaste))
+        let command = CMDYKeybindingCommand.action(.writeScrollbackPaste)
+        XCTAssertEqual(try JSONDecoder().decode(CMDYKeybindingCommand.self,
+            from: JSONEncoder().encode(command)), command)
+        XCTAssertEqual(result.candidates[1].disposition, .unsupported)
+    }
+
     func testGhosttyFixtureTranslatesActionsAndExplainsUnsupportedRows() throws {
         let fixture = """
         # ~/.config/ghostty/config

@@ -28,6 +28,9 @@ private final class PTYSession: @unchecked Sendable {
     var writeSource: DispatchSourceWrite?
     var pendingWrites: [PendingWrite] = []
     var pendingWriteIndex = 0
+    // Used only by the dedicated serial-owner read path. Swift Array COW
+    // detaches the next mutation if a delegate retains a delivered slice.
+    var readStorage: [UInt8] = []
 
     private let markerLock = NSLock()
     private var acceptsData = true
@@ -243,6 +246,8 @@ public final class LocalProcess: @unchecked Sendable {
     private weak var delegate: LocalProcessDelegate?
     private let callbackQueue: DispatchQueue
     private let ioQueue: DispatchQueue
+    private let usesSerialOwnerQueue: Bool
+    private let reusesReadBuffer: Bool
     private let ioQueueKey = DispatchSpecificKey<UInt8>()
     private let generationLock = NSLock()
 
@@ -262,6 +267,25 @@ public final class LocalProcess: @unchecked Sendable {
         ioQueue = DispatchQueue(
             label: "com.cmdy.pty.io.\(UUID().uuidString)",
             qos: .userInteractive)
+        usesSerialOwnerQueue = false
+        reusesReadBuffer = false
+        ioQueue.setSpecific(key: ioQueueKey, value: 1)
+    }
+
+    /// App-owned integration: the supplied queue must be a dedicated serial
+    /// queue owning both the delegate's model and this process. Read callbacks
+    /// run inline on that queue and must not wait for work enqueued onto it.
+    /// Other callers retain the asynchronous callback-queue initializer above.
+    @_spi(CmdyApp) public init(
+        delegate: LocalProcessDelegate,
+        serialQueue: DispatchQueue,
+        reuseReadBuffer: Bool = true
+    ) {
+        self.delegate = delegate
+        callbackQueue = serialQueue
+        ioQueue = serialQueue
+        usesSerialOwnerQueue = true
+        reusesReadBuffer = reuseReadBuffer
         ioQueue.setSpecific(key: ioQueueKey, value: 1)
     }
 
@@ -441,6 +465,13 @@ public final class LocalProcess: @unchecked Sendable {
         dispatchPrecondition(condition: .onQueue(ioQueue))
         guard activeSession === session, session.descriptorIsOpen else { return }
 
+        // Logging owns each queued payload independently. Keep that optional
+        // path, and all callback-queue callers, on the existing owned chunks.
+        if reusesReadBuffer && hostLogSink == nil {
+            readUsingRetainedStorage(for: session)
+            return
+        }
+
         var storage = [UInt8](repeating: 0, count: Self.readChunkSize)
         var count: Int
         repeat {
@@ -456,6 +487,14 @@ public final class LocalProcess: @unchecked Sendable {
                 let index = hostLogCounter
                 hostLogCounter &+= 1
                 hostLogSink.writeChunk(storage, index: index)
+            }
+            if usesSerialOwnerQueue {
+                if session.shouldDeliverData() {
+                    delegate?.dataReceived(slice: storage[...])
+                }
+                // The delegate may terminate or replace this session. Do not
+                // touch its source or state after returning from the callback.
+                return
             }
             guard let source = session.readSource else { return }
             source.suspend()
@@ -482,6 +521,33 @@ public final class LocalProcess: @unchecked Sendable {
         finishIfReady(session)
     }
 
+    private func readUsingRetainedStorage(for session: PTYSession) {
+        if session.readStorage.isEmpty {
+            session.readStorage = [UInt8](repeating: 0, count: Self.readChunkSize)
+        }
+        var count: Int
+        repeat {
+            count = session.readStorage.withUnsafeMutableBytes { buffer -> Int in
+                guard let baseAddress = buffer.baseAddress else { return 0 }
+                return Darwin.read(session.masterDescriptor, baseAddress, buffer.count)
+            }
+        } while count == -1 && errno == EINTR
+
+        if count > 0 {
+            // Leave the allocation at full capacity, but expose only bytes
+            // initialized by this read. The pointer access ends before calling
+            // the delegate, which may retain the slice or replace the session.
+            if session.shouldDeliverData() {
+                delegate?.dataReceived(slice: session.readStorage.prefix(count))
+            }
+            return
+        }
+        if count == -1 && (errno == EAGAIN || errno == EWOULDBLOCK) { return }
+        session.reachedEOF = true
+        closeMaster(for: session)
+        finishIfReady(session)
+    }
+
     private func resumeReading(_ session: PTYSession) {
         dispatchPrecondition(condition: .onQueue(ioQueue))
         guard activeSession === session,
@@ -500,18 +566,30 @@ public final class LocalProcess: @unchecked Sendable {
             return
         }
 
+        var writtenThisTurn = 0
         while session.pendingWriteIndex < session.pendingWrites.count {
+            if usesSerialOwnerQueue && writtenThisTurn == Self.readChunkSize {
+                // A large writable paste must yield to model/input/snapshot
+                // work. Reuse one readiness source for the remaining bytes.
+                ensureWriteSource(for: session)
+                return
+            }
             var pending = session.pendingWrites[session.pendingWriteIndex]
+            let remaining = pending.bytes.count - pending.offset
+            let writeLimit = usesSerialOwnerQueue
+                ? min(remaining, Self.readChunkSize - writtenThisTurn)
+                : remaining
             let written = pending.bytes.withUnsafeBytes { buffer -> Int in
                 guard let base = buffer.baseAddress else { return 0 }
                 return Darwin.write(
                     session.masterDescriptor,
                     base.advanced(by: pending.offset),
-                    pending.bytes.count - pending.offset)
+                    writeLimit)
             }
 
             if written > 0 {
                 pending.offset += written
+                writtenThisTurn += written
                 if pending.offset == pending.bytes.count {
                     session.pendingWriteIndex += 1
                 } else {

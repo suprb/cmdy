@@ -52,6 +52,12 @@ class WorkingTreeProvenanceTests(unittest.TestCase):
         )
         self.assertEqual(gate.IMPORT_SCAN_ROOTS, active_gate.IMPORT_SCAN_ROOTS)
         self.assertEqual(gate.PACKAGE_MANIFESTS, active_gate.PACKAGE_MANIFESTS)
+        self.assertEqual(gate.PACKAGE_GRAPH_INPUTS, active_gate.PACKAGE_GRAPH_INPUTS)
+        self.assertEqual(gate.NATIVE_BUILD_INPUTS, active_gate.NATIVE_BUILD_INPUTS)
+        self.assertEqual(gate.SOURCE_DATA_ROOTS, active_gate.SOURCE_DATA_ROOTS)
+        self.assertEqual(gate.GENERATED_NATIVE_STAMP, active_gate.GENERATED_NATIVE_STAMP)
+        self.assertEqual(gate.NATIVE_BUILD_RECEIPT, active_gate.NATIVE_BUILD_RECEIPT)
+        self.assertEqual(gate.NATIVE_BUILD_MODES, active_gate.NATIVE_BUILD_MODES)
 
         provenance_sources, provenance_issues = gate.discover_active_sources(
             REPOSITORY,
@@ -274,6 +280,10 @@ class WorkingTreeProvenanceTests(unittest.TestCase):
                 path = root / manifest
                 path.parent.mkdir(parents=True, exist_ok=True)
                 path.write_text("// package fixture\n")
+            for relative in set(gate.PACKAGE_GRAPH_INPUTS) - set(gate.PACKAGE_MANIFESTS):
+                path = root / relative
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text("fixture build input\n")
             allowlist = root / "allowlist.json"
             allowlist.write_text(json.dumps({
                 "schemaVersion": 1,
@@ -284,8 +294,27 @@ class WorkingTreeProvenanceTests(unittest.TestCase):
             first = gate.build_report(root, vendor_ref, retired_ref, allowlist)
             second = gate.build_report(root, vendor_ref, retired_ref, allowlist)
             self.assertEqual(first, second)
+            self.assertEqual(first["schemaVersion"], 2)
             self.assertTrue(first["summary"]["ok"])
             self.assertGreaterEqual(first["summary"]["activeSourceCount"], 12)
+            self.assertEqual(
+                {item["path"] for item in first["trustFiles"]},
+                set(gate.PACKAGE_GRAPH_INPUTS),
+            )
+            tool = root / "Core/Tools/ZigEngine/source_inputs.py"
+            tool.write_text("changed native build input discovery\n")
+            changed = gate.build_report(root, vendor_ref, retired_ref, allowlist)
+            self.assertNotEqual(first["reportSHA256"], changed["reportSHA256"])
+            self.assertNotEqual(first["trustFiles"], changed["trustFiles"])
+            self.assertEqual(first["activeSources"], changed["activeSources"])
+            tool.unlink()
+            missing = gate.build_report(root, vendor_ref, retired_ref, allowlist)
+            self.assertFalse(missing["summary"]["ok"])
+            self.assertIn("missing package-graph input: Core/Tools/ZigEngine/source_inputs.py", missing["issues"])
+            tool.symlink_to(root / "App/EngineFactory.swift")
+            linked = gate.build_report(root, vendor_ref, retired_ref, allowlist)
+            self.assertFalse(linked["summary"]["ok"])
+            self.assertIn("package-graph input contains symlink component: Core/Tools/ZigEngine/source_inputs.py", linked["issues"])
 
     def test_check_fails_but_report_succeeds_for_unresolved_findings(self) -> None:
         report = {

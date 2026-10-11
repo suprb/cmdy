@@ -1,5 +1,6 @@
 import AppKit
 import ProductIdentity
+import Darwin
 
 /// Ghostty-style plain-text configuration at ~/.config/cmdy/config:
 /// one `key = value` per line, `#` comments. Values apply into Preferences
@@ -54,6 +55,19 @@ public enum ConfigFile {
     nonisolated(unsafe) private static var watchedFD: Int32 = -1
     nonisolated(unsafe) private static var pendingApply: DispatchWorkItem?
     nonisolated(unsafe) private static var lastApplied: Data?
+    nonisolated(unsafe) public private(set) static var issues: [ConfigValidationIssue] = []
+    nonisolated(unsafe) public private(set) static var persistenceError: String?
+
+    private static func report(issues newIssues: [ConfigValidationIssue]? = nil,
+                               persistenceError error: String? = nil) {
+        let newIssues = newIssues ?? issues
+        guard issues != newIssues || persistenceError != error else { return }
+        issues = newIssues
+        persistenceError = error
+        DispatchQueue.main.async {
+            NotificationCenter.default.post(name: .cmdySettingsIssuesChanged, object: nil)
+        }
+    }
 
     // MARK: - Parsing
 
@@ -66,7 +80,8 @@ public enum ConfigFile {
             let key = String(line[..<eq]).trimmingCharacters(in: .whitespaces).lowercased()
             var value = String(line[line.index(after: eq)...]).trimmingCharacters(in: .whitespaces)
             // Allow quoted values (for font names with spaces, etc.)
-            if value.count >= 2, value.hasPrefix("\""), value.hasSuffix("\"") {
+            if value.hasPrefix("\"") {
+                guard value.count >= 2, value.hasSuffix("\"") else { continue }
                 value = String(value.dropFirst().dropLast())
             }
             guard !key.isEmpty else { continue }
@@ -88,13 +103,41 @@ public enum ConfigFile {
     /// Read the file (if present) and push its values into Preferences.
     /// Returns true if a config file was found and applied.
     @discardableResult
-    public static func applyIfPresent() -> Bool {
-        guard let data = try? BoundedFileReader.data(
-            at: url, maxBytes: 4 * 1024 * 1024) else { return false }
-        if data == lastApplied { return true }   // editor event, no content change
+    public static func applyIfPresent(force: Bool = false) -> Bool {
+        guard FileManager.default.fileExists(atPath: url.path) else { return false }
+        let data: Data
+        do {
+            data = try BoundedFileReader.data(at: url, maxBytes: 4 * 1024 * 1024)
+        } catch {
+            report(persistenceError: "Could not read the config file. Check its permissions and keep it below 4 MB, then reload it.")
+            return false
+        }
+        if !force && data == lastApplied { return true }   // editor event, no content change
         lastApplied = data
         Theme.reloadUserThemes()                 // themes dir may have changed too
-        apply(parse(String(decoding: data, as: UTF8.self)))
+        guard let text = String(data: data, encoding: .utf8) else {
+            report(persistenceError: "The config file is not valid UTF-8 text. Save it as UTF-8, then reload it.")
+            lastApplied = nil
+            return false
+        }
+        let values = parse(text)
+        apply(values, syntaxIssues: syntaxIssues(in: text))
+        if let key = values["anthropic-api-key"] {
+            if Preferences.migrateAssistantConfigKey(key) {
+                if !Preferences.shared.usesIsolatedCredentialStorage {
+                    removeLegacyAssistantKeyEntries()
+                } else {
+                    // Isolated profiles use memory credentials; never destroy
+                    // their source as if that temporary store were durable.
+                    try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
+                }
+            } else {
+                // A locked Keychain can be retried without editing the secret.
+                lastApplied = nil
+                // Retain the original value for retry with private permissions.
+                try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
+            }
+        }
         return true
     }
 
@@ -104,11 +147,18 @@ public enum ConfigFile {
 
     /// Apply config key/values from outside the file-watch path — the
     /// marketplace uses this to apply rigs (whole-look presets).
-    public static func applyValues(_ kv: [String: String]) { apply(kv) }
+    public static func applyValues(_ kv: [String: String]) {
+        apply(kv)
+        if let key = kv["anthropic-api-key"] { _ = Preferences.migrateAssistantConfigKey(key) }
+    }
 
-    private static func apply(_ kv: [String: String]) {
+    private static func apply(_ kv: [String: String], syntaxIssues: [ConfigValidationIssue] = []) {
         isApplying = true
         defer { isApplying = false }
+        let invalid = syntaxIssues + validationIssues(for: kv)
+        report(issues: invalid)
+        let invalidKeys = Set(invalid.map(\.key))
+        let kv = kv.filter { !invalidKeys.contains($0.key) }
         let p = Preferences.shared
         if let v = kv["marketplace-registry"], !v.isEmpty { p.marketplaceRegistry = v }
         if let v = kv["marketplace-update-checks"].flatMap(bool) {
@@ -118,8 +168,6 @@ public enum ConfigFile {
         if let v = kv["theme"] {
             if Theme.names.contains(where: { $0.caseInsensitiveCompare(v) == .orderedSame }) {
                 p.themeName = Theme.names.first { $0.caseInsensitiveCompare(v) == .orderedSame }!
-            } else {
-                NSLog("cmdy config: unknown theme '%@'", v)
             }
         }
         if let v = kv["cursor-color"] {
@@ -172,8 +220,6 @@ public enum ConfigFile {
                 p.shaderName = match
             } else if bool(v) == false {
                 p.shaderName = "None"
-            } else {
-                NSLog("cmdy config: unknown shader '%@'", v)
             }
         }
         // Back-compat: `crt = true` from older configs selects the CRT shader —
@@ -196,7 +242,6 @@ public enum ConfigFile {
         if let v = kv["sounds"].flatMap(bool) { p.sounds = v }
         if let v = kv["restore-session"].flatMap(bool) { p.restoreSession = v }
         if let v = kv["automatic-error-help"].flatMap(bool) { p.automaticErrorHelp = v }
-        if let v = kv["anthropic-api-key"] { p.anthropicKey = v.isEmpty ? nil : v }
         if let v = kv["ai-model"], !v.isEmpty { p.aiModel = v }
     }
 
@@ -209,26 +254,67 @@ public enum ConfigFile {
     /// appends the key if the file doesn't mention it. No file, no write —
     /// then UserDefaults is the only store and persists by itself.
     public static func writeBack(key: String, value: String) {
-        guard !isApplying else { return }
-        guard let text = try? BoundedFileReader.utf8String(
-            at: url, maxBytes: 4 * 1024 * 1024) else { return }
-        let data = Data(rewriting(text, key: key, value: value).utf8)
-        lastApplied = data   // the watcher's re-apply becomes a no-op
-        try? data.write(to: url, options: .atomic)
+        guard !isApplying, key != "anthropic-api-key" else { return }
+        guard FileManager.default.fileExists(atPath: url.path) else { return }
+        do {
+            let text = try BoundedFileReader.utf8String(at: url, maxBytes: 4 * 1024 * 1024)
+            let updated = rewriting(text, key: key, value: value)
+            let data = Data(updated.utf8)
+            try writePrivate(data, to: url)
+            lastApplied = data   // only skip the watcher after a successful save
+            report(issues: syntaxIssues(in: updated) + validationIssues(for: parse(updated)))
+        } catch {
+            report(persistenceError: "The change is active, but could not be saved to the config file. Check its permissions, then change the setting again or edit the file. Reloading may restore the older value.")
+        }
+    }
+
+    /// Called only after a successful Keychain save/migration (or explicit
+    /// removal). Scrubbing a backup must never make another plaintext backup.
+    static func removeLegacyAssistantKeyEntries() {
+        for target in [url, url.appendingPathExtension("bak")] {
+            guard FileManager.default.fileExists(atPath: target.path) else { continue }
+            do {
+                let text = try BoundedFileReader.utf8String(at: target, maxBytes: 4 * 1024 * 1024)
+                let sanitized = removingAssistantCredentials(from: text)
+                guard sanitized != text else { continue }
+                let data = Data(sanitized.utf8)
+                try writePrivate(data, to: target)
+                if target == url { lastApplied = data }
+            } catch {
+                report(persistenceError: "The Keychain change succeeded, but a legacy API-key entry could not be removed from config or config.bak. Check file permissions and reload before sharing those files.")
+            }
+        }
+    }
+
+    /// Replace atomically without exposing a legacy credential through a
+    /// permissive temporary file. Config backups use the same private mode.
+    static func writePrivate(_ data: Data, to target: URL) throws {
+        let temporary = target.deletingLastPathComponent()
+            .appendingPathComponent(".cmdy-config-\(UUID().uuidString)")
+        guard FileManager.default.createFile(atPath: temporary.path, contents: data,
+                                             attributes: [.posixPermissions: 0o600]) else {
+            throw CocoaError(.fileWriteUnknown)
+        }
+        defer { try? FileManager.default.removeItem(at: temporary) }
+        guard rename(temporary.path, target.path) == 0 else {
+            throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO)
+        }
     }
 
     /// Pure text transform behind `writeBack` (covered by --selftest).
     public static func rewriting(_ text: String, key: String, value: String) -> String {
         var lines = text.components(separatedBy: "\n")
+        var found = false
         for (i, raw) in lines.enumerated() {
             let line = raw.trimmingCharacters(in: .whitespaces)
             guard !line.isEmpty, !line.hasPrefix("#"), let eq = line.firstIndex(of: "=") else { continue }
             let k = String(line[..<eq]).trimmingCharacters(in: .whitespaces).lowercased()
             if k == key {
                 lines[i] = "\(key) = \(value)"
-                return lines.joined(separator: "\n")
+                found = true
             }
         }
+        if found { return lines.joined(separator: "\n") }
         if lines.last?.trimmingCharacters(in: .whitespaces).isEmpty == false { lines.append("") }
         lines.append("\(key) = \(value)")
         return lines.joined(separator: "\n")
@@ -286,13 +372,22 @@ public enum ConfigFile {
     /// editor without CmdyKit depending on app-layer UI.
     @discardableResult
     public static func prepareForEditing() -> URL {
-        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        if !FileManager.default.fileExists(atPath: url.path) {
-            try? template().write(to: url, atomically: true, encoding: .utf8)
-            lastApplied = try? BoundedFileReader.data(
-                at: url, maxBytes: 4 * 1024 * 1024)   // don't re-apply what we just wrote
-        } else if isStale() {
-            regenerate()   // refresh an old/incomplete config to the current, fully-commented layout
+        do {
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            if !FileManager.default.fileExists(atPath: url.path) {
+                let data = Data(template().utf8)
+                try writePrivate(data, to: url)
+                lastApplied = data
+                report(issues: [])
+            } else if isStale() {
+                applyIfPresent(force: true)
+                // Keep invalid input and unmigrated secrets intact for repair.
+                if issues.isEmpty && Preferences.shared.credentialError == nil {
+                    try regenerate()
+                }
+            }
+        } catch {
+            report(persistenceError: "Could not prepare the config file for editing. Check the configuration folder's permissions and try again.")
         }
         return url
     }
@@ -316,19 +411,21 @@ public enum ConfigFile {
 
     /// Rewrite the config to the current, fully-commented template — filled with
     /// the user's CURRENT values (they live in Preferences, so nothing is lost)
-    /// and with any custom keys the template doesn't cover (an API key, a custom
-    /// registry) preserved at the end. The previous file is backed up to
+    /// and with any custom keys the template doesn't cover (a custom registry)
+    /// preserved at the end. The previous file is backed up to
     /// `config.bak` first, so a hand-tuned layout is never gone for good.
-    private static func regenerate() {
-        guard let existing = try? BoundedFileReader.utf8String(
-            at: url, maxBytes: 4 * 1024 * 1024) else { return }
-        try? existing.write(to: url.appendingPathExtension("bak"), atomically: true, encoding: .utf8)
+    private static func regenerate() throws {
+        let existing = try BoundedFileReader.utf8String(at: url, maxBytes: 4 * 1024 * 1024)
+        guard parse(existing)["anthropic-api-key"] == nil else { return }
+        try writePrivate(Data(removingAssistantCredentials(from: existing).utf8),
+                         to: url.appendingPathExtension("bak"))
 
         let templateKeys = Set(parse(template()).keys)
         let extras = parse(existing)
             .filter {
                 !templateKeys.contains($0.key)
                     && !retiredKeys.contains($0.key)
+                    && $0.key != "anthropic-api-key"
             }
             .sorted { $0.key < $1.key }
             .map { "\($0.key) = \($0.value)" }
@@ -338,9 +435,10 @@ public enum ConfigFile {
             out += "\n\n# ── your other settings (kept from the previous config) ──\n"
                  + extras.joined(separator: "\n") + "\n"
         }
-        try? out.write(to: url, atomically: true, encoding: .utf8)
-        lastApplied = try? BoundedFileReader.data(
-            at: url, maxBytes: 4 * 1024 * 1024)   // values are unchanged; don't re-apply
+        let data = Data(out.utf8)
+        try writePrivate(data, to: url)
+        lastApplied = data   // values are unchanged; don't re-apply
+        report(issues: [])
     }
 
     public static func template() -> String {
@@ -463,11 +561,13 @@ public enum ConfigFile {
         # inserted only after ⌘Return and still requires Return to run.
         automatic-error-help = \(p.automaticErrorHelp)
 
+        # Ask explicitly with Compose Command (⇧⌘K), or type # followed by a
+        # request. Other prompt input is always sent to the shell.
         # Error help starts with built-in diagnostics, then Apple Intelligence
-        # on-device. This optional key is the cloud fallback and is required for
-        # Agent. A key here also works for Finder and Dock launches;
-        # ANTHROPIC_API_KEY only reaches \(identity.displayName) when it is started from a shell.
-        # anthropic-api-key = sk-ant-…
+        # on-device. Configure the optional Anthropic cloud fallback in
+        # Settings → Assistant (⌘,). The API key is stored in Keychain;
+        # keep secrets out of this file. ANTHROPIC_API_KEY is also supported
+        # when \(identity.displayName) is started from a shell.
         ai-model = \(p.aiModel)
         """
     }
