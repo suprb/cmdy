@@ -148,61 +148,6 @@
       "rationale": "One-to-one public cursor-style enum conversion at the App/Core seam."
     },
     {
-      "id": "retired-app-snapshot-field-plumbing",
-      "origin": "retired",
-      "mode": "exact",
-      "active": "App/CmdySnapshotShaper.swift",
-      "historical": "App/TermiteCoreShaping.swift",
-      "fingerprints": [
-        "9177ba42c5c8ce7cd0681a950a8d293518907263c201c88aebcd45e350781f21",
-        "cc5d7b8aee05ed8bca131e0b1e8723de2cca7810ae8c55bed10bb73d4b264403",
-        "31536c703b11f5670d7253f40b8def7bc345c77af45a0d35cfb90005f4cfca20",
-        "03a19dfe533081e3afb09f58d38a506e12b403ec50d993085eb81c8acc7d1251"
-      ],
-      "classification": "data-plumbing",
-      "rationale": "Field projection for placeholder cells, cursor-cell lookup, and the App image wrapper; no shaping or decoding algorithm is covered."
-    },
-    {
-      "id": "retired-app-surface-callback-fields",
-      "origin": "retired",
-      "mode": "exact",
-      "active": "App/CmdyTerminalSurface.swift",
-      "historical": "App/TermiteCoreSurface.swift",
-      "fingerprint": "822cc7da38149e62b26004403cd1ca9f532ffad829013bd3b93e0c2c7b3b7c51",
-      "classification": "api-declaration",
-      "rationale": "Stored callback declarations forming the application seam."
-    },
-    {
-      "id": "retired-app-surface-feed-forwarding",
-      "origin": "retired",
-      "mode": "exact",
-      "active": "App/CmdyTerminalSurface.swift",
-      "historical": "App/TermiteCoreSurface.swift",
-      "fingerprint": "b41cf00143911d131fdb4cb389e373bfcaa88fea64b28431ffffdd3fea80553c",
-      "classification": "data-plumbing",
-      "rationale": "Thin send/feed forwarding methods and palette installation entrypoint."
-    },
-    {
-      "id": "retired-app-surface-renderer-options",
-      "origin": "retired",
-      "mode": "exact",
-      "active": "App/CmdyTerminalSurface.swift",
-      "historical": "App/TermiteCoreSurface.swift",
-      "fingerprint": "92c4fd27cf7f1fc15a702a832b35414fc7d3d08c5c29ef0d3c7b936b8c358ec0",
-      "classification": "data-plumbing",
-      "rationale": "Copies user-facing renderer options into renderer properties."
-    },
-    {
-      "id": "retired-app-standard-pasteboard-actions",
-      "origin": "retired",
-      "mode": "exact",
-      "active": "App/CmdyTerminalSurface.swift",
-      "historical": "App/TermiteCoreSurface.swift",
-      "fingerprint": "9328afd40e6d9a8dbf24c04664ac88048d4989070e2b6271f81969fa2f309d28",
-      "classification": "standard-platform-mechanics",
-      "rationale": "Standard AppKit pasteboard copy and select-all action mechanics."
-    },
-    {
       "id": "retired-app-process-forwarding",
       "origin": "retired",
       "mode": "exact",
@@ -231,16 +176,6 @@
       "fingerprint": "f6275fdd3b5d9a0950ac817767131ca459a5116746863bbf8e1261f7dd0fc1f9",
       "classification": "data-plumbing",
       "rationale": "Observer callbacks forward output and process termination and consume a stored dirty-row range."
-    },
-    {
-      "id": "retired-app-render-grid-projection",
-      "origin": "retired",
-      "mode": "structural",
-      "active": "App/CmdyTerminalSurface.swift",
-      "historical": "App/TermiteCoreShaping.swift",
-      "fingerprint": "d9d4a84848251e1ccbcad4ec19396051a406a5fb802ed1bfb72be06de5ad1f53",
-      "classification": "data-plumbing",
-      "rationale": "Projects a captured Core grid's public fields into the renderer seam; the identifier-normalized match contains no rendering algorithm."
     },
     {
       "id": "retired-app-kitty-render-projection",
@@ -609,6 +544,266 @@
       "fingerprint": "f02dde8bb66c2736a654edcb73cb751c983f15493aca97b8f6688a737ad08b9b",
       "classification": "standard-platform-mechanics",
       "rationale": "Canonical AppKit conversion from 16-bit RGB channels to an opaque sRGB NSColor."
+    },
+    {
+      "id": "vendor-zig-cell-chardata",
+      "origin": "vendor",
+      "mode": "structural",
+      "active": "Core/Sources/CmdyCoreZig/Cell.swift",
+      "historical": "Vendor/SwiftTerm/Sources/SwiftTerm/CharData.swift",
+      "fingerprint": "c1f4f14decaa6ec75b797fb45d82441219ed12c1b999cadc308e2b40ca3c772b",
+      "classification": "api-declaration",
+      "rationale": "Public cell value and style-bit declarations required by the compatibility surface; identifiers differ and no cell algorithm is covered. Zig-engine copy of the reviewed CmdyCore declaration."
+    },
+    {
+      "id": "vendor-zig-placeholder-kittyplaceholder",
+      "origin": "vendor",
+      "mode": "exact",
+      "active": "Core/Zig/placeholder.zig",
+      "historical": "Vendor/SwiftTerm/Sources/SwiftTerm/KittyPlaceholder.swift",
+      "fingerprint": "78a4ed9106b50bd8dd69e49d737fd8ac064e4ca5c331361336a0d21d28dc18d7",
+      "classification": "official-protocol-data",
+      "rationale": "The ordered combining-diacritic table is normative public Kitty protocol data and is cited to the official specification in the active source."
+    },
+    {
+      "id": "vendor-zig-render-schedule-kittygraphics",
+      "origin": "vendor",
+      "mode": "structural",
+      "active": "Core/Zig/render_schedule.zig",
+      "historical": "Vendor/SwiftTerm/Sources/SwiftTerm/KittyGraphics.swift",
+      "fingerprint": "e375195806cb84d6afa7ee159b3c483f8ce42e5f472362118502d7ed28cf187a",
+      "classification": "non-substantive-structural-collision",
+      "rationale": "Normalization makes the render scheduler inspection struct field list resemble the Vendor Kitty control initializer argument list; it contains no graphics parsing, storage, or placement logic."
+    },
+    {
+      "id": "vendor-zig-metalcore-metalerror",
+      "origin": "vendor",
+      "mode": "exact",
+      "active": "Renderer/Sources/CmdyGPUZig/MetalCore.swift",
+      "historical": "Vendor/SwiftTerm/Sources/SwiftTerm/Apple/Metal/MetalError.swift",
+      "fingerprint": "8b554a850d4eceaaf2f1355ead1aca8f62c7716e8789fe279c6cd79d24492d19",
+      "classification": "api-declaration",
+      "rationale": "Renderer error enum declaration and case names only. Zig-backed renderer copy of the reviewed CmdyGPU declaration."
+    },
+    {
+      "id": "vendor-zig-proceduralglyphs-boxdrawingrenderer",
+      "origin": "vendor",
+      "mode": "exact",
+      "active": "Renderer/Sources/CmdyGPUZig/ProceduralGlyphs.swift",
+      "historical": "Vendor/SwiftTerm/Sources/SwiftTerm/Apple/BoxDrawingRenderer.swift",
+      "fingerprint": "6f9d33003890a52004bbe36a1a516500da4b236b3df97774bf1b41d51f13a316",
+      "classification": "api-declaration",
+      "rationale": "Public box-drawing entrypoint signature only; the independently rewritten glyph construction is outside the match. Zig-backed renderer copy; drawing is delegated to the native engine."
+    },
+    {
+      "id": "retired-port-cell-cell",
+      "origin": "retired",
+      "mode": "exact",
+      "active": "Core/Sources/CmdyCoreZig/Cell.swift",
+      "historical": "Core/Sources/TermiteCore/Cell.swift",
+      "fingerprint": "cadd7a405db7ff5c89a725cd726279aafb10f2dbb630fefa0088c82b2f2cf0e6",
+      "classification": "cmdy-original-retained-source",
+      "rationale": "Hash-pinned retained Cmdy engine source; its separate Vendor declaration match is classified explicitly. Ported copy of the reviewed Core/Sources/CmdyCore/Cell.swift match."
+    },
+    {
+      "id": "retired-port-replay-replay",
+      "origin": "retired",
+      "mode": "exact",
+      "active": "Core/Sources/CmdyCoreZig/Replay.swift",
+      "historical": "Core/Sources/TermiteCore/Replay.swift",
+      "fingerprint": "53c07a011231da301c2e3acf184b1555652e94531029bb457987ba7e96c488bc",
+      "classification": "cmdy-original-retained-source",
+      "rationale": "Hash-pinned retained Cmdy replay source; comparison with the initial Vendor import has no unresolved substantive Vendor match. Ported copy of the reviewed Core/Sources/CmdyCore/Replay.swift match."
+    },
+    {
+      "id": "retired-port-replay-replay-2",
+      "origin": "retired",
+      "mode": "exact",
+      "active": "Core/Sources/CmdyCoreZig/Replay.swift",
+      "historical": "Core/Sources/TermiteCore/Replay.swift",
+      "fingerprint": "45a71a4e79fe255cc0b9e0c5726e83b28ac8d1289b9f3037a8a973a0e998bc9e",
+      "classification": "cmdy-original-retained-source",
+      "rationale": "Hash-pinned retained Cmdy replay source; comparison with the initial Vendor import has no unresolved substantive Vendor match. Ported copy of the reviewed Core/Sources/CmdyCore/Replay.swift match."
+    },
+    {
+      "id": "retired-port-replay-replay-3",
+      "origin": "retired",
+      "mode": "exact",
+      "active": "Core/Sources/CmdyCoreZig/Replay.swift",
+      "historical": "Core/Sources/TermiteCore/Replay.swift",
+      "fingerprint": "40a0234916b01f6e3014f34a6c34b6483dc491073b8e3e0bdadab809b5a3f412",
+      "classification": "cmdy-original-retained-source",
+      "rationale": "Hash-pinned retained Cmdy replay source; comparison with the initial Vendor import has no unresolved substantive Vendor match. Ported copy of the reviewed Core/Sources/CmdyCore/Replay.swift match."
+    },
+    {
+      "id": "retired-port-replay-replay-4",
+      "origin": "retired",
+      "mode": "exact",
+      "active": "Core/Sources/CmdyCoreZig/Replay.swift",
+      "historical": "Core/Sources/TermiteCore/Replay.swift",
+      "fingerprint": "a46565d19ac41835b17f677ec6f01f1181a297e8ac9f95419e70fd9b8e13aef6",
+      "classification": "cmdy-original-retained-source",
+      "rationale": "Hash-pinned retained Cmdy replay source; comparison with the initial Vendor import has no unresolved substantive Vendor match. Ported copy of the reviewed Core/Sources/CmdyCore/Replay.swift match."
+    },
+    {
+      "id": "retired-port-terminalsearch-terminalsupport",
+      "origin": "retired",
+      "mode": "exact",
+      "active": "Core/Sources/CmdyCoreZig/TerminalSearch.swift",
+      "historical": "Core/Sources/TermiteCore/TerminalSupport.swift",
+      "fingerprint": "7f2fc7b00c29f92c0a99c692cc50b6636fba48cd7a17c0a281a639a574a135db",
+      "classification": "cmdy-original-retained-source",
+      "rationale": "Hash-pinned retained Cmdy support types; comparison with the initial Vendor import has no unresolved substantive Vendor match. Ported copy of the reviewed Core/Sources/CmdyCore/TerminalSupport.swift match."
+    },
+    {
+      "id": "retired-port-builtineffectshaders-metalterminalrenderer",
+      "origin": "retired",
+      "mode": "exact",
+      "active": "Renderer/Sources/CmdyGPUZig/BuiltInEffectShaders.swift",
+      "historical": "Renderer/Sources/TermiteGPU/MetalTerminalRenderer.swift",
+      "fingerprint": "9909ca29945eae9f9a0f50f6fd9c40c92d6f279e16e38647b058c1dbde01a237",
+      "classification": "api-declaration",
+      "rationale": "Metal uniform field layout shared across the public CPU/GPU data seam. Ported copy of the reviewed Renderer/Sources/CmdyGPU/BuiltInEffectShaders.swift match."
+    },
+    {
+      "id": "retired-port-compatibilityutilities-rendertypes",
+      "origin": "retired",
+      "mode": "structural",
+      "active": "Renderer/Sources/CmdyGPUZig/CompatibilityUtilities.swift",
+      "historical": "Renderer/Sources/TermiteGPU/RenderTypes.swift",
+      "fingerprint": "9220878ee43efc8b810c3b9d40a27060023324a48eb62591905cd14d632db412",
+      "classification": "api-declaration",
+      "rationale": "Identifier-normalized atlas-region value fields and memberwise initializer. Ported copy of the reviewed Renderer/Sources/CmdyGPU/CompatibilityUtilities.swift match."
+    },
+    {
+      "id": "retired-port-compatibilityutilities-blockelementrenderer",
+      "origin": "retired",
+      "mode": "structural",
+      "active": "Renderer/Sources/CmdyGPUZig/CompatibilityUtilities.swift",
+      "historical": "Renderer/Sources/TermiteGPU/BlockElementRenderer.swift",
+      "fingerprint": "592e49f202e7deda1037114055ca5730f52499c863e101587142ac0321536679",
+      "classification": "api-declaration",
+      "rationale": "Identifier-normalized glyph bitmap value fields and memberwise initializer. Ported copy of the reviewed Renderer/Sources/CmdyGPU/CompatibilityUtilities.swift match."
+    },
+    {
+      "id": "retired-port-geometryandscheduling-metalterminalrenderer",
+      "origin": "retired",
+      "mode": "exact",
+      "active": "Renderer/Sources/CmdyGPUZig/GeometryAndScheduling.swift",
+      "historical": "Renderer/Sources/TermiteGPU/MetalTerminalRenderer.swift",
+      "fingerprint": "1c94e1073d67e610a14a4470e8985679bbe4a9ba433ef4d39baf3730c231e0aa",
+      "classification": "api-declaration",
+      "rationale": "Viewport translation value fields and initializer signature only. Ported copy of the reviewed Renderer/Sources/CmdyGPU/GeometryAndScheduling.swift match."
+    },
+    {
+      "id": "retired-port-metalcore-metalerror",
+      "origin": "retired",
+      "mode": "exact",
+      "active": "Renderer/Sources/CmdyGPUZig/MetalCore.swift",
+      "historical": "Renderer/Sources/TermiteGPU/MetalError.swift",
+      "fingerprint": "8b554a850d4eceaaf2f1355ead1aca8f62c7716e8789fe279c6cd79d24492d19",
+      "classification": "api-declaration",
+      "rationale": "Renderer error enum declaration and case names only. Ported copy of the reviewed Renderer/Sources/CmdyGPU/MetalCore.swift match."
+    },
+    {
+      "id": "retired-port-proceduralglyphs-blockelementrenderer",
+      "origin": "retired",
+      "mode": "exact",
+      "active": "Renderer/Sources/CmdyGPUZig/ProceduralGlyphs.swift",
+      "historical": "Renderer/Sources/TermiteGPU/BlockElementRenderer.swift",
+      "fingerprint": "7608a5bd564ceab3a6226a3ee8706dc9a67cfe8abff7f3aada31b1508fc4ead9",
+      "classification": "compatibility-data",
+      "rationale": "Fixed block-element alpha levels and public rectangle value fields. Ported copy of the reviewed Renderer/Sources/CmdyGPU/ProceduralGlyphs.swift match."
+    },
+    {
+      "id": "retired-port-proceduralglyphs-blockelementrenderer-2",
+      "origin": "retired",
+      "mode": "exact",
+      "active": "Renderer/Sources/CmdyGPUZig/ProceduralGlyphs.swift",
+      "historical": "Renderer/Sources/TermiteGPU/BlockElementRenderer.swift",
+      "fingerprint": "969d29d0cbcb4e1c39e0a131bc696cb30ae721ddaeaca937b27a77c9c8caad02",
+      "classification": "api-declaration",
+      "rationale": "Block-element render-item fields and memberwise initializer. Ported copy of the reviewed Renderer/Sources/CmdyGPU/ProceduralGlyphs.swift match."
+    },
+    {
+      "id": "retired-port-proceduralglyphs-boxdrawingrenderer",
+      "origin": "retired",
+      "mode": "exact",
+      "active": "Renderer/Sources/CmdyGPUZig/ProceduralGlyphs.swift",
+      "historical": "Renderer/Sources/TermiteGPU/BoxDrawingRenderer.swift",
+      "fingerprint": "9ecadd779ee5210f6a460641a960f8ad4580e12a567aedc182ce286320a0f391",
+      "classification": "api-declaration",
+      "rationale": "Box-drawing render-item fields and memberwise initializer. Ported copy of the reviewed Renderer/Sources/CmdyGPU/ProceduralGlyphs.swift match."
+    },
+    {
+      "id": "retired-zig-proceduralglyphs-boxdrawingrenderer",
+      "origin": "retired",
+      "mode": "exact",
+      "active": "Renderer/Sources/CmdyGPUZig/ProceduralGlyphs.swift",
+      "historical": "Renderer/Sources/TermiteGPU/BoxDrawingRenderer.swift",
+      "fingerprint": "e133cafb0f7f96d7e8d8f3b715e934955402c74470da07aaae4b3dc00e7d2311",
+      "classification": "api-declaration",
+      "rationale": "Public box-drawing entrypoint signature only; drawing is delegated to the native engine."
+    },
+    {
+      "id": "retired-port-rendercontract-metalrendersource",
+      "origin": "retired",
+      "mode": "exact",
+      "active": "Renderer/Sources/CmdyGPUZig/RenderContract.swift",
+      "historical": "Renderer/Sources/TermiteGPU/MetalRenderSource.swift",
+      "fingerprint": "c778e410e25964f6717e86f76efe239515b749dac9ddf6be6afe380a2bc95e63",
+      "classification": "api-declaration",
+      "rationale": "Renderer input protocol requirements defining the preserved App/renderer boundary. Ported copy of the reviewed Renderer/Sources/CmdyGPU/RenderContract.swift match."
+    },
+    {
+      "id": "retired-port-rendercontract-rendertypes",
+      "origin": "retired",
+      "mode": "exact",
+      "active": "Renderer/Sources/CmdyGPUZig/RenderContract.swift",
+      "historical": "Renderer/Sources/TermiteGPU/RenderTypes.swift",
+      "fingerprint": "e00ef77e0c96648595c6c08bda5845b03a9d8bc9760e7fd77b15f1a5577d9a89",
+      "classification": "api-declaration",
+      "rationale": "Line-segment public fields plus overflow-safe column-span projection. Ported copy of the reviewed Renderer/Sources/CmdyGPU/RenderContract.swift match."
+    },
+    {
+      "id": "retired-port-rendercontract-rendertypes-2",
+      "origin": "retired",
+      "mode": "exact",
+      "active": "Renderer/Sources/CmdyGPUZig/RenderContract.swift",
+      "historical": "Renderer/Sources/TermiteGPU/RenderTypes.swift",
+      "fingerprint": "2279fec3755342e9c63252fb3d3c85203ecbf2d2c35efdc4492318933a2547c7",
+      "classification": "api-declaration",
+      "rationale": "Grid snapshot public fields and initializer signature. Ported copy of the reviewed Renderer/Sources/CmdyGPU/RenderContract.swift match."
+    },
+    {
+      "id": "retired-port-rendercontract-rendertypes-3",
+      "origin": "retired",
+      "mode": "exact",
+      "active": "Renderer/Sources/CmdyGPUZig/RenderContract.swift",
+      "historical": "Renderer/Sources/TermiteGPU/RenderTypes.swift",
+      "fingerprint": "2abb13f5fa31c0f60fdb9a85490293661a208c8e5fbb1610bd01a0d9e86d7820",
+      "classification": "data-plumbing",
+      "rationale": "Grid snapshot memberwise assignments and buffering enum declaration. Ported copy of the reviewed Renderer/Sources/CmdyGPU/RenderContract.swift match."
+    },
+    {
+      "id": "retired-port-rendercontract-rendertypes-4",
+      "origin": "retired",
+      "mode": "exact",
+      "active": "Renderer/Sources/CmdyGPUZig/RenderContract.swift",
+      "historical": "Renderer/Sources/TermiteGPU/RenderTypes.swift",
+      "fingerprint": "613a2d44b3e827f79f960e0981e76b1f5508958914fb4a153e483c9672c8181d",
+      "classification": "api-declaration",
+      "rationale": "Kitty cache-stamp and placement value fields and initializer signature. Ported copy of the reviewed Renderer/Sources/CmdyGPU/RenderContract.swift match."
+    },
+    {
+      "id": "retired-port-rendercontract-rendertypes-5",
+      "origin": "retired",
+      "mode": "exact",
+      "active": "Renderer/Sources/CmdyGPUZig/RenderContract.swift",
+      "historical": "Renderer/Sources/TermiteGPU/RenderTypes.swift",
+      "fingerprint": "b5f3b2e5736a6499be302363bd5095e4205231bcaccecc8a65cd4d9221f1ba55",
+      "classification": "api-declaration",
+      "rationale": "Kitty image-payload and placeholder-cell public value declarations. Ported copy of the reviewed Renderer/Sources/CmdyGPU/RenderContract.swift match."
     }
   ],
   "reviewedRetainedSources": [
@@ -632,7 +827,7 @@
       "id": "retained-cmdy-terminal",
       "active": "Core/Sources/CmdyCore/CmdyTerminal.swift",
       "historical": "Core/Sources/TermiteCore/TermiteTerminal.swift",
-      "sha256": "6ea35b0cc10c4435e97374a0ceb25f37f70b684cd724c16bae5aee2d400b8af6",
+      "sha256": "4730a04eb143a86f780d8be0ce5537ae6ac3fc8f181fa9c3a978f04d61b8e24b",
       "classification": "cmdy-original-retained-source",
       "rationale": "Hash-pinned retained Cmdy engine source; comparison with the initial Vendor import has no unresolved substantive Vendor match."
     },
@@ -648,7 +843,7 @@
       "id": "retained-cmdy-line",
       "active": "Core/Sources/CmdyCore/Line.swift",
       "historical": "Core/Sources/TermiteCore/Line.swift",
-      "sha256": "67e5aaf846dc95e9aab66aaf040857ecbe5c3470339c6174b5a4e76545a32155",
+      "sha256": "1a0c8f9bfbb1f80b30220790dac6493fd75d792f8dde55a5536c5e01f96d0ef4",
       "classification": "cmdy-original-retained-source",
       "rationale": "Hash-pinned retained Cmdy engine source; comparison with the initial Vendor import has no unresolved substantive Vendor match."
     },
@@ -664,7 +859,7 @@
       "id": "retained-cmdy-screen-buffer",
       "active": "Core/Sources/CmdyCore/ScreenBuffer.swift",
       "historical": "Core/Sources/TermiteCore/ScreenBuffer.swift",
-      "sha256": "00a8d0f426f88edaa657b14a5ebd52f5cc10e7b9a98f6ef838c81e6689ab494f",
+      "sha256": "8e442940364236f539b28be252fc182b8c6379d896277a5dadd17568ac11f2b8",
       "classification": "cmdy-original-retained-source",
       "rationale": "Hash-pinned retained Cmdy screen-buffer source; comparison with the initial Vendor import has no unresolved substantive Vendor match."
     },
@@ -680,7 +875,7 @@
       "id": "retained-cmdy-dispatch",
       "active": "Core/Sources/CmdyCore/TerminalDispatch.swift",
       "historical": "Core/Sources/TermiteCore/TerminalDispatch.swift",
-      "sha256": "adc4dccb5438689db6b7fff9a07c6d2613395fe29657f08d2fbc97cfbe2b31e5",
+      "sha256": "74e50d68cd856ed7a6ff56ee13e751b7dc35941d3a8534ec4d796e212cecf2e0",
       "classification": "cmdy-original-retained-source",
       "rationale": "Hash-pinned retained Cmdy dispatch source; comparison with the initial Vendor import has no unresolved substantive Vendor match."
     },
@@ -696,7 +891,7 @@
       "id": "retained-cmdy-modes",
       "active": "Core/Sources/CmdyCore/TerminalModes.swift",
       "historical": "Core/Sources/TermiteCore/TerminalModes.swift",
-      "sha256": "c821bcc1ffeadb76503d05151508d5dc10265cb2ab003651fbf6081ff9131690",
+      "sha256": "38714daf0a535e4e91426e408138a93a5e56a36cff937f215a3652536cb7c6b4",
       "classification": "cmdy-original-retained-source",
       "rationale": "Hash-pinned retained Cmdy mode-state source; comparison with the initial Vendor import has no unresolved substantive Vendor match."
     },
@@ -736,9 +931,129 @@
       "id": "retained-cmdy-parser",
       "active": "Core/Sources/CmdyCore/VTParser.swift",
       "historical": "Core/Sources/TermiteCore/VTParser.swift",
-      "sha256": "ef6de5a1b7edd2318b5c62640cd00c9048612305cc4ca1ef4a0f57368248753a",
+      "sha256": "641503330034ec23f92edbc79dafc69939f9f222ec216e71584c565c2021d35f",
       "classification": "cmdy-original-retained-source",
       "rationale": "Hash-pinned retained Cmdy parser source; comparison with the initial Vendor import has no unresolved substantive Vendor match."
+    },
+    {
+      "id": "retained-cmdysnapshotshaper-from-termitecoreshaping",
+      "active": "App/CmdySnapshotShaper.swift",
+      "historical": "App/TermiteCoreShaping.swift",
+      "sha256": "2d4b7ef5ff5feade4bd33f7cfcace6f44bde6d89c2ba29d50e375d0a6c02430f",
+      "classification": "cmdy-original-retained-source",
+      "rationale": "Hash-pinned Cmdy source carried forward from the retired Cmdy implementation; comparison with the initial Vendor import has no unresolved substantive Vendor match."
+    },
+    {
+      "id": "retained-cmdyterminalsurface-from-termitecoresurface",
+      "active": "App/CmdyTerminalSurface.swift",
+      "historical": "App/TermiteCoreSurface.swift",
+      "sha256": "a8fb2f2e89de8d0fdf2f9b7fc7cfa5884c6780c987ab9c2787d93f7bb68362e8",
+      "classification": "cmdy-original-retained-source",
+      "rationale": "Hash-pinned Cmdy source carried forward from the retired Cmdy implementation; comparison with the initial Vendor import has no unresolved substantive Vendor match."
+    },
+    {
+      "id": "retained-cmdyterminal-from-termiteterminal",
+      "active": "Core/Sources/CmdyCoreZig/CmdyTerminal.swift",
+      "historical": "Core/Sources/TermiteCore/TermiteTerminal.swift",
+      "sha256": "7b96d2c536b5cbfdd7483438f213b04412d5b918458b80ec3bf7d54c1834ef42",
+      "classification": "cmdy-original-retained-source",
+      "rationale": "Hash-pinned Cmdy source carried forward from the retired Cmdy implementation; comparison with the initial Vendor import has no unresolved substantive Vendor match."
+    },
+    {
+      "id": "retained-kittygraphicsstore-from-terminalgraphics",
+      "active": "Core/Sources/CmdyCoreZig/KittyGraphicsStore.swift",
+      "historical": "Core/Sources/TermiteCore/TerminalGraphics.swift",
+      "sha256": "137cf180ede1d6b8c615fae5d8420b2c6179c3a846fa2cea896a06d26fbdcbf0",
+      "classification": "cmdy-original-retained-source",
+      "rationale": "Hash-pinned Cmdy source carried forward from the retired Cmdy implementation; comparison with the initial Vendor import has no unresolved substantive Vendor match."
+    },
+    {
+      "id": "retained-kittyunicodeplaceholder-from-kittyunicodeplaceholder",
+      "active": "Core/Sources/CmdyCoreZig/KittyUnicodePlaceholder.swift",
+      "historical": "Core/Sources/TermiteCore/KittyUnicodePlaceholder.swift",
+      "sha256": "6deb33446ff8152990b9c7ad7c11ca1b4d6ef2df8c5e95a8a90f215bc127f4c5",
+      "classification": "cmdy-original-retained-source",
+      "rationale": "Hash-pinned Cmdy source carried forward from the retired Cmdy implementation; comparison with the initial Vendor import has no unresolved substantive Vendor match."
+    },
+    {
+      "id": "retained-line-from-line",
+      "active": "Core/Sources/CmdyCoreZig/Line.swift",
+      "historical": "Core/Sources/TermiteCore/Line.swift",
+      "sha256": "76f30c474db7ac6271c369f1fd89529f0bb37c74f75ddb869dfafc9a8c896d48",
+      "classification": "cmdy-original-retained-source",
+      "rationale": "Hash-pinned Cmdy source carried forward from the retired Cmdy implementation; comparison with the initial Vendor import has no unresolved substantive Vendor match."
+    },
+    {
+      "id": "retained-lineimage-from-line",
+      "active": "Core/Sources/CmdyCoreZig/LineImage.swift",
+      "historical": "Core/Sources/TermiteCore/Line.swift",
+      "sha256": "9c586a9984f6f95b54efb35c8503622e3b3b860192ec071bdd0b28595ec5281a",
+      "classification": "cmdy-original-retained-source",
+      "rationale": "Hash-pinned Cmdy source carried forward from the retired Cmdy implementation; comparison with the initial Vendor import has no unresolved substantive Vendor match."
+    },
+    {
+      "id": "retained-screenbuffer-from-screenbuffer",
+      "active": "Core/Sources/CmdyCoreZig/ScreenBuffer.swift",
+      "historical": "Core/Sources/TermiteCore/ScreenBuffer.swift",
+      "sha256": "8d3fe699fb92af98337bf073b0de6139a97e383ec303adab9165028d44ff83e5",
+      "classification": "cmdy-original-retained-source",
+      "rationale": "Hash-pinned Cmdy source carried forward from the retired Cmdy implementation; comparison with the initial Vendor import has no unresolved substantive Vendor match."
+    },
+    {
+      "id": "retained-snapshotvalues-from-termiteterminal",
+      "active": "Core/Sources/CmdyCoreZig/SnapshotValues.swift",
+      "historical": "Core/Sources/TermiteCore/TermiteTerminal.swift",
+      "sha256": "81068668b23bd9ca90a97305156e8f6531b1a2224e747f5f1e9eb26a95e40969",
+      "classification": "cmdy-original-retained-source",
+      "rationale": "Hash-pinned Cmdy source carried forward from the retired Cmdy implementation; comparison with the initial Vendor import has no unresolved substantive Vendor match."
+    },
+    {
+      "id": "retained-snapshotvalues-from-rendertypes",
+      "active": "Core/Sources/CmdyCoreZig/SnapshotValues.swift",
+      "historical": "Renderer/Sources/TermiteGPU/RenderTypes.swift",
+      "sha256": "81068668b23bd9ca90a97305156e8f6531b1a2224e747f5f1e9eb26a95e40969",
+      "classification": "cmdy-original-retained-source",
+      "rationale": "Hash-pinned Cmdy source carried forward from the retired Cmdy implementation; comparison with the initial Vendor import has no unresolved substantive Vendor match."
+    },
+    {
+      "id": "retained-terminalsupport-from-terminalsupport",
+      "active": "Core/Sources/CmdyCoreZig/TerminalSupport.swift",
+      "historical": "Core/Sources/TermiteCore/TerminalSupport.swift",
+      "sha256": "caa1ed8dd52111cc3e4ffd201cd421b23b4f070bfecefe022118cff203c028a1",
+      "classification": "cmdy-original-retained-source",
+      "rationale": "Hash-pinned Cmdy source carried forward from the retired Cmdy implementation; comparison with the initial Vendor import has no unresolved substantive Vendor match."
+    },
+    {
+      "id": "retained-vtparser-from-vtparser",
+      "active": "Core/Sources/CmdyCoreZig/VTParser.swift",
+      "historical": "Core/Sources/TermiteCore/VTParser.swift",
+      "sha256": "6d01f04f69d94234db7d0e219950160982cf49527bb50a95873fcffc479d7db6",
+      "classification": "cmdy-original-retained-source",
+      "rationale": "Hash-pinned Cmdy source carried forward from the retired Cmdy implementation; comparison with the initial Vendor import has no unresolved substantive Vendor match."
+    },
+    {
+      "id": "retained-render-shader-effects-from-shaders",
+      "active": "Core/Zig/render_shader_effects.metal",
+      "historical": "Renderer/Sources/TermiteGPU/Shaders.metal",
+      "sha256": "71cf7a58e330cbff3e8207fb3cf5d9c5918240438e4e04d3fc704f7aaffb3c85",
+      "classification": "cmdy-original-retained-source",
+      "rationale": "Hash-pinned Cmdy (term64) shader effects carried forward from the retired Cmdy renderer. Lineage overlap with Vendor-derived lines is limited to boundary statements (returns and closing braces), and comparison with the initial Vendor import has no unresolved substantive Vendor match in this file."
+    },
+    {
+      "id": "retained-render-shader-preamble-from-shaders",
+      "active": "Core/Zig/render_shader_preamble.metal",
+      "historical": "Renderer/Sources/TermiteGPU/Shaders.metal",
+      "sha256": "c18eb154b8e0b9af90318b4f8555b6a192aaf353bc61efdfac4d677e849f4ac2",
+      "classification": "cmdy-original-retained-source",
+      "rationale": "Hash-pinned Cmdy source carried forward from the retired Cmdy implementation; comparison with the initial Vendor import has no unresolved substantive Vendor match."
+    },
+    {
+      "id": "retained-rendercontract-from-rendertypes",
+      "active": "Renderer/Sources/CmdyGPUZig/RenderContract.swift",
+      "historical": "Renderer/Sources/TermiteGPU/RenderTypes.swift",
+      "sha256": "6d12a5f6accc6dcb4d3992eafd5595fe44ee277983439405b1023dddda7a10c2",
+      "classification": "cmdy-original-retained-source",
+      "rationale": "Hash-pinned Cmdy source carried forward from the retired Cmdy implementation; comparison with the initial Vendor import has no unresolved substantive Vendor match."
     }
   ]
 }

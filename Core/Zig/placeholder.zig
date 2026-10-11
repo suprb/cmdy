@@ -80,6 +80,9 @@ fn diacriticIndex(scalar: u32) ?isize {
     return @intCast(low);
 }
 
+// Normative Kitty graphics protocol data: the ordered row/column combining
+// diacritics from the official specification,
+// https://sw.kovidgoyal.net/kitty/_downloads/f0a0de9ec8d9ff4456206db8e0814937/rowcolumn-diacritics.txt
 // Pinned to the original CMDY Swift table (Kitty's Unicode-6-derived order).
 const official_diacritics = [_]u32{
         0x305, 0x30D, 0x30E, 0x310, 0x312, 0x33D, 0x33E, 0x33F,
