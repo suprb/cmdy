@@ -75,7 +75,7 @@
       {
         "path": "scripts/check-release-qualification.py",
         "purpose": "qualification-checker",
-        "sha256": "66512f2d202d1397f876657bad186bdb3ba25c363a551e93145bb48be87537d9"
+        "sha256": "4015318738dd3c6d17f05154838c2a70710020ba9ee8485698ab0993cb6afd84"
       },
       {
         "path": "Schemas/release-qualification-v1.schema.json",
@@ -174,8 +174,8 @@
       "approvalReference": "Project owner replied 'yes to all' on 2026-10-11 to the three pending 1.0.8 decisions: the v2 renderer reference corpus for the line-modes seam fix, the visual review of the 14-station zoo contact sheet, and owner approval of the release with the non-independent review notice.",
       "approvedPublicWording": "Engineering qualification passed for the exact cmdy 1.0.8 source and evidence set: Core parity across 17 seeds and 53,992 cases, 40/40 exact renderer pixel parity against the owner-approved reference corpus v2, performance gates in normal and maximized windows, a three-run resource plateau with no zombie processes, and an owner-reviewed 14-station TUI zoo. Project-owner approval; this is not an independent authorship or legal clean-room review.",
       "decision": "approved",
-      "engineeringDigestSha256": "63e6bc90cccba7def8214f02a1ea289415821b90f37f0f4170381d6bed05f602",
-      "evidenceDigestSha256": "85c20baab15fda77cf764f96796eee7e394f0540315e2e686f2e6b2d5b5ba12d",
+      "engineeringDigestSha256": "b275ca97501d89d37f7c10189ceac883f0ece15cc38e39183403fbd740e0e333",
+      "evidenceDigestSha256": "834439f8f9e6877946ad2dfa2d58efc7220544434492bcd3c99390b2ea7213e8",
       "reviewedAtUTC": "2026-10-11T22:19:20Z",
       "reviewerAffiliation": "cmdy project owner",
       "reviewerIndependentFromImplementation": false,
@@ -219,8 +219,8 @@
         "path": "docs/independence/qualification/working-tree-provenance.json",
         "sha256": "f2d8aae1363ed07e80dc2e56979337855f97c680c16cbceb6b307c2cbd4f5644"
       },
-      "sourceCommit": "703a36337f337ca59d7f41aea5452791b2e7773a",
-      "sourceTree": "c2e4ac528521d3051df03c4885d9e961c23103ed"
+      "sourceCommit": "57bd4af2d7ced3faaa5c368514da7b5331e431e9",
+      "sourceTree": "7e82aa8a6d6fe97f7fc707dada1162903de6a136"
     },
     "state": "approved"
   },
