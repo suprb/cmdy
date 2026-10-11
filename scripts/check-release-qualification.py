@@ -789,14 +789,27 @@ def validate_renderer_evidence(
         raise QualificationError("renderer environment schema must be 2")
     if environment.get("fixtureSourceSha256") != renderer_policy["candidateFixtureSha256"]:
         raise QualificationError("renderer environment used a different fixture source")
+    candidate_value = environment.get("candidate")
+    candidate_keys = {"kind", "moduleSha256", "objectSetSha256", "releaseBuild"}
+    # Zig-backed CmdyGPU builds also record the native engine they linked.
+    if isinstance(candidate_value, dict) and "native" in candidate_value:
+        candidate_keys.add("native")
     candidate = expect_keys(
-        environment.get("candidate"), {"kind", "moduleSha256", "objectSetSha256", "releaseBuild"},
-        "renderer environment candidate")
+        candidate_value, candidate_keys, "renderer environment candidate")
     if candidate["kind"] != "build":
         raise QualificationError("renderer candidate environment must describe a build")
     expect_string(candidate["releaseBuild"], "renderer candidate releaseBuild")
     expect_sha(candidate["moduleSha256"], "renderer candidate module hash")
     expect_sha(candidate["objectSetSha256"], "renderer candidate object-set hash")
+    if "native" in candidate:
+        native = expect_keys(candidate["native"], {
+            "archiveSha256", "bridgeObjectSetSha256", "optimize",
+            "receiptSha256", "sourceKey",
+        }, "renderer environment candidate native")
+        for field in ("archiveSha256", "bridgeObjectSetSha256", "receiptSha256", "sourceKey"):
+            expect_sha(native[field], f"renderer candidate native {field}")
+        if native["optimize"] != "ReleaseFast":
+            raise QualificationError("renderer candidate native engine must be ReleaseFast")
     reference = expect_keys(environment.get("reference"), {
         "archive", "archiveBytes", "archiveSha256", "corpusID",
         "fixtureIndexSha256", "kind", "lock", "lockSha256",

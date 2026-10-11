@@ -570,6 +570,31 @@ class ReleaseQualificationTests(unittest.TestCase):
                 self.fixture.root, wrapper, self.fixture.manifest_sha,
                 self.fixture.engineering)
 
+    def test_renderer_native_engine_identity_is_validated(self) -> None:
+        path = self.fixture.root / "docs/independence/qualification/renderer-environment.json"
+        environment = json.loads(path.read_text())
+        native = {
+            "archiveSha256": "a" * 64, "bridgeObjectSetSha256": "b" * 64,
+            "optimize": "ReleaseFast", "receiptSha256": "c" * 64, "sourceKey": "d" * 64,
+        }
+        for value, message in (
+            (native, None),
+            ({**native, "optimize": "Debug"}, "ReleaseFast"),
+            ({**native, "extra": "x"}, "native"),
+        ):
+            environment["candidate"]["native"] = value
+            path.write_bytes(qualification.canonical_bytes(environment))
+            wrapper = copy.deepcopy(self.fixture.record["publication"]["evidence"]["renderer"])
+            wrapper["environment"] = self.fixture._ref(path)
+            validate = lambda: qualification.validate_renderer_evidence(
+                self.fixture.root, wrapper, self.fixture.manifest_sha,
+                self.fixture.engineering)
+            if message is None:
+                validate()
+            else:
+                with self.assertRaisesRegex(qualification.QualificationError, message):
+                    validate()
+
     def test_unreviewed_operational_evidence_fails(self) -> None:
         path = self.fixture.root / "docs/independence/qualification/operational.json"
         operational = json.loads(path.read_text())
