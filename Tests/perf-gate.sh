@@ -406,10 +406,14 @@ if [ "$VIS" != "1" ]; then
   check "plasma occluded frames / 5s" "$D" "<=" 2
   echo "  · (window occluded — animation correctly stopped)"
 elif [ "$KEY" = "1" ]; then
+  # A focused, unthrottled window animates at the display rate (60-120 fps);
+  # Low Power Mode keeps the 60 fps shader rate and thermal pressure lowers it.
+  SCREEN_HZ=$(echo "$ST" | python3 -c 'import json,sys;print(int(json.load(sys.stdin).get("screenHz") or 60))')
+  DISPLAY_FPS=$(( SCREEN_HZ < 60 ? 60 : (SCREEN_HZ > 120 ? 120 : SCREEN_HZ) ))
   case "$THERMAL_STATE" in
     3) SHADER_FPS=20 ;;
     2) SHADER_FPS=30 ;;
-    *) SHADER_FPS=60 ;;
+    *) if [ "$LOW_POWER" = "1" ]; then SHADER_FPS=60; else SHADER_FPS=$DISPLAY_FPS; fi ;;
   esac
   check "plasma focused frames / 5s (min)" "$D" ">=" $((SHADER_FPS * 3))
   check "plasma focused frames / 5s (max)" "$D" "<=" $((SHADER_FPS * 6))
