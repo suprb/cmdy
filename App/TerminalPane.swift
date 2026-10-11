@@ -1829,14 +1829,17 @@ final class TerminalPane: DropView, InlinePanelHost, ExtensionSurfaceHost,
 
     /// Used shells at an empty prompt are just as safe to close as new ones.
     /// Process inspection also covers background jobs and disabled integration.
+    /// Until the user has interacted with the pane, its processes are the
+    /// shell's own startup (the pre-exec fork, login rc helpers), not work.
     var closeState: SessionCloseState {
-        let processes = SessionProcessInspector.inspect(shellPID: surface.shellPid)
+        let processes = hasUserActivity
+            ? SessionProcessInspector.inspect(shellPID: surface.shellPid) : nil
         let input = currentInputText() ?? promptDraft
         return SessionCloseState(
             runningCommand: blockStore.isRunning
                 ? (blockStore.blocks.last?.commandText ?? "") : nil,
-            runningProcesses: processes.runningPrograms,
-            processStateUnknown: processes.isUnknown,
+            runningProcesses: processes?.runningPrograms ?? [],
+            processStateUnknown: processes?.isUnknown ?? false,
             isAlternateScreen: surface.engine.isCurrentBufferAlternate,
             hasDraftInput: isComposingText
                 || !input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
