@@ -202,6 +202,17 @@ class PTYTests(unittest.TestCase):
                 data += connection.recv(65536)
         return json.loads(data)
 
+    def wait_for(self, child, predicate, seconds=3):
+        # Hosted CI runners can be tens of milliseconds late, so wait for the
+        # worker's own state rather than a fixed delay.
+        deadline = time.monotonic() + seconds
+        while True:
+            status = self.request(child, "status")
+            if predicate(status):
+                return status
+            self.assertLess(time.monotonic(), deadline, status)
+            self.drain(.01)
+
     def finish(self, child):
         self.request(child, "stop")
         self.drain(.05)
@@ -230,7 +241,7 @@ class PTYTests(unittest.TestCase):
         self.drain(.03)
         self.assertEqual(self.request(child, "status")["setupKeys"], [122, 122])
         self.assertTrue(self.request(child, "arm", startNs=time.monotonic_ns() + 50_000_000)["ok"])
-        self.drain(.08)
+        self.wait_for(child, lambda status: status["mode"] == "active")
         for _ in range(3):
             os.write(child["master"], b"a")
             self.drain(.015)
@@ -244,7 +255,7 @@ class PTYTests(unittest.TestCase):
         self.launch(expect_slot=0)
         child = self.launch(expect_slot=1)
         self.assertTrue(self.request(child, "arm", startNs=time.monotonic_ns() + 50_000_000)["ok"])
-        self.drain(.14)
+        self.wait_for(child, lambda status: status["completedBytes"] >= QUANTUM)
         self.assertFalse((self.root / "fixture/final-1.json").exists())
         final = self.finish(child)
         validate_stream(final)
