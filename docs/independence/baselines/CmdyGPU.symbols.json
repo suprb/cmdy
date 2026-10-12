@@ -769,6 +769,11 @@
     },
     {
       "kind": "memberOf",
+      "source": "s:7CmdyGPU21MetalTerminalRendererC11lastFailureSSSgvp",
+      "target": "c:@M@CmdyGPU@objc(cs)MetalTerminalRenderer"
+    },
+    {
+      "kind": "memberOf",
       "source": "s:7CmdyGPU21MetalTerminalRendererC11rowsRebuiltSivpZ",
       "target": "c:@M@CmdyGPU@objc(cs)MetalTerminalRenderer"
     },
@@ -784,7 +789,7 @@
     },
     {
       "kind": "memberOf",
-      "source": "s:7CmdyGPU21MetalTerminalRendererC14loadUserShader6sourceSSSgAF_tF",
+      "source": "s:7CmdyGPU21MetalTerminalRendererC14loadUserShader6sourceSSSgAF_tYaF",
       "target": "c:@M@CmdyGPU@objc(cs)MetalTerminalRenderer"
     },
     {
@@ -860,6 +865,21 @@
     {
       "kind": "memberOf",
       "source": "s:7CmdyGPU21MetalTerminalRendererC4view6sourceACSo7MTKViewC_AA0C12RenderSource_ptKcfc",
+      "target": "c:@M@CmdyGPU@objc(cs)MetalTerminalRenderer"
+    },
+    {
+      "kind": "memberOf",
+      "source": "s:7CmdyGPU21MetalTerminalRendererC5closeyyF",
+      "target": "c:@M@CmdyGPU@objc(cs)MetalTerminalRenderer"
+    },
+    {
+      "kind": "memberOf",
+      "source": "s:7CmdyGPU21MetalTerminalRendererC8shutdownyyYaF",
+      "target": "c:@M@CmdyGPU@objc(cs)MetalTerminalRenderer"
+    },
+    {
+      "kind": "memberOf",
+      "source": "s:7CmdyGPU21MetalTerminalRendererC9onFailureySSSgcSgvp",
       "target": "c:@M@CmdyGPU@objc(cs)MetalTerminalRenderer"
     },
     {
@@ -9278,7 +9298,7 @@
     },
     {
       "accessLevel": "public",
-      "declaration": "@MainActor var shaderMode: Int { get set }",
+      "declaration": "@MainActor var shaderMode: Int",
       "identifier": {
         "interfaceLanguage": "swift",
         "precise": "s:7CmdyGPU21MetalTerminalRendererC10shaderModeSivp"
@@ -9316,6 +9336,52 @@
       "pathComponents": [
         "MetalTerminalRenderer",
         "shaderMode"
+      ]
+    },
+    {
+      "accessLevel": "public",
+      "declaration": "@MainActor var lastFailure: String? { get }",
+      "identifier": {
+        "interfaceLanguage": "swift",
+        "precise": "s:7CmdyGPU21MetalTerminalRendererC11lastFailureSSSgvp"
+      },
+      "kind": {
+        "displayName": "Instance Property",
+        "identifier": "swift.property"
+      },
+      "names": {
+        "subHeading": [
+          {
+            "kind": "keyword",
+            "spelling": "var"
+          },
+          {
+            "kind": "text",
+            "spelling": " "
+          },
+          {
+            "kind": "identifier",
+            "spelling": "lastFailure"
+          },
+          {
+            "kind": "text",
+            "spelling": ": "
+          },
+          {
+            "kind": "typeIdentifier",
+            "preciseIdentifier": "s:SS",
+            "spelling": "String"
+          },
+          {
+            "kind": "text",
+            "spelling": "?"
+          }
+        ],
+        "title": "lastFailure"
+      },
+      "pathComponents": [
+        "MetalTerminalRenderer",
+        "lastFailure"
       ]
     },
     {
@@ -9475,7 +9541,7 @@
     },
     {
       "accessLevel": "public",
-      "declaration": "@discardableResult @MainActor func loadUserShader(source: String?) -> String?",
+      "declaration": "@discardableResult @MainActor func loadUserShader(source: String?) async -> String?",
       "functionSignature": {
         "parameters": [
           {
@@ -9497,7 +9563,7 @@
       },
       "identifier": {
         "interfaceLanguage": "swift",
-        "precise": "s:7CmdyGPU21MetalTerminalRendererC14loadUserShader6sourceSSSgAF_tF"
+        "precise": "s:7CmdyGPU21MetalTerminalRendererC14loadUserShader6sourceSSSgAF_tYaF"
       },
       "kind": {
         "displayName": "Instance Method",
@@ -9536,7 +9602,15 @@
           },
           {
             "kind": "text",
-            "spelling": "?) -> "
+            "spelling": "?) "
+          },
+          {
+            "kind": "keyword",
+            "spelling": "async"
+          },
+          {
+            "kind": "text",
+            "spelling": " -> "
           },
           {
             "kind": "typeIdentifier",
@@ -9772,7 +9846,7 @@
     },
     {
       "accessLevel": "public",
-      "declaration": "@MainActor var textRenderingMode: TextRenderingMode { get set }",
+      "declaration": "@MainActor var textRenderingMode: TextRenderingMode",
       "identifier": {
         "interfaceLanguage": "swift",
         "precise": "s:7CmdyGPU21MetalTerminalRendererC17textRenderingModeAA04TextgH0Ovp"
@@ -10338,7 +10412,7 @@
     },
     {
       "accessLevel": "public",
-      "declaration": "@MainActor init(view: MTKView, source: any MetalRenderSource) throws",
+      "declaration": "@MainActor convenience init(view: MTKView, source: any MetalRenderSource) throws",
       "functionSignature": {
         "parameters": [
           {
@@ -10361,6 +10435,14 @@
       },
       "names": {
         "subHeading": [
+          {
+            "kind": "keyword",
+            "spelling": "convenience"
+          },
+          {
+            "kind": "text",
+            "spelling": " "
+          },
           {
             "kind": "keyword",
             "spelling": "init"
@@ -10413,6 +10495,155 @@
       "pathComponents": [
         "MetalTerminalRenderer",
         "init(view:source:)"
+      ]
+    },
+    {
+      "accessLevel": "public",
+      "declaration": "@MainActor func close()",
+      "functionSignature": {
+        "returns": [
+          {
+            "kind": "text",
+            "spelling": "()"
+          }
+        ]
+      },
+      "identifier": {
+        "interfaceLanguage": "swift",
+        "precise": "s:7CmdyGPU21MetalTerminalRendererC5closeyyF"
+      },
+      "kind": {
+        "displayName": "Instance Method",
+        "identifier": "swift.method"
+      },
+      "names": {
+        "subHeading": [
+          {
+            "kind": "keyword",
+            "spelling": "func"
+          },
+          {
+            "kind": "text",
+            "spelling": " "
+          },
+          {
+            "kind": "identifier",
+            "spelling": "close"
+          },
+          {
+            "kind": "text",
+            "spelling": "()"
+          }
+        ],
+        "title": "close()"
+      },
+      "pathComponents": [
+        "MetalTerminalRenderer",
+        "close()"
+      ]
+    },
+    {
+      "accessLevel": "public",
+      "declaration": "@MainActor func shutdown() async",
+      "functionSignature": {
+        "returns": [
+          {
+            "kind": "text",
+            "spelling": "()"
+          }
+        ]
+      },
+      "identifier": {
+        "interfaceLanguage": "swift",
+        "precise": "s:7CmdyGPU21MetalTerminalRendererC8shutdownyyYaF"
+      },
+      "kind": {
+        "displayName": "Instance Method",
+        "identifier": "swift.method"
+      },
+      "names": {
+        "subHeading": [
+          {
+            "kind": "keyword",
+            "spelling": "func"
+          },
+          {
+            "kind": "text",
+            "spelling": " "
+          },
+          {
+            "kind": "identifier",
+            "spelling": "shutdown"
+          },
+          {
+            "kind": "text",
+            "spelling": "() "
+          },
+          {
+            "kind": "keyword",
+            "spelling": "async"
+          }
+        ],
+        "title": "shutdown()"
+      },
+      "pathComponents": [
+        "MetalTerminalRenderer",
+        "shutdown()"
+      ]
+    },
+    {
+      "accessLevel": "public",
+      "declaration": "@MainActor var onFailure: ((String?) -> Void)?",
+      "identifier": {
+        "interfaceLanguage": "swift",
+        "precise": "s:7CmdyGPU21MetalTerminalRendererC9onFailureySSSgcSgvp"
+      },
+      "kind": {
+        "displayName": "Instance Property",
+        "identifier": "swift.property"
+      },
+      "names": {
+        "subHeading": [
+          {
+            "kind": "keyword",
+            "spelling": "var"
+          },
+          {
+            "kind": "text",
+            "spelling": " "
+          },
+          {
+            "kind": "identifier",
+            "spelling": "onFailure"
+          },
+          {
+            "kind": "text",
+            "spelling": ": (("
+          },
+          {
+            "kind": "typeIdentifier",
+            "preciseIdentifier": "s:SS",
+            "spelling": "String"
+          },
+          {
+            "kind": "text",
+            "spelling": "?) -> "
+          },
+          {
+            "kind": "typeIdentifier",
+            "preciseIdentifier": "s:s4Voida",
+            "spelling": "Void"
+          },
+          {
+            "kind": "text",
+            "spelling": ")?"
+          }
+        ],
+        "title": "onFailure"
+      },
+      "pathComponents": [
+        "MetalTerminalRenderer",
+        "onFailure"
       ]
     },
     {

@@ -368,6 +368,25 @@ display-aligned renderer update. That requires the optional
 release exposed it. The machine-readable baseline freezes this reviewed 1.0
 surface and continues to compare it exactly.
 
+## Reviewed cmdy 1.0.8 API delta
+
+cmdy 1.0.8 moved renderer work onto the native engine's own executor. The
+renderer therefore needs an explicit lifecycle and reports failures
+asynchronously instead of returning them from the UI thread:
+
+- `close()` stops observers and in-flight work; repeated calls are harmless.
+- `shutdown() async` closes and waits for the native session to finish.
+- `lastFailure` (get-only) and `onFailure` expose the most recent renderer
+  failure message.
+- `loadUserShader(source:)` is now `async` because compilation completes on
+  the engine executor; its labels, result and `@discardableResult` are kept.
+- `init(view:source:)` is now a `convenience` initializer with the same
+  signature.
+
+Every 1.0.8 caller is in this repository and was updated with the change.
+The baseline was patched for exactly these six symbols; everything else is
+still compared strictly.
+
 ## Compatibility-name policy
 
 `TTColor`, `TTFont`, and `TTImage` are frozen source/API aliases. Their presence does not require derived implementation; an independent module may retain them as deprecated declaration-only aliases while using AppKit names internally.
