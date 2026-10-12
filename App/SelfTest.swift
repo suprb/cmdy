@@ -217,8 +217,10 @@ enum SelfTest {
             windowNumber: 0, context: nil, characters: "",
             charactersIgnoringModifiers: "", isARepeat: false, keyCode: 53)!
         dismissedPanel.keyDown(with: escape)
-        NotificationCenter.default.post(name: .cmdyPreferencesChanged, object: nil)
-        check(settle { panelPane.surface.bottomContentInset == Preferences.shared.contentMargin },
+        // A standalone pane has no window controller to forward preference
+        // changes, so apply them directly as the controller would.
+        panelPane.applyPreferences()
+        check(panelPane.surface.bottomContentInset == Preferences.shared.contentMargin,
               "inline panel: dismissal preserves the edge margin without restoring stale panel height")
         let controlBar = panelPane.presentExtensionControlBar()
         controlBar.configure(
