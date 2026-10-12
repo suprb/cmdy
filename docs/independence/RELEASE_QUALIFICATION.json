@@ -25,7 +25,7 @@
       {
         "path": ".github/workflows/ci.yml",
         "purpose": "ci-workflow",
-        "sha256": "0b3296a801839c1a3e717ea54e9b3480a5683aa2250802f8f80ab8fd4b0e7153"
+        "sha256": "866eb40d73f870ac876fdfdda2f67ee1225cabc4dbbad03cfc7499bf5b04d034"
       },
       {
         "path": "scripts/check-core-blackbox-parity.py",
