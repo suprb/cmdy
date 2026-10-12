@@ -8,12 +8,21 @@ final class FirstScalarMetadataTests: XCTestCase {
         let separator: UnicodeScalar = "\u{200D}"
         for value in UInt32(0)...0x10FFFF {
             guard let scalar = UnicodeScalar(value) else { continue }
-            let expected = scalar.properties.isEmoji
+            let expected = Self.pinnedEmojiProperty(scalar)
             XCTAssertEqual(terminal.emojiPropertyForClustering(scalar), expected, "miss \(value)")
             XCTAssertEqual(terminal.emojiPropertyForClustering(scalar), expected, "newest \(value)")
             XCTAssertFalse(terminal.emojiPropertyForClustering(separator))
             XCTAssertEqual(terminal.emojiPropertyForClustering(scalar), expected, "previous \(value)")
         }
+    }
+
+    /// Clustering data is pinned to Unicode 16.0.0 (Core/Tools/ZigEngine/Grapheme).
+    /// A newer OS reports later emoji too; those stay non-emoji until the pin moves.
+    static func pinnedEmojiProperty(_ scalar: UnicodeScalar) -> Bool {
+        if let age = scalar.properties.age, age.major > 16 || (age.major == 16 && age.minor > 0) {
+            return false
+        }
+        return scalar.properties.isEmoji
     }
 
     func testEmojiPropertyCacheEvictionAndTerminalIndependence() {
@@ -25,9 +34,9 @@ final class FirstScalarMetadataTests: XCTestCase {
             for (index, value) in values.enumerated() {
                 for (offset, terminal) in terminals.enumerated() {
                     let scalar = UnicodeScalar(values[(index + pass + offset) % values.count])!
-                    XCTAssertEqual(terminal.emojiPropertyForClustering(scalar), scalar.properties.isEmoji)
+                    XCTAssertEqual(terminal.emojiPropertyForClustering(scalar), Self.pinnedEmojiProperty(scalar))
                     let other = UnicodeScalar(value)!
-                    XCTAssertEqual(terminal.emojiPropertyForClustering(other), other.properties.isEmoji)
+                    XCTAssertEqual(terminal.emojiPropertyForClustering(other), Self.pinnedEmojiProperty(other))
                 }
             }
         }
