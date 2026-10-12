@@ -120,22 +120,48 @@ final class CmdyHostSecurityTests: XCTestCase {
     func testStreamProxyRejectsBodiesOverSixteenMegabytes() async throws {
         let server = StreamProxyServer()
         try await server.start()
-        do {
-            let url = try XCTUnwrap(URL(
-                string: "http://127.0.0.1:\(server.port)/sess/test/v1/messages"))
-            var request = URLRequest(url: url)
-            request.httpMethod = "POST"
-            request.timeoutInterval = 10
-            request.httpBody = Data(repeating: 0x61, count: 16 * 1024 * 1024 + 1)
-            let (data, response) = try await URLSession.shared.data(for: request)
-            let http = try XCTUnwrap(response as? HTTPURLResponse)
-            XCTAssertEqual(http.statusCode, 413)
-            XCTAssertTrue(String(decoding: data, as: UTF8.self).contains("exceeds 16 MB"))
-        } catch {
-            await server.stop()
-            throw error
+        let port = Int(server.port)
+        // The proxy rejects from the declared length and closes. Uploading the
+        // body too races that close, so send only the head and read the reply.
+        let head = "POST /sess/test/v1/messages HTTP/1.1\r\nHost: 127.0.0.1\r\n"
+            + "Content-Length: \(16 * 1024 * 1024 + 1)\r\n\r\n"
+        let exchange = Task.detached { () -> String? in
+            CmdyHostSecurityTests.exchange(port: port, request: head)
         }
+        let reply = await exchange.value
         await server.stop()
+        let text = try XCTUnwrap(reply)
+        XCTAssertTrue(text.hasPrefix("HTTP/1.1 413"), text)
+        XCTAssertTrue(text.contains("exceeds 16 MB"), text)
+    }
+
+    /// Writes `request` to a loopback TCP port and reads until the peer closes.
+    private nonisolated static func exchange(port: Int, request: String) -> String? {
+        let descriptor = socket(AF_INET, SOCK_STREAM, 0)
+        guard descriptor >= 0 else { return nil }
+        defer { close(descriptor) }
+        var timeout = timeval(tv_sec: 10, tv_usec: 0)
+        setsockopt(descriptor, SOL_SOCKET, SO_RCVTIMEO, &timeout, socklen_t(MemoryLayout<timeval>.size))
+        var address = sockaddr_in()
+        address.sin_family = sa_family_t(AF_INET)
+        address.sin_port = in_port_t(UInt16(port).bigEndian)
+        address.sin_addr.s_addr = inet_addr("127.0.0.1")
+        let connected = withUnsafePointer(to: &address) {
+            $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
+                connect(descriptor, $0, socklen_t(MemoryLayout<sockaddr_in>.size))
+            }
+        }
+        guard connected == 0 else { return nil }
+        let bytes = Array(request.utf8)
+        guard send(descriptor, bytes, bytes.count, 0) == bytes.count else { return nil }
+        var response = [UInt8]()
+        var buffer = [UInt8](repeating: 0, count: 4096)
+        while true {
+            let count = recv(descriptor, &buffer, buffer.count, 0)
+            if count <= 0 { break }
+            response += buffer[0..<count]
+        }
+        return String(decoding: response, as: UTF8.self)
     }
 
     @MainActor
