@@ -31,6 +31,7 @@ for t in selftest menu-bar-test panel-test shader-test reflow-test wheel-test sc
     echo "PASS  --$t  $last"
   else
     echo "FAIL  --$t"
+    echo "$out" | grep -E '^FAIL' || true
     echo "$out" | tail -12
     FAIL=1
   fi
