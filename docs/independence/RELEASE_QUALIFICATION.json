@@ -120,7 +120,7 @@
       {
         "path": "test.sh",
         "purpose": "resource-stress-gate",
-        "sha256": "fac26205a44b8843a1271fc368a604a947c35d1fe76ff1c2e7ade95ba632781a"
+        "sha256": "adaa9dd39073f95e6d9a7e9c4a4487d7c702310c954deb4652f179f3435b0091"
       },
       {
         "path": "Tests/zoo.sh",
