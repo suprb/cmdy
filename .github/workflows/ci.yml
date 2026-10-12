@@ -51,10 +51,8 @@ jobs:
           python3 -B Core/Tools/ZigEngine/Grapheme/generate.py --check --cache "$RUNNER_TEMP/cmdy-grapheme-data"
       - name: Native engine ownership and compatibility
         run: |
-          native_arch="$(uname -m)"
-          if [ "$native_arch" = arm64 ]; then native_arch=aarch64; fi
-          zig test Core/Zig/tests.zig -lc -O Debug -target "$native_arch-macos.26.0.0"
-          zig test Core/Zig/tests.zig -lc -O ReleaseSafe -target "$native_arch-macos.26.0.0"
+          ./scripts/test-zig-engine.sh Debug
+          ./scripts/test-zig-engine.sh ReleaseSafe
       - name: Independent source provenance
         run: |
           python3 -B Tests/test-working-tree-provenance.py
