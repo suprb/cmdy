@@ -8,6 +8,17 @@ import CmdyCore
 /// (OSC 133 parsing + BlockStore state machine). Run with: cmdy --selftest
 @MainActor
 enum SelfTest {
+    /// Runs the main run loop until `condition` holds or two seconds pass.
+    /// Layout and snapshot publication complete asynchronously, and hosted
+    /// CI machines can need more than one short turn to deliver them.
+    static func settle(_ condition: () -> Bool) -> Bool {
+        let deadline = Date().addingTimeInterval(2)
+        while !condition() && Date() < deadline {
+            RunLoop.current.run(until: Date().addingTimeInterval(0.01))
+        }
+        return condition()
+    }
+
     static func runIfRequested() {
         guard CommandLine.arguments.contains("--selftest") else { return }
         var failures = 0
@@ -207,7 +218,7 @@ enum SelfTest {
             charactersIgnoringModifiers: "", isARepeat: false, keyCode: 53)!
         dismissedPanel.keyDown(with: escape)
         NotificationCenter.default.post(name: .cmdyPreferencesChanged, object: nil)
-        check(panelPane.surface.bottomContentInset == Preferences.shared.contentMargin,
+        check(settle { panelPane.surface.bottomContentInset == Preferences.shared.contentMargin },
               "inline panel: dismissal preserves the edge margin without restoring stale panel height")
         let controlBar = panelPane.presentExtensionControlBar()
         controlBar.configure(
@@ -1128,8 +1139,11 @@ enum SelfTest {
               "IME: marked Unicode text is visible with candidate geometry and no PTY bytes")
         pasteSurface.feed(text: "\r\noutput while composing")
         flushInput()
-        let moved = pasteSurface.markedTextPresentationForTesting
-        check(moved?.frame != marked?.frame && moved?.text == "日本🙂",
+        let preeditMoved = settle {
+            let moved = pasteSurface.markedTextPresentationForTesting
+            return moved?.frame != marked?.frame && moved?.text == "日本🙂"
+        }
+        check(preeditMoved,
               "IME: preedit follows the cursor when terminal output moves it")
         pasteSurface.insertText(NSAttributedString(string: "日本🙂"),
                                 replacementRange: pasteSurface.markedRange())
