@@ -389,7 +389,8 @@ extension CmdyTerminal {
                                           kittyPlacementId: info.has_placement_id == 0 ? nil : info.placement_id,
                                           kittyZIndex: info.z_index,
                                           kittyPixelOffsetX: info.offset_x,
-                                          kittyPixelOffsetY: info.offset_y)
+                                          kittyPixelOffsetY: info.offset_y,
+                                          kittyDisplayBox: CoreKittyDisplayBox(info))
                 }
                 capturedLines.append(CoreLineSnapshot(frozenNativeLine: line, images: images))
             }

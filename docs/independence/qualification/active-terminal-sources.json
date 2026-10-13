@@ -302,8 +302,8 @@
     {
       "mode": "100644",
       "path": "App/BlockOverlayView.swift",
-      "sha256": "267e62b0f4d8e451094cde8378f3b1cdfc5cf4da9793e47e68067a47ae8a6065",
-      "size": 17192
+      "sha256": "f05f9e94674edeef05ca45234ffc15aec19ca484a8c16a490f684b58cf11ba00",
+      "size": 17540
     },
     {
       "mode": "100644",
@@ -404,8 +404,8 @@
     {
       "mode": "100644",
       "path": "App/CmdySnapshotShaper.swift",
-      "sha256": "2d4b7ef5ff5feade4bd33f7cfcace6f44bde6d89c2ba29d50e375d0a6c02430f",
-      "size": 15906
+      "sha256": "a4e09f51fa094c1a778d26dbd30d831a932da30178c773f350aeb490898bfa52",
+      "size": 16232
     },
     {
       "mode": "100644",
@@ -536,8 +536,8 @@
     {
       "mode": "100644",
       "path": "App/SelfTest.swift",
-      "sha256": "a99ca53357bcdb824fb6ac5048aeeb8a54b0aaa824b9d4aca23e8a4f3e78f825",
-      "size": 71821
+      "sha256": "1e877e65144137881daffc282d28e580e1483e15a19adac6a8854a13cd16fbe7",
+      "size": 72688
     },
     {
       "mode": "100644",
@@ -596,14 +596,14 @@
     {
       "mode": "100644",
       "path": "App/TerminalModel.swift",
-      "sha256": "5ecaa423bbaf347288aa88e08103f6795340314a0b1afeea68579fec159b2f6d",
-      "size": 30921
+      "sha256": "421033454da943bafec5e0f35ca25471e323d403f05b53a8d4c89d251f3e6955",
+      "size": 30996
     },
     {
       "mode": "100644",
       "path": "App/TerminalPane.swift",
-      "sha256": "fc2d6070d1878ae6c699a11985e2594e9ae2a25ed452f9614dbae35748262791",
-      "size": 91171
+      "sha256": "7620e5f9ff7d0736328fc65346b5b60a92d4c3ce4e917c3794bd84e2bfb6fea2",
+      "size": 91418
     },
     {
       "mode": "100644",
@@ -872,8 +872,8 @@
     {
       "mode": "100644",
       "path": "Core/Sources/CmdyCoreZig/CmdyTerminal.swift",
-      "sha256": "7b96d2c536b5cbfdd7483438f213b04412d5b918458b80ec3bf7d54c1834ef42",
-      "size": 24311
+      "sha256": "d59d9cab5e67edaa5fba82ab47b95e341078e0ab7b6e6127543e114868538394",
+      "size": 24397
     },
     {
       "mode": "100644",
@@ -914,8 +914,8 @@
     {
       "mode": "100644",
       "path": "Core/Sources/CmdyCoreZig/LineImage.swift",
-      "sha256": "9c586a9984f6f95b54efb35c8503622e3b3b860192ec071bdd0b28595ec5281a",
-      "size": 6523
+      "sha256": "e1cba5eb25250b83197289d9af151f06ddca1196329b5ff47cc6e02480162a99",
+      "size": 6906
     },
     {
       "mode": "100644",
@@ -950,8 +950,8 @@
     {
       "mode": "100644",
       "path": "Core/Sources/CmdyCoreZig/SnapshotValues.swift",
-      "sha256": "81068668b23bd9ca90a97305156e8f6531b1a2224e747f5f1e9eb26a95e40969",
-      "size": 11801
+      "sha256": "bc5159844d240499323a7489dc2f08139c732a78feff71325e9437d7a2d57fee",
+      "size": 12683
     },
     {
       "mode": "100644",
@@ -1004,8 +1004,8 @@
     {
       "mode": "100644",
       "path": "Core/Sources/CmdyNative/include/cmdy_images.h",
-      "sha256": "80db3d3f7e73ba777adbc981622b9f5b17647fa1c745cc3aa5eee7a971de2a85",
-      "size": 5671
+      "sha256": "2a6d5af65a52aa9549fe4b6e504dad1657909d3fc04da3e7a4de95b15ad565b6",
+      "size": 5836
     },
     {
       "mode": "100644",
@@ -1058,8 +1058,8 @@
     {
       "mode": "100644",
       "path": "Core/Sources/CmdyNative/include/cmdy_render_gpu.h",
-      "sha256": "b3d2a0d7ec3188bbb296deb6d012ddfae94b0f0fc79a0b59dabf04c1c556d430",
-      "size": 8927
+      "sha256": "350a686b08042fa4d4790020b423df194e1a25cc0f25c0c2fa5884039092e5ae",
+      "size": 9081
     },
     {
       "mode": "100644",
@@ -1238,14 +1238,14 @@
     {
       "mode": "100644",
       "path": "Core/Zig/graphics.zig",
-      "sha256": "e4a356b7a2a64797aa6221e689763e067ad72a97ba32989d304e2851a7e9b987",
-      "size": 44290
+      "sha256": "73d344ae4b57ba1542077dd70d48715e503b3bd7d278d7a3f5031df9a4d0546a",
+      "size": 45954
     },
     {
       "mode": "100644",
       "path": "Core/Zig/image_abi.zig",
-      "sha256": "3e8605e58adb6d78022673e891207bce9bfb416f12718c35b5cc345945052729",
-      "size": 15798
+      "sha256": "7b747577c2f7780243dc33fcb47b5d50fbab3f617f0b293a0c4611dbd20a9c79",
+      "size": 16141
     },
     {
       "mode": "100644",
@@ -1334,8 +1334,8 @@
     {
       "mode": "100644",
       "path": "Core/Zig/render_cache.zig",
-      "sha256": "c3f7e0b37acfbf1814a7c43bb24296e226ce34e78b53acc01ed062213a98eea3",
-      "size": 30150
+      "sha256": "cad39cc54c36cc25a64feb4f5d6fe3f005cd922b2f0afe52a535ed75d4ce0833",
+      "size": 30356
     },
     {
       "mode": "100644",
@@ -1418,8 +1418,8 @@
     {
       "mode": "100644",
       "path": "Core/Zig/render_gpu_frame.zig",
-      "sha256": "a2aa83956f07a9b895446be491d0ceb304df3171d8d4a05908647b2b021293da",
-      "size": 29935
+      "sha256": "45ec409c8072ac9906402f443cfc93792d97ce5fcf1fc2b9bee7768bdb43a16f",
+      "size": 31896
     },
     {
       "mode": "100644",
@@ -1688,8 +1688,8 @@
     {
       "mode": "100644",
       "path": "Core/Zig/terminal_protocols.zig",
-      "sha256": "a31924abf44782c346f3635255700f4a3631faabd7234f8d2fb2115983844776",
-      "size": 32557
+      "sha256": "694763ab0344171369d78195abb9b30cbabec31998ba8d2ad6ff55f9a93d1f76",
+      "size": 33607
     },
     {
       "mode": "100644",
@@ -2210,14 +2210,14 @@
     {
       "mode": "100644",
       "path": "Renderer/Sources/CmdyGPUZig/ProducerFrameCapture.swift",
-      "sha256": "c10aa73fa203ea363bf86d7740bd6f564845e7bd838c1e6345651f53e946f76d",
-      "size": 36644
+      "sha256": "b296683ff5c05c35d3ba05962247633aef2eb0e55ce77530bd67d891f62d1301",
+      "size": 36977
     },
     {
       "mode": "100644",
       "path": "Renderer/Sources/CmdyGPUZig/RenderContract.swift",
-      "sha256": "6d12a5f6accc6dcb4d3992eafd5595fe44ee277983439405b1023dddda7a10c2",
-      "size": 13884
+      "sha256": "10a81f49a047d8bf36ad28ee7e5b00147a027c3af1ae17bd79edcbb3b77f1887",
+      "size": 14373
     },
     {
       "mode": "100644",

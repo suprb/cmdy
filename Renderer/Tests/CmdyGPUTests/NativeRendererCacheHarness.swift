@@ -52,7 +52,7 @@ final class NativeRendererCacheHarness {
             let imageObjects = owners.map { $0.image }
             let images = zip(owners, imageObjects).map { owner, image in CmdyGpuImagePlacement(owner: UnsafeRawPointer(Unmanaged.passUnretained(owner as AnyObject).toOpaque()), image: UnsafeRawPointer(Unmanaged.passUnretained(image).toOpaque()), col: owner.col, z_index: owner.kittyZIndex,
                 width: owner.pixelWidth, height: owner.pixelHeight, offset_x: owner.kittyPixelOffsetX, offset_y: owner.kittyPixelOffsetY,
-                kitty_image_id: owner.kittyImageId ?? 0, has_kitty_id: owner.kittyImageId == nil ? 0 : 1, is_kitty: owner.kittyIsKitty ? 1 : 0, owned_image: nil) }
+                kitty_image_id: owner.kittyImageId ?? 0, has_kitty_id: owner.kittyImageId == nil ? 0 : 1, is_kitty: owner.kittyIsKitty ? 1 : 0, cell_cols: 0, cell_rows: 0, source_x: 0, source_y: 0, source_width: 0, source_height: 0, owned_image: nil) }
             let placeholders = line.kittyPlaceholders.map { $0.gpuValue }
             return withExtendedLifetime(imageObjects) {
                 images.withUnsafeBufferPointer { nativeImages in
@@ -129,7 +129,7 @@ final class NativeRendererCacheHarness {
         let images = owners.map { item, owner, image in CmdyGpuImagePlacement(
             owner: UnsafeRawPointer(Unmanaged.passUnretained(owner as AnyObject).toOpaque()), image: UnsafeRawPointer(Unmanaged.passUnretained(image).toOpaque()),
             col: item.col, z_index: item.zIndex, width: item.pixelWidth, height: item.pixelHeight, offset_x: item.pixelOffsetX, offset_y: item.pixelOffsetY,
-            kitty_image_id: item.kittyImageId ?? 0, has_kitty_id: item.kittyImageId == nil ? 0 : 1, is_kitty: item.kittyIsKitty ? 1 : 0, owned_image: nil) }
+            kitty_image_id: item.kittyImageId ?? 0, has_kitty_id: item.kittyImageId == nil ? 0 : 1, is_kitty: item.kittyIsKitty ? 1 : 0, cell_cols: 0, cell_rows: 0, source_x: 0, source_y: 0, source_width: 0, source_height: 0, owned_image: nil) }
         withExtendedLifetime(owners) { images.withUnsafeBufferPointer { imageBuffer in entry.key.withGPUKey { key in
             var cacheKey = key.pointee; cacheKey.absolute_row = row
             colors.withUnsafeBufferPointer { colorBuffer in backgrounds.withUnsafeBufferPointer { backgroundBuffer in tints.withUnsafeBufferPointer { tintBuffer in atlas.withUnsafeBufferPointer { atlasBuffer in decorations.withUnsafeBufferPointer { decorationBuffer in placeholders.withUnsafeBufferPointer { placeholderBuffer in

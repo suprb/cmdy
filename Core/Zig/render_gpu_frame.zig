@@ -306,9 +306,46 @@ fn encodeRows(self: anytype, e: Encoding, f: *const c.CmdyGpuFrame, x: f64, y: f
         }) orelse continue;
         const content = if (std.math.isFinite(f.image_scale)) @max(0, f.image_scale) else 1;
         const scale = if (std.math.isFinite(f.scale)) @max(0, f.scale) else 1;
-        const destination = Rect{ .x = x + @as(f64, @floatFromInt(placement.col)) * f.cell_width, .y = y + @as(f64, @floatFromInt(row.display_index)) * f.cell_height, .width = @as(f64, @floatFromInt(placement.width)) * content * scale, .height = @as(f64, @floatFromInt(placement.height)) * content * scale };
-        e.texture(self.core, texture, destination, full_uv, false, white);
+        const box = kittyImageBox(placement, f.cell_width, f.cell_height, content * scale);
+        const destination = Rect{ .x = x + @as(f64, @floatFromInt(placement.col)) * f.cell_width, .y = y + @as(f64, @floatFromInt(row.display_index)) * f.cell_height, .width = box.width, .height = box.height };
+        e.texture(self.core, texture, destination, box.uv, false, white);
     };
+}
+
+const ImageBox = struct { width: f64, height: f64, uv: Rect };
+
+/// Kitty `x,y,w,h` crops the source and `c,r` sets the display box in cells;
+/// with only one of `c,r` the other follows the crop's aspect ratio. Without
+/// either, the crop keeps its own pixel size. Other images use their own size.
+pub fn kittyImageBox(placement: c.CmdyGpuImagePlacement, cell_width: f64, cell_height: f64, pixel_scale: f64) ImageBox {
+    const image_width: f64 = @floatFromInt(@max(0, placement.width));
+    const image_height: f64 = @floatFromInt(@max(0, placement.height));
+    if (placement.is_kitty == 0 or image_width <= 0 or image_height <= 0) {
+        return .{ .width = image_width * pixel_scale, .height = image_height * pixel_scale, .uv = full_uv };
+    }
+    const sx = @min(image_width, @as(f64, @floatFromInt(@max(0, placement.source_x))));
+    const sy = @min(image_height, @as(f64, @floatFromInt(@max(0, placement.source_y))));
+    var sw = image_width - sx;
+    var sh = image_height - sy;
+    if (placement.source_width > 0) sw = @min(sw, @as(f64, @floatFromInt(placement.source_width)));
+    if (placement.source_height > 0) sh = @min(sh, @as(f64, @floatFromInt(placement.source_height)));
+    const uv = Rect{ .x = sx / image_width, .y = sy / image_height, .width = sw / image_width, .height = sh / image_height };
+    if (sw <= 0 or sh <= 0) return .{ .width = 0, .height = 0, .uv = uv };
+    const cols: f64 = @floatFromInt(@max(0, placement.cell_cols));
+    const rows: f64 = @floatFromInt(@max(0, placement.cell_rows));
+    var width = sw * pixel_scale;
+    var height = sh * pixel_scale;
+    if (cols > 0 and rows > 0) {
+        width = cols * cell_width;
+        height = rows * cell_height;
+    } else if (cols > 0) {
+        width = cols * cell_width;
+        height = width * sh / sw;
+    } else if (rows > 0) {
+        height = rows * cell_height;
+        width = height * sw / sh;
+    }
+    return .{ .width = width, .height = height, .uv = uv };
 }
 fn encodeCursor(self: anytype, e: Encoding, f: *const c.CmdyGpuFrame, x: f64, y: f64) void {
     if (f.cursor_valid == 0 or f.cursor_col < 0 or f.cursor_col >= f.grid_cols) {

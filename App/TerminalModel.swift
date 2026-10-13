@@ -474,7 +474,8 @@ final class TerminalModel: @unchecked Sendable {
                                       kittyPlacementId: $0.kittyPlacementId,
                                       kittyZIndex: $0.kittyZIndex,
                                       kittyPixelOffsetX: $0.kittyPixelOffsetX,
-                                      kittyPixelOffsetY: $0.kittyPixelOffsetY)
+                                      kittyPixelOffsetY: $0.kittyPixelOffsetY,
+                                      kittyDisplayBox: $0.kittyDisplayBox)
             }
             return CoreLineSnapshot(cells: line.cells, isWrapped: line.isWrapped,
                                     renderMode: line.renderMode, images: images,

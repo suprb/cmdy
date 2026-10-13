@@ -53,6 +53,8 @@ typedef struct CmdyGpuImagePlacement {
  const void *owner; const void *image;
  intptr_t col,z_index,width,height,offset_x,offset_y;
  uint32_t kitty_image_id; uint8_t has_kitty_id,is_kitty;
+ /* Kitty display box in cells and source crop in image pixels; 0 = unset. */
+ intptr_t cell_cols,cell_rows,source_x,source_y,source_width,source_height;
  /* Native encoded input replaces owner/image in captured-frame rendering. */
  CmdyRenderOwnedImageInput *owned_image;
 } CmdyGpuImagePlacement;

@@ -101,6 +101,35 @@ final class GraphicsSafetyTests: XCTestCase {
         XCTAssertFalse(terminal.handleAPC(malformed[...]))
     }
 
+    /// Multiplexers such as herdr re-send one placement as their panes scroll
+    /// and crop it to the visible area. Kitty replaces the placement with the
+    /// same IDs and keeps the requested cell box and source crop.
+    func testKittyReplacedPlacementMovesAndKeepsCellBoxAndCrop() {
+        let terminal = CmdyTerminal(cols: 20, rows: 8)
+        func images() -> [(row: Int, image: LineImage)] {
+            (0..<terminal.rows).flatMap { row in
+                (terminal.lineForDiff(absolute: terminal.liveScreenTopRow + row)?.images ?? []).map { (row, $0) }
+            }
+        }
+        terminal.feed(text: "\u{1b}[?1049h\u{1b}_Ga=t,f=32,s=2,v=2,i=5,q=2;/wAA//8AAP8AAP//AP8A/w==\u{1b}\\")
+        terminal.feed(text: "\u{1b}[2;3H\u{1b}_Ga=p,i=5,p=7,c=4,r=2,x=1,y=0,w=1,h=2,C=1,q=2;\u{1b}\\")
+        var placed = images()
+        XCTAssertEqual(placed.count, 1)
+        XCTAssertEqual(placed.first?.row, 1)
+        XCTAssertEqual(placed.first?.image.kittyDisplayBox,
+                       CoreKittyDisplayBox(cellColumns: 4, cellRows: 2, sourceX: 1, sourceY: 0,
+                                           sourceWidth: 1, sourceHeight: 2))
+        terminal.feed(text: "\u{1b}[6;3H\u{1b}_Ga=p,i=5,p=7,c=4,r=2,C=1,q=2;\u{1b}\\")
+        placed = images()
+        XCTAssertEqual(placed.map(\.row), [5])
+        XCTAssertEqual(placed.first?.image.kittyDisplayBox,
+                       CoreKittyDisplayBox(cellColumns: 4, cellRows: 2, sourceX: 0, sourceY: 0,
+                                           sourceWidth: 0, sourceHeight: 0))
+        // A different placement of the same image is a second copy.
+        terminal.feed(text: "\u{1b}[1;1H\u{1b}_Ga=p,i=5,p=8,c=1,r=1,C=1,q=2;\u{1b}\\")
+        XCTAssertEqual(images().map(\.row).sorted(), [0, 5])
+    }
+
     func testKittyAPCDispatchesAtStringTerminatorEscapePrefix() {
         let terminal = CmdyTerminal(cols: 12, rows: 6)
         let firstChunk = Array(

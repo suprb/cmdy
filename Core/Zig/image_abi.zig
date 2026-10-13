@@ -81,6 +81,12 @@ pub const ImageInfo = extern struct {
     is_kitty: u8 = 0,
     has_image_id: u8 = 0,
     has_placement_id: u8 = 0,
+    cell_cols: isize = 0,
+    cell_rows: isize = 0,
+    source_x: isize = 0,
+    source_y: isize = 0,
+    source_width: isize = 0,
+    source_height: isize = 0,
 };
 pub const StoredImageInfo = extern struct {
     pixel_width: isize = 0,
@@ -152,7 +158,9 @@ export fn cmdy_zig_image_info(image: ?*const LineImage, out: ?*ImageInfo) i32 {
         .z_index = i.z_index, .offset_x = i.offset_x, .offset_y = i.offset_y,
         .image_id = i.image_id orelse 0, .placement_id = i.placement_id orelse 0,
         .is_kitty = @intFromBool(i.is_kitty), .has_image_id = @intFromBool(i.image_id != null),
-        .has_placement_id = @intFromBool(i.placement_id != null) };
+        .has_placement_id = @intFromBool(i.placement_id != null),
+        .cell_cols = i.cell_cols, .cell_rows = i.cell_rows, .source_x = i.source_x, .source_y = i.source_y,
+        .source_width = i.source_width, .source_height = i.source_height };
     return 0;
 }
 /// Only mutable placement fields change. Payload, dimensions and identity stay fixed.

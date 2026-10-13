@@ -192,6 +192,20 @@ final class NativeSnapshotGraphics: @unchecked Sendable {
     deinit { cmdy_render_graphics_input_release(handle) }
 }
 
+/// Kitty display box in cells and source crop in image pixels. Zero means
+/// unset: the source's own pixel size, and the whole image from the origin.
+public struct CoreKittyDisplayBox: Sendable, Equatable {
+    public var cellColumns = 0, cellRows = 0
+    public var sourceX = 0, sourceY = 0, sourceWidth = 0, sourceHeight = 0
+    public static let unset = CoreKittyDisplayBox()
+    public init() {}
+    public init(cellColumns: Int, cellRows: Int, sourceX: Int, sourceY: Int, sourceWidth: Int, sourceHeight: Int) {
+        self.cellColumns = cellColumns; self.cellRows = cellRows
+        self.sourceX = sourceX; self.sourceY = sourceY
+        self.sourceWidth = sourceWidth; self.sourceHeight = sourceHeight
+    }
+}
+
 /// Immutable form of a line image. `LineImage` itself is mutable during
 /// reflow, so renderer snapshots must not retain the live object.
 public struct CoreLineImageSnapshot: Sendable {
@@ -206,12 +220,14 @@ public struct CoreLineImageSnapshot: Sendable {
     public let kittyZIndex: Int
     public let kittyPixelOffsetX: Int
     public let kittyPixelOffsetY: Int
+    public let kittyDisplayBox: CoreKittyDisplayBox
 
     public init(renderIdentity: UUID, payload: LineImage.Payload,
                 pixelWidth: Int, pixelHeight: Int,
                 col: Int, kittyIsKitty: Bool, kittyImageId: UInt32?,
                 kittyPlacementId: UInt32?, kittyZIndex: Int,
-                kittyPixelOffsetX: Int, kittyPixelOffsetY: Int) {
+                kittyPixelOffsetX: Int, kittyPixelOffsetY: Int,
+                kittyDisplayBox: CoreKittyDisplayBox = .unset) {
         self.renderIdentity = renderIdentity
         self.payload = payload
         self.pixelWidth = pixelWidth
@@ -223,6 +239,7 @@ public struct CoreLineImageSnapshot: Sendable {
         self.kittyZIndex = kittyZIndex
         self.kittyPixelOffsetX = kittyPixelOffsetX
         self.kittyPixelOffsetY = kittyPixelOffsetY
+        self.kittyDisplayBox = kittyDisplayBox
     }
 }
 

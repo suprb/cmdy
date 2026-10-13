@@ -381,7 +381,11 @@ final class ProducerFrameCapture {
                         col: owner.col, z_index: owner.kittyZIndex, width: owner.pixelWidth, height: owner.pixelHeight,
                         offset_x: owner.kittyPixelOffsetX, offset_y: owner.kittyPixelOffsetY,
                         kitty_image_id: owner.kittyImageId ?? 0, has_kitty_id: owner.kittyImageId == nil ? 0 : 1,
-                        is_kitty: owner.kittyIsKitty ? 1 : 0, owned_image: nil)))
+                        is_kitty: owner.kittyIsKitty ? 1 : 0,
+                        cell_cols: encoded.kittyCellColumns, cell_rows: encoded.kittyCellRows,
+                        source_x: encoded.kittySourceRect.x, source_y: encoded.kittySourceRect.y,
+                        source_width: encoded.kittySourceRect.width, source_height: encoded.kittySourceRect.height,
+                        owned_image: nil)))
                 }
                 row = try ProducerRow(key: key, raster: raster, revision: evidence, text: text,
                     images: rowImages, placeholders: placeholders, revisionReusable: revisionReusable,

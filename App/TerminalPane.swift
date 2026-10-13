@@ -2047,8 +2047,11 @@ final class TerminalPane: DropView, InlinePanelHost, ExtensionSurfaceHost,
 
     /// Failed prompts are styled in the row geometry itself. No separate dot,
     /// hit target, or permanent gutter is created.
-    private func updateBlockStyles() {
-        let failed = Set(blockStore.blocks.compactMap { block -> Int? in
+    /// Internal so the self-test can apply styles without an on-screen window.
+    func updateBlockStyles() {
+        // Prompt rows index the normal screen; never paint them over a
+        // full-screen program on the alternate screen.
+        let failed = surface.engine.isCurrentBufferAlternate ? [] : Set(blockStore.blocks.compactMap { block -> Int? in
             !block.running && block.exitCode != 0 ? block.promptRow : nil
         })
         if surface.failedBlockRows != failed { surface.failedBlockRows = failed }

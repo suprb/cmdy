@@ -122,6 +122,15 @@ pub const LineImage = struct {
     z_index: isize = 0,
     offset_x: isize = 0,
     offset_y: isize = 0,
+    /// Kitty display box in cells; zero means the source's own pixel size.
+    cell_cols: isize = 0,
+    cell_rows: isize = 0,
+    /// Kitty source rectangle in image pixels; zero width/height means the
+    /// rest of the image from the origin.
+    source_x: isize = 0,
+    source_y: isize = 0,
+    source_width: isize = 0,
+    source_height: isize = 0,
 
     /// Borrows payload and gives the returned attachment one retained reference.
     pub fn init(payload: *Payload, col: isize) Error!*LineImage {
@@ -145,7 +154,10 @@ pub const LineImage = struct {
             .pixel_width = self.pixel_width, .pixel_height = self.pixel_height,
             .col = self.col, .is_kitty = self.is_kitty, .image_id = self.image_id,
             .placement_id = self.placement_id, .z_index = self.z_index,
-            .offset_x = self.offset_x, .offset_y = self.offset_y };
+            .offset_x = self.offset_x, .offset_y = self.offset_y,
+            .cell_cols = self.cell_cols, .cell_rows = self.cell_rows,
+            .source_x = self.source_x, .source_y = self.source_y,
+            .source_width = self.source_width, .source_height = self.source_height };
         return copy;
     }
 
@@ -412,6 +424,8 @@ pub const KittyControl = struct {
     cell_rows: u32 = 0,
     source_x: u32 = 0,
     source_y: u32 = 0,
+    source_width: u32 = 0,
+    source_height: u32 = 0,
     z_index: i32 = 0,
     more: bool = false,
     quiet: u2 = 0,
@@ -454,6 +468,8 @@ pub fn decodeKittyEnvelope(bytes: []const u8) Error!KittyEnvelope {
                 'r' => control.cell_rows = try decimalUnsigned(value),
                 'x' => control.source_x = try decimalUnsigned(value),
                 'y' => control.source_y = try decimalUnsigned(value),
+                'w' => control.source_width = try decimalUnsigned(value),
+                'h' => control.source_height = try decimalUnsigned(value),
                 'z' => control.z_index = try decimalSigned(i32, value),
                 'm' => control.more = try boolean(value),
                 'q' => {
@@ -709,6 +725,10 @@ pub const Display = struct {
     is_virtual: bool,
     cols: isize,
     rows: isize,
+    /// Where this image/placement pair was displayed before, if anywhere.
+    /// Kitty replaces a placement with the same IDs instead of adding one.
+    previous_row: ?isize = null,
+    previous_is_alternate_buffer: bool = false,
     /// Present only for a nonvirtual placement, with one owned payload ref.
     attachment: ?*LineImage = null,
 
@@ -899,13 +919,22 @@ pub const KittyEngine = struct {
             attachment.?.z_index = control.z_index;
             attachment.?.offset_x = control.offset_x;
             attachment.?.offset_y = control.offset_y;
+            attachment.?.cell_cols = control.cell_cols;
+            attachment.?.cell_rows = control.cell_rows;
+            attachment.?.source_x = control.source_x;
+            attachment.?.source_y = control.source_y;
+            attachment.?.source_width = control.source_width;
+            attachment.?.source_height = control.source_height;
         }
+        const previous = self.store.placements_by_key.get(placementKey(image.id, placement_id));
         _ = try self.store.place(.{ .image_id = image.id, .placement_id = placement_id,
             .col = cursor.col, .row = cursor.row, .cols = cols, .rows = rows,
             .z_index = control.z_index, .offset_x = control.offset_x, .offset_y = control.offset_y,
             .is_virtual = control.virtual_placement, .is_alternate_buffer = cursor.is_alternate_buffer });
         return .{ .image_id = image.id, .placement_id = placement_id, .is_virtual = control.virtual_placement,
-            .cols = cols, .rows = rows, .attachment = attachment };
+            .cols = cols, .rows = rows, .attachment = attachment,
+            .previous_row = if (previous) |value| (if (value.is_virtual) null else value.row) else null,
+            .previous_is_alternate_buffer = if (previous) |value| value.is_alternate_buffer else false };
     }
 
     fn delete(self: *KittyEngine, control: KittyControl, cursor: CursorContext) Allocator.Error!std.ArrayList(Placement) {

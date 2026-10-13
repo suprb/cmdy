@@ -585,6 +585,11 @@ pub fn handleAPCResult(t: anytype, bytes: []const u8) anyerror!graphics.KittyRes
             try source_line.appendImage(image);
             try removeOtherPlacements(source_line, image);
             t.markDirty(b.y_base + source_row);
+            if (display.previous_row) |previous| {
+                if (previous != b.y_base + source_row or display.previous_is_alternate_buffer != t.is_alternate) {
+                    try removeMovedPlacement(t, image, previous, display.previous_is_alternate_buffer);
+                }
+            }
         }
         if (result.should_apply_display_line_motion) {
             b.x = 0;
@@ -611,6 +616,19 @@ pub fn handleAPCResult(t: anytype, bytes: []const u8) anyerror!graphics.KittyRes
     // bookkeeping. Keep that callback boundary and its captured source row.
     if (result.reply) |reply| try t.sendResponse(reply.bytes());
     return result;
+}
+
+/// A re-sent placement moves: drop the copy it replaced. Screen scrolling moves
+/// lines without updating the recorded row, so search the whole live screen
+/// that held it, plus its recorded row when that is now in scrollback.
+fn removeMovedPlacement(t: anytype, newest: *graphics.LineImage, previous_row: isize, previous_alternate: bool) Allocator.Error!void {
+    const screen: *Buffer = if (previous_alternate) &t.alternate else &t.normal;
+    var relative: isize = 0;
+    while (relative < screen.rows) : (relative += 1) try removeOtherPlacements(screen.liveLine(relative), newest);
+    if (previous_row < screen.y_base) {
+        if (screen.line(previous_row)) |line| try removeOtherPlacements(line, newest);
+    }
+    t.markAllDirty();
 }
 
 fn removeOtherPlacements(line: *Line, newest: *graphics.LineImage) Allocator.Error!void {

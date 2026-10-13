@@ -99,6 +99,18 @@ public protocol RenderableCellImage: AnyObject {
 public protocol EncodedRenderableCellImage: RenderableCellImage {
     var renderIdentity: UUID { get }
     var encodedPayload: KittyImagePayload { get }
+    /// Kitty `c,r` display box in cells and `x,y,w,h` source crop in image
+    /// pixels. Zero means unset.
+    var kittyCellColumns: Int { get }
+    var kittyCellRows: Int { get }
+    var kittySourceRect: (x: Int, y: Int, width: Int, height: Int) { get }
+}
+
+@_spi(CmdyApp)
+extension EncodedRenderableCellImage {
+    public var kittyCellColumns: Int { 0 }
+    public var kittyCellRows: Int { 0 }
+    public var kittySourceRect: (x: Int, y: Int, width: Int, height: Int) { (0, 0, 0, 0) }
 }
 
 public struct ViewLineSegment {

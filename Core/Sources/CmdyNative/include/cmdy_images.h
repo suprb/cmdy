@@ -21,6 +21,8 @@ typedef struct {
     intptr_t pixel_width, pixel_height, col, z_index, offset_x, offset_y;
     uint32_t image_id, placement_id;
     uint8_t is_kitty, has_image_id, has_placement_id;
+    /* Kitty display box in cells and source crop in image pixels; 0 = unset. */
+    intptr_t cell_cols, cell_rows, source_x, source_y, source_width, source_height;
 } CmdyZigImageInfo;
 typedef struct {
     intptr_t pixel_width, pixel_height;

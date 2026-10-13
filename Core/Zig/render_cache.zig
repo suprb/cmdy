@@ -462,7 +462,9 @@ pub const Cache = struct {
     }
 };
 fn viewportImagePlacement(image: *const LineImage) c.CmdyGpuImagePlacement {
-    return .{ .owner = null, .image = null, .owned_image = null, .col = image.col, .z_index = image.z_index, .width = image.pixel_width, .height = image.pixel_height, .offset_x = image.offset_x, .offset_y = image.offset_y, .kitty_image_id = image.image_id orelse 0, .has_kitty_id = @intFromBool(image.image_id != null), .is_kitty = @intFromBool(image.is_kitty) };
+    return .{ .owner = null, .image = null, .owned_image = null, .col = image.col, .z_index = image.z_index, .width = image.pixel_width, .height = image.pixel_height, .offset_x = image.offset_x, .offset_y = image.offset_y, .kitty_image_id = image.image_id orelse 0, .has_kitty_id = @intFromBool(image.image_id != null), .is_kitty = @intFromBool(image.is_kitty),
+        .cell_cols = image.cell_cols, .cell_rows = image.cell_rows, .source_x = image.source_x, .source_y = image.source_y,
+        .source_width = image.source_width, .source_height = image.source_height };
 }
 fn viewportRasterScalarsEqual(left: *const FrozenParameters, right: *const FrozenParameters) bool {
     var l = left.input;

@@ -283,12 +283,18 @@ final class CmdyCellImage: @preconcurrency RenderableCellImage, EncodedRenderabl
     let kittyZIndex: Int
     let kittyPixelOffsetX: Int
     let kittyPixelOffsetY: Int
+    let kittyCellColumns: Int
+    let kittyCellRows: Int
+    let kittySourceRect: (x: Int, y: Int, width: Int, height: Int)
     private init(_ source: CoreLineImageSnapshot) {
         renderIdentity = source.renderIdentity
         pixelWidth = source.pixelWidth; pixelHeight = source.pixelHeight; col = source.col
         kittyIsKitty = source.kittyIsKitty; kittyImageId = source.kittyImageId
         kittyZIndex = source.kittyZIndex
         kittyPixelOffsetX = source.kittyPixelOffsetX; kittyPixelOffsetY = source.kittyPixelOffsetY
+        let box = source.kittyDisplayBox
+        kittyCellColumns = box.cellColumns; kittyCellRows = box.cellRows
+        kittySourceRect = (box.sourceX, box.sourceY, box.sourceWidth, box.sourceHeight)
         switch source.payload {
         case .png(let data):
             encodedPayload = .png(data)

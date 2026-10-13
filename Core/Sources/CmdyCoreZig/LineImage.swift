@@ -98,6 +98,15 @@ public final class LineImage: @unchecked Sendable {
         get { info.offset_y }
         set { var value = info; value.offset_y = newValue; info = value }
     }
+    public var kittyDisplayBox: CoreKittyDisplayBox { CoreKittyDisplayBox(info) }
+}
+
+extension CoreKittyDisplayBox {
+    init(_ info: CmdyZigImageInfo) {
+        self.init(cellColumns: info.cell_cols, cellRows: info.cell_rows,
+                  sourceX: info.source_x, sourceY: info.source_y,
+                  sourceWidth: info.source_width, sourceHeight: info.source_height)
+    }
 }
 
 private final class NativePayloadOwner {

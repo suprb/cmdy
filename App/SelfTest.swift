@@ -1053,8 +1053,21 @@ enum SelfTest {
         pane.dismissExtensionControlBar(bar)
         pane.focus()
 
-        // A stale/replaced draft cannot turn a TUI's Return into a shell Ask.
+        // Shell decorations index the normal screen. A full-screen program on
+        // the alternate screen (herdr, vim) must not inherit failed-row tints.
+        surface.feed(text: "\u{1b}]133;C\u{7}missing\r\n\u{1b}]133;D;1\u{7}\u{1b}]133;A\u{7}$ \u{1b}]133;B\u{7}")
+        flushInput()
+        pane.updateBlockStyles()
+        let failedOnShell = !surface.failedBlockRows.isEmpty
         surface.feed(text: "\u{1b}[?1049h")
+        flushInput()
+        pane.updateBlockStyles()
+        pane.blockOverlayForTesting.blockDataChanged()
+        check(failedOnShell && surface.failedBlockRows.isEmpty
+                && pane.blockOverlayForTesting.visibleSeparatorLayerCountForTesting == 0,
+              "blocks: failed rows and separators stay off the alternate screen")
+
+        // A stale/replaced draft cannot turn a TUI's Return into a shell Ask.
         pane.replacePromptInput(with: "# tui request")
         flushInput()
         sent.removeAll()
@@ -1064,6 +1077,8 @@ enum SelfTest {
               "input ownership: alternate-screen Return reaches the application")
         surface.feed(text: "\u{1b}[?1049l\r\n\u{1b}]133;A\u{7}$ \u{1b}]133;B\u{7}")
         flushInput()
+        pane.updateBlockStyles()
+        check(!surface.failedBlockRows.isEmpty, "blocks: failed rows return with the normal screen")
         sent.removeAll()
 
         // The physical romanization key is not a committed shell character.

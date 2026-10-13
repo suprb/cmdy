@@ -58,6 +58,7 @@ final class BlockOverlayView: NSView {
     private let separatorContainerLayer = CALayer()
     private var separatorLayers: [CALayer] = []
     private var lastTop = Int.min
+    private var lastAlternate = false
     private var lastCount = -1
     private var lastRows = -1
     private var lastCellHeight = CGFloat.greatestFiniteMagnitude
@@ -140,12 +141,16 @@ final class BlockOverlayView: NSView {
         }
         guard let term = surface?.engine else { return }
         let top = term.currentTopRow
+        // Command separators belong to the shell's normal screen. A full-screen
+        // program on the alternate screen (vim, herdr, tmux) owns every row.
+        let alternate = term.isCurrentBufferAlternate
         let count = store.blocks.count
         let rows = term.rows
         let cellHeight = surface?.cellSize.height ?? 0
         let contentXOrigin = surface?.contentXOrigin ?? 0
         let visualOffset = surface?.visualScrollOffset ?? 0
         let geometryChanged = top != lastTop
+            || alternate != lastAlternate
             || count != lastCount
             || rows != lastRows
             || abs(cellHeight - lastCellHeight) > 0.001
@@ -154,6 +159,7 @@ final class BlockOverlayView: NSView {
         let visualChanged = abs(visualOffset - lastVisualOffset) > 0.01
         if geometryChanged {
             lastTop = top
+            lastAlternate = alternate
             lastCount = count
             lastRows = rows
             lastCellHeight = cellHeight
@@ -161,7 +167,7 @@ final class BlockOverlayView: NSView {
             lastBoundsSize = bounds.size
             rebuildSeparatorLayers(
                 top: top, rows: rows, cellHeight: cellHeight,
-                contentXOrigin: contentXOrigin, blocks: store.blocks)
+                contentXOrigin: contentXOrigin, blocks: alternate ? [] : store.blocks)
         }
         if geometryChanged || visualChanged {
             setSeparatorTranslation(visualOffset)
