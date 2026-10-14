@@ -939,7 +939,7 @@
       "id": "retained-cmdysnapshotshaper-from-termitecoreshaping",
       "active": "App/CmdySnapshotShaper.swift",
       "historical": "App/TermiteCoreShaping.swift",
-      "sha256": "2d4b7ef5ff5feade4bd33f7cfcace6f44bde6d89c2ba29d50e375d0a6c02430f",
+      "sha256": "a4e09f51fa094c1a778d26dbd30d831a932da30178c773f350aeb490898bfa52",
       "classification": "cmdy-original-retained-source",
       "rationale": "Hash-pinned Cmdy source carried forward from the retired Cmdy implementation; comparison with the initial Vendor import has no unresolved substantive Vendor match."
     },
@@ -955,7 +955,7 @@
       "id": "retained-cmdyterminal-from-termiteterminal",
       "active": "Core/Sources/CmdyCoreZig/CmdyTerminal.swift",
       "historical": "Core/Sources/TermiteCore/TermiteTerminal.swift",
-      "sha256": "7b96d2c536b5cbfdd7483438f213b04412d5b918458b80ec3bf7d54c1834ef42",
+      "sha256": "d59d9cab5e67edaa5fba82ab47b95e341078e0ab7b6e6127543e114868538394",
       "classification": "cmdy-original-retained-source",
       "rationale": "Hash-pinned Cmdy source carried forward from the retired Cmdy implementation; comparison with the initial Vendor import has no unresolved substantive Vendor match."
     },
@@ -987,7 +987,7 @@
       "id": "retained-lineimage-from-line",
       "active": "Core/Sources/CmdyCoreZig/LineImage.swift",
       "historical": "Core/Sources/TermiteCore/Line.swift",
-      "sha256": "9c586a9984f6f95b54efb35c8503622e3b3b860192ec071bdd0b28595ec5281a",
+      "sha256": "e1cba5eb25250b83197289d9af151f06ddca1196329b5ff47cc6e02480162a99",
       "classification": "cmdy-original-retained-source",
       "rationale": "Hash-pinned Cmdy source carried forward from the retired Cmdy implementation; comparison with the initial Vendor import has no unresolved substantive Vendor match."
     },
@@ -1003,7 +1003,7 @@
       "id": "retained-snapshotvalues-from-termiteterminal",
       "active": "Core/Sources/CmdyCoreZig/SnapshotValues.swift",
       "historical": "Core/Sources/TermiteCore/TermiteTerminal.swift",
-      "sha256": "81068668b23bd9ca90a97305156e8f6531b1a2224e747f5f1e9eb26a95e40969",
+      "sha256": "bc5159844d240499323a7489dc2f08139c732a78feff71325e9437d7a2d57fee",
       "classification": "cmdy-original-retained-source",
       "rationale": "Hash-pinned Cmdy source carried forward from the retired Cmdy implementation; comparison with the initial Vendor import has no unresolved substantive Vendor match."
     },
@@ -1011,7 +1011,7 @@
       "id": "retained-snapshotvalues-from-rendertypes",
       "active": "Core/Sources/CmdyCoreZig/SnapshotValues.swift",
       "historical": "Renderer/Sources/TermiteGPU/RenderTypes.swift",
-      "sha256": "81068668b23bd9ca90a97305156e8f6531b1a2224e747f5f1e9eb26a95e40969",
+      "sha256": "bc5159844d240499323a7489dc2f08139c732a78feff71325e9437d7a2d57fee",
       "classification": "cmdy-original-retained-source",
       "rationale": "Hash-pinned Cmdy source carried forward from the retired Cmdy implementation; comparison with the initial Vendor import has no unresolved substantive Vendor match."
     },
@@ -1051,7 +1051,7 @@
       "id": "retained-rendercontract-from-rendertypes",
       "active": "Renderer/Sources/CmdyGPUZig/RenderContract.swift",
       "historical": "Renderer/Sources/TermiteGPU/RenderTypes.swift",
-      "sha256": "6d12a5f6accc6dcb4d3992eafd5595fe44ee277983439405b1023dddda7a10c2",
+      "sha256": "10a81f49a047d8bf36ad28ee7e5b00147a027c3af1ae17bd79edcbb3b77f1887",
       "classification": "cmdy-original-retained-source",
       "rationale": "Hash-pinned Cmdy source carried forward from the retired Cmdy implementation; comparison with the initial Vendor import has no unresolved substantive Vendor match."
     }

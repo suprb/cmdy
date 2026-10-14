@@ -30,7 +30,7 @@
       {
         "path": "scripts/check-core-blackbox-parity.py",
         "purpose": "core-parity-checker",
-        "sha256": "3a45bd5fec2e385d2f193969f9da67590e9df1c09c465770de3813cda97cbaa9"
+        "sha256": "f8a21b6d9912ffd4805a36266754d1de8a99f8b833785303bcfe7697a582caf3"
       },
       {
         "path": "scripts/check-independent-api.sh",
@@ -65,7 +65,7 @@
       {
         "path": "docs/independence/WORKING_TREE_PROVENANCE_ALLOWLIST.json",
         "purpose": "provenance-allowlist",
-        "sha256": "60f410377c96c70f96c86edd4a70126122dd51c6e15e2d9ea6670c8ccc867668"
+        "sha256": "2897b04cc5169bed5abbf8597730bb6eb80dcdb9021e247c5f9d00782d1f3b71"
       },
       {
         "path": "scripts/check-working-tree-provenance.py",
