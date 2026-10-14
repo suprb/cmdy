@@ -65,7 +65,7 @@
       {
         "path": "docs/independence/WORKING_TREE_PROVENANCE_ALLOWLIST.json",
         "purpose": "provenance-allowlist",
-        "sha256": "2897b04cc5169bed5abbf8597730bb6eb80dcdb9021e247c5f9d00782d1f3b71"
+        "sha256": "2639f9f1901f64f8ad43ddf6838dfb4f8bb8a18f8bdcc0a22f677925c2b01534"
       },
       {
         "path": "scripts/check-working-tree-provenance.py",

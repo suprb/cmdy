@@ -278,8 +278,8 @@
     {
       "mode": "100644",
       "path": "App/AppDelegate.swift",
-      "sha256": "7f8bcfbd024fb4654a073264d6fffd5c3692d1c1c8802fe314f47a8e6eb39a57",
-      "size": 282723
+      "sha256": "4c8c85a161ac1eb3186466609cfb7b76b3c55c4639ac754bf802f3fcd981b594",
+      "size": 283702
     },
     {
       "mode": "100644",
@@ -416,8 +416,8 @@
     {
       "mode": "100644",
       "path": "App/CmdyTerminalSurface.swift",
-      "sha256": "a8fb2f2e89de8d0fdf2f9b7fc7cfa5884c6780c987ab9c2787d93f7bb68362e8",
-      "size": 91821
+      "sha256": "2725b151bf1a52256d46cdfde8440667139dcb1736acfde28ca8b9525bcacdf9",
+      "size": 92389
     },
     {
       "mode": "100644",
@@ -536,8 +536,8 @@
     {
       "mode": "100644",
       "path": "App/SelfTest.swift",
-      "sha256": "1e877e65144137881daffc282d28e580e1483e15a19adac6a8854a13cd16fbe7",
-      "size": 72688
+      "sha256": "f73770b34811f68120d3bcc5811009b1c4b00adad5cc7554e4b932cbe40df092",
+      "size": 73717
     },
     {
       "mode": "100644",
@@ -1742,8 +1742,8 @@
     {
       "mode": "100644",
       "path": "Kit/Sources/CmdyKit/AppUpdates.swift",
-      "sha256": "ccbd7da666171dccb473fce5f51855d886574e73da32b8e25617186dca408be0",
-      "size": 29788
+      "sha256": "d843efbfa26eb22ec5dc88a55dec7c78930808601d99bc72877f38484ce165be",
+      "size": 33875
     },
     {
       "mode": "100644",
