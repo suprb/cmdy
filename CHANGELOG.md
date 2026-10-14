@@ -11,6 +11,16 @@ be called out here with a migration path before a versioned release.
 
 ## [Unreleased]
 
+## [1.0.9] - 2026-10-13
+
+### Fixed
+
+- Images from terminal multiplexers such as herdr are drawn at their intended
+  size and crop instead of oversized, and an image that moves while a pane
+  scrolls no longer leaves stale copies behind.
+- Failed-command highlighting and command separators no longer paint over
+  full-screen apps on the alternate screen, so TUIs inside cmdy stay clean.
+
 ## [1.0.8] - 2026-10-11
 
 ### Changed
