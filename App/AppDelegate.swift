@@ -5400,16 +5400,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                     return
                 }
                 let alert = NSAlert()
-                alert.messageText = "No newer stable release found"
                 let current = AppUpdateMonitor.shared.currentVersion ?? "this build"
-                alert.informativeText =
-                    "\(ProductIdentity.current.displayName) \(current) is the newest "
-                    + "published version available from GitHub."
-                alert.addButton(withTitle: "OK")
-                if let parent, parent.isVisible {
-                    alert.beginSheetModal(for: parent)
+                let releases = AppUpdateMonitor.latestReleasePageURL
+                if let failure = AppUpdateMonitor.shared.lastCheckFailure {
+                    alert.messageText = "Couldn’t check for updates"
+                    alert.informativeText =
+                        "\(failure). You are running \(ProductIdentity.current.displayName) "
+                        + "\(current); the newest release is listed on GitHub."
+                    alert.addButton(withTitle: "Open Releases")
+                    alert.addButton(withTitle: "Cancel")
                 } else {
-                    alert.runModal()
+                    alert.messageText = "No newer stable release found"
+                    alert.informativeText =
+                        "\(ProductIdentity.current.displayName) \(current) is the newest "
+                        + "published version available from GitHub."
+                    alert.addButton(withTitle: "OK")
+                }
+                let failed = AppUpdateMonitor.shared.lastCheckFailure != nil
+                let handle: (NSApplication.ModalResponse) -> Void = { response in
+                    if failed, response == .alertFirstButtonReturn {
+                        NSWorkspace.shared.open(releases)
+                    }
+                }
+                if let parent, parent.isVisible {
+                    alert.beginSheetModal(for: parent, completionHandler: handle)
+                } else {
+                    handle(alert.runModal())
                 }
             }
         }

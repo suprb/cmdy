@@ -1,7 +1,38 @@
 import XCTest
 @testable import CmdyKit
+import ProductIdentity
 
 final class AppUpdateTests: XCTestCase {
+    func testReleasePageFallbackUsesStableArchivesFromTheTag() throws {
+        let repository = ProductIdentity.current.githubRepository
+        let prefix = ProductIdentity.current.releaseAssetPrefix
+        let page = try XCTUnwrap(URL(string: "https://github.com/\(repository)/releases/tag/v2.3.4"))
+        let lean = try XCTUnwrap(AppUpdateMonitor.releaseFromTagPage(page, prefersBrowserEdition: false))
+        XCTAssertEqual(lean.version, "2.3.4")
+        XCTAssertEqual(lean.releaseURL, page)
+        #if arch(arm64)
+        XCTAssertEqual(lean.assetName, "\(prefix)-macOS-arm64.zip")
+        XCTAssertEqual(lean.assetURL?.absoluteString,
+                       "https://github.com/\(repository)/releases/download/v2.3.4/\(prefix)-macOS-arm64.zip")
+        XCTAssertEqual(lean.checksumURL?.absoluteString,
+                       "https://github.com/\(repository)/releases/download/v2.3.4/\(prefix)-macOS-arm64.zip.sha256")
+        let browser = try XCTUnwrap(AppUpdateMonitor.releaseFromTagPage(page, prefersBrowserEdition: true))
+        XCTAssertEqual(browser.assetName, "\(prefix)-browser-macOS-arm64.zip")
+        #endif
+        XCTAssertTrue(AppUpdateMonitor.isVersion(lean.version, newerThan: "1.0.9"))
+
+        for rejected in [
+            "https://github.com/someone/else/releases/tag/v2.3.4",
+            "https://example.com/\(repository)/releases/tag/v2.3.4",
+            "http://github.com/\(repository)/releases/tag/v2.3.4",
+            "https://github.com/\(repository)/releases",
+            "https://github.com/\(repository)/releases/tag/nightly",
+        ] {
+            XCTAssertNil(AppUpdateMonitor.releaseFromTagPage(
+                try XCTUnwrap(URL(string: rejected)), prefersBrowserEdition: false), rejected)
+        }
+    }
+
     func testNewVersionDiscoveryNotifiesExactlyOncePerVersion() {
         XCTAssertTrue(AppUpdateMonitor.shouldNotifyAvailableVersion(
             "1.4.0", previouslyNotified: nil))

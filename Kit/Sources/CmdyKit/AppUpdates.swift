@@ -42,6 +42,8 @@ public final class AppUpdateMonitor {
     public private(set) var availableUpdate: AppReleaseUpdate?
     public private(set) var downloadState: AppUpdateDownloadState = .idle
     public private(set) var isChecking = false
+    /// Why the most recent check could not reach GitHub, or nil when it did.
+    public private(set) var lastCheckFailure: String?
     public var currentVersion: String? {
         if let value = Bundle.main.object(
             forInfoDictionaryKey: "CFBundleShortVersionString") as? String,
@@ -72,6 +74,10 @@ public final class AppUpdateMonitor {
     nonisolated static let checkInterval: TimeInterval = 12 * 60 * 60
     nonisolated static let latestReleaseURL =
         ProductIdentity.current.latestReleaseAPIURL
+    /// The public page redirects to the newest stable tag. Unlike the API it
+    /// is not rate-limited per IP, so it answers on shared and managed networks.
+    nonisolated public static let latestReleasePageURL = URL(
+        string: "https://github.com/\(ProductIdentity.current.githubRepository)/releases/latest")!
 
     private struct PersistedState: Codable {
         var lastCheck: TimeInterval = 0
@@ -177,29 +183,111 @@ public final class AppUpdateMonitor {
 
         URLSession.shared.dataTask(with: request) { [weak self] data, response, _ in
             let status = (response as? HTTPURLResponse)?.statusCode
-            let release: AppReleaseUpdate?
+            // nil: GitHub gave no usable answer. .some(nil): no newer release.
+            var answer: AppReleaseUpdate?? = nil
             if status == 404 {
-                release = nil
-            } else if status == 200, let data, data.count <= 1_048_576 {
-                release = try? Self.decodeRelease(
-                    data,
-                    prefersBrowserEdition: prefersBrowserEdition)
-            } else {
-                release = nil
+                answer = .some(nil)
+            } else if status == 200, let data, data.count <= 1_048_576,
+                      let release = try? Self.decodeRelease(
+                        data, prefersBrowserEdition: prefersBrowserEdition) {
+                answer = .some(release)
             }
-            DispatchQueue.main.async {
-                guard let self else { return }
-                self.isChecking = false
-                // Network and server failures retain a previously known update.
-                if status == 200 || status == 404 {
-                    var saved = self.loadState()
-                    saved.cachedRelease = release
-                    self.saveState(saved)
-                    self.apply(release, currentVersion: currentVersion)
+            if let answer {
+                DispatchQueue.main.async {
+                    self?.finishCheck(.success(answer), currentVersion: currentVersion)
                 }
-                self.finishCheckCompletions()
+                return
+            }
+            // Rate limits (403/429), blocked API hosts and server errors fall
+            // back to the public release page.
+            let apiFailure = status.map { "GitHub answered HTTP \($0)" }
+                ?? "GitHub could not be reached"
+            Self.resolveLatestReleasePage(
+                prefersBrowserEdition: prefersBrowserEdition
+            ) { release in
+                DispatchQueue.main.async {
+                    self?.finishCheck(
+                        release.map { .success($0) } ?? .failure(apiFailure),
+                        currentVersion: currentVersion)
+                }
             }
         }.resume()
+    }
+
+    private enum CheckOutcome {
+        case success(AppReleaseUpdate?)
+        case failure(String)
+    }
+
+    private func finishCheck(_ outcome: CheckOutcome, currentVersion: String) {
+        isChecking = false
+        switch outcome {
+        case .success(let release):
+            lastCheckFailure = nil
+            var saved = loadState()
+            saved.cachedRelease = release
+            saveState(saved)
+            apply(release, currentVersion: currentVersion)
+        case .failure(let reason):
+            // Network and server failures retain a previously known update.
+            lastCheckFailure = reason
+        }
+        finishCheckCompletions()
+    }
+
+    nonisolated private static func resolveLatestReleasePage(
+        prefersBrowserEdition: Bool,
+        completion: @escaping (AppReleaseUpdate?) -> Void
+    ) {
+        var request = URLRequest(
+            url: latestReleasePageURL,
+            cachePolicy: .reloadIgnoringLocalCacheData,
+            timeoutInterval: 15)
+        request.httpMethod = "HEAD"
+        URLSession.shared.dataTask(with: request) { _, response, _ in
+            guard let response = response as? HTTPURLResponse,
+                  response.statusCode == 200, let finalURL = response.url else {
+                completion(nil)
+                return
+            }
+            completion(releaseFromTagPage(
+                finalURL, prefersBrowserEdition: prefersBrowserEdition))
+        }.resume()
+    }
+
+    /// Build an update from `https://github.com/<repo>/releases/tag/vX.Y.Z`.
+    /// Every release publishes stable-named archives with SHA-256 files, and
+    /// the download is still authenticated by checksum and signature.
+    nonisolated static func releaseFromTagPage(
+        _ url: URL,
+        prefersBrowserEdition: Bool
+    ) -> AppReleaseUpdate? {
+        let repository = ProductIdentity.current.githubRepository
+        let components = url.pathComponents
+        guard url.scheme?.lowercased() == "https",
+              url.host?.lowercased() == "github.com",
+              components.count == 6,
+              "\(components[1])/\(components[2])".lowercased() == repository.lowercased(),
+              components[3] == "releases", components[4] == "tag",
+              let version = normalizedVersion(components[5]) else { return nil }
+        let tag = components[5]
+        let name = "\(ProductIdentity.current.titleName) \(version)"
+        #if arch(arm64)
+        let prefix = ProductIdentity.current.releaseAssetPrefix
+        let assetName = prefersBrowserEdition
+            ? "\(prefix)-browser-macOS-arm64.zip" : "\(prefix)-macOS-arm64.zip"
+        let root = "https://github.com/\(repository)/releases/download/\(tag)"
+        guard let assetURL = URL(string: "\(root)/\(assetName)"),
+              let checksumURL = URL(string: "\(root)/\(assetName).sha256") else { return nil }
+        return AppReleaseUpdate(
+            version: version, name: name, releaseURL: url,
+            assetURL: assetURL, assetName: assetName, checksumURL: checksumURL,
+            notes: "")
+        #else
+        return AppReleaseUpdate(
+            version: version, name: name, releaseURL: url,
+            assetURL: nil, assetName: nil, checksumURL: nil, notes: "")
+        #endif
     }
 
     nonisolated static func isVersion(_ candidate: String, newerThan installed: String) -> Bool {
