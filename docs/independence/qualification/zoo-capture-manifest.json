@@ -1,8 +1,8 @@
 {
   "appBinary": {
     "name": "cmdy",
-    "sha256": "9627ff72279d8e20f5f01235b6053a93cf25182bb859d5efa369b1c2b3e18320",
-    "size": 14507272
+    "sha256": "52b0f91668e3161866a25df7a956bd26fd021317785d696e07c1d67d1579e3e0",
+    "size": 14518008
   },
   "captureCount": 14,
   "captures": [
@@ -17,104 +17,104 @@
     {
       "file": "01-vim-open.png",
       "height": 1080,
-      "sha256": "c1e8854ecdac790c3aa4df59c1ad410b5fc25d54cfb16cf0993e82bdd99f6420",
-      "size": 186089,
+      "sha256": "7a7aa183e28ae3b798f50b8e8babcb76890befb489cf3157c5690c5f581cd554",
+      "size": 186066,
       "stationID": "01-vim-open",
       "width": 1720
     },
     {
       "file": "02-vim-scrolled.png",
       "height": 1080,
-      "sha256": "ebd562db982e6e4c481f9b6a2f60876e3bf4f79c5aedf2e226ac83d89301e6f7",
-      "size": 159252,
+      "sha256": "2c02594f6dea8d43939dac2efb2b752460bf8c32545966615b2a17c9cb913602",
+      "size": 159242,
       "stationID": "02-vim-scrolled",
       "width": 1720
     },
     {
       "file": "03-vim-split.png",
       "height": 1080,
-      "sha256": "f911e0f73d54a15b1dd7bd3618cb7fcb7646b4fd18800fc020b81d3a26abcb3a",
-      "size": 165406,
+      "sha256": "ab44d4e6134114bb0d12172f4e7775fab6ca9d3ee7937003d4772006b6d5f4a0",
+      "size": 165339,
       "stationID": "03-vim-split",
       "width": 1720
     },
     {
       "file": "04-man.png",
       "height": 1080,
-      "sha256": "098f76e6f45964ee13d379df2aa347aeb6093a4b578e644e6f5935018651a2f1",
-      "size": 184498,
+      "sha256": "4778cce3d5fb289bdedd3a953231debb511312eb32da571177b82955c4ae6439",
+      "size": 184455,
       "stationID": "04-man",
       "width": 1720
     },
     {
       "file": "05-less.png",
       "height": 1080,
-      "sha256": "f774616a1709299fd7328521ad1b606665141dd736ba81446e4421a94f212958",
-      "size": 75909,
+      "sha256": "92b36cbca09f89eb4c2920d7a8bf6c431c1088f3ac47e976dc3edfa73be6e81a",
+      "size": 75897,
       "stationID": "05-less",
       "width": 1720
     },
     {
       "file": "06-less-end.png",
       "height": 1080,
-      "sha256": "58cc8422216f8e484f7f2b33081608ea7d53465ad20701fde0678df260021e5b",
-      "size": 93999,
+      "sha256": "facbb7c2481895e52846595679f3c1191d9d23f6467149aa46716156e0ac4901",
+      "size": 93984,
       "stationID": "06-less-end",
       "width": 1720
     },
     {
       "file": "07-htop.png",
       "height": 1080,
-      "sha256": "fad340923498f273aa23f82de1d2b6c4f7c618201d963b6155787f42a7b5e95e",
-      "size": 377089,
+      "sha256": "7424aebe5c610b617a6adcf617a741ef437ecdb9324fb82b0eb3efdb69699890",
+      "size": 372327,
       "stationID": "07-htop",
       "width": 1720
     },
     {
       "file": "08-tmux.png",
       "height": 1080,
-      "sha256": "85d0292a38982462b892557fe167a3ca0613b236db8b9841ca35812bc39b1b4f",
-      "size": 73456,
+      "sha256": "0ac2914120ea05ba3602360ad5e697560271a4969d1915ee4b0ed2f02e38f381",
+      "size": 73440,
       "stationID": "08-tmux",
       "width": 1720
     },
     {
       "file": "09-tmux-echo.png",
       "height": 1080,
-      "sha256": "2474605b3002fefdefcfedf854dfc7ad5df268c875ae33f347eb418a2501ecc8",
-      "size": 90105,
+      "sha256": "a60e8b3786625a1a4048ee4500088bd98d5713b652342d38a7a5ca3cb3d370ac",
+      "size": 90089,
       "stationID": "09-tmux-echo",
       "width": 1720
     },
     {
       "file": "10-tmux-split.png",
       "height": 1080,
-      "sha256": "c0ccd3b2bd28e7d7597a75ade4a0819369fffb8390d140091dc188184ef4c6f4",
-      "size": 94413,
+      "sha256": "16d4e85a6b04d3a3c272fa8c36936dc5dc8ebe3dff9c5417ac68838388d75d95",
+      "size": 94594,
       "stationID": "10-tmux-split",
       "width": 1720
     },
     {
       "file": "11-cat-10mb.png",
       "height": 1080,
-      "sha256": "20d197374d78f3653af0e96227e86bbb719c69460f2979affb4617cf5be01e1d",
-      "size": 493716,
+      "sha256": "bcefbdef3e52717c9f1cffbb5c308c71966844ae882168a3897e65d5b772aaff",
+      "size": 493586,
       "stationID": "11-cat-10mb",
       "width": 1720
     },
     {
       "file": "12-claude-code.png",
       "height": 1080,
-      "sha256": "243607327299d660632b264df13d3ab7498ddf0d2005659e50979e78a8476d01",
-      "size": 123810,
+      "sha256": "ea8190d5661a031b09321a9fe8219c395a04aad5e152b1e2c47709a6597eefd4",
+      "size": 110919,
       "stationID": "12-claude-code",
       "width": 1720
     },
     {
       "file": "99-shell-after.png",
       "height": 1080,
-      "sha256": "27efce5131867566f392c5de7a9197fdf402472a532a97313ac3ea10b42d6821",
-      "size": 480575,
+      "sha256": "b0a5fd88c9506efa19b07c17803565a8ad782a6fe56e338e38ab3468ae8cd2f1",
+      "size": 480456,
       "stationID": "99-shell-after",
       "width": 1720
     }

@@ -5,7 +5,7 @@
       "exceptions": [],
       "log": {
         "path": "docs/independence/qualification/performance-normal.log",
-        "sha256": "b8349834a1d2d882b8ce01aa46dde82bd9997cb3b1af5c3afc5e13066bad0aae"
+        "sha256": "18eab6d8e437102eda25297d23dabcc234c65761185ac1fb908c4e3ef8f5b982"
       },
       "mode": "normal",
       "passed": true,
@@ -15,7 +15,7 @@
       "exceptions": [],
       "log": {
         "path": "docs/independence/qualification/performance-maximized.log",
-        "sha256": "f7fcf859c2825c75e65f64c56ca818befe867153bcc59601a7d3d308fab6fcba"
+        "sha256": "4378fbecee7049c9479364545286d7636e4e4487712786d83a06cc215f16934a"
       },
       "mode": "maximized",
       "passed": true,
@@ -26,34 +26,34 @@
     "exceptions": [],
     "log": {
       "path": "docs/independence/qualification/resource-plateau.log",
-      "sha256": "6880fd2dd7863b0607246ed4a17b289d38d82719712d1f46da458d856fd0f7fd"
+      "sha256": "192438ac0a1b3293864f4195af7fd63a6caeebe5df13e161616c4b541c76fad7"
     },
     "monotonicGrowth": false,
     "passed": true,
     "runs": 3,
-    "scriptSha256": "fac26205a44b8843a1271fc368a604a947c35d1fe76ff1c2e7ade95ba632781a",
+    "scriptSha256": "adaa9dd39073f95e6d9a7e9c4a4487d7c702310c954deb4652f179f3435b0091",
     "zombieCount": 0
   },
   "review": {
     "decision": "approved",
-    "reference": "cmdy 1.0.8 owner approval ('yes to all'); contact-sheet-sha256:036734780fc5f1d4e5f8cb90676133fd66c94e2a75cdbf5bc5eb266bb3a17b96; rebound 2026-10-11 to the package.sh cleanup fix (app binary and evidence unchanged)",
-    "reviewedAtUTC": "2026-10-11T22:19:20Z",
+    "reference": "cmdy 1.0.9 owner approval ('yes, go!'); contact-sheet-sha256:7333defbd985eac38fd635b711178840e12e1a044a5503f5fc2c45e81ddf600c; the first normal-window perf run missed idle frames 3 > 2 once and the full gate was rerun (18/18, kept beside the evidence)",
+    "reviewedAtUTC": "2026-10-14T11:02:27Z",
     "reviewerName": "Andreas Pihlström"
   },
   "schemaVersion": 1,
-  "sourceManifestSha256": "523423b311797a1284d2eb132e3a9fd6abd20e99fd26a0af89b266130976d002",
+  "sourceManifestSha256": "8bea34eba5d9f1e505caceb0b6e64c0cfdce2f8cfa9e500105221559bd9cbb48",
   "zoo": {
     "captureCount": 14,
     "captureManifest": {
       "path": "docs/independence/qualification/zoo-capture-manifest.json",
-      "sha256": "e4c76d2a553283fd1d9de319c836ba02d7ed8eee0bf50ff356222b30e2a11060"
+      "sha256": "5242d774696f3f075a42da5148eaf79d4d2dbd28e542947f7bc207f9063c5123"
     },
     "exceptions": [],
     "passed": true,
     "scriptSha256": "4a9f9d67c46556f38eeb0df5689315b89da35a957b1bab0adaf574301bf75d2b",
     "visualReview": {
       "path": "docs/independence/qualification/zoo-visual-review.json",
-      "sha256": "3957916f3e9c08495c493dc4f27f492075ac8053dbf2b691435a8ad9768a013d"
+      "sha256": "b3f5b9d7093b3f2f5002d3f7b392fabcdfa7e36c7a69dce2840e175c6a31a8ac"
     }
   }
 }

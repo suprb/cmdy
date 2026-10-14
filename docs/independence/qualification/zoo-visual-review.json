@@ -1,9 +1,9 @@
 {
   "decision": "approved",
   "kind": "cmdy-tui-zoo-visual-review",
-  "manifestSHA256": "e4c76d2a553283fd1d9de319c836ba02d7ed8eee0bf50ff356222b30e2a11060",
-  "notes": "Approved by the project owner ('yes to all') after the 14-station 1.0.8 contact sheet with SHA-256 036734780fc5f1d4e5f8cb90676133fd66c94e2a75cdbf5bc5eb266bb3a17b96 was presented for review.",
-  "reviewedAt": "2026-10-11T22:19:20Z",
+  "manifestSHA256": "5242d774696f3f075a42da5148eaf79d4d2dbd28e542947f7bc207f9063c5123",
+  "notes": "Approved by the project owner ('yes, go!') for the 1.0.9 release; the 14-station 1.0.9 contact sheet with SHA-256 7333defbd985eac38fd635b711178840e12e1a044a5503f5fc2c45e81ddf600c was presented in the release conversation.",
+  "reviewedAt": "2026-10-14T11:02:27Z",
   "reviewer": "Andreas Pihlström",
   "schemaVersion": 1
 }

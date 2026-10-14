@@ -34,7 +34,7 @@
     },
     {
       "path": "App/BlockOverlayView.swift",
-      "sha256": "267e62b0f4d8e451094cde8378f3b1cdfc5cf4da9793e47e68067a47ae8a6065"
+      "sha256": "f05f9e94674edeef05ca45234ffc15aec19ca484a8c16a490f684b58cf11ba00"
     },
     {
       "path": "App/ChannelManagerWindow.swift",
@@ -102,7 +102,7 @@
     },
     {
       "path": "App/CmdySnapshotShaper.swift",
-      "sha256": "2d4b7ef5ff5feade4bd33f7cfcace6f44bde6d89c2ba29d50e375d0a6c02430f"
+      "sha256": "a4e09f51fa094c1a778d26dbd30d831a932da30178c773f350aeb490898bfa52"
     },
     {
       "path": "App/CmdySurfaceContractHarness.swift",
@@ -190,7 +190,7 @@
     },
     {
       "path": "App/SelfTest.swift",
-      "sha256": "fec977dc90f99f8f556953eb579b7f3f4d7ce8a94eaeb04f597c789e51c503d1"
+      "sha256": "1e877e65144137881daffc282d28e580e1483e15a19adac6a8854a13cd16fbe7"
     },
     {
       "path": "App/SessionLifecycle.swift",
@@ -230,11 +230,11 @@
     },
     {
       "path": "App/TerminalModel.swift",
-      "sha256": "5ecaa423bbaf347288aa88e08103f6795340314a0b1afeea68579fec159b2f6d"
+      "sha256": "421033454da943bafec5e0f35ca25471e323d403f05b53a8d4c89d251f3e6955"
     },
     {
       "path": "App/TerminalPane.swift",
-      "sha256": "fc2d6070d1878ae6c699a11985e2594e9ae2a25ed452f9614dbae35748262791"
+      "sha256": "7620e5f9ff7d0736328fc65346b5b60a92d4c3ce4e917c3794bd84e2bfb6fea2"
     },
     {
       "path": "App/TerminalScreenExport.swift",
@@ -414,7 +414,7 @@
     },
     {
       "path": "Core/Sources/CmdyCoreZig/CmdyTerminal.swift",
-      "sha256": "7b96d2c536b5cbfdd7483438f213b04412d5b918458b80ec3bf7d54c1834ef42"
+      "sha256": "d59d9cab5e67edaa5fba82ab47b95e341078e0ab7b6e6127543e114868538394"
     },
     {
       "path": "Core/Sources/CmdyCoreZig/CmdyUnicodeWidthPolicy.swift",
@@ -442,7 +442,7 @@
     },
     {
       "path": "Core/Sources/CmdyCoreZig/LineImage.swift",
-      "sha256": "9c586a9984f6f95b54efb35c8503622e3b3b860192ec071bdd0b28595ec5281a"
+      "sha256": "e1cba5eb25250b83197289d9af151f06ddca1196329b5ff47cc6e02480162a99"
     },
     {
       "path": "Core/Sources/CmdyCoreZig/NativeOwner.swift",
@@ -466,7 +466,7 @@
     },
     {
       "path": "Core/Sources/CmdyCoreZig/SnapshotValues.swift",
-      "sha256": "81068668b23bd9ca90a97305156e8f6531b1a2224e747f5f1e9eb26a95e40969"
+      "sha256": "bc5159844d240499323a7489dc2f08139c732a78feff71325e9437d7a2d57fee"
     },
     {
       "path": "Core/Sources/CmdyCoreZig/TerminalGraphics.swift",
@@ -502,7 +502,7 @@
     },
     {
       "path": "Core/Sources/CmdyNative/include/cmdy_images.h",
-      "sha256": "80db3d3f7e73ba777adbc981622b9f5b17647fa1c745cc3aa5eee7a971de2a85"
+      "sha256": "2a6d5af65a52aa9549fe4b6e504dad1657909d3fc04da3e7a4de95b15ad565b6"
     },
     {
       "path": "Core/Sources/CmdyNative/include/cmdy_legacy.h",
@@ -538,7 +538,7 @@
     },
     {
       "path": "Core/Sources/CmdyNative/include/cmdy_render_gpu.h",
-      "sha256": "b3d2a0d7ec3188bbb296deb6d012ddfae94b0f0fc79a0b59dabf04c1c556d430"
+      "sha256": "350a686b08042fa4d4790020b423df194e1a25cc0f25c0c2fa5884039092e5ae"
     },
     {
       "path": "Core/Sources/CmdyNative/include/cmdy_render_image_bridge.h",
@@ -658,11 +658,11 @@
     },
     {
       "path": "Core/Zig/graphics.zig",
-      "sha256": "e4a356b7a2a64797aa6221e689763e067ad72a97ba32989d304e2851a7e9b987"
+      "sha256": "15b05e3eea9081be8cea1cdc35326c5c9ea013820ac7fcb202d52e7a107d8742"
     },
     {
       "path": "Core/Zig/image_abi.zig",
-      "sha256": "3e8605e58adb6d78022673e891207bce9bfb416f12718c35b5cc345945052729"
+      "sha256": "7b747577c2f7780243dc33fcb47b5d50fbab3f617f0b293a0c4611dbd20a9c79"
     },
     {
       "path": "Core/Zig/legacy_abi.zig",
@@ -722,7 +722,7 @@
     },
     {
       "path": "Core/Zig/render_cache.zig",
-      "sha256": "c3f7e0b37acfbf1814a7c43bb24296e226ce34e78b53acc01ed062213a98eea3"
+      "sha256": "cad39cc54c36cc25a64feb4f5d6fe3f005cd922b2f0afe52a535ed75d4ce0833"
     },
     {
       "path": "Core/Zig/render_cache_glyph.zig",
@@ -778,7 +778,7 @@
     },
     {
       "path": "Core/Zig/render_gpu_frame.zig",
-      "sha256": "a2aa83956f07a9b895446be491d0ceb304df3171d8d4a05908647b2b021293da"
+      "sha256": "45ec409c8072ac9906402f443cfc93792d97ce5fcf1fc2b9bee7768bdb43a16f"
     },
     {
       "path": "Core/Zig/render_gpu_target.zig",
@@ -958,7 +958,7 @@
     },
     {
       "path": "Core/Zig/terminal_protocols.zig",
-      "sha256": "a31924abf44782c346f3635255700f4a3631faabd7234f8d2fb2115983844776"
+      "sha256": "694763ab0344171369d78195abb9b30cbabec31998ba8d2ad6ff55f9a93d1f76"
     },
     {
       "path": "Core/Zig/terminal_protocols_abi.zig",
@@ -1306,11 +1306,11 @@
     },
     {
       "path": "Renderer/Sources/CmdyGPUZig/ProducerFrameCapture.swift",
-      "sha256": "c10aa73fa203ea363bf86d7740bd6f564845e7bd838c1e6345651f53e946f76d"
+      "sha256": "b296683ff5c05c35d3ba05962247633aef2eb0e55ce77530bd67d891f62d1301"
     },
     {
       "path": "Renderer/Sources/CmdyGPUZig/RenderContract.swift",
-      "sha256": "6d12a5f6accc6dcb4d3992eafd5595fe44ee277983439405b1023dddda7a10c2"
+      "sha256": "10a81f49a047d8bf36ad28ee7e5b00147a027c3af1ae17bd79edcbb3b77f1887"
     },
     {
       "path": "Renderer/Sources/CmdyGPUZig/RenderUpdateMailbox.swift",
@@ -1841,20 +1841,20 @@
       "active": "App/CmdySnapshotShaper.swift",
       "activeLines": [
         278,
-        286
+        285
       ],
       "classificationId": "retained-cmdysnapshotshaper-from-termitecoreshaping",
       "disposition": "cmdy-original-retained-source",
-      "fingerprint": "06e90879e7f6741586b6fade07b600159ccf5d182a8c2e73be68d052e9f61244",
+      "fingerprint": "10c3df4761423172c273d05598d3a8a651a883c48eac4c039c314545eeffadb6",
       "historical": "App/TermiteCoreShaping.swift",
       "historicalLines": [
         404,
-        413
+        411
       ],
       "mode": "exact",
       "origin": "retired",
       "rationale": "Hash-pinned Cmdy source carried forward from the retired Cmdy implementation; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
-      "tokenCount": 42
+      "tokenCount": 33
     },
     {
       "active": "App/CmdyTerminalSurface.swift",
@@ -2068,8 +2068,8 @@
     {
       "active": "App/TerminalModel.swift",
       "activeLines": [
-        572,
-        581
+        573,
+        582
       ],
       "classificationId": "retired-app-model-cursor-style-projection",
       "disposition": "data-plumbing",
@@ -4405,8 +4405,8 @@
     {
       "active": "Core/Sources/CmdyCoreZig/CmdyTerminal.swift",
       "activeLines": [
-        394,
-        420
+        395,
+        421
       ],
       "classificationId": "retained-cmdyterminal-from-termiteterminal",
       "disposition": "cmdy-original-retained-source",
@@ -4424,8 +4424,8 @@
     {
       "active": "Core/Sources/CmdyCoreZig/CmdyTerminal.swift",
       "activeLines": [
-        422,
-        434
+        423,
+        435
       ],
       "classificationId": "retained-cmdyterminal-from-termiteterminal",
       "disposition": "cmdy-original-retained-source",
@@ -4728,27 +4728,84 @@
     {
       "active": "Core/Sources/CmdyCoreZig/SnapshotValues.swift",
       "activeLines": [
-        192,
-        254
+        206,
+        223
       ],
       "classificationId": "retained-snapshotvalues-from-termiteterminal",
       "disposition": "cmdy-original-retained-source",
-      "fingerprint": "f6cf8d7eef0e496c2fea2018863db2bb1fde37df63746cffdabd0d9df325339b",
+      "fingerprint": "940cf95cf910bf9b131d1a39d28a81ac19727432844a9097100109748c60c5a9",
       "historical": "Core/Sources/TermiteCore/TermiteTerminal.swift",
       "historicalLines": [
         951,
+        969
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned Cmdy source carried forward from the retired Cmdy implementation; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 68
+    },
+    {
+      "active": "Core/Sources/CmdyCoreZig/SnapshotValues.swift",
+      "activeLines": [
+        225,
+        229
+      ],
+      "classificationId": "retained-snapshotvalues-from-termiteterminal",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "1626d5d94ff2b7938410c70be2f4d9d23c2785cdd274d6c1f68a6403954970b8",
+      "historical": "Core/Sources/TermiteCore/TermiteTerminal.swift",
+      "historicalLines": [
+        969,
+        973
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned Cmdy source carried forward from the retired Cmdy implementation; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 50
+    },
+    {
+      "active": "Core/Sources/CmdyCoreZig/SnapshotValues.swift",
+      "activeLines": [
+        230,
+        241
+      ],
+      "classificationId": "retained-snapshotvalues-from-termiteterminal",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "1ad9bb0b399e0e503aa2bc017d4565ae87ba0803b474e1e033830321a8b048bd",
+      "historical": "Core/Sources/TermiteCore/TermiteTerminal.swift",
+      "historicalLines": [
+        973,
+        984
+      ],
+      "mode": "exact",
+      "origin": "retired",
+      "rationale": "Hash-pinned Cmdy source carried forward from the retired Cmdy implementation; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
+      "tokenCount": 57
+    },
+    {
+      "active": "Core/Sources/CmdyCoreZig/SnapshotValues.swift",
+      "activeLines": [
+        243,
+        271
+      ],
+      "classificationId": "retained-snapshotvalues-from-termiteterminal",
+      "disposition": "cmdy-original-retained-source",
+      "fingerprint": "9e696d01bb7c181a0da32ad6119b9f459941032a46451be50c917b42a04afbfc",
+      "historical": "Core/Sources/TermiteCore/TermiteTerminal.swift",
+      "historicalLines": [
+        985,
         1013
       ],
       "mode": "exact",
       "origin": "retired",
       "rationale": "Hash-pinned Cmdy source carried forward from the retired Cmdy implementation; comparison with the initial Vendor import has no unresolved substantive Vendor match.",
-      "tokenCount": 273
+      "tokenCount": 99
     },
     {
       "active": "Core/Sources/CmdyCoreZig/SnapshotValues.swift",
       "activeLines": [
-        262,
-        279
+        279,
+        296
       ],
       "classificationId": "retained-snapshotvalues-from-termiteterminal",
       "disposition": "cmdy-original-retained-source",
@@ -7141,8 +7198,8 @@
     {
       "active": "Renderer/Sources/CmdyGPUZig/RenderContract.swift",
       "activeLines": [
-        104,
-        111
+        116,
+        123
       ],
       "classificationId": "retired-port-rendercontract-rendertypes",
       "disposition": "api-declaration",
@@ -7160,8 +7217,8 @@
     {
       "active": "Renderer/Sources/CmdyGPUZig/RenderContract.swift",
       "activeLines": [
-        111,
-        119
+        123,
+        131
       ],
       "classificationId": "retained-rendercontract-from-rendertypes",
       "disposition": "cmdy-original-retained-source",
@@ -7179,8 +7236,8 @@
     {
       "active": "Renderer/Sources/CmdyGPUZig/RenderContract.swift",
       "activeLines": [
-        125,
-        152
+        137,
+        164
       ],
       "classificationId": "retained-rendercontract-from-rendertypes",
       "disposition": "cmdy-original-retained-source",
@@ -7198,8 +7255,8 @@
     {
       "active": "Renderer/Sources/CmdyGPUZig/RenderContract.swift",
       "activeLines": [
-        181,
-        207
+        193,
+        219
       ],
       "classificationId": "retired-port-rendercontract-rendertypes-2",
       "disposition": "api-declaration",
@@ -7217,8 +7274,8 @@
     {
       "active": "Renderer/Sources/CmdyGPUZig/RenderContract.swift",
       "activeLines": [
-        210,
-        221
+        222,
+        233
       ],
       "classificationId": "retired-port-rendercontract-rendertypes-3",
       "disposition": "data-plumbing",
@@ -7236,8 +7293,8 @@
     {
       "active": "Renderer/Sources/CmdyGPUZig/RenderContract.swift",
       "activeLines": [
-        243,
-        261
+        255,
+        273
       ],
       "classificationId": "retired-port-rendercontract-rendertypes-4",
       "disposition": "api-declaration",
@@ -7255,8 +7312,8 @@
     {
       "active": "Renderer/Sources/CmdyGPUZig/RenderContract.swift",
       "activeLines": [
-        271,
-        302
+        283,
+        314
       ],
       "classificationId": "retired-port-rendercontract-rendertypes-5",
       "disposition": "api-declaration",
@@ -7282,13 +7339,13 @@
       "sourceCount": 111
     }
   },
-  "reportSHA256": "cc9f6a75fe4c069e1327703c8588cd82427988877748f959943d931cfb1c44fd",
+  "reportSHA256": "3a7c606541eab0d60a52989e175241cb95aefbcf5fa37985f54441ca17d4f0e5",
   "schemaVersion": 2,
   "summary": {
     "activeSourceCount": 335,
-    "classifiedMatchCount": 312,
+    "classifiedMatchCount": 315,
     "issueCount": 0,
-    "matchCount": 312,
+    "matchCount": 315,
     "ok": true,
     "unresolvedMatchCount": 0
   },
