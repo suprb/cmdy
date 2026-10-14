@@ -1076,6 +1076,8 @@ final class CmdyTerminalSurface: NSView,
         clearGesture()
         let local = convert(event.locationInWindow, from: nil)
         guard let point = gridPoint(at: local, clamp: false) else {
+            // A click in the padding outside the grid still dismisses a selection.
+            if selectionAnchor != nil { clearSelection(notify: true) }
             super.mouseDown(with: event)
             return
         }
@@ -1111,6 +1113,10 @@ final class CmdyTerminalSurface: NSView,
               let point = gridPoint(
                 at: convert(event.locationInWindow, from: nil), clamp: true)
         else { return }
+        // Trackpad clicks wobble by a pixel or two; staying in the pressed
+        // cell is still a click, not the start of a selection.
+        if !gestureDragged,
+           point.absoluteRow == origin.absoluteRow, point.col == origin.col { return }
         let beganTrackedDrag = gestureReportsMouse
         if gestureReportsMouse {
             gestureReportsMouse = false
@@ -1133,6 +1139,8 @@ final class CmdyTerminalSurface: NSView,
         let final = gridPoint(
             at: convert(event.locationInWindow, from: nil), clamp: true) ?? origin
         if gestureReportsMouse && !gestureDragged {
+            // A plain click dismisses a selection even when the app tracks the mouse.
+            if selectionAnchor != nil { clearSelection(notify: true) }
             let modifiers = mouseModifiers(event.modifierFlags)
             terminal.sendMouseEvent(button: 0, pressed: true, motion: false,
                                     modifiers: modifiers,

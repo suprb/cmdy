@@ -637,6 +637,19 @@ enum SelfTest {
                 && selectionSurface.selectedText() == completedSelection,
               "selection: unrelated window drag cannot extend completed selection")
 
+        // A click that wobbles inside the pressed cell is still a click: it
+        // dismisses the selection instead of leaving a one-cell selection.
+        selectionSurface.mouseDown(with: mouseEvent(
+            .leftMouseDown, NSPoint(x: selectionSurface.cellSize.width * 2.3, y: firstRowY)))
+        selectionSurface.mouseDragged(with: mouseEvent(
+            .leftMouseDragged,
+            NSPoint(x: selectionSurface.cellSize.width * 2.6, y: firstRowY + 1)))
+        selectionSurface.mouseUp(with: mouseEvent(
+            .leftMouseUp,
+            NSPoint(x: selectionSurface.cellSize.width * 2.6, y: firstRowY + 1)))
+        check(selectionSurface.selectedText().isEmpty,
+              "selection: a click that wobbles within one cell clears the selection")
+
         // Agent TUIs enable primary-button mouse reporting. A normal click
         // still belongs to the TUI, but a drag must remain the familiar native
         // select/copy gesture instead of disappearing into SGR mouse events.
@@ -662,14 +675,18 @@ enum SelfTest {
         reportedMouseBytes.removeAll()
         selectionSurface.mouseDown(with: mouseEvent(
             .leftMouseDown, NSPoint(x: 1, y: firstRowY)))
+        selectionSurface.mouseDragged(with: mouseEvent(
+            .leftMouseDragged, NSPoint(x: 2, y: firstRowY + 1)))
         selectionSurface.mouseUp(with: mouseEvent(
-            .leftMouseUp, NSPoint(x: 1, y: firstRowY)))
+            .leftMouseUp, NSPoint(x: 2, y: firstRowY + 1)))
         RunLoop.current.run(until: Date().addingTimeInterval(0.02))
         let reportedClick = String(decoding: reportedMouseBytes, as: UTF8.self)
         check(reportedClick.contains("\u{1b}[<0;")
                 && reportedClick.contains("M")
                 && reportedClick.contains("m"),
               "agent mouse mode: a plain click still reaches the TUI")
+        check(selectionSurface.selectedText().isEmpty,
+              "agent mouse mode: a plain click dismisses the local selection")
         selectionSurface.feed(text: "\u{1b}[?1000l\u{1b}[?1006l")
         selectionSurface.onSendToProcess = nil
 
