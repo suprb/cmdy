@@ -130,6 +130,19 @@ final class GraphicsSafetyTests: XCTestCase {
         XCTAssertEqual(images().map(\.row).sorted(), [0, 5])
     }
 
+    func testKittyExplicitPlacementDoesNotMoveImplicitlyNumberedDisplay() {
+        let terminal = CmdyTerminal(cols: 4, rows: 6)
+        func rows() -> [Int] {
+            (0..<terminal.rows).filter { row in
+                !(terminal.lineForDiff(absolute: terminal.liveScreenTopRow + row)?.images ?? []).isEmpty
+            }
+        }
+        // a=T without p= is numbered by the store; an explicit p=1 is a separate placement.
+        terminal.feed(text: "\u{1b}[5;4H\u{1b}_Ga=T,f=32,s=1,v=1,i=3,q=2;/wAA/w==\u{1b}\\")
+        terminal.feed(text: "\u{1b}[1;4H\u{1b}_Ga=p,i=3,p=1,c=1,r=1,q=2;\u{1b}\\")
+        XCTAssertEqual(rows(), [0, 4])
+    }
+
     func testKittyAPCDispatchesAtStringTerminatorEscapePrefix() {
         let terminal = CmdyTerminal(cols: 12, rows: 6)
         let firstChunk = Array(

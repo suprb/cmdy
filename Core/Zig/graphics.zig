@@ -249,6 +249,8 @@ pub const Placement = struct {
     offset_y: isize = 0,
     is_virtual: bool = false,
     is_alternate_buffer: bool = false,
+    /// False when the store assigned the id; only client-chosen ids can be re-placed.
+    has_explicit_id: bool = false,
 
     pub fn key(self: Placement) u64 { return placementKey(self.image_id, self.placement_id); }
 };
@@ -926,14 +928,16 @@ pub const KittyEngine = struct {
             attachment.?.source_width = control.source_width;
             attachment.?.source_height = control.source_height;
         }
-        const previous = self.store.placements_by_key.get(placementKey(image.id, placement_id));
+        // An implicit id can equal a later explicit p=, but that is a new placement, not a move.
+        const previous = if (control.placement_id == 0) null else self.store.placements_by_key.get(placementKey(image.id, placement_id));
         _ = try self.store.place(.{ .image_id = image.id, .placement_id = placement_id,
             .col = cursor.col, .row = cursor.row, .cols = cols, .rows = rows,
             .z_index = control.z_index, .offset_x = control.offset_x, .offset_y = control.offset_y,
-            .is_virtual = control.virtual_placement, .is_alternate_buffer = cursor.is_alternate_buffer });
+            .is_virtual = control.virtual_placement, .is_alternate_buffer = cursor.is_alternate_buffer,
+            .has_explicit_id = control.placement_id != 0 });
         return .{ .image_id = image.id, .placement_id = placement_id, .is_virtual = control.virtual_placement,
             .cols = cols, .rows = rows, .attachment = attachment,
-            .previous_row = if (previous) |value| (if (value.is_virtual) null else value.row) else null,
+            .previous_row = if (previous) |value| (if (value.is_virtual or !value.has_explicit_id) null else value.row) else null,
             .previous_is_alternate_buffer = if (previous) |value| value.is_alternate_buffer else false };
     }
 

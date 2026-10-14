@@ -146,6 +146,15 @@ class Case:
     payload: bytes
     chunks: tuple[int, ...]
     resize: tuple[int, int] | None = None
+    # Reviewed behavior change: the reference replays this payload instead.
+    reference_payload: bytes | None = None
+
+
+def reference_case(case: Case) -> Case:
+    if case.reference_payload is None:
+        return case
+    payload = case.reference_payload
+    return Case(case.name, case.cols, case.rows, payload, (len(payload),), case.resize)
 
 
 def nowrap_parked_dl_matrix_cases() -> Iterator[Case]:
@@ -2895,8 +2904,6 @@ def kitty_retransmit_line_generation_representative_cases() -> Iterator[Case]:
          two_positions(transmit_three, transmit_three, delete_three), (4, 1)),
         ("kitty-retransmit-invalid-control", 4, 6,
          two_positions(transmit_three, invalid_three), (4, 1)),
-        ("kitty-placement-same-id-control", 4, 6,
-         preload_three + two_positions(place_one, place_one), (4, 1)),
         ("kitty-placement-distinct-id-control", 4, 6,
          preload_three + two_positions(place_one, place_two), (4, 1)),
         ("kitty-transmit-then-place-control", 4, 6,
@@ -2904,6 +2911,14 @@ def kitty_retransmit_line_generation_representative_cases() -> Iterator[Case]:
     )
     for name, cols, rows, payload, resize in controls:
         yield Case(name, cols, rows, payload, (len(payload),), resize)
+    # Re-placing the same image and placement id replaces (moves) the
+    # placement, as the kitty graphics protocol specifies. The reference kept
+    # a stale copy at the old row (cmdy 1.0.9 review, herdr pane images), so
+    # it replays the same cursor motion with only the final placement.
+    same_id = preload_three + two_positions(place_one, place_one)
+    yield Case("kitty-placement-same-id-control", 4, 6, same_id,
+               (len(same_id),), (4, 1),
+               reference_payload=preload_three + two_positions(b"", place_one))
 
 
 def decbi_generated_blank_grapheme_matrix_cases() -> Iterator[Case]:
@@ -8689,7 +8704,7 @@ def main() -> int:
         digest = hashlib.sha256()
         progress_interval = max(100, len(cases) // 20)
         for index, case in enumerate(cases, 1):
-            expected = reference.run(case)
+            expected = reference.run(reference_case(case))
             actual = candidate.run(case)
             difference = first_difference(expected, actual)
             if difference:
