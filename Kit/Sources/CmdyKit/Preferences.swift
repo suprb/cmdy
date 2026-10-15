@@ -36,9 +36,8 @@ public final class Preferences {
         static let cursorStyle = "cursorStyle"
         static let cursorColorOverride = "cursorColorOverride"
         static let optionAsMeta = "optionAsMeta"
-        static let keymap = "keymap"
         static let copyOnSelect = "copyOnSelect"
-        static let omarchyModifier = "omarchyModifier"
+        static let paneKeyModifier = "paneKeyModifier"
         static let attentionSignals = "attentionSignals"
         static let shellIntegration = "shellIntegration"
         static let cleanPrompt = "cleanPrompt"
@@ -106,7 +105,7 @@ public final class Preferences {
             Key.cursorGlideSpeed: 1.6,
             Key.cursorGlideMaxDistance: 0.0,
             Key.smoothScroll: true,
-            Key.restoreSession: true,
+            Key.restoreSession: false,
             Key.automaticErrorHelp: true,
             Key.marketplaceUpdateChecks: true,
             Key.editor: ProductIdentity.current.slug,
@@ -218,36 +217,21 @@ public final class Preferences {
         set { guard newValue != attentionSignals else { return }
               d.set(newValue, forKey: Key.attentionSignals); sync("attention-signals", "\(newValue)"); changed() }
     }
-    /// Keyboard layer on top of the macOS defaults: "standard", or "omarchy"
-    /// for Omarchy's tmux/herdr pane, tab and window keys.
-    public static let keymaps = ["standard", "omarchy"]
-    public var keymap: String {
-        get {
-            let value = d.string(forKey: Key.keymap)?.lowercased() ?? "standard"
-            return Self.keymaps.contains(value) ? value : "standard"
-        }
-        set {
-            let value = newValue.lowercased()
-            guard Self.keymaps.contains(value), value != keymap else { return }
-            d.set(value, forKey: Key.keymap); sync("keymap", value); changed()
-        }
-    }
-    public var usesOmarchyKeys: Bool { keymap == "omarchy" }
-    /// The key Omarchy's no-prefix bindings hold: "alt" as in Omarchy, or
+    /// The key the no-prefix pane, tab and window keys hold: "alt", or
     /// "command", where Super sits on a Mac keyboard.
-    public static let omarchyModifiers = ["alt", "command"]
-    public var omarchyModifier: String {
+    public static let paneKeyModifiers = ["alt", "command"]
+    public var paneKeyModifier: String {
         get {
-            let value = d.string(forKey: Key.omarchyModifier)?.lowercased() ?? "alt"
-            return Self.omarchyModifiers.contains(value) ? value : "alt"
+            let value = d.string(forKey: Key.paneKeyModifier)?.lowercased() ?? "alt"
+            return Self.paneKeyModifiers.contains(value) ? value : "alt"
         }
         set {
             let value = newValue.lowercased()
-            guard Self.omarchyModifiers.contains(value), value != omarchyModifier else { return }
-            d.set(value, forKey: Key.omarchyModifier); sync("omarchy-modifier", value); changed()
+            guard Self.paneKeyModifiers.contains(value), value != paneKeyModifier else { return }
+            d.set(value, forKey: Key.paneKeyModifier); sync("pane-key-modifier", value); changed()
         }
     }
-    public var omarchyUsesCommand: Bool { omarchyModifier == "command" }
+    public var paneKeysUseCommand: Bool { paneKeyModifier == "command" }
     /// Copy a mouse selection to the clipboard as soon as it is made. On
     /// unless the config says otherwise.
     public var copyOnSelect: Bool {

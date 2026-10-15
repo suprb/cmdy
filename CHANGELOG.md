@@ -11,16 +11,22 @@ be called out here with a migration path before a versioned release.
 
 ## [Unreleased]
 
+### Changed
+
+- The pane, tab and window keys are built in and always on; the separate
+  keymap setting and its View → Terminal menu items are gone. The 1.0.10
+  modifier setting is now `pane-key-modifier = command` to hold ⌘ instead
+  of Alt.
+- Session restore is off by default: cmdy starts with one fresh window. Set
+  `restore-session = true` to bring windows, splits and scrollback back.
+
 ## [1.0.10] - 2026-10-15
 
 ### Added
 
-- Omarchy keys (View → Terminal → Omarchy Keys, or `keymap = omarchy`):
-  Omarchy's tmux/herdr pane, tab and window keys with the Ctrl+Space prefix,
-  including breaking a pane into a tab (`prefix !`) and joining it back
-  (`prefix @`), moving and renaming tabs, and switching windows.
-  `omarchy-modifier = command` (View → Terminal → Omarchy Keys on ⌘)
-  moves the Alt keys to ⌘, where Super sits on a Mac keyboard.
+- tmux-style pane, tab and window keys with the Ctrl+Space prefix, including
+  breaking a pane into a tab (`prefix !`) and joining it back (`prefix @`),
+  moving and renaming tabs, and switching windows; the Alt keys can move to ⌘.
 - Copy on select, on by default: a dragged, double-clicked or
   triple-clicked selection goes straight to the clipboard. Turn it off in
   View → Terminal → Copy on Select, or with `copy-on-select = false`.

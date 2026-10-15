@@ -71,12 +71,8 @@ extension ConfigFile {
                     if !["theme", "auto"].contains(lower), Theme.hex(value) == nil {
                         message = "Use theme or a color in #RRGGBB format."
                     }
-                case "keymap":
-                    if !Preferences.keymaps.contains(lower) {
-                        message = "Choose standard or omarchy."
-                    }
-                case "omarchy-modifier":
-                    if !Preferences.omarchyModifiers.contains(lower) {
+                case "pane-key-modifier":
+                    if !Preferences.paneKeyModifiers.contains(lower) {
                         message = "Choose alt or command."
                     }
                 case "cursor-style":

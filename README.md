@@ -179,7 +179,8 @@ without becoming overlapping authoring systems. Read [Build cmdy Extensions](EXT
 - **Ghost-text autocomplete**: fish-style dimmed suggestion from your history
   (~/.zsh_history + everything you run), drawn inline at the cursor — accept with →
 - **Session recovery**: windows, splits, directories, and recent scrollback are
-  checkpointed during use and on quit (`restore-session`). Recovery keeps a
+  checkpointed during use and on quit when `restore-session = true` (off by
+  default; cmdy starts with one fresh window). Recovery keeps a
   previous good snapshot and reports when it must use it. Transcript files are
   owner-only; restoring starts fresh shells, so previous processes are not running.
 - **Named Workspaces**: File → Workspaces can save a new snapshot, update it,
@@ -497,7 +498,7 @@ cursor-glide-max-distance = 0 # largest animated jump in cells; 0 = unlimited
 smooth-scroll = true
 ghost-text = true           # inline history suggestion, → to accept
 sounds = false              # SID keypress blips + error buzz
-restore-session = true      # bring everything back on launch
+restore-session = false     # true brings windows back on launch
 automatic-error-help = true # inline explanation + keyboard-reviewed fix
 marketplace-update-checks = true # daily only after a marketplace Extension install
 anthropic-api-key = sk-ant-…   # optional cloud fallback + Agent
@@ -563,14 +564,11 @@ replace macOS or existing cmdy shortcuts and have Undo and Reset. See the
 
 Themes, fonts, line spacing, cursor, and toggles also live in the **View** menu.
 
-### Omarchy keys
+### Pane, tab and window keys
 
-**View → Terminal → Omarchy Keys** (or `keymap = omarchy` in the config)
-adds the pane, tab, and window keys from Omarchy's tmux and herdr setup. A
-tmux pane is a cmdy split, a tmux window is a tab, and a tmux session is a
-window. `Ctrl+Space` is the prefix: press it, then the key. `Ctrl+Space ?`
-lists every key. With Omarchy Keys on, `Alt+←/→` switch tabs instead of
-moving the shell cursor by word.
+tmux-style keys for splits, tabs and windows. A tmux pane is a cmdy split, a
+tmux window is a tab, and a tmux session is a window. `Ctrl+Space` is the
+prefix: press it, then the key. `Ctrl+Space ?` lists every key.
 
 | Key | Action |
 |-----|--------|
@@ -590,12 +588,9 @@ moving the shell cursor by word.
 | `prefix C` / `K` | New / close window |
 | `prefix q` / `?` | Reload configuration / show keys |
 
-Omarchy holds `Alt` for these keys and keeps `Super` for the window manager.
-To use `⌘` where `Super` sits on a Mac keyboard, turn on **View → Terminal →
-Omarchy Keys on ⌘ (Super)** or set `omarchy-modifier = command`: every `Alt`
-key above moves to `⌘`, except `⌘←/→`, which still move to the start and end
-of the line (use `prefix p/n` or `⌘1…9` for tabs). `⌘Enter` then splits;
-fullscreen stays on `⌃⌘F`.
+`pane-key-modifier = command` moves every `Alt` key above to `⌘`, except
+`⌘←/→`, which still move to the start and end of the line (use `prefix p/n` or
+`⌘1…9` for tabs). `⌘Enter` then splits; fullscreen stays on `⌃⌘F`.
 
 ## Record a feature tour
 

@@ -24,7 +24,7 @@ final class StandardKeybindings {
         case startSearch, searchSelection, endSearch, searchNext, searchPrevious
         case inspector
         case send(String)
-        // Omarchy keymap (OmarchyKeymap.swift).
+        // Pane, tab and window keys (PaneKeys.swift).
         case resizeCells(TerminalWindowController.PaneDirection, Int)
         case lastPane, breakPaneToTab, joinTabLeft
         case moveTab(Int), renameTab, switchWindow(Int), keymapHelp
@@ -34,7 +34,7 @@ final class StandardKeybindings {
     private var monitor: Any?
     private var importedMappings:
         [CMDYKeybindingShortcut: CMDYKeybindingCommand] = [:]
-    /// Set after Ctrl+Space with the Omarchy keymap; the next key is a prefix key.
+    /// Set after Ctrl+Space; the next key is a prefix key.
     private(set) var prefixArmed = false
 
     init(delegate: AppDelegate,
@@ -57,7 +57,7 @@ final class StandardKeybindings {
             // Modifier-only presses do not reach a keyDown monitor; any other
             // key completes the prefix, bound or not, as in tmux.
             prefixArmed = false
-            guard let action = OmarchyKeymap.afterPrefix(
+            guard let action = PaneKeys.afterPrefix(
                 keyCode: event.keyCode,
                 characters: event.charactersIgnoringModifiers ?? "",
                 modifiers: event.modifierFlags) else {
@@ -72,21 +72,19 @@ final class StandardKeybindings {
            let action = Self.action(for: command) {
             return perform(action, event: event)
         }
-        if Preferences.shared.usesOmarchyKeys {
-            if OmarchyKeymap.isPrefix(keyCode: event.keyCode, modifiers: event.modifierFlags),
-               terminalHasFocus(event) {
-                prefixArmed = true
-                return true
-            }
-            // A bound key with nothing to act on (one tab, no neighbor pane)
-            // does nothing, as in tmux, instead of reaching the shell.
-            if let action = OmarchyKeymap.root(
-                keyCode: event.keyCode, modifiers: event.modifierFlags,
-                usesCommand: Preferences.shared.omarchyUsesCommand),
-               terminalHasFocus(event) {
-                _ = perform(action, event: event)
-                return true
-            }
+        if PaneKeys.isPrefix(keyCode: event.keyCode, modifiers: event.modifierFlags),
+           terminalHasFocus(event) {
+            prefixArmed = true
+            return true
+        }
+        // A bound key with nothing to act on (one tab, no neighbor pane)
+        // does nothing, as in tmux, instead of reaching the shell.
+        if let action = PaneKeys.root(
+            keyCode: event.keyCode, modifiers: event.modifierFlags,
+            usesCommand: Preferences.shared.paneKeysUseCommand),
+           terminalHasFocus(event) {
+            _ = perform(action, event: event)
+            return true
         }
         guard let action = Self.resolve(event) else { return false }
         return perform(action, event: event)

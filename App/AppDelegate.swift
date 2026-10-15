@@ -374,12 +374,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             runWindowGridStressSmokeTest()
         } else if CommandLine.arguments.contains("--ui-test-window-grid") {
             runWindowGridSmokeTest()
-        } else if CommandLine.arguments.contains("--ui-test-omarchy-keys") {
-            Preferences.shared.keymap = "omarchy"
-            Preferences.shared.omarchyModifier =
-                CommandLine.arguments.contains("--omarchy-command") ? "command" : "alt"
+        } else if CommandLine.arguments.contains("--ui-test-pane-keys") {
+            Preferences.shared.paneKeyModifier =
+                CommandLine.arguments.contains("--pane-keys-command") ? "command" : "alt"
             newWindow(nil)
-            runOmarchyKeysSmokeTest()
+            runPaneKeysSmokeTest()
         } else if uiTestMerge {
             newWindow(nil)
             runMergeSmokeTest()
@@ -2510,7 +2509,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                     ? .on : .off
             case #selector(toggleOptionAsMeta(_:)): item.state = p.optionAsMeta ? .on : .off
             case #selector(toggleCopyOnSelect(_:)): item.state = p.copyOnSelect ? .on : .off
-            case #selector(toggleOmarchyKeys(_:)): item.state = p.usesOmarchyKeys ? .on : .off
             case #selector(toggleShellIntegration(_:)): item.state = p.shellIntegration ? .on : .off
             case #selector(toggleAutomaticErrorHelp(_:)): item.state = p.automaticErrorHelp ? .on : .off
             case #selector(toggleCleanPrompt(_:)): item.state = p.cleanPrompt ? .on : .off
@@ -3378,13 +3376,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
     }
 
-    /// `--ui-test-omarchy-keys`: drive the Omarchy keymap through the real key
+    /// `--ui-test-pane-keys`: drive the pane, tab and window keys through the real key
     /// monitor: split, focus, last pane, break a pane into a tab, move tabs,
     /// join the tab back, and switch windows, with every shell kept alive.
-    private func runOmarchyKeysSmokeTest() {
+    private func runPaneKeysSmokeTest() {
         var failures: [String] = []
         func expect(_ ok: Bool, _ label: String) {
-            print("UIOMARCHY \(ok ? "PASS" : "FAIL") \(label)")
+            print("UIPANEKEYS \(ok ? "PASS" : "FAIL") \(label)")
             if !ok { failures.append(label) }
         }
         func press(_ keyCode: UInt16, _ characters: String,
@@ -3406,9 +3404,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         func step(_ delay: Double = 0.8, _ body: @escaping () -> Void) {
             DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: body)
         }
-        // omarchy-modifier = command moves the Alt keys to Cmd; Cmd+Left/Right
+        // pane-key-modifier = command moves the Alt keys to Cmd; Cmd+Left/Right
         // stay line moves, so the tab steps use prefix p / n instead.
-        let alt: NSEvent.ModifierFlags = Preferences.shared.omarchyUsesCommand ? .command : .option
+        let alt: NSEvent.ModifierFlags = Preferences.shared.paneKeysUseCommand ? .command : .option
         func previousTab() {
             if alt == .command { prefix(35, "p") } else { press(123, "", [alt]) }
         }
@@ -3480,7 +3478,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                                                         step {
                                                             expect(NSApp.keyWindow !== second,
                                                                    "Alt+Up switches windows")
-                                                            print("UIOMARCHY \(failures.isEmpty ? "ALL PASS" : "\(failures.count) FAILURE(S)")")
+                                                            print("UIPANEKEYS \(failures.isEmpty ? "ALL PASS" : "\(failures.count) FAILURE(S)")")
                                                             exit(failures.isEmpty ? 0 : 1)
                                                         }
                                                     }
@@ -5140,23 +5138,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
     @objc func toggleOptionAsMeta(_ sender: Any?) { Preferences.shared.optionAsMeta.toggle() }
     @objc func toggleCopyOnSelect(_ sender: Any?) { Preferences.shared.copyOnSelect.toggle() }
-    @objc func toggleOmarchyKeys(_ sender: Any?) {
-        let p = Preferences.shared
-        p.keymap = p.usesOmarchyKeys ? "standard" : "omarchy"
-    }
-    @objc func toggleOmarchyCommandKey(_ sender: Any?) {
-        let p = Preferences.shared
-        p.omarchyModifier = p.omarchyUsesCommand ? "alt" : "command"
-    }
-    @objc func showOmarchyKeys(_ sender: Any?) {
-        showKeymapHelp(relativeTo: NSApp.keyWindow)
-    }
-
     func showKeymapHelp(relativeTo parent: NSWindow?) {
         let alert = NSAlert()
-        alert.messageText = Preferences.shared.usesOmarchyKeys
-            ? "Omarchy Keys" : "Omarchy Keys (off)"
-        let helpRows = OmarchyKeymap.helpRows(usesCommand: Preferences.shared.omarchyUsesCommand)
+        alert.messageText = "Pane, Tab and Window Keys"
+        let helpRows = PaneKeys.helpRows(usesCommand: Preferences.shared.paneKeysUseCommand)
         let width = helpRows.map(\.keys.count).max() ?? 0
         let rows = helpRows.map {
             $0.keys.padding(toLength: width + 2, withPad: " ", startingAt: 0) + $0.action
@@ -5165,9 +5150,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         text.font = .monospacedSystemFont(ofSize: 11, weight: .regular)
         text.isSelectable = true
         alert.accessoryView = text
-        alert.informativeText = Preferences.shared.usesOmarchyKeys
-            ? "Ctrl+Space is the prefix: press it, then the key."
-            : "Turn on View → Terminal → Omarchy Keys, or set keymap = omarchy."
+        alert.informativeText = "Ctrl+Space is the prefix: press it, then the key."
         alert.addButton(withTitle: "OK")
         if let parent, parent.isVisible { alert.beginSheetModal(for: parent) }
         else { alert.runModal() }
@@ -5713,10 +5696,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             item.state = p.optionAsMeta ? .on : .off
         case #selector(toggleCopyOnSelect(_:)):
             item.state = p.copyOnSelect ? .on : .off
-        case #selector(toggleOmarchyKeys(_:)):
-            item.state = p.usesOmarchyKeys ? .on : .off
-        case #selector(toggleOmarchyCommandKey(_:)):
-            item.state = p.omarchyUsesCommand ? .on : .off
         case #selector(toggleShellIntegration(_:)):
             item.state = p.shellIntegration ? .on : .off
         case #selector(toggleAutomaticErrorHelp(_:)):

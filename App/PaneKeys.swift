@@ -1,9 +1,8 @@
 import AppKit
 
-/// Omarchy's tmux/herdr keys (basecamp/omarchy config/tmux/tmux.conf and
-/// config/herdr/config.toml). A tmux pane is a split, a tmux window is a tab,
-/// and a tmux session is a window. Ctrl+Space is the prefix.
-enum OmarchyKeymap {
+/// tmux-style pane, tab and window keys. A tmux pane is a split, a tmux window
+/// is a tab, and a tmux session is a window. Ctrl+Space is the prefix.
+enum PaneKeys {
     typealias Action = StandardKeybindings.Action
 
     static let prefixKeyCode: UInt16 = 49 // Space
@@ -27,8 +26,8 @@ enum OmarchyKeymap {
         }
     }
 
-    /// Keys that act without the prefix (tmux `bind -n`). Omarchy holds Alt;
-    /// with `usesCommand` (omarchy-modifier = command) ⌘ takes Alt's place,
+    /// Keys that act without the prefix (tmux `bind -n`). They hold Alt; with
+    /// `usesCommand` (pane-key-modifier = command) ⌘ takes Alt's place,
     /// except ⌘←/⌘→, which keep moving to the start and end of the line.
     static func root(keyCode: UInt16, modifiers: NSEvent.ModifierFlags,
                      usesCommand: Bool = false) -> Action? {

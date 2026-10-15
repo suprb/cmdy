@@ -423,71 +423,71 @@ enum SelfTest {
                   "first-launch text rendering matches the default config")
         }
 
-        // Omarchy keymap: the tmux/herdr keys from basecamp/omarchy.
-        func omarchyRoot(_ keyCode: UInt16, _ modifiers: NSEvent.ModifierFlags,
+        // Pane, tab and window keys (tmux-style, Ctrl+Space prefix).
+        func paneRoot(_ keyCode: UInt16, _ modifiers: NSEvent.ModifierFlags,
                          command: Bool = false) -> String {
-            OmarchyKeymap.root(keyCode: keyCode, modifiers: modifiers, usesCommand: command)
+            PaneKeys.root(keyCode: keyCode, modifiers: modifiers, usesCommand: command)
                 .map { String(describing: $0) } ?? "nil"
         }
-        func omarchyPrefix(_ characters: String, _ keyCode: UInt16 = 0,
+        func panePrefix(_ characters: String, _ keyCode: UInt16 = 0,
                            _ modifiers: NSEvent.ModifierFlags = []) -> String {
-            OmarchyKeymap.afterPrefix(keyCode: keyCode, characters: characters, modifiers: modifiers)
+            PaneKeys.afterPrefix(keyCode: keyCode, characters: characters, modifiers: modifiers)
                 .map { String(describing: $0) } ?? "nil"
         }
-        check(omarchyRoot(36, [.option]) == "splitDown"
-                && omarchyRoot(36, [.option, .shift]) == "splitRight"
-                && omarchyRoot(53, [.option]) == "closeSurface",
-              "omarchy keys: Alt+Enter splits down, Alt+Shift+Enter right, Alt+Esc closes")
-        check(omarchyRoot(123, [.control, .option]).hasPrefix("focus(")
-                && omarchyRoot(123, [.control, .option]).hasSuffix("left)"),
-              "omarchy keys: Ctrl+Alt+Left focuses the pane on the left")
-        check(omarchyRoot(124, [.control, .option, .shift]).hasPrefix("resizeCells(")
-                && omarchyRoot(124, [.control, .option, .shift]).hasSuffix("right, 5)"),
-              "omarchy keys: Ctrl+Alt+Shift+Right resizes five cells")
-        check(omarchyRoot(20, [.option]) == "tab(2)" && omarchyRoot(25, [.option]) == "tab(8)"
-                && omarchyRoot(123, [.option]) == "previousTab"
-                && omarchyRoot(124, [.option]) == "nextTab"
-                && omarchyRoot(123, [.option, .shift]) == "moveTab(-1)"
-                && omarchyRoot(124, [.option, .shift]) == "moveTab(1)"
-                && omarchyRoot(126, [.option]) == "switchWindow(-1)"
-                && omarchyRoot(125, [.option]) == "switchWindow(1)",
-              "omarchy keys: Alt+1..9, Alt+arrows and Alt+Shift+arrows drive tabs and windows")
-        check(omarchyRoot(0, [.option]) == "nil" && omarchyRoot(36, []) == "nil"
-                && omarchyRoot(36, [.command]) == "nil",
-              "omarchy keys: unbound keys still reach the terminal")
-        check(omarchyRoot(36, [.command], command: true) == "splitDown"
-                && omarchyRoot(36, [.command, .shift], command: true) == "splitRight"
-                && omarchyRoot(53, [.command], command: true) == "closeSurface"
-                && omarchyRoot(20, [.command], command: true) == "tab(2)"
-                && omarchyRoot(126, [.command], command: true) == "switchWindow(-1)"
-                && omarchyRoot(123, [.command, .shift], command: true) == "moveTab(-1)"
-                && omarchyRoot(123, [.control, .command], command: true).hasPrefix("focus(")
-                && omarchyRoot(124, [.control, .command, .shift], command: true)
+        check(paneRoot(36, [.option]) == "splitDown"
+                && paneRoot(36, [.option, .shift]) == "splitRight"
+                && paneRoot(53, [.option]) == "closeSurface",
+              "pane keys: Alt+Enter splits down, Alt+Shift+Enter right, Alt+Esc closes")
+        check(paneRoot(123, [.control, .option]).hasPrefix("focus(")
+                && paneRoot(123, [.control, .option]).hasSuffix("left)"),
+              "pane keys: Ctrl+Alt+Left focuses the pane on the left")
+        check(paneRoot(124, [.control, .option, .shift]).hasPrefix("resizeCells(")
+                && paneRoot(124, [.control, .option, .shift]).hasSuffix("right, 5)"),
+              "pane keys: Ctrl+Alt+Shift+Right resizes five cells")
+        check(paneRoot(20, [.option]) == "tab(2)" && paneRoot(25, [.option]) == "tab(8)"
+                && paneRoot(123, [.option]) == "previousTab"
+                && paneRoot(124, [.option]) == "nextTab"
+                && paneRoot(123, [.option, .shift]) == "moveTab(-1)"
+                && paneRoot(124, [.option, .shift]) == "moveTab(1)"
+                && paneRoot(126, [.option]) == "switchWindow(-1)"
+                && paneRoot(125, [.option]) == "switchWindow(1)",
+              "pane keys: Alt+1..9, Alt+arrows and Alt+Shift+arrows drive tabs and windows")
+        check(paneRoot(0, [.option]) == "nil" && paneRoot(36, []) == "nil"
+                && paneRoot(36, [.command]) == "nil",
+              "pane keys: unbound keys still reach the terminal")
+        check(paneRoot(36, [.command], command: true) == "splitDown"
+                && paneRoot(36, [.command, .shift], command: true) == "splitRight"
+                && paneRoot(53, [.command], command: true) == "closeSurface"
+                && paneRoot(20, [.command], command: true) == "tab(2)"
+                && paneRoot(126, [.command], command: true) == "switchWindow(-1)"
+                && paneRoot(123, [.command, .shift], command: true) == "moveTab(-1)"
+                && paneRoot(123, [.control, .command], command: true).hasPrefix("focus(")
+                && paneRoot(124, [.control, .command, .shift], command: true)
                     .hasPrefix("resizeCells("),
-              "omarchy keys on Cmd: Cmd takes Alt's place")
-        check(omarchyRoot(123, [.command], command: true) == "nil"
-                && omarchyRoot(124, [.command], command: true) == "nil"
-                && omarchyRoot(36, [.option], command: true) == "nil"
-                && omarchyRoot(36, [.command, .option], command: true) == "nil",
-              "omarchy keys on Cmd: Cmd+Left/Right stay line moves and Alt is free")
-        check(OmarchyKeymap.isPrefix(keyCode: 49, modifiers: [.control])
-                && !OmarchyKeymap.isPrefix(keyCode: 49, modifiers: [.control, .shift])
-                && omarchyPrefix(" ", 49, [.control]) == "send(\"\\0\")",
-              "omarchy keys: Ctrl+Space is the prefix and twice sends it through")
-        check(omarchyPrefix("h") == "splitDown" && omarchyPrefix("v") == "splitRight"
-                && omarchyPrefix("x") == "closeSurface" && omarchyPrefix("z") == "splitZoom"
-                && omarchyPrefix(";") == "lastPane"
-                && omarchyPrefix("!", 18, [.shift]) == "breakPaneToTab"
-                && omarchyPrefix("@", 19, [.shift]) == "joinTabLeft",
-              "omarchy keys: prefix pane keys, break (!) and join (@)")
-        check(omarchyPrefix("c") == "newTab" && omarchyPrefix("r") == "renameTab"
-                && omarchyPrefix("k") == "closeTab" && omarchyPrefix("9") == "tab(8)"
-                && omarchyPrefix("C", 8, [.shift]) == "newWindow"
-                && omarchyPrefix("K", 40, [.shift]) == "closeWindow"
-                && omarchyPrefix("N", 45, [.shift]) == "switchWindow(1)"
-                && omarchyPrefix("?", 44, [.shift]) == "keymapHelp"
-                && omarchyPrefix("y") == "nil",
-              "omarchy keys: prefix tab and window keys; unbound prefix keys do nothing")
+              "pane keys on Cmd: Cmd takes Alt's place")
+        check(paneRoot(123, [.command], command: true) == "nil"
+                && paneRoot(124, [.command], command: true) == "nil"
+                && paneRoot(36, [.option], command: true) == "nil"
+                && paneRoot(36, [.command, .option], command: true) == "nil",
+              "pane keys on Cmd: Cmd+Left/Right stay line moves and Alt is free")
+        check(PaneKeys.isPrefix(keyCode: 49, modifiers: [.control])
+                && !PaneKeys.isPrefix(keyCode: 49, modifiers: [.control, .shift])
+                && panePrefix(" ", 49, [.control]) == "send(\"\\0\")",
+              "pane keys: Ctrl+Space is the prefix and twice sends it through")
+        check(panePrefix("h") == "splitDown" && panePrefix("v") == "splitRight"
+                && panePrefix("x") == "closeSurface" && panePrefix("z") == "splitZoom"
+                && panePrefix(";") == "lastPane"
+                && panePrefix("!", 18, [.shift]) == "breakPaneToTab"
+                && panePrefix("@", 19, [.shift]) == "joinTabLeft",
+              "pane keys: prefix pane keys, break (!) and join (@)")
+        check(panePrefix("c") == "newTab" && panePrefix("r") == "renameTab"
+                && panePrefix("k") == "closeTab" && panePrefix("9") == "tab(8)"
+                && panePrefix("C", 8, [.shift]) == "newWindow"
+                && panePrefix("K", 40, [.shift]) == "closeWindow"
+                && panePrefix("N", 45, [.shift]) == "switchWindow(1)"
+                && panePrefix("?", 44, [.shift]) == "keymapHelp"
+                && panePrefix("y") == "nil",
+              "pane keys: prefix tab and window keys; unbound prefix keys do nothing")
 
         // Ghostty-compatible standard keybindings. Test physical and textual
         // routes so keyboard layouts cannot silently regress the common set.
