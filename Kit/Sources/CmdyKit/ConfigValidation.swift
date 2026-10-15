@@ -75,6 +75,10 @@ extension ConfigFile {
                     if !Preferences.keymaps.contains(lower) {
                         message = "Choose standard or omarchy."
                     }
+                case "omarchy-modifier":
+                    if !Preferences.omarchyModifiers.contains(lower) {
+                        message = "Choose alt or command."
+                    }
                 case "cursor-style":
                     if !["block", "bar", "underline"].contains(lower) {
                         message = "Choose block, bar, or underline."

@@ -376,6 +376,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             runWindowGridSmokeTest()
         } else if CommandLine.arguments.contains("--ui-test-omarchy-keys") {
             Preferences.shared.keymap = "omarchy"
+            Preferences.shared.omarchyModifier =
+                CommandLine.arguments.contains("--omarchy-command") ? "command" : "alt"
             newWindow(nil)
             runOmarchyKeysSmokeTest()
         } else if uiTestMerge {
@@ -3404,22 +3406,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         func step(_ delay: Double = 0.8, _ body: @escaping () -> Void) {
             DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: body)
         }
+        // omarchy-modifier = command moves the Alt keys to Cmd; Cmd+Left/Right
+        // stay line moves, so the tab steps use prefix p / n instead.
+        let alt: NSEvent.ModifierFlags = Preferences.shared.omarchyUsesCommand ? .command : .option
+        func previousTab() {
+            if alt == .command { prefix(35, "p") } else { press(123, "", [alt]) }
+        }
+        func nextTab() {
+            if alt == .command { prefix(45, "n") } else { press(124, "", [alt]) }
+        }
         var host: TerminalWindowController?
         var originalIDs: Set<String> = []
         step(1.5) {
             host = self.controllers.first
             host?.panes.first?.focus()
-            press(36, "\r", [.option])                       // Alt+Enter
+            press(36, "\r", [alt])                       // Alt+Enter
             step {
                 expect(host?.panes.count == 2, "Alt+Enter splits")
                 let frames = host?.panes.map { $0.convert($0.bounds, to: nil) } ?? []
                 expect(frames.count == 2 && abs(frames[0].minX - frames[1].minX) < 1,
                        "Alt+Enter splits down (panes stacked)")
-                press(36, "\r", [.option, .shift])            // Alt+Shift+Enter
+                press(36, "\r", alt.union(.shift))            // Alt+Shift+Enter
                 step {
                     expect(host?.panes.count == 3, "Alt+Shift+Enter splits")
                     let before = host?.focusedPane
-                    press(126, "", [.control, .option])       // Ctrl+Alt+Up
+                    press(126, "", alt.union(.control))       // Ctrl+Alt+Up
                     step {
                         let moved = host?.focusedPane
                         expect(moved != nil && moved !== before, "Ctrl+Alt+Up focuses another pane")
@@ -3433,19 +3444,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                                 expect(host?.panes.count == 2 && tabs.count == 2,
                                        "prefix ! breaks the pane into a new tab")
                                 let broken = tabs.first { $0 !== host }
-                                press(123, "", [.option, .shift]) // Alt+Shift+Left
+                                press(123, "", alt.union(.shift)) // Alt+Shift+Left
                                 step {
                                     let order = host.map { self.workspaceTabs(containing: $0) } ?? []
                                     expect(order.first === broken, "Alt+Shift+Left moves the tab left")
-                                    press(124, "", [.option, .shift]) // Alt+Shift+Right
+                                    press(124, "", alt.union(.shift)) // Alt+Shift+Right
                                     step {
                                         let back = host.map { self.workspaceTabs(containing: $0) } ?? []
                                         expect(back.last === broken, "Alt+Shift+Right moves it back")
-                                        press(123, "", [.option])  // Alt+Left
+                                        previousTab()  // Alt+Left
                                         step {
                                             expect(NSApp.keyWindow === host?.window,
                                                    "Alt+Left selects the previous tab")
-                                            press(124, "", [.option]) // Alt+Right
+                                            nextTab() // Alt+Right
                                             step {
                                                 expect(NSApp.keyWindow === broken?.window,
                                                        "Alt+Right selects the next tab")
@@ -3465,7 +3476,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                                                         let second = NSApp.keyWindow
                                                         expect(self.controllers.count == 2 && second !== host?.window,
                                                                "prefix C opens a new window")
-                                                        press(126, "", [.option]) // Alt+Up
+                                                        press(126, "", [alt]) // Alt+Up
                                                         step {
                                                             expect(NSApp.keyWindow !== second,
                                                                    "Alt+Up switches windows")
@@ -5133,6 +5144,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let p = Preferences.shared
         p.keymap = p.usesOmarchyKeys ? "standard" : "omarchy"
     }
+    @objc func toggleOmarchyCommandKey(_ sender: Any?) {
+        let p = Preferences.shared
+        p.omarchyModifier = p.omarchyUsesCommand ? "alt" : "command"
+    }
     @objc func showOmarchyKeys(_ sender: Any?) {
         showKeymapHelp(relativeTo: NSApp.keyWindow)
     }
@@ -5141,8 +5156,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let alert = NSAlert()
         alert.messageText = Preferences.shared.usesOmarchyKeys
             ? "Omarchy Keys" : "Omarchy Keys (off)"
-        let width = OmarchyKeymap.helpRows.map(\.keys.count).max() ?? 0
-        let rows = OmarchyKeymap.helpRows.map {
+        let helpRows = OmarchyKeymap.helpRows(usesCommand: Preferences.shared.omarchyUsesCommand)
+        let width = helpRows.map(\.keys.count).max() ?? 0
+        let rows = helpRows.map {
             $0.keys.padding(toLength: width + 2, withPad: " ", startingAt: 0) + $0.action
         }
         let text = NSTextField(wrappingLabelWithString: rows.joined(separator: "\n"))
@@ -5699,6 +5715,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             item.state = p.copyOnSelect ? .on : .off
         case #selector(toggleOmarchyKeys(_:)):
             item.state = p.usesOmarchyKeys ? .on : .off
+        case #selector(toggleOmarchyCommandKey(_:)):
+            item.state = p.omarchyUsesCommand ? .on : .off
         case #selector(toggleShellIntegration(_:)):
             item.state = p.shellIntegration ? .on : .off
         case #selector(toggleAutomaticErrorHelp(_:)):

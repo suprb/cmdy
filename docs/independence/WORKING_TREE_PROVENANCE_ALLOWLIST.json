@@ -115,16 +115,6 @@
       "rationale": "Normalization makes the unrelated menu-title/SF-symbol tuple table resemble a Vendor test-input/expected-URL tuple table; no literals or behavior match."
     },
     {
-      "id": "vendor-omarchy-help-table-structural-collision",
-      "origin": "vendor",
-      "mode": "structural",
-      "active": "App/OmarchyKeymap.swift",
-      "historical": "Vendor/SwiftTerm/Tests/SwiftTermTests/GhosttyImplicitLinkDetectionTests.swift",
-      "fingerprint": "fc5e3c8b1fcf70487ea395300e4d7332ce74aebce1c39ec6dc983ac4471363de",
-      "classification": "non-substantive-structural-collision",
-      "rationale": "Normalization makes the Omarchy key/description help table resemble a Vendor test-input/expected-URL tuple table; no literals or behavior match."
-    },
-    {
       "id": "vendor-app-keybinding-switch-projection",
       "origin": "vendor",
       "mode": "structural",

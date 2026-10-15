@@ -27,9 +27,16 @@ enum OmarchyKeymap {
         }
     }
 
-    /// Keys that act without the prefix (tmux `bind -n`).
-    static func root(keyCode: UInt16, modifiers: NSEvent.ModifierFlags) -> Action? {
-        let m = modifiers.intersection([.command, .option, .control, .shift])
+    /// Keys that act without the prefix (tmux `bind -n`). Omarchy holds Alt;
+    /// with `usesCommand` (omarchy-modifier = command) ⌘ takes Alt's place,
+    /// except ⌘←/⌘→, which keep moving to the start and end of the line.
+    static func root(keyCode: UInt16, modifiers: NSEvent.ModifierFlags,
+                     usesCommand: Bool = false) -> Action? {
+        let held = modifiers.intersection([.command, .option, .control, .shift])
+        let alt: NSEvent.ModifierFlags = usesCommand ? .command : .option
+        guard held.contains(alt),
+              held.intersection([.command, .option]) == alt else { return nil }
+        let m = held.subtracting(alt).union(.option)
         let isReturn = keyCode == 36 || keyCode == 76
         switch m {
         case [.option]:
@@ -37,8 +44,8 @@ enum OmarchyKeymap {
             if keyCode == 53 { return .closeSurface }
             if let digit = digitKeyCodes[keyCode] { return .tab(digit - 1) }
             switch direction(keyCode) {
-            case .left: return .previousTab
-            case .right: return .nextTab
+            case .left: return usesCommand ? nil : .previousTab
+            case .right: return usesCommand ? nil : .nextTab
             case .up: return .switchWindow(-1)
             case .down: return .switchWindow(1)
             case nil: return nil
@@ -94,24 +101,28 @@ enum OmarchyKeymap {
         }
     }
 
-    static let helpRows: [(keys: String, action: String)] = [
+    static func helpRows(usesCommand: Bool) -> [(keys: String, action: String)] {
+        let alt = usesCommand ? "Cmd" : "Alt"
+        let tabs = usesCommand ? "prefix p / n" : "Alt+Left / Right  ·  prefix p / n"
+        return [
         ("Ctrl+Space", "Prefix (press twice to send Ctrl+Space)"),
-        ("Alt+Enter  ·  prefix h", "Split down"),
-        ("Alt+Shift+Enter  ·  prefix v", "Split right"),
-        ("Alt+Esc  ·  prefix x", "Close pane"),
-        ("Ctrl+Alt+Arrows", "Focus pane"),
-        ("Ctrl+Alt+Shift+Arrows  ·  prefix Ctrl+Arrows", "Resize pane"),
+        ("\(alt)+Enter  ·  prefix h", "Split down"),
+        ("\(alt)+Shift+Enter  ·  prefix v", "Split right"),
+        ("\(alt)+Esc  ·  prefix x", "Close pane"),
+        ("Ctrl+\(alt)+Arrows", "Focus pane"),
+        ("Ctrl+\(alt)+Shift+Arrows  ·  prefix Ctrl+Arrows", "Resize pane"),
         ("prefix z", "Zoom pane"),
         ("prefix ;", "Last pane"),
         ("prefix !", "Break pane into a new tab"),
         ("prefix @", "Join tab into the tab on its left"),
-        ("Alt+1…9  ·  prefix 1…9", "Go to tab"),
-        ("Alt+Left / Right  ·  prefix p / n", "Previous / next tab"),
-        ("Alt+Shift+Left / Right", "Move tab left / right"),
+        ("\(alt)+1…9  ·  prefix 1…9", "Go to tab"),
+        (tabs, "Previous / next tab"),
+        ("\(alt)+Shift+Left / Right", "Move tab left / right"),
         ("prefix c  ·  r  ·  k", "New / rename / close tab"),
-        ("Alt+Up / Down  ·  prefix P / N", "Previous / next window"),
+        ("\(alt)+Up / Down  ·  prefix P / N", "Previous / next window"),
         ("prefix C  ·  K", "New / close window"),
         ("prefix q", "Reload configuration"),
         ("prefix ?", "Show these keys"),
-    ]
+        ]
+    }
 }

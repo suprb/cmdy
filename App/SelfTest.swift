@@ -424,8 +424,9 @@ enum SelfTest {
         }
 
         // Omarchy keymap: the tmux/herdr keys from basecamp/omarchy.
-        func omarchyRoot(_ keyCode: UInt16, _ modifiers: NSEvent.ModifierFlags) -> String {
-            OmarchyKeymap.root(keyCode: keyCode, modifiers: modifiers)
+        func omarchyRoot(_ keyCode: UInt16, _ modifiers: NSEvent.ModifierFlags,
+                         command: Bool = false) -> String {
+            OmarchyKeymap.root(keyCode: keyCode, modifiers: modifiers, usesCommand: command)
                 .map { String(describing: $0) } ?? "nil"
         }
         func omarchyPrefix(_ characters: String, _ keyCode: UInt16 = 0,
@@ -454,6 +455,21 @@ enum SelfTest {
         check(omarchyRoot(0, [.option]) == "nil" && omarchyRoot(36, []) == "nil"
                 && omarchyRoot(36, [.command]) == "nil",
               "omarchy keys: unbound keys still reach the terminal")
+        check(omarchyRoot(36, [.command], command: true) == "splitDown"
+                && omarchyRoot(36, [.command, .shift], command: true) == "splitRight"
+                && omarchyRoot(53, [.command], command: true) == "closeSurface"
+                && omarchyRoot(20, [.command], command: true) == "tab(2)"
+                && omarchyRoot(126, [.command], command: true) == "switchWindow(-1)"
+                && omarchyRoot(123, [.command, .shift], command: true) == "moveTab(-1)"
+                && omarchyRoot(123, [.control, .command], command: true).hasPrefix("focus(")
+                && omarchyRoot(124, [.control, .command, .shift], command: true)
+                    .hasPrefix("resizeCells("),
+              "omarchy keys on Cmd: Cmd takes Alt's place")
+        check(omarchyRoot(123, [.command], command: true) == "nil"
+                && omarchyRoot(124, [.command], command: true) == "nil"
+                && omarchyRoot(36, [.option], command: true) == "nil"
+                && omarchyRoot(36, [.command, .option], command: true) == "nil",
+              "omarchy keys on Cmd: Cmd+Left/Right stay line moves and Alt is free")
         check(OmarchyKeymap.isPrefix(keyCode: 49, modifiers: [.control])
                 && !OmarchyKeymap.isPrefix(keyCode: 49, modifiers: [.control, .shift])
                 && omarchyPrefix(" ", 49, [.control]) == "send(\"\\0\")",

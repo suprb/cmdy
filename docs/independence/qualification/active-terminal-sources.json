@@ -278,8 +278,8 @@
     {
       "mode": "100644",
       "path": "App/AppDelegate.swift",
-      "sha256": "661c83e2f4879c6f50479e2160c23155f18d94ad99a9ece930991af4e574cdd6",
-      "size": 295439
+      "sha256": "4438bdf873119cf3fa2eb37468bd3e2598afe24a21d276ac0d918865759dd601",
+      "size": 296378
     },
     {
       "mode": "100644",
@@ -524,8 +524,8 @@
     {
       "mode": "100644",
       "path": "App/OmarchyKeymap.swift",
-      "sha256": "c3f6cc92eb72fe0a14596338ccd89a2e18b7777b7237999248e1318dd166d718",
-      "size": 4784
+      "sha256": "297d00a53632eebb06c649cd9b713a0cb27e4b52ddfee3ac0fd7617aa51e84b1",
+      "size": 5468
     },
     {
       "mode": "100644",
@@ -542,8 +542,8 @@
     {
       "mode": "100644",
       "path": "App/SelfTest.swift",
-      "sha256": "70abd3a3c3fa5da14492e4a4f0d08f1c2250babfaa541f02d14a7822915a8176",
-      "size": 77629
+      "sha256": "ccfeb9b1f256da8ad926691b5a11441537e9a655e1af9258ae2750f03f30783e",
+      "size": 78841
     },
     {
       "mode": "100644",
@@ -590,8 +590,8 @@
     {
       "mode": "100644",
       "path": "App/StandardKeybindings.swift",
-      "sha256": "164c3aa32e20205d0af6363aec3f11a1fec7fbf7ad05689dbe7e2746a53a222d",
-      "size": 23699
+      "sha256": "1d59d0949156eb354c518ed4320a5e9482fdd5dc79f64a212cdf177ccbcfc0ff",
+      "size": 23767
     },
     {
       "mode": "100644",
@@ -680,8 +680,8 @@
     {
       "mode": "100644",
       "path": "App/main.swift",
-      "sha256": "16c65e8f84fb41cefa130bb8f76771eb206b7ecd0877c0b3e72d0647eb95f8a1",
-      "size": 72821
+      "sha256": "69b12ef362dc6ac52515aebcc66e8d69cfdc0bf691410ea86b35e5a02bf42874",
+      "size": 72954
     },
     {
       "mode": "100644",
@@ -1826,14 +1826,14 @@
     {
       "mode": "100644",
       "path": "Kit/Sources/CmdyKit/ConfigFile.swift",
-      "sha256": "263a2e6368c2f2b387530abba8369ca2bccd2f5a9db1e5ededbd2a9b8f308e00",
-      "size": 30264
+      "sha256": "88c0ff9cb04bf50e4bb32e43715baf567321fe45a23119756743a4926f33e56c",
+      "size": 30595
     },
     {
       "mode": "100644",
       "path": "Kit/Sources/CmdyKit/ConfigValidation.swift",
-      "sha256": "dfd6c718674263da594467a9f6cce65bc8cf184e60b01ddb4c1e833ff67223f3",
-      "size": 5889
+      "sha256": "868fa09e4acb12f15e76cd69344c9965df647bdde17fd07b08face4f198c4123",
+      "size": 6082
     },
     {
       "mode": "100644",
@@ -1922,8 +1922,8 @@
     {
       "mode": "100644",
       "path": "Kit/Sources/CmdyKit/Preferences.swift",
-      "sha256": "91ddf553fe1d1777fb94cbb28abf151bed21af502aaa73092d15c9be818d814b",
-      "size": 29358
+      "sha256": "ad1f53c186d768801ced1e4cbce82e44cc90a5c7180c2e5c50f61d2421feaa1a",
+      "size": 30171
     },
     {
       "mode": "100644",

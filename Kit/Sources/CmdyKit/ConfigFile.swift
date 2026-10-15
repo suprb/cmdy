@@ -206,6 +206,7 @@ public enum ConfigFile {
         if let v = kv["option-as-meta"].flatMap(bool) { p.optionAsMeta = v }
         if let v = kv["keymap"]?.lowercased(), Preferences.keymaps.contains(v) { p.keymap = v }
         if let v = kv["copy-on-select"].flatMap(bool) { p.copyOnSelect = v }
+        if let v = kv["omarchy-modifier"]?.lowercased(), Preferences.omarchyModifiers.contains(v) { p.omarchyModifier = v }
         if let v = kv["attention-signals"].flatMap(bool) { p.attentionSignals = v }
         if let v = kv["shell-integration"].flatMap(bool) { p.shellIntegration = v }
         if let v = kv["clean-prompt"].flatMap(bool) { p.cleanPrompt = v }
@@ -499,6 +500,9 @@ public enum ConfigFile {
         # Alt+Enter splits, Ctrl+Alt+arrows move between panes, Alt+1..9 picks a
         # tab, and Ctrl+Space is the prefix (Ctrl+Space ? lists every key).
         keymap = \(p.keymap)
+        # omarchy-modifier: alt | command. command moves the no-prefix Omarchy
+        # keys from Alt to Cmd (Super's place); Cmd+Left/Right stay line moves.
+        omarchy-modifier = \(p.omarchyModifier)
         # Copy a mouse selection to the clipboard as soon as you release the button.
         copy-on-select = \(p.copyOnSelect)
         # OSC 133 shell integration: command blocks, durations, jump-to-command,

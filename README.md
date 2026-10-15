@@ -590,6 +590,13 @@ moving the shell cursor by word.
 | `prefix C` / `K` | New / close window |
 | `prefix q` / `?` | Reload configuration / show keys |
 
+Omarchy holds `Alt` for these keys and keeps `Super` for the window manager.
+To use `⌘` where `Super` sits on a Mac keyboard, turn on **View → Terminal →
+Omarchy Keys on ⌘ (Super)** or set `omarchy-modifier = command`: every `Alt`
+key above moves to `⌘`, except `⌘←/→`, which still move to the start and end
+of the line (use `prefix p/n` or `⌘1…9` for tabs). `⌘Enter` then splits;
+fullscreen stays on `⌃⌘F`.
+
 ## Record a feature tour
 
 Open and focus the cmdy pane you want to film, start a macOS window recording,

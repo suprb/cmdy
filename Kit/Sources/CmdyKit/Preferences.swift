@@ -38,6 +38,7 @@ public final class Preferences {
         static let optionAsMeta = "optionAsMeta"
         static let keymap = "keymap"
         static let copyOnSelect = "copyOnSelect"
+        static let omarchyModifier = "omarchyModifier"
         static let attentionSignals = "attentionSignals"
         static let shellIntegration = "shellIntegration"
         static let cleanPrompt = "cleanPrompt"
@@ -232,6 +233,21 @@ public final class Preferences {
         }
     }
     public var usesOmarchyKeys: Bool { keymap == "omarchy" }
+    /// The key Omarchy's no-prefix bindings hold: "alt" as in Omarchy, or
+    /// "command", where Super sits on a Mac keyboard.
+    public static let omarchyModifiers = ["alt", "command"]
+    public var omarchyModifier: String {
+        get {
+            let value = d.string(forKey: Key.omarchyModifier)?.lowercased() ?? "alt"
+            return Self.omarchyModifiers.contains(value) ? value : "alt"
+        }
+        set {
+            let value = newValue.lowercased()
+            guard Self.omarchyModifiers.contains(value), value != omarchyModifier else { return }
+            d.set(value, forKey: Key.omarchyModifier); sync("omarchy-modifier", value); changed()
+        }
+    }
+    public var omarchyUsesCommand: Bool { omarchyModifier == "command" }
     /// Copy a mouse selection to the clipboard as soon as it is made. On
     /// unless the config says otherwise.
     public var copyOnSelect: Bool {

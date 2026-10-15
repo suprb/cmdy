@@ -81,7 +81,8 @@ final class StandardKeybindings {
             // A bound key with nothing to act on (one tab, no neighbor pane)
             // does nothing, as in tmux, instead of reaching the shell.
             if let action = OmarchyKeymap.root(
-                keyCode: event.keyCode, modifiers: event.modifierFlags),
+                keyCode: event.keyCode, modifiers: event.modifierFlags,
+                usesCommand: Preferences.shared.omarchyUsesCommand),
                terminalHasFocus(event) {
                 _ = perform(action, event: event)
                 return true
