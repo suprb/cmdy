@@ -477,6 +477,7 @@ scroll-speed = 1.5
 cursor-style = block        # block | bar | underline
 cursor-blink = true
 option-as-meta = true
+copy-on-select = true       # a mouse selection goes straight to the clipboard
 shell-integration = true
 clean-prompt = true
 hide-traffic-lights = false # AppKit's native window controls

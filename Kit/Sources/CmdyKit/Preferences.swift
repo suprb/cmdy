@@ -37,6 +37,7 @@ public final class Preferences {
         static let cursorColorOverride = "cursorColorOverride"
         static let optionAsMeta = "optionAsMeta"
         static let keymap = "keymap"
+        static let copyOnSelect = "copyOnSelect"
         static let attentionSignals = "attentionSignals"
         static let shellIntegration = "shellIntegration"
         static let cleanPrompt = "cleanPrompt"
@@ -231,6 +232,13 @@ public final class Preferences {
         }
     }
     public var usesOmarchyKeys: Bool { keymap == "omarchy" }
+    /// Copy a mouse selection to the clipboard as soon as it is made. On
+    /// unless the config says otherwise.
+    public var copyOnSelect: Bool {
+        get { d.object(forKey: Key.copyOnSelect) == nil ? true : d.bool(forKey: Key.copyOnSelect) }
+        set { guard newValue != copyOnSelect else { return }
+              d.set(newValue, forKey: Key.copyOnSelect); sync("copy-on-select", "\(newValue)"); changed() }
+    }
     public var optionAsMeta: Bool {
         get { d.bool(forKey: Key.optionAsMeta) }
         set { guard newValue != optionAsMeta else { return }

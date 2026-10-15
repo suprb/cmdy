@@ -17,6 +17,9 @@ be called out here with a migration path before a versioned release.
   Omarchy's tmux/herdr pane, tab and window keys with the Ctrl+Space prefix,
   including breaking a pane into a tab (`prefix !`) and joining it back
   (`prefix @`), moving and renaming tabs, and switching windows.
+- Copy on select, on by default: a dragged, double-clicked or
+  triple-clicked selection goes straight to the clipboard. Turn it off in
+  View → Terminal → Copy on Select, or with `copy-on-select = false`.
 
 ### Fixed
 

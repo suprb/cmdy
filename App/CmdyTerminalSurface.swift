@@ -1156,9 +1156,24 @@ final class CmdyTerminalSurface: NSView,
                 anchor: selectionAnchor,
                 active: SelectionPoint(row: final.absoluteRow, col: final.col),
                 notify: true)
+            copySelectionIfEnabled()
         } else if gestureUsesNativeSelection {
             onSelectionChanged?()
+            copySelectionIfEnabled()
         }
+    }
+
+    /// Where copy-on-select writes; tests swap in a private pasteboard.
+    var selectionPasteboard: NSPasteboard = .general
+
+    /// Copy-on-select: a finished drag, double- or triple-click selection
+    /// goes straight to the clipboard.
+    private func copySelectionIfEnabled() {
+        guard Preferences.shared.copyOnSelect else { return }
+        let text = selectedText()
+        guard !text.isEmpty else { return }
+        selectionPasteboard.clearContents()
+        selectionPasteboard.setString(text, forType: .string)
     }
 
     override func scrollWheel(with event: NSEvent) {

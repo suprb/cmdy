@@ -2507,6 +2507,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                     == (currentController?.selectedShaderName ?? p.shaderName))
                     ? .on : .off
             case #selector(toggleOptionAsMeta(_:)): item.state = p.optionAsMeta ? .on : .off
+            case #selector(toggleCopyOnSelect(_:)): item.state = p.copyOnSelect ? .on : .off
             case #selector(toggleOmarchyKeys(_:)): item.state = p.usesOmarchyKeys ? .on : .off
             case #selector(toggleShellIntegration(_:)): item.state = p.shellIntegration ? .on : .off
             case #selector(toggleAutomaticErrorHelp(_:)): item.state = p.automaticErrorHelp ? .on : .off
@@ -5127,6 +5128,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         refreshMenuStates()
     }
     @objc func toggleOptionAsMeta(_ sender: Any?) { Preferences.shared.optionAsMeta.toggle() }
+    @objc func toggleCopyOnSelect(_ sender: Any?) { Preferences.shared.copyOnSelect.toggle() }
     @objc func toggleOmarchyKeys(_ sender: Any?) {
         let p = Preferences.shared
         p.keymap = p.usesOmarchyKeys ? "standard" : "omarchy"
@@ -5693,6 +5695,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             item.state = NSApp.keyWindow?.level == .floating ? .on : .off
         case #selector(toggleOptionAsMeta(_:)):
             item.state = p.optionAsMeta ? .on : .off
+        case #selector(toggleCopyOnSelect(_:)):
+            item.state = p.copyOnSelect ? .on : .off
         case #selector(toggleOmarchyKeys(_:)):
             item.state = p.usesOmarchyKeys ? .on : .off
         case #selector(toggleShellIntegration(_:)):

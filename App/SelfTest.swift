@@ -663,6 +663,9 @@ enum SelfTest {
         // later mouseDragged event to the focused surface and stretch it.
         let selectionSurface = CmdyTerminalSurface(
             frame: NSRect(x: 0, y: 0, width: 320, height: 120))
+        let selectionPasteboard = NSPasteboard.withUniqueName()
+        defer { selectionPasteboard.releaseGlobally() }
+        selectionSurface.selectionPasteboard = selectionPasteboard
         selectionSurface.feed(text: "alpha\r\nbeta")
         RunLoop.current.run(until: Date().addingTimeInterval(0.02))
         func mouseEvent(_ type: NSEvent.EventType, _ point: NSPoint) -> NSEvent {
@@ -686,6 +689,9 @@ enum SelfTest {
         check(completedSelection == "alpha"
                 && selectionSurface.selectedText() == completedSelection,
               "selection: unrelated window drag cannot extend completed selection")
+        check(!Preferences.shared.copyOnSelect
+                || selectionPasteboard.string(forType: .string) == "alpha",
+              "selection: copy-on-select puts a finished drag on the clipboard")
 
         // A click that wobbles inside the pressed cell is still a click: it
         // dismisses the selection instead of leaving a one-cell selection.

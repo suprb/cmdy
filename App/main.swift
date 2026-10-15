@@ -378,6 +378,7 @@ private func buildMainMenu(delegate: AppDelegate) -> NSMenu {
     let terminalMenu = NSMenu(title: "Terminal")
     terminalItem.submenu = terminalMenu
     terminalMenu.addItem(item("Option as Meta", #selector(AppDelegate.toggleOptionAsMeta(_:)), "", modifiers: []))
+    terminalMenu.addItem(item("Copy on Select", #selector(AppDelegate.toggleCopyOnSelect(_:)), "", modifiers: []))
     terminalMenu.addItem(item("Omarchy Keys", #selector(AppDelegate.toggleOmarchyKeys(_:)), "", modifiers: []))
     terminalMenu.addItem(item("Show Omarchy Keys…", #selector(AppDelegate.showOmarchyKeys(_:)), "", modifiers: []))
     terminalMenu.addItem(item("Shell Integration", #selector(AppDelegate.toggleShellIntegration(_:)), "", modifiers: []))

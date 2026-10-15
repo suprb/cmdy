@@ -957,7 +957,7 @@
       "id": "retained-cmdyterminalsurface-from-termitecoresurface",
       "active": "App/CmdyTerminalSurface.swift",
       "historical": "App/TermiteCoreSurface.swift",
-      "sha256": "2725b151bf1a52256d46cdfde8440667139dcb1736acfde28ca8b9525bcacdf9",
+      "sha256": "767a9dff83f11806566df122479afb875c360b95a1faa762e7d49b2865307c89",
       "classification": "cmdy-original-retained-source",
       "rationale": "Hash-pinned Cmdy source carried forward from the retired Cmdy implementation; comparison with the initial Vendor import has no unresolved substantive Vendor match."
     },
