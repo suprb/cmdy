@@ -1,5 +1,5 @@
-2026-10-14 06:56:46.748 cmdy[5652:82050096] cmdy: plugin API listening on 127.0.0.1:4665
-cmdy perf gate — pid 5652, port 4665
+2026-10-15 07:17:41.762 cmdy[69464:83282080] cmdy: plugin API listening on 127.0.0.1:4665
+cmdy perf gate — pid 69464, port 4665
 power policy — lowPower=0 thermalState=0
   ✓ idle frames / 6s (settled)              0  (budget <= 2)
   ✓ frames for 200-line burst               3  (budget <= 120)
@@ -13,12 +13,12 @@ power policy — lowPower=0 thermalState=0
   ✓ rows rebuilt for 20 one-line scroll-ups      0  (budget <= 60)
   ✓ rows rebuilt for 20 one-line scroll-downs      0  (budget <= 60)
   ✓ idle frames / 5s (re-settled)           0  (budget <= 2)
-  ✓ 3MB dump wall-time (ms)               295  (budget <= 6000)
+  ✓ 3MB dump wall-time (ms)               298  (budget <= 6000)
   ✓ static-shader idle / 6s                 0  (budget <= 2)
-  ✓ plasma focused frames / 5s (min)      597  (budget >= 360)
-  ✓ plasma focused frames / 5s (max)      597  (budget <= 720)
+  ✓ plasma focused frames / 5s (min)      601  (budget >= 360)
+  ✓ plasma focused frames / 5s (max)      601  (budget <= 720)
   ✓ two-pane concurrent drain markers       2  (budget >= 2)
-  ✓ two-pane concurrent 2MB (ms)          206  (budget <= 6000)
+  ✓ two-pane concurrent 2MB (ms)          202  (budget <= 6000)
 
 passed 18 · failed 0
-Tests/perf-gate.sh: line 19:  5652 Terminated: 15          CMDY_DEFAULTS_DOMAIN="$DEFAULTS_DOMAIN" CMDY_CONFIG_DIR="$GATE" ZDOTDIR="$GATE/zsh" "$BIN" "${APP_ARGS[@]}"
+Tests/perf-gate.sh: line 19: 69464 Terminated: 15          CMDY_DEFAULTS_DOMAIN="$DEFAULTS_DOMAIN" CMDY_CONFIG_DIR="$GATE" ZDOTDIR="$GATE/zsh" "$BIN" "${APP_ARGS[@]}"

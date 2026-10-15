@@ -18,7 +18,7 @@
     },
     {
       "path": "App/AppDelegate.swift",
-      "sha256": "7f8bcfbd024fb4654a073264d6fffd5c3692d1c1c8802fe314f47a8e6eb39a57"
+      "sha256": "4438bdf873119cf3fa2eb37468bd3e2598afe24a21d276ac0d918865759dd601"
     },
     {
       "path": "App/AppUpdateWindow.swift",
@@ -110,7 +110,7 @@
     },
     {
       "path": "App/CmdyTerminalSurface.swift",
-      "sha256": "a8fb2f2e89de8d0fdf2f9b7fc7cfa5884c6780c987ab9c2787d93f7bb68362e8"
+      "sha256": "767a9dff83f11806566df122479afb875c360b95a1faa762e7d49b2865307c89"
     },
     {
       "path": "App/CommandCatalog.swift",
@@ -181,6 +181,10 @@
       "sha256": "27fc0a0c0bbb198fd232f81658909e10b10309ccae8c14f4bee665083420af31"
     },
     {
+      "path": "App/OmarchyKeymap.swift",
+      "sha256": "297d00a53632eebb06c649cd9b713a0cb27e4b52ddfee3ac0fd7617aa51e84b1"
+    },
+    {
       "path": "App/PaneComposition.swift",
       "sha256": "819e2792b129acfb6bc8fc578a77d7860a68933d5600b4bbc6d24668915f9d22"
     },
@@ -190,7 +194,7 @@
     },
     {
       "path": "App/SelfTest.swift",
-      "sha256": "1e877e65144137881daffc282d28e580e1483e15a19adac6a8854a13cd16fbe7"
+      "sha256": "ccfeb9b1f256da8ad926691b5a11441537e9a655e1af9258ae2750f03f30783e"
     },
     {
       "path": "App/SessionLifecycle.swift",
@@ -222,7 +226,7 @@
     },
     {
       "path": "App/StandardKeybindings.swift",
-      "sha256": "2ea886db9175817733e23b2780f7e3ee5ad2b0c969f495f98a44ddc816f99bc7"
+      "sha256": "1d59d0949156eb354c518ed4320a5e9482fdd5dc79f64a212cdf177ccbcfc0ff"
     },
     {
       "path": "App/TerminalLinkOpener.swift",
@@ -254,7 +258,7 @@
     },
     {
       "path": "App/TerminalWindowController.swift",
-      "sha256": "236baaf119b2c2b71ed2c0b55d918a9f81918395efb8c5d5695b1922417e7ea5"
+      "sha256": "d7ed7a01c3c5e1171dc2534c1f5fb63abd7958ecfb30ae6a817f9f2685371f51"
     },
     {
       "path": "App/ToolbarCustomizationView.swift",
@@ -282,7 +286,7 @@
     },
     {
       "path": "App/main.swift",
-      "sha256": "0b567ce9d74a66b218b9e95ad98b323704c69ecfdcfce0c89eee563e4b09a319"
+      "sha256": "69b12ef362dc6ac52515aebcc66e8d69cfdc0bf691410ea86b35e5a02bf42874"
     },
     {
       "path": "Core/Platform/platform_gpu.h",
@@ -994,7 +998,7 @@
     },
     {
       "path": "Kit/Sources/CmdyKit/AppUpdates.swift",
-      "sha256": "ccbd7da666171dccb473fce5f51855d886574e73da32b8e25617186dca408be0"
+      "sha256": "d843efbfa26eb22ec5dc88a55dec7c78930808601d99bc72877f38484ce165be"
     },
     {
       "path": "Kit/Sources/CmdyKit/AssistantCredentials.swift",
@@ -1046,11 +1050,11 @@
     },
     {
       "path": "Kit/Sources/CmdyKit/ConfigFile.swift",
-      "sha256": "9fe1f5ffeb515a55f646952d7a80a415577939594f08ee4b49ef253d622f404d"
+      "sha256": "88c0ff9cb04bf50e4bb32e43715baf567321fe45a23119756743a4926f33e56c"
     },
     {
       "path": "Kit/Sources/CmdyKit/ConfigValidation.swift",
-      "sha256": "72b498f07bd43f5a1e0bc80592c88d69222240e7c1d90fc4bb3c443b2931b806"
+      "sha256": "868fa09e4acb12f15e76cd69344c9965df647bdde17fd07b08face4f198c4123"
     },
     {
       "path": "Kit/Sources/CmdyKit/ExtensionCLI.swift",
@@ -1110,7 +1114,7 @@
     },
     {
       "path": "Kit/Sources/CmdyKit/Preferences.swift",
-      "sha256": "43ab8ddcfb1e1a7e7227b73b357081ff1f7ea015b86698a8a84d9a13df9dd13d"
+      "sha256": "ad1f53c186d768801ced1e4cbce82e44cc90a5c7180c2e5c50f61d2421feaa1a"
     },
     {
       "path": "Kit/Sources/CmdyKit/ProcessCapture.swift",
@@ -1384,8 +1388,8 @@
     {
       "active": "App/StandardKeybindings.swift",
       "activeLines": [
-        126,
-        138
+        162,
+        174
       ],
       "classificationId": "vendor-app-keybinding-switch-projection",
       "disposition": "data-plumbing",
@@ -1403,8 +1407,8 @@
     {
       "active": "App/StandardKeybindings.swift",
       "activeLines": [
-        146,
-        171
+        182,
+        207
       ],
       "classificationId": "vendor-app-keybinding-switch-projection",
       "disposition": "data-plumbing",
@@ -1422,8 +1426,8 @@
     {
       "active": "App/TerminalWindowController.swift",
       "activeLines": [
-        1520,
-        1530
+        1524,
+        1534
       ],
       "classificationId": "vendor-app-toolbar-list-structural-collision",
       "disposition": "non-substantive-structural-collision",
@@ -1631,8 +1635,8 @@
     {
       "active": "Kit/Sources/CmdyKit/Preferences.swift",
       "activeLines": [
-        364,
-        381
+        404,
+        421
       ],
       "classificationId": "vendor-kit-shader-list-structural-collision",
       "disposition": "non-substantive-structural-collision",
@@ -1650,8 +1654,8 @@
     {
       "active": "Kit/Sources/CmdyKit/Preferences.swift",
       "activeLines": [
-        540,
-        545
+        580,
+        585
       ],
       "classificationId": "vendor-kit-cursor-style-projection",
       "disposition": "data-plumbing",
@@ -1935,8 +1939,8 @@
     {
       "active": "App/CmdyTerminalSurface.swift",
       "activeLines": [
-        1310,
-        1319
+        1333,
+        1342
       ],
       "classificationId": "retired-app-process-forwarding",
       "disposition": "data-plumbing",
@@ -1954,8 +1958,8 @@
     {
       "active": "App/CmdyTerminalSurface.swift",
       "activeLines": [
-        1946,
-        1971
+        1969,
+        1994
       ],
       "classificationId": "retired-app-observer-platform-forwarding",
       "disposition": "data-plumbing",
@@ -1973,8 +1977,8 @@
     {
       "active": "App/CmdyTerminalSurface.swift",
       "activeLines": [
-        1975,
-        1988
+        1998,
+        2011
       ],
       "classificationId": "retired-app-observer-process-forwarding",
       "disposition": "data-plumbing",
@@ -1992,8 +1996,8 @@
     {
       "active": "App/CmdyTerminalSurface.swift",
       "activeLines": [
-        2068,
-        2079
+        2091,
+        2102
       ],
       "classificationId": "retired-app-kitty-render-projection",
       "disposition": "data-plumbing",
@@ -2011,8 +2015,8 @@
     {
       "active": "App/CmdyTerminalSurface.swift",
       "activeLines": [
-        2087,
-        2106
+        2110,
+        2129
       ],
       "classificationId": "retired-app-kitty-render-projection",
       "disposition": "data-plumbing",
@@ -2030,8 +2034,8 @@
     {
       "active": "App/CmdyTerminalSurface.swift",
       "activeLines": [
-        2135,
-        2143
+        2158,
+        2166
       ],
       "classificationId": "retired-app-kitty-render-projection",
       "disposition": "data-plumbing",
@@ -2087,8 +2091,8 @@
     {
       "active": "App/TerminalWindowController.swift",
       "activeLines": [
-        1520,
-        1530
+        1524,
+        1534
       ],
       "classificationId": "retired-app-toolbar-list-structural-collision",
       "disposition": "non-substantive-structural-collision",
@@ -7339,10 +7343,10 @@
       "sourceCount": 111
     }
   },
-  "reportSHA256": "3a7c606541eab0d60a52989e175241cb95aefbcf5fa37985f54441ca17d4f0e5",
+  "reportSHA256": "f6c34b5a8da389d2bd4de94c8b56baf918a189719ecced9f17e9bda0f64f89ca",
   "schemaVersion": 2,
   "summary": {
-    "activeSourceCount": 335,
+    "activeSourceCount": 336,
     "classifiedMatchCount": 315,
     "issueCount": 0,
     "matchCount": 315,

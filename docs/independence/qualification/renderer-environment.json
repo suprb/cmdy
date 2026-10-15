@@ -9,7 +9,7 @@
       "receiptSha256": "374bcec2c5ed01e0f09a1efe2e6becdd89bf0acfd7254026f246dc969b659922",
       "sourceKey": "6802d174821196cfaf6dbad9591b3ed9310572001e1b309ffd90feaae06dab4c"
     },
-    "objectSetSha256": "57ca60b57cfaed8279b5ce8983937917bf83fd8c2ab62418435bf95200495192",
+    "objectSetSha256": "5768b0debc9287bf217b083c635a743bb95e0c5cc33452d8258e8bb824872265",
     "releaseBuild": "Renderer/.build/arm64-apple-macosx/release"
   },
   "fixtureSourceSha256": "aad4c214230f0106246bb54c58479dfa492cfc3f03093934511ab6d84a81cc8f",

@@ -5,7 +5,7 @@
       "exceptions": [],
       "log": {
         "path": "docs/independence/qualification/performance-normal.log",
-        "sha256": "18eab6d8e437102eda25297d23dabcc234c65761185ac1fb908c4e3ef8f5b982"
+        "sha256": "164f678de0577e458b10a207d6d6123af1e00651d5934e4240aeb2b9c3069ca2"
       },
       "mode": "normal",
       "passed": true,
@@ -15,7 +15,7 @@
       "exceptions": [],
       "log": {
         "path": "docs/independence/qualification/performance-maximized.log",
-        "sha256": "4378fbecee7049c9479364545286d7636e4e4487712786d83a06cc215f16934a"
+        "sha256": "884d116fff2d68167c3b716b4b3ffdbc4994be9d256642a58b5630f2aabe3c70"
       },
       "mode": "maximized",
       "passed": true,
@@ -26,7 +26,7 @@
     "exceptions": [],
     "log": {
       "path": "docs/independence/qualification/resource-plateau.log",
-      "sha256": "192438ac0a1b3293864f4195af7fd63a6caeebe5df13e161616c4b541c76fad7"
+      "sha256": "34f778c04d98072d2df683e16fcac34789b077739f2690cf531d89b50f1085a6"
     },
     "monotonicGrowth": false,
     "passed": true,
@@ -36,24 +36,24 @@
   },
   "review": {
     "decision": "approved",
-    "reference": "cmdy 1.0.9 owner approval ('yes, go!'); contact-sheet-sha256:7333defbd985eac38fd635b711178840e12e1a044a5503f5fc2c45e81ddf600c; the first normal-window perf run missed idle frames 3 > 2 once and the full gate was rerun (18/18, kept beside the evidence)",
-    "reviewedAtUTC": "2026-10-14T11:02:27Z",
+    "reference": "cmdy 1.0.10 owner approval ('great yes go'); contact-sheet-sha256:18b273581c7e4471e0595efa8f1a655d9ad1777257de2fc90555bde2ff366716",
+    "reviewedAtUTC": "2026-10-15T14:31:38Z",
     "reviewerName": "Andreas Pihlström"
   },
   "schemaVersion": 1,
-  "sourceManifestSha256": "8bea34eba5d9f1e505caceb0b6e64c0cfdce2f8cfa9e500105221559bd9cbb48",
+  "sourceManifestSha256": "0d7e896ff2ac44b128a067062e33a4f7ffcc22c01bd76aec4e36d3dbb19c6e65",
   "zoo": {
     "captureCount": 14,
     "captureManifest": {
       "path": "docs/independence/qualification/zoo-capture-manifest.json",
-      "sha256": "5242d774696f3f075a42da5148eaf79d4d2dbd28e542947f7bc207f9063c5123"
+      "sha256": "694daef1dd0f399d63362d0ab1be11a5e7f457b28f3a71f09fa7cd863355ed23"
     },
     "exceptions": [],
     "passed": true,
     "scriptSha256": "4a9f9d67c46556f38eeb0df5689315b89da35a957b1bab0adaf574301bf75d2b",
     "visualReview": {
       "path": "docs/independence/qualification/zoo-visual-review.json",
-      "sha256": "b3f5b9d7093b3f2f5002d3f7b392fabcdfa7e36c7a69dce2840e175c6a31a8ac"
+      "sha256": "fa12d1c908ffc372b24444eda5da1b8023c021364e00b0ce492842b722732d56"
     }
   }
 }

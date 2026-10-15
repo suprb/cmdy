@@ -1,8 +1,8 @@
 {
   "appBinary": {
     "name": "cmdy",
-    "sha256": "52b0f91668e3161866a25df7a956bd26fd021317785d696e07c1d67d1579e3e0",
-    "size": 14518008
+    "sha256": "cec2827cffdf75a5ecabdb1a5d97e72c637bfd215f07dc8578d4cb1d08c925cb",
+    "size": 14620072
   },
   "captureCount": 14,
   "captures": [
@@ -17,16 +17,16 @@
     {
       "file": "01-vim-open.png",
       "height": 1080,
-      "sha256": "7a7aa183e28ae3b798f50b8e8babcb76890befb489cf3157c5690c5f581cd554",
-      "size": 186066,
+      "sha256": "9e3d6f0c46a96875fb8ad6beb4662a8196c3074ec335666825a72f0d9c16aa3f",
+      "size": 186305,
       "stationID": "01-vim-open",
       "width": 1720
     },
     {
       "file": "02-vim-scrolled.png",
       "height": 1080,
-      "sha256": "2c02594f6dea8d43939dac2efb2b752460bf8c32545966615b2a17c9cb913602",
-      "size": 159242,
+      "sha256": "06c6ddb083d12e505763e85127362e80a8072b84864a61d356714b3a2e5bcfed",
+      "size": 159509,
       "stationID": "02-vim-scrolled",
       "width": 1720
     },
@@ -65,40 +65,40 @@
     {
       "file": "07-htop.png",
       "height": 1080,
-      "sha256": "7424aebe5c610b617a6adcf617a741ef437ecdb9324fb82b0eb3efdb69699890",
-      "size": 372327,
+      "sha256": "ed29cc78b7fd4461149e326ba7032ee10ea2c8b51cf7391fa19792f945c1239d",
+      "size": 368881,
       "stationID": "07-htop",
       "width": 1720
     },
     {
       "file": "08-tmux.png",
       "height": 1080,
-      "sha256": "0ac2914120ea05ba3602360ad5e697560271a4969d1915ee4b0ed2f02e38f381",
-      "size": 73440,
+      "sha256": "c6910def56b5f62253f0b663db1c77adc37db4174004fc048e6aff99e939d04c",
+      "size": 73544,
       "stationID": "08-tmux",
       "width": 1720
     },
     {
       "file": "09-tmux-echo.png",
       "height": 1080,
-      "sha256": "a60e8b3786625a1a4048ee4500088bd98d5713b652342d38a7a5ca3cb3d370ac",
-      "size": 90089,
+      "sha256": "6d95b8a9c135cc9539575d50e0da2e7e5eb812b9c7ab874f3b8f8d753cdffe9f",
+      "size": 90193,
       "stationID": "09-tmux-echo",
       "width": 1720
     },
     {
       "file": "10-tmux-split.png",
       "height": 1080,
-      "sha256": "16d4e85a6b04d3a3c272fa8c36936dc5dc8ebe3dff9c5417ac68838388d75d95",
-      "size": 94594,
+      "sha256": "a9ca4ad0253999169eba0b0f6a99035126ca5b216d5fffad2fbfa04cd28eafac",
+      "size": 94705,
       "stationID": "10-tmux-split",
       "width": 1720
     },
     {
       "file": "11-cat-10mb.png",
       "height": 1080,
-      "sha256": "bcefbdef3e52717c9f1cffbb5c308c71966844ae882168a3897e65d5b772aaff",
-      "size": 493586,
+      "sha256": "5bafff4c06a39a9957a884bd62032ff94addde452fc30b3c7f63cb99d3fc6114",
+      "size": 493457,
       "stationID": "11-cat-10mb",
       "width": 1720
     },
@@ -113,8 +113,8 @@
     {
       "file": "99-shell-after.png",
       "height": 1080,
-      "sha256": "b0a5fd88c9506efa19b07c17803565a8ad782a6fe56e338e38ab3468ae8cd2f1",
-      "size": 480456,
+      "sha256": "928f3696bbfa43e78fdee246d1de20667a9dfb724f56088fa2160840af86eff0",
+      "size": 480325,
       "stationID": "99-shell-after",
       "width": 1720
     }
