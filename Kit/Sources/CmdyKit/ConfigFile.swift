@@ -204,6 +204,7 @@ public enum ConfigFile {
             NSLog("cmdy: use-gpu = false is no longer supported — rendering is always Metal")
         }
         if let v = kv["option-as-meta"].flatMap(bool) { p.optionAsMeta = v }
+        if let v = kv["keymap"]?.lowercased(), Preferences.keymaps.contains(v) { p.keymap = v }
         if let v = kv["attention-signals"].flatMap(bool) { p.attentionSignals = v }
         if let v = kv["shell-integration"].flatMap(bool) { p.shellIntegration = v }
         if let v = kv["clean-prompt"].flatMap(bool) { p.cleanPrompt = v }
@@ -493,6 +494,10 @@ public enum ConfigFile {
 
         # Send Option as Meta/Esc (for emacs, tmux prefixes, etc.).
         option-as-meta = \(p.optionAsMeta)
+        # Keymap: standard | omarchy. omarchy adds Omarchy's tmux/herdr keys:
+        # Alt+Enter splits, Ctrl+Alt+arrows move between panes, Alt+1..9 picks a
+        # tab, and Ctrl+Space is the prefix (Ctrl+Space ? lists every key).
+        keymap = \(p.keymap)
         # OSC 133 shell integration: command blocks, durations, jump-to-command,
         # finished-while-away notifications. Off = a plain terminal.
         shell-integration = \(p.shellIntegration)

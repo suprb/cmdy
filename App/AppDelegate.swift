@@ -374,6 +374,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             runWindowGridStressSmokeTest()
         } else if CommandLine.arguments.contains("--ui-test-window-grid") {
             runWindowGridSmokeTest()
+        } else if CommandLine.arguments.contains("--ui-test-omarchy-keys") {
+            Preferences.shared.keymap = "omarchy"
+            newWindow(nil)
+            runOmarchyKeysSmokeTest()
         } else if uiTestMerge {
             newWindow(nil)
             runMergeSmokeTest()
@@ -2503,6 +2507,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                     == (currentController?.selectedShaderName ?? p.shaderName))
                     ? .on : .off
             case #selector(toggleOptionAsMeta(_:)): item.state = p.optionAsMeta ? .on : .off
+            case #selector(toggleOmarchyKeys(_:)): item.state = p.usesOmarchyKeys ? .on : .off
             case #selector(toggleShellIntegration(_:)): item.state = p.shellIntegration ? .on : .off
             case #selector(toggleAutomaticErrorHelp(_:)): item.state = p.automaticErrorHelp ? .on : .off
             case #selector(toggleCleanPrompt(_:)): item.state = p.cleanPrompt ? .on : .off
@@ -3362,6 +3367,116 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                                     && (out?.panes.first?.currentCwd != nil)
                                 print("UITEST3 windows=\(self.controllers.count) hostPanes=\(host?.panes.count ?? -1) breakoutOK=\(ok)")
                                 NSApp.terminate(nil)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /// `--ui-test-omarchy-keys`: drive the Omarchy keymap through the real key
+    /// monitor: split, focus, last pane, break a pane into a tab, move tabs,
+    /// join the tab back, and switch windows, with every shell kept alive.
+    private func runOmarchyKeysSmokeTest() {
+        var failures: [String] = []
+        func expect(_ ok: Bool, _ label: String) {
+            print("UIOMARCHY \(ok ? "PASS" : "FAIL") \(label)")
+            if !ok { failures.append(label) }
+        }
+        func press(_ keyCode: UInt16, _ characters: String,
+                   _ modifiers: NSEvent.ModifierFlags = []) {
+            guard let window = NSApp.keyWindow,
+                  let event = NSEvent.keyEvent(
+                    with: .keyDown, location: .zero, modifierFlags: modifiers,
+                    timestamp: ProcessInfo.processInfo.systemUptime,
+                    windowNumber: window.windowNumber, context: nil,
+                    characters: characters, charactersIgnoringModifiers: characters,
+                    isARepeat: false, keyCode: keyCode) else { return }
+            _ = standardKeybindings?.handle(event)
+        }
+        func prefix(_ keyCode: UInt16, _ characters: String,
+                    _ modifiers: NSEvent.ModifierFlags = []) {
+            press(49, " ", [.control])
+            press(keyCode, characters, modifiers)
+        }
+        func step(_ delay: Double = 0.8, _ body: @escaping () -> Void) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: body)
+        }
+        var host: TerminalWindowController?
+        var originalIDs: Set<String> = []
+        step(1.5) {
+            host = self.controllers.first
+            host?.panes.first?.focus()
+            press(36, "\r", [.option])                       // Alt+Enter
+            step {
+                expect(host?.panes.count == 2, "Alt+Enter splits")
+                let frames = host?.panes.map { $0.convert($0.bounds, to: nil) } ?? []
+                expect(frames.count == 2 && abs(frames[0].minX - frames[1].minX) < 1,
+                       "Alt+Enter splits down (panes stacked)")
+                press(36, "\r", [.option, .shift])            // Alt+Shift+Enter
+                step {
+                    expect(host?.panes.count == 3, "Alt+Shift+Enter splits")
+                    let before = host?.focusedPane
+                    press(126, "", [.control, .option])       // Ctrl+Alt+Up
+                    step {
+                        let moved = host?.focusedPane
+                        expect(moved != nil && moved !== before, "Ctrl+Alt+Up focuses another pane")
+                        prefix(41, ";")                       // prefix ;
+                        step {
+                            expect(host?.focusedPane === before, "prefix ; returns to the last pane")
+                            originalIDs = Set(host?.panes.map(\.paneId) ?? [])
+                            prefix(18, "!", [.shift])          // prefix !
+                            step(1.2) {
+                                let tabs = host.map { self.workspaceTabs(containing: $0) } ?? []
+                                expect(host?.panes.count == 2 && tabs.count == 2,
+                                       "prefix ! breaks the pane into a new tab")
+                                let broken = tabs.first { $0 !== host }
+                                press(123, "", [.option, .shift]) // Alt+Shift+Left
+                                step {
+                                    let order = host.map { self.workspaceTabs(containing: $0) } ?? []
+                                    expect(order.first === broken, "Alt+Shift+Left moves the tab left")
+                                    press(124, "", [.option, .shift]) // Alt+Shift+Right
+                                    step {
+                                        let back = host.map { self.workspaceTabs(containing: $0) } ?? []
+                                        expect(back.last === broken, "Alt+Shift+Right moves it back")
+                                        press(123, "", [.option])  // Alt+Left
+                                        step {
+                                            expect(NSApp.keyWindow === host?.window,
+                                                   "Alt+Left selects the previous tab")
+                                            press(124, "", [.option]) // Alt+Right
+                                            step {
+                                                expect(NSApp.keyWindow === broken?.window,
+                                                       "Alt+Right selects the next tab")
+                                                prefix(19, "@", [.shift]) // prefix @
+                                                step(1.2) {
+                                                    let ids = Set(host?.panes.map(\.paneId) ?? [])
+                                                    let tabs = host.map { self.workspaceTabs(containing: $0) } ?? []
+                                                    expect(ids == originalIDs && tabs.count == 1,
+                                                           "prefix @ joins the tab back into the split")
+                                                    expect(host?.panes.allSatisfy { $0.currentCwd != nil } == true,
+                                                           "every shell survives break and join")
+                                                    host?.setCustomTabTitle("build")
+                                                    expect(host?.window?.title.hasPrefix("build") == true,
+                                                           "renamed tab keeps its name")
+                                                    prefix(8, "C", [.shift]) // prefix C
+                                                    step(1.2) {
+                                                        let second = NSApp.keyWindow
+                                                        expect(self.controllers.count == 2 && second !== host?.window,
+                                                               "prefix C opens a new window")
+                                                        press(126, "", [.option]) // Alt+Up
+                                                        step {
+                                                            expect(NSApp.keyWindow !== second,
+                                                                   "Alt+Up switches windows")
+                                                            print("UIOMARCHY \(failures.isEmpty ? "ALL PASS" : "\(failures.count) FAILURE(S)")")
+                                                            exit(failures.isEmpty ? 0 : 1)
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -4489,6 +4604,60 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         return true
     }
 
+    /// Move a tab one place left or right, like tmux swap-window -t -1/+1.
+    @discardableResult
+    func moveWorkspaceTab(_ controller: TerminalWindowController, by offset: Int) -> Bool {
+        let set = workspaceTabSet(containing: controller)
+        guard let index = set.controllers.firstIndex(where: { $0 === controller }) else {
+            return false
+        }
+        let target = index + offset
+        guard target != index, set.controllers.indices.contains(target) else { return false }
+        if !set.usesSidebar {
+            guard let window = controller.window, let group = window.tabGroup else { return false }
+            set.isTransitioning = true
+            group.removeWindow(window)
+            group.insertWindow(window, at: target)
+            set.isTransitioning = false
+            window.makeKeyAndOrderFront(nil)
+        }
+        set.controllers.swapAt(index, target)
+        NotificationCenter.default.post(name: .cmdyWorkspaceFrameChanged, object: controller)
+        return true
+    }
+
+    /// Join a tab back into the tab on its left as a split on the right; the
+    /// reverse of breaking a pane out into a tab.
+    @discardableResult
+    func joinWorkspaceTabIntoPrevious(_ controller: TerminalWindowController) -> Bool {
+        let set = workspaceTabSet(containing: controller)
+        guard let index = set.controllers.firstIndex(where: { $0 === controller }),
+              index > 0 else { return false }
+        let destination = set.controllers[index - 1]
+        guard moveWorkspaceTab(controller, into: destination, side: .right) else { return false }
+        activateWorkspaceTab(destination, from: destination)
+        return true
+    }
+
+    /// Cycle between windows (tab groups), like tmux switch-client -p/-n.
+    @discardableResult
+    func selectWorkspaceWindow(from controller: TerminalWindowController, offset: Int) -> Bool {
+        let current = workspaceTabSet(containing: controller)
+        var sets: [WorkspaceTabSet] = []
+        for candidate in controllers {
+            let set = workspaceTabSet(containing: candidate)
+            if !sets.contains(where: { $0 === set }) { sets.append(set) }
+        }
+        guard sets.count > 1, let index = sets.firstIndex(where: { $0 === current }) else {
+            return false
+        }
+        let next = sets[(index + offset % sets.count + sets.count) % sets.count]
+        guard let first = next.selected ?? next.controllers.first,
+              let target = selectedWorkspaceTab(containing: first) else { return false }
+        target.window?.makeKeyAndOrderFront(nil)
+        return true
+    }
+
     @discardableResult
     func selectWorkspaceTab(from controller: TerminalWindowController,
                             index: Int) -> Bool {
@@ -4958,6 +5127,33 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         refreshMenuStates()
     }
     @objc func toggleOptionAsMeta(_ sender: Any?) { Preferences.shared.optionAsMeta.toggle() }
+    @objc func toggleOmarchyKeys(_ sender: Any?) {
+        let p = Preferences.shared
+        p.keymap = p.usesOmarchyKeys ? "standard" : "omarchy"
+    }
+    @objc func showOmarchyKeys(_ sender: Any?) {
+        showKeymapHelp(relativeTo: NSApp.keyWindow)
+    }
+
+    func showKeymapHelp(relativeTo parent: NSWindow?) {
+        let alert = NSAlert()
+        alert.messageText = Preferences.shared.usesOmarchyKeys
+            ? "Omarchy Keys" : "Omarchy Keys (off)"
+        let width = OmarchyKeymap.helpRows.map(\.keys.count).max() ?? 0
+        let rows = OmarchyKeymap.helpRows.map {
+            $0.keys.padding(toLength: width + 2, withPad: " ", startingAt: 0) + $0.action
+        }
+        let text = NSTextField(wrappingLabelWithString: rows.joined(separator: "\n"))
+        text.font = .monospacedSystemFont(ofSize: 11, weight: .regular)
+        text.isSelectable = true
+        alert.accessoryView = text
+        alert.informativeText = Preferences.shared.usesOmarchyKeys
+            ? "Ctrl+Space is the prefix: press it, then the key."
+            : "Turn on View → Terminal → Omarchy Keys, or set keymap = omarchy."
+        alert.addButton(withTitle: "OK")
+        if let parent, parent.isVisible { alert.beginSheetModal(for: parent) }
+        else { alert.runModal() }
+    }
     @objc func toggleShellIntegration(_ sender: Any?) { Preferences.shared.shellIntegration.toggle() }
     @objc func toggleAutomaticErrorHelp(_ sender: Any?) { Preferences.shared.automaticErrorHelp.toggle() }
     @objc func toggleCleanPrompt(_ sender: Any?) { Preferences.shared.cleanPrompt.toggle() }
@@ -5497,6 +5693,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             item.state = NSApp.keyWindow?.level == .floating ? .on : .off
         case #selector(toggleOptionAsMeta(_:)):
             item.state = p.optionAsMeta ? .on : .off
+        case #selector(toggleOmarchyKeys(_:)):
+            item.state = p.usesOmarchyKeys ? .on : .off
         case #selector(toggleShellIntegration(_:)):
             item.state = p.shellIntegration ? .on : .off
         case #selector(toggleAutomaticErrorHelp(_:)):

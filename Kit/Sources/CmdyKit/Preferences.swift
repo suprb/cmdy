@@ -36,6 +36,7 @@ public final class Preferences {
         static let cursorStyle = "cursorStyle"
         static let cursorColorOverride = "cursorColorOverride"
         static let optionAsMeta = "optionAsMeta"
+        static let keymap = "keymap"
         static let attentionSignals = "attentionSignals"
         static let shellIntegration = "shellIntegration"
         static let cleanPrompt = "cleanPrompt"
@@ -215,6 +216,21 @@ public final class Preferences {
         set { guard newValue != attentionSignals else { return }
               d.set(newValue, forKey: Key.attentionSignals); sync("attention-signals", "\(newValue)"); changed() }
     }
+    /// Keyboard layer on top of the macOS defaults: "standard", or "omarchy"
+    /// for Omarchy's tmux/herdr pane, tab and window keys.
+    public static let keymaps = ["standard", "omarchy"]
+    public var keymap: String {
+        get {
+            let value = d.string(forKey: Key.keymap)?.lowercased() ?? "standard"
+            return Self.keymaps.contains(value) ? value : "standard"
+        }
+        set {
+            let value = newValue.lowercased()
+            guard Self.keymaps.contains(value), value != keymap else { return }
+            d.set(value, forKey: Key.keymap); sync("keymap", value); changed()
+        }
+    }
+    public var usesOmarchyKeys: Bool { keymap == "omarchy" }
     public var optionAsMeta: Bool {
         get { d.bool(forKey: Key.optionAsMeta) }
         set { guard newValue != optionAsMeta else { return }

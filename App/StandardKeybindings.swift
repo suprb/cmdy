@@ -24,12 +24,18 @@ final class StandardKeybindings {
         case startSearch, searchSelection, endSearch, searchNext, searchPrevious
         case inspector
         case send(String)
+        // Omarchy keymap (OmarchyKeymap.swift).
+        case resizeCells(TerminalWindowController.PaneDirection, Int)
+        case lastPane, breakPaneToTab, joinTabLeft
+        case moveTab(Int), renameTab, switchWindow(Int), keymapHelp
     }
 
     private weak var delegate: AppDelegate?
     private var monitor: Any?
     private var importedMappings:
         [CMDYKeybindingShortcut: CMDYKeybindingCommand] = [:]
+    /// Set after Ctrl+Space with the Omarchy keymap; the next key is a prefix key.
+    private(set) var prefixArmed = false
 
     init(delegate: AppDelegate,
          importedMappings: [CMDYKeybindingShortcut: CMDYKeybindingCommand]? = nil) {
@@ -47,10 +53,39 @@ final class StandardKeybindings {
         if ((event.window ?? NSApp.keyWindow)?.firstResponder as? NSTextInputClient)?.hasMarkedText() == true {
             return false
         }
+        if prefixArmed {
+            // Modifier-only presses do not reach a keyDown monitor; any other
+            // key completes the prefix, bound or not, as in tmux.
+            prefixArmed = false
+            guard let action = OmarchyKeymap.afterPrefix(
+                keyCode: event.keyCode,
+                characters: event.charactersIgnoringModifiers ?? "",
+                modifiers: event.modifierFlags) else {
+                NSSound.beep()
+                return true
+            }
+            if !perform(action, event: event) { NSSound.beep() }
+            return true
+        }
         if let command = Self.importedCommand(
             for: event, mappings: importedMappings),
            let action = Self.action(for: command) {
             return perform(action, event: event)
+        }
+        if Preferences.shared.usesOmarchyKeys {
+            if OmarchyKeymap.isPrefix(keyCode: event.keyCode, modifiers: event.modifierFlags),
+               terminalHasFocus(event) {
+                prefixArmed = true
+                return true
+            }
+            // A bound key with nothing to act on (one tab, no neighbor pane)
+            // does nothing, as in tmux, instead of reaching the shell.
+            if let action = OmarchyKeymap.root(
+                keyCode: event.keyCode, modifiers: event.modifierFlags),
+               terminalHasFocus(event) {
+                _ = perform(action, event: event)
+                return true
+            }
         }
         guard let action = Self.resolve(event) else { return false }
         return perform(action, event: event)
@@ -296,6 +331,14 @@ final class StandardKeybindings {
         }
     }
 
+    private func terminalHasFocus(_ event: NSEvent) -> Bool {
+        guard let controller = Self.terminalController(
+            eventWindow: event.window, keyWindow: NSApp.keyWindow),
+              CmdyEditorManager.shared.editor(in: event.window ?? NSApp.keyWindow) == nil
+        else { return false }
+        return controller.focusedPane?.isTerminalFocused == true
+    }
+
     static func terminalController(eventWindow: NSWindow?, keyWindow: NSWindow?) -> TerminalWindowController? {
         // A native sheet or unrelated window can own an event while a terminal
         // keeps its last first responder. Only a windowless event may use the
@@ -423,6 +466,18 @@ final class StandardKeybindings {
             controller.showFindBar(term: term)
         case .inspector: controller.showInspector()
         case .send(let text): pane.surface.send(txt: text)
+        case .resizeCells(let direction, let cells):
+            return controller.resizeSplit(direction: direction, cells: cells)
+        case .lastPane: return controller.focusLastPane()
+        case .breakPaneToTab:
+            guard controller.panes.count > 1 else { return false }
+            controller.breakOutFocusedPane(asTab: true)
+        case .joinTabLeft: return delegate.joinWorkspaceTabIntoPrevious(controller)
+        case .moveTab(let offset): return delegate.moveWorkspaceTab(controller, by: offset)
+        case .renameTab: controller.promptRenameTab()
+        case .switchWindow(let offset):
+            return delegate.selectWorkspaceWindow(from: controller, offset: offset)
+        case .keymapHelp: delegate.showKeymapHelp(relativeTo: controller.window)
         case .endSearch, .searchNext, .searchPrevious: return false
         }
         return true

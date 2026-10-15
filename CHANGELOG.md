@@ -11,6 +11,20 @@ be called out here with a migration path before a versioned release.
 
 ## [Unreleased]
 
+### Added
+
+- Omarchy keys (View → Terminal → Omarchy Keys, or `keymap = omarchy`):
+  Omarchy's tmux/herdr pane, tab and window keys with the Ctrl+Space prefix,
+  including breaking a pane into a tab (`prefix !`) and joining it back
+  (`prefix @`), moving and renaming tabs, and switching windows.
+
+### Fixed
+
+- A click reliably dismisses a text selection, including small trackpad
+  movement, clicks in apps that use the mouse, and clicks in the padding.
+- Update checks find new releases when the GitHub API is rate-limited or
+  blocked, and say so when they cannot check.
+
 ## [1.0.9] - 2026-10-13
 
 ### Fixed

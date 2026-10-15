@@ -633,6 +633,10 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
     private(set) var panes: [TerminalPane] = []
     private var editorPanes: [CmdyEditorPane] = []
     private var lastFocused: TerminalPane?
+    /// The pane focused before the current one, for tmux's last-pane.
+    private weak var previouslyFocused: TerminalPane?
+    /// A tab name set with Rename Tab; nil follows the shell title or folder.
+    private(set) var customTabTitle: String?
     private var responderObservation: NSKeyValueObservation?
     private var chromeUpdateScheduled = false
     private var isNormalizingNativeToolbar = false
@@ -3062,6 +3066,7 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
                 if let p = controller.panes.first(where: { $0.isFocused }) {
                     controller.lastFocused = p
                     if p !== previous {
+                        controller.previouslyFocused = previous
                         if let previous {
                             PluginManager.shared.emit(
                                 "pane-updated", ["pane": previous.paneId])
@@ -4347,6 +4352,51 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
         else if let editor = view as? CmdyEditorPane { editor.focus() }
     }
 
+    /// Jump back to the pane that was focused before this one.
+    @discardableResult
+    func focusLastPane() -> Bool {
+        guard let pane = previouslyFocused, pane !== focusedPane,
+              panes.contains(where: { $0 === pane }), !pane.isHidden else { return false }
+        pane.focus()
+        return true
+    }
+
+    /// Resize by whole terminal cells, like tmux resize-pane -L 5.
+    @discardableResult
+    func resizeSplit(direction: PaneDirection, cells: Int) -> Bool {
+        guard let pane = focusedPane else { return false }
+        let cell = pane.surface.cellSize
+        let step = direction == .left || direction == .right ? cell.width : cell.height
+        return resizeSplit(direction: direction, points: max(1, step) * CGFloat(cells))
+    }
+
+    func setCustomTabTitle(_ title: String?) {
+        let trimmed = title?.trimmingCharacters(in: .whitespacesAndNewlines)
+        customTabTitle = trimmed?.isEmpty == false ? trimmed : nil
+        updateWindowTitle()
+        NotificationCenter.default.post(name: .cmdyWorkspaceFrameChanged, object: self)
+    }
+
+    /// Ask for a tab name, like tmux rename-window. An empty name restores
+    /// the automatic title.
+    func promptRenameTab() {
+        guard let window else { return }
+        let alert = NSAlert()
+        alert.messageText = "Rename Tab"
+        alert.informativeText = "Leave empty to follow the shell title again."
+        let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 260, height: 24))
+        field.stringValue = customTabTitle ?? ""
+        field.placeholderString = window.title
+        alert.accessoryView = field
+        alert.addButton(withTitle: "Rename")
+        alert.addButton(withTitle: "Cancel")
+        alert.window.initialFirstResponder = field
+        alert.beginSheetModal(for: window) { [weak self] response in
+            guard response == .alertFirstButtonReturn else { return }
+            self?.setCustomTabTitle(field.stringValue)
+        }
+    }
+
     @discardableResult
     func resizeSplit(direction: PaneDirection, points: CGFloat = 10) -> Bool {
         guard var child: NSView = (focusedEditor as NSView?) ?? (focusedPane as NSView?) else {
@@ -4568,7 +4618,9 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
             let pane = controller.focusedPane ?? controller.panes.first
             let selected = controller === selectedController
             let title: String
-            if let pane, !pane.oscTitle.isEmpty {
+            if let custom = controller.customTabTitle {
+                title = custom
+            } else if let pane, !pane.oscTitle.isEmpty {
                 title = pane.oscTitle
             } else if let cwd = pane?.currentCwd {
                 title = (cwd as NSString).lastPathComponent
@@ -6013,7 +6065,9 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
         }
         guard let pane = focusedPane else { return }
         let name: String
-        if !pane.oscTitle.isEmpty {
+        if let customTabTitle {
+            name = customTabTitle
+        } else if !pane.oscTitle.isEmpty {
             name = pane.oscTitle
         } else if let cwd = pane.currentCwd {
             name = (cwd as NSString).lastPathComponent

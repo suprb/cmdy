@@ -423,6 +423,56 @@ enum SelfTest {
                   "first-launch text rendering matches the default config")
         }
 
+        // Omarchy keymap: the tmux/herdr keys from basecamp/omarchy.
+        func omarchyRoot(_ keyCode: UInt16, _ modifiers: NSEvent.ModifierFlags) -> String {
+            OmarchyKeymap.root(keyCode: keyCode, modifiers: modifiers)
+                .map { String(describing: $0) } ?? "nil"
+        }
+        func omarchyPrefix(_ characters: String, _ keyCode: UInt16 = 0,
+                           _ modifiers: NSEvent.ModifierFlags = []) -> String {
+            OmarchyKeymap.afterPrefix(keyCode: keyCode, characters: characters, modifiers: modifiers)
+                .map { String(describing: $0) } ?? "nil"
+        }
+        check(omarchyRoot(36, [.option]) == "splitDown"
+                && omarchyRoot(36, [.option, .shift]) == "splitRight"
+                && omarchyRoot(53, [.option]) == "closeSurface",
+              "omarchy keys: Alt+Enter splits down, Alt+Shift+Enter right, Alt+Esc closes")
+        check(omarchyRoot(123, [.control, .option]).hasPrefix("focus(")
+                && omarchyRoot(123, [.control, .option]).hasSuffix("left)"),
+              "omarchy keys: Ctrl+Alt+Left focuses the pane on the left")
+        check(omarchyRoot(124, [.control, .option, .shift]).hasPrefix("resizeCells(")
+                && omarchyRoot(124, [.control, .option, .shift]).hasSuffix("right, 5)"),
+              "omarchy keys: Ctrl+Alt+Shift+Right resizes five cells")
+        check(omarchyRoot(20, [.option]) == "tab(2)" && omarchyRoot(25, [.option]) == "tab(8)"
+                && omarchyRoot(123, [.option]) == "previousTab"
+                && omarchyRoot(124, [.option]) == "nextTab"
+                && omarchyRoot(123, [.option, .shift]) == "moveTab(-1)"
+                && omarchyRoot(124, [.option, .shift]) == "moveTab(1)"
+                && omarchyRoot(126, [.option]) == "switchWindow(-1)"
+                && omarchyRoot(125, [.option]) == "switchWindow(1)",
+              "omarchy keys: Alt+1..9, Alt+arrows and Alt+Shift+arrows drive tabs and windows")
+        check(omarchyRoot(0, [.option]) == "nil" && omarchyRoot(36, []) == "nil"
+                && omarchyRoot(36, [.command]) == "nil",
+              "omarchy keys: unbound keys still reach the terminal")
+        check(OmarchyKeymap.isPrefix(keyCode: 49, modifiers: [.control])
+                && !OmarchyKeymap.isPrefix(keyCode: 49, modifiers: [.control, .shift])
+                && omarchyPrefix(" ", 49, [.control]) == "send(\"\\0\")",
+              "omarchy keys: Ctrl+Space is the prefix and twice sends it through")
+        check(omarchyPrefix("h") == "splitDown" && omarchyPrefix("v") == "splitRight"
+                && omarchyPrefix("x") == "closeSurface" && omarchyPrefix("z") == "splitZoom"
+                && omarchyPrefix(";") == "lastPane"
+                && omarchyPrefix("!", 18, [.shift]) == "breakPaneToTab"
+                && omarchyPrefix("@", 19, [.shift]) == "joinTabLeft",
+              "omarchy keys: prefix pane keys, break (!) and join (@)")
+        check(omarchyPrefix("c") == "newTab" && omarchyPrefix("r") == "renameTab"
+                && omarchyPrefix("k") == "closeTab" && omarchyPrefix("9") == "tab(8)"
+                && omarchyPrefix("C", 8, [.shift]) == "newWindow"
+                && omarchyPrefix("K", 40, [.shift]) == "closeWindow"
+                && omarchyPrefix("N", 45, [.shift]) == "switchWindow(1)"
+                && omarchyPrefix("?", 44, [.shift]) == "keymapHelp"
+                && omarchyPrefix("y") == "nil",
+              "omarchy keys: prefix tab and window keys; unbound prefix keys do nothing")
+
         // Ghostty-compatible standard keybindings. Test physical and textual
         // routes so keyboard layouts cannot silently regress the common set.
         if case .fullscreen? = StandardKeybindings.resolve(

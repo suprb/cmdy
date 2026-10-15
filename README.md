@@ -562,6 +562,33 @@ replace macOS or existing cmdy shortcuts and have Undo and Reset. See the
 
 Themes, fonts, line spacing, cursor, and toggles also live in the **View** menu.
 
+### Omarchy keys
+
+**View → Terminal → Omarchy Keys** (or `keymap = omarchy` in the config)
+adds the pane, tab, and window keys from Omarchy's tmux and herdr setup. A
+tmux pane is a cmdy split, a tmux window is a tab, and a tmux session is a
+window. `Ctrl+Space` is the prefix: press it, then the key. `Ctrl+Space ?`
+lists every key. With Omarchy Keys on, `Alt+←/→` switch tabs instead of
+moving the shell cursor by word.
+
+| Key | Action |
+|-----|--------|
+| `Alt+Enter` · `prefix h` | Split down |
+| `Alt+Shift+Enter` · `prefix v` | Split right |
+| `Alt+Esc` · `prefix x` | Close pane |
+| `Ctrl+Alt+←↑↓→` | Focus pane |
+| `Ctrl+Alt+Shift+←↑↓→` · `prefix Ctrl+←↑↓→` | Resize pane by 5 cells |
+| `prefix z` / `prefix ;` | Zoom pane / last pane |
+| `prefix !` | Break the pane into a new tab |
+| `prefix @` | Join the tab into the tab on its left |
+| `Alt+1…9` · `prefix 1…9` | Go to tab |
+| `Alt+←/→` · `prefix p/n` | Previous / next tab |
+| `Alt+Shift+←/→` | Move tab left / right |
+| `prefix c` / `r` / `k` | New / rename / close tab |
+| `Alt+↑/↓` · `prefix P/N` | Previous / next window |
+| `prefix C` / `K` | New / close window |
+| `prefix q` / `?` | Reload configuration / show keys |
+
 ## Record a feature tour
 
 Open and focus the cmdy pane you want to film, start a macOS window recording,

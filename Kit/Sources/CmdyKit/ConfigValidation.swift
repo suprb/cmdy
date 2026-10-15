@@ -71,6 +71,10 @@ extension ConfigFile {
                     if !["theme", "auto"].contains(lower), Theme.hex(value) == nil {
                         message = "Use theme or a color in #RRGGBB format."
                     }
+                case "keymap":
+                    if !Preferences.keymaps.contains(lower) {
+                        message = "Choose standard or omarchy."
+                    }
                 case "cursor-style":
                     if !["block", "bar", "underline"].contains(lower) {
                         message = "Choose block, bar, or underline."
