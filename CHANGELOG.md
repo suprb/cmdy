@@ -11,6 +11,8 @@ be called out here with a migration path before a versioned release.
 
 ## [Unreleased]
 
+## [1.0.10] - 2026-10-15
+
 ### Added
 
 - Omarchy keys (View → Terminal → Omarchy Keys, or `keymap = omarchy`):
