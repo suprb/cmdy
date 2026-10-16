@@ -84,6 +84,18 @@ public final class AppUpdateMonitor {
         var cachedRelease: AppReleaseUpdate?
         var notifiedAvailableVersion: String?
         var notifiedDownloadVersion: String?
+        var badgeDismissedVersion: String?
+    }
+
+    /// The in-window update badge stays closed for a version once dismissed.
+    public func isBadgeDismissed(for version: String) -> Bool {
+        loadState().badgeDismissedVersion == version
+    }
+
+    public func dismissBadge(for version: String) {
+        var state = loadState()
+        state.badgeDismissedVersion = version
+        saveState(state)
     }
 
     private struct GitHubRelease: Decodable {

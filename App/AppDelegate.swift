@@ -1105,8 +1105,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         refreshMenuStates()
         MarketplaceUpdateMonitor.shared.checkIfDue()
+        MainActor.assumeIsolated {
+            UpdateBadgeController.shared.onOpen = { [weak self] in self?.checkForUpdates(nil) }
+            UpdateBadgeController.shared.start()
+        }
         CmdyPerformanceTrace.record(
             event: "startup.post-window", started: postWindowStarted)
+        if CommandLine.arguments.contains("--ui-test-update-badge") {
+            // The update state file in CMDY_CONFIG_DIR supplies a newer cached
+            // release. Report the badge and the window frame for a screenshot.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
+                let window = self?.controllers.first?.window
+                let badge = window?.contentView?.subviews.first { $0 is UpdateBadgeView }
+                let screenHeight = NSScreen.screens.first?.frame.height ?? 0
+                if let frame = window?.frame {
+                    let monitor = AppUpdateMonitor.shared
+                    print("UIUPDATEBADGE shown=\(badge != nil) "
+                          + "current=\(monitor.currentVersion ?? "nil") "
+                          + "available=\(monitor.availableUpdate?.version ?? "nil")")
+                    print("UIUPDATEBADGE FRAME \(Int(frame.minX)) "
+                          + "\(Int(screenHeight - frame.maxY)) \(Int(frame.width)) \(Int(frame.height))")
+                }
+                fflush(stdout)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 6.0) { exit(badge != nil ? 0 : 1) }
+            }
+        }
         if CommandLine.arguments.contains("--ui-test-app-update") {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in
                 guard let window = self?.controllers.first?.window,
