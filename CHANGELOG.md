@@ -11,6 +11,8 @@ be called out here with a migration path before a versioned release.
 
 ## [Unreleased]
 
+## [1.0.11] - 2026-10-15
+
 ### Changed
 
 - The pane, tab and window keys are built in and always on; the separate
