@@ -403,9 +403,13 @@ SwiftPM. Set `CMDY_ZIG` to use an existing copy of that compiler.
 The packaged app checks GitHub's latest stable Release at most every 12 hours.
 When a newer numeric version exists, cmdy automatically downloads the matching
 macOS ZIP into its cache and keeps it only when the release's SHA-256 checksum
-passes. **cmdy → Check for Updates…** shows download, retry, and ready states and
-reveals the verified ZIP in Finder. cmdy never executes the archive, replaces
-the running app, or relaunches without the user.
+passes. A small badge in the window's corner then offers **Restart**: cmdy checks
+the new app's Developer ID Team ID, hardened runtime and Gatekeeper acceptance,
+quits, and a signed helper swaps it in place and reopens it. The old app comes
+back if the new one does not confirm a clean start. Nothing is replaced without
+that click; if cmdy cannot write to its folder, the verified ZIP is shown in
+Finder instead. `scripts/test-app-update-swap.sh` exercises the swap with two
+packaged apps.
 
 Publish a committed version's signed and notarized GitHub assets with:
 

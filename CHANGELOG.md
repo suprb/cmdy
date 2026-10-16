@@ -11,6 +11,13 @@ be called out here with a migration path before a versioned release.
 
 ## [Unreleased]
 
+### Added
+
+- A small badge in the window's corner when a newer version is available.
+- Restart to update: the downloaded, checksum-verified release is checked for
+  the same Developer ID and Gatekeeper acceptance, installed in place and
+  reopened, with the old version restored if the new one doesn't start.
+
 ## [1.0.11] - 2026-10-15
 
 ### Changed

@@ -1419,9 +1419,16 @@ public enum BrowserComponentInstaller {
                 return 8
             }
             transaction.state = .completed
-            transaction.message = transaction.variant == .browser
-                ? "Browser installed and cmdy restarted"
-                : "Browser removed and Chromium storage reclaimed"
+            let wasBrowser = transaction.originalInspection?.browserEdition
+            if wasBrowser == (transaction.variant == .browser),
+               let previous = transaction.originalInspection?.version,
+               previous != transaction.candidateVersion {
+                transaction.message = "Updated from \(previous) to \(transaction.candidateVersion) and restarted"
+            } else {
+                transaction.message = transaction.variant == .browser
+                    ? "Browser installed and cmdy restarted"
+                    : "Browser removed and Chromium storage reclaimed"
+            }
             try? write(transaction, to: transactionURL)
             releaseSwitchLock(at: lockDirectory, token: token)
             removeSafeHelperDirectory(transaction)
