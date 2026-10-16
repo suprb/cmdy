@@ -91,4 +91,45 @@ final class SessionClosePolicyTests: XCTestCase {
         XCTAssertTrue(result.runningPrograms.contains("sleep"))
         XCTAssertFalse(SessionProcessInspector.inspect(shellPID: -1).isUnknown)
     }
+
+    func testMultiplexerInPaneIsRecognizedSoItsKeysPassThrough() throws {
+        XCTAssertTrue(SessionProcessInspector.isMultiplexer(["vim", "tmux"]))
+        XCTAssertTrue(SessionProcessInspector.isMultiplexer(["herdr"]))
+        XCTAssertFalse(SessionProcessInspector.isMultiplexer(["vim", "sleep"]))
+        XCTAssertFalse(SessionProcessInspector.isMultiplexer([]))
+
+        // A real child process named tmux under a shell.
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let fake = directory.appendingPathComponent("tmux")
+        // A copied system binary is killed by code signing; build a stand-in.
+        let source = directory.appendingPathComponent("tmux.c")
+        try "#include <unistd.h>\nint main(void) { sleep(30); return 0; }\n"
+            .write(to: source, atomically: true, encoding: .utf8)
+        let compile = Process()
+        compile.executableURL = URL(fileURLWithPath: "/usr/bin/xcrun")
+        compile.arguments = ["clang", "-o", fake.path, source.path]
+        try compile.run()
+        compile.waitUntilExit()
+        XCTAssertEqual(compile.terminationStatus, 0)
+        let shell = Process()
+        shell.executableURL = URL(fileURLWithPath: "/bin/sh")
+        shell.arguments = ["-c", "'\(fake.path)' 30 & child=$!; trap 'kill $child 2>/dev/null' EXIT; trap 'exit 0' TERM; wait"]
+        shell.standardOutput = FileHandle.nullDevice
+        shell.standardError = FileHandle.nullDevice
+        try shell.run()
+        defer { shell.terminate(); shell.waitUntilExit() }
+        var found = false
+        for _ in 0..<100 {
+            if SessionProcessInspector.runsMultiplexer(shellPID: shell.processIdentifier) {
+                found = true
+                break
+            }
+            Thread.sleep(forTimeInterval: 0.01)
+        }
+        XCTAssertTrue(found, "a tmux client in the pane gets its own keys")
+        XCTAssertFalse(SessionProcessInspector.runsMultiplexer(shellPID: -1))
+    }
 }

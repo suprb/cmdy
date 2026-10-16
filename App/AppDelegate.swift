@@ -3478,8 +3478,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                                                         step {
                                                             expect(NSApp.keyWindow !== second,
                                                                    "Alt+Up switches windows")
-                                                            print("UIPANEKEYS \(failures.isEmpty ? "ALL PASS" : "\(failures.count) FAILURE(S)")")
-                                                            exit(failures.isEmpty ? 0 : 1)
+                                                            // tmux in the pane gets its own keys.
+                                                            let live = NSApp.keyWindow?.windowController as? TerminalWindowController
+                                                            let paneCount = live?.panes.count ?? 0
+                                                            MainActor.assumeIsolated {
+                                                                (live?.focusedPane?.surface as? CmdyTerminalSurface)?.insertText(
+                                                                    "tmux -L cmdy-uitest -f /dev/null new-session\n",
+                                                                    replacementRange: NSRange(location: NSNotFound, length: 0))
+                                                            }
+                                                            step(2.5) {
+                                                                let shell = live?.focusedPane?.surface.shellPid ?? 0
+                                                                expect(SessionProcessInspector.runsMultiplexer(shellPID: shell),
+                                                                       "tmux runs in the pane")
+                                                                press(36, "\r", [alt])  // Alt+Enter
+                                                                prefix(4, "h")
+                                                                step {
+                                                                    expect(live?.panes.count == paneCount,
+                                                                           "pane keys pass through to tmux")
+                                                                    let kill = Process()
+                                                                    kill.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+                                                                    kill.arguments = ["tmux", "-L", "cmdy-uitest", "kill-server"]
+                                                                    try? kill.run()
+                                                                    kill.waitUntilExit()
+                                                                    print("UIPANEKEYS \(failures.isEmpty ? "ALL PASS" : "\(failures.count) FAILURE(S)")")
+                                                                    exit(failures.isEmpty ? 0 : 1)
+                                                                }
+                                                            }
                                                         }
                                                     }
                                                 }

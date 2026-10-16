@@ -73,7 +73,7 @@ final class StandardKeybindings {
             return perform(action, event: event)
         }
         if PaneKeys.isPrefix(keyCode: event.keyCode, modifiers: event.modifierFlags),
-           terminalHasFocus(event) {
+           paneKeysApply(event) {
             prefixArmed = true
             return true
         }
@@ -82,7 +82,7 @@ final class StandardKeybindings {
         if let action = PaneKeys.root(
             keyCode: event.keyCode, modifiers: event.modifierFlags,
             usesCommand: Preferences.shared.paneKeysUseCommand),
-           terminalHasFocus(event) {
+           paneKeysApply(event) {
             _ = perform(action, event: event)
             return true
         }
@@ -336,6 +336,16 @@ final class StandardKeybindings {
               CmdyEditorManager.shared.editor(in: event.window ?? NSApp.keyWindow) == nil
         else { return false }
         return controller.focusedPane?.isTerminalFocused == true
+    }
+
+    /// The pane keys act in a focused terminal unless tmux, herdr or another
+    /// multiplexer runs there; its own prefix and pane keys then pass through.
+    private func paneKeysApply(_ event: NSEvent) -> Bool {
+        guard terminalHasFocus(event),
+              let pane = Self.terminalController(
+                eventWindow: event.window, keyWindow: NSApp.keyWindow)?.focusedPane
+        else { return false }
+        return !SessionProcessInspector.runsMultiplexer(shellPID: pane.surface.shellPid)
     }
 
     static func terminalController(eventWindow: NSWindow?, keyWindow: NSWindow?) -> TerminalWindowController? {

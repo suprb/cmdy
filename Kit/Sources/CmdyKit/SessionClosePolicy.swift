@@ -161,6 +161,18 @@ public enum SessionProcessInspector {
         return Snapshot(runningPrograms: names, isUnknown: unknown)
     }
 
+    /// Terminal multiplexers that bring their own pane, tab and prefix keys.
+    public static let multiplexers: Set<String> = ["tmux", "herdr", "zellij", "screen"]
+
+    public static func isMultiplexer(_ runningPrograms: [String]) -> Bool {
+        runningPrograms.contains { multiplexers.contains($0.lowercased()) }
+    }
+
+    /// Whether the shell is running a multiplexer, whose keys then come first.
+    public static func runsMultiplexer(shellPID: Int32) -> Bool {
+        isMultiplexer(inspect(shellPID: shellPID).runningPrograms)
+    }
+
     private static func processInfo(_ pid: pid_t) -> proc_bsdinfo? {
         var info = proc_bsdinfo()
         let size = Int32(MemoryLayout<proc_bsdinfo>.size)

@@ -278,8 +278,8 @@
     {
       "mode": "100644",
       "path": "App/AppDelegate.swift",
-      "sha256": "997501c9aec973385f7fc7de32859be71ecd5382097dc538dbbc7c92c73eed6d",
-      "size": 295395
+      "sha256": "b99058af7aaac661e061d67492d5d15bb70a6be06a97e29ddd086b0c7a6f3bfd",
+      "size": 297795
     },
     {
       "mode": "100644",
@@ -590,8 +590,8 @@
     {
       "mode": "100644",
       "path": "App/StandardKeybindings.swift",
-      "sha256": "b71ffc968e280b6b4c724245a1921f7614796725f3140afe8967a3867ac8b08e",
-      "size": 23620
+      "sha256": "fd0d91650529840dee737808a7e7d175ceacb0e45ce809e95d2091c3bb5efe28",
+      "size": 24130
     },
     {
       "mode": "100644",
@@ -1940,8 +1940,8 @@
     {
       "mode": "100644",
       "path": "Kit/Sources/CmdyKit/SessionClosePolicy.swift",
-      "sha256": "4b3620cc3da6be4a935418a63ac0100f2aaa0c799e6e859903eebb15a48327c3",
-      "size": 7928
+      "sha256": "96d4bafb3225fdc448180ed10903350a4b3df9f1a39fa80586076172fa0dfe83",
+      "size": 8474
     },
     {
       "mode": "100644",

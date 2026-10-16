@@ -568,7 +568,8 @@ Themes, fonts, line spacing, cursor, and toggles also live in the **View** menu.
 
 tmux-style keys for splits, tabs and windows. A tmux pane is a cmdy split, a
 tmux window is a tab, and a tmux session is a window. `Ctrl+Space` is the
-prefix: press it, then the key. `Ctrl+Space ?` lists every key.
+prefix: press it, then the key. `Ctrl+Space ?` lists every key. While tmux,
+herdr, zellij or screen runs in a pane, these keys go to it instead.
 
 | Key | Action |
 |-----|--------|

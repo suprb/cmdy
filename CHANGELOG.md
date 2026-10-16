@@ -19,6 +19,8 @@ be called out here with a migration path before a versioned release.
   keymap setting and its View → Terminal menu items are gone. The 1.0.10
   modifier setting is now `pane-key-modifier = command` to hold ⌘ instead
   of Alt.
+- While tmux, herdr, zellij or screen runs in a pane, the pane keys and the
+  Ctrl+Space prefix pass through to it.
 - Session restore is off by default: cmdy starts with one fresh window. Set
   `restore-session = true` to bring windows, splits and scrollback back.
 
