@@ -18,7 +18,7 @@
     },
     {
       "path": "App/AppDelegate.swift",
-      "sha256": "4438bdf873119cf3fa2eb37468bd3e2598afe24a21d276ac0d918865759dd601"
+      "sha256": "b99058af7aaac661e061d67492d5d15bb70a6be06a97e29ddd086b0c7a6f3bfd"
     },
     {
       "path": "App/AppUpdateWindow.swift",
@@ -181,12 +181,12 @@
       "sha256": "27fc0a0c0bbb198fd232f81658909e10b10309ccae8c14f4bee665083420af31"
     },
     {
-      "path": "App/OmarchyKeymap.swift",
-      "sha256": "297d00a53632eebb06c649cd9b713a0cb27e4b52ddfee3ac0fd7617aa51e84b1"
-    },
-    {
       "path": "App/PaneComposition.swift",
       "sha256": "819e2792b129acfb6bc8fc578a77d7860a68933d5600b4bbc6d24668915f9d22"
+    },
+    {
+      "path": "App/PaneKeys.swift",
+      "sha256": "78031019cc271979292120027f31b378088db589dcd90497c9cde429ee60bdca"
     },
     {
       "path": "App/Retrobleeps.swift",
@@ -194,7 +194,7 @@
     },
     {
       "path": "App/SelfTest.swift",
-      "sha256": "ccfeb9b1f256da8ad926691b5a11441537e9a655e1af9258ae2750f03f30783e"
+      "sha256": "6078134438bace81d1238434e1e1681516386e16e084b10d012b3af2d1686a4d"
     },
     {
       "path": "App/SessionLifecycle.swift",
@@ -226,7 +226,7 @@
     },
     {
       "path": "App/StandardKeybindings.swift",
-      "sha256": "1d59d0949156eb354c518ed4320a5e9482fdd5dc79f64a212cdf177ccbcfc0ff"
+      "sha256": "fd0d91650529840dee737808a7e7d175ceacb0e45ce809e95d2091c3bb5efe28"
     },
     {
       "path": "App/TerminalLinkOpener.swift",
@@ -286,7 +286,7 @@
     },
     {
       "path": "App/main.swift",
-      "sha256": "69b12ef362dc6ac52515aebcc66e8d69cfdc0bf691410ea86b35e5a02bf42874"
+      "sha256": "bf7547a43e09d3d9d170c27dbec6b313b71bef579874665f3132be3cc4c4cfa1"
     },
     {
       "path": "Core/Platform/platform_gpu.h",
@@ -1050,11 +1050,11 @@
     },
     {
       "path": "Kit/Sources/CmdyKit/ConfigFile.swift",
-      "sha256": "88c0ff9cb04bf50e4bb32e43715baf567321fe45a23119756743a4926f33e56c"
+      "sha256": "6e59c142deff671312167e268a8d1e1a05ca423106a6a78df96370c561e4acb5"
     },
     {
       "path": "Kit/Sources/CmdyKit/ConfigValidation.swift",
-      "sha256": "868fa09e4acb12f15e76cd69344c9965df647bdde17fd07b08face4f198c4123"
+      "sha256": "bee697cd3b3e8c193862920542da2e191ec7ed17be1d974bb203d4a1d5f630d7"
     },
     {
       "path": "Kit/Sources/CmdyKit/ExtensionCLI.swift",
@@ -1114,7 +1114,7 @@
     },
     {
       "path": "Kit/Sources/CmdyKit/Preferences.swift",
-      "sha256": "ad1f53c186d768801ced1e4cbce82e44cc90a5c7180c2e5c50f61d2421feaa1a"
+      "sha256": "2adebaa27947c0005511b40a0cf6f32f394c03f863b56702e2ceda6c359eb77a"
     },
     {
       "path": "Kit/Sources/CmdyKit/ProcessCapture.swift",
@@ -1126,7 +1126,7 @@
     },
     {
       "path": "Kit/Sources/CmdyKit/SessionClosePolicy.swift",
-      "sha256": "4b3620cc3da6be4a935418a63ac0100f2aaa0c799e6e859903eebb15a48327c3"
+      "sha256": "96d4bafb3225fdc448180ed10903350a4b3df9f1a39fa80586076172fa0dfe83"
     },
     {
       "path": "Kit/Sources/CmdyKit/SessionStore.swift",
@@ -1388,8 +1388,8 @@
     {
       "active": "App/StandardKeybindings.swift",
       "activeLines": [
-        162,
-        174
+        160,
+        172
       ],
       "classificationId": "vendor-app-keybinding-switch-projection",
       "disposition": "data-plumbing",
@@ -1407,8 +1407,8 @@
     {
       "active": "App/StandardKeybindings.swift",
       "activeLines": [
-        182,
-        207
+        180,
+        205
       ],
       "classificationId": "vendor-app-keybinding-switch-projection",
       "disposition": "data-plumbing",
@@ -1635,8 +1635,8 @@
     {
       "active": "Kit/Sources/CmdyKit/Preferences.swift",
       "activeLines": [
-        404,
-        421
+        388,
+        405
       ],
       "classificationId": "vendor-kit-shader-list-structural-collision",
       "disposition": "non-substantive-structural-collision",
@@ -1654,8 +1654,8 @@
     {
       "active": "Kit/Sources/CmdyKit/Preferences.swift",
       "activeLines": [
-        580,
-        585
+        564,
+        569
       ],
       "classificationId": "vendor-kit-cursor-style-projection",
       "disposition": "data-plumbing",
@@ -7343,7 +7343,7 @@
       "sourceCount": 111
     }
   },
-  "reportSHA256": "f6c34b5a8da389d2bd4de94c8b56baf918a189719ecced9f17e9bda0f64f89ca",
+  "reportSHA256": "e6a33ba36c82a5956ac2326531e75821778fb9a70bd521d70ac2c7ff623cd242",
   "schemaVersion": 2,
   "summary": {
     "activeSourceCount": 336,

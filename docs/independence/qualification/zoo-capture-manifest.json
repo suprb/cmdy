@@ -1,8 +1,8 @@
 {
   "appBinary": {
     "name": "cmdy",
-    "sha256": "cec2827cffdf75a5ecabdb1a5d97e72c637bfd215f07dc8578d4cb1d08c925cb",
-    "size": 14620072
+    "sha256": "7f61c1698696e7894e3626dd7660ace7b99f4e0d222e49abe84960ff05cd6101",
+    "size": 14621192
   },
   "captureCount": 14,
   "captures": [
@@ -17,16 +17,16 @@
     {
       "file": "01-vim-open.png",
       "height": 1080,
-      "sha256": "9e3d6f0c46a96875fb8ad6beb4662a8196c3074ec335666825a72f0d9c16aa3f",
-      "size": 186305,
+      "sha256": "fbcce7f80a3a365d6f8ab9eb9f5594c3e10eda4bb4fe8087b03ae15ea09e224b",
+      "size": 186333,
       "stationID": "01-vim-open",
       "width": 1720
     },
     {
       "file": "02-vim-scrolled.png",
       "height": 1080,
-      "sha256": "06c6ddb083d12e505763e85127362e80a8072b84864a61d356714b3a2e5bcfed",
-      "size": 159509,
+      "sha256": "4bbedb88624ab031fb987dda81592ddc310fce26b1ffa31247cbe68b6dff8132",
+      "size": 159535,
       "stationID": "02-vim-scrolled",
       "width": 1720
     },
@@ -65,56 +65,56 @@
     {
       "file": "07-htop.png",
       "height": 1080,
-      "sha256": "ed29cc78b7fd4461149e326ba7032ee10ea2c8b51cf7391fa19792f945c1239d",
-      "size": 368881,
+      "sha256": "8b7f80bffe9b6b7da91aa5f0b1b289bb53b0b7293fc9648410e97e20615d489e",
+      "size": 369405,
       "stationID": "07-htop",
       "width": 1720
     },
     {
       "file": "08-tmux.png",
       "height": 1080,
-      "sha256": "c6910def56b5f62253f0b663db1c77adc37db4174004fc048e6aff99e939d04c",
-      "size": 73544,
+      "sha256": "4fd237bfb586f2edcc433ab5992a9e15008afe5f91e8736699467a613896e739",
+      "size": 73291,
       "stationID": "08-tmux",
       "width": 1720
     },
     {
       "file": "09-tmux-echo.png",
       "height": 1080,
-      "sha256": "6d95b8a9c135cc9539575d50e0da2e7e5eb812b9c7ab874f3b8f8d753cdffe9f",
-      "size": 90193,
+      "sha256": "a21c9849a6d5967057ac181ee5315701818dee511fd1e4d959928212bf7c47aa",
+      "size": 89940,
       "stationID": "09-tmux-echo",
       "width": 1720
     },
     {
       "file": "10-tmux-split.png",
       "height": 1080,
-      "sha256": "a9ca4ad0253999169eba0b0f6a99035126ca5b216d5fffad2fbfa04cd28eafac",
-      "size": 94705,
+      "sha256": "caacee23bd2d4392f09fe3b952fc7d91d74f97419d25444f1ea71bf576d4325a",
+      "size": 94441,
       "stationID": "10-tmux-split",
       "width": 1720
     },
     {
       "file": "11-cat-10mb.png",
       "height": 1080,
-      "sha256": "5bafff4c06a39a9957a884bd62032ff94addde452fc30b3c7f63cb99d3fc6114",
-      "size": 493457,
+      "sha256": "d4ca9e3e50e4e8cbc1e2d3a961a2767804275ee215251bf2b4f4e1ccb5b0d9da",
+      "size": 493826,
       "stationID": "11-cat-10mb",
       "width": 1720
     },
     {
       "file": "12-claude-code.png",
       "height": 1080,
-      "sha256": "ea8190d5661a031b09321a9fe8219c395a04aad5e152b1e2c47709a6597eefd4",
-      "size": 110919,
+      "sha256": "0714fe2eee0c668bdd969306e4231f3b1728fc95df37d8905571550ad05914e4",
+      "size": 111997,
       "stationID": "12-claude-code",
       "width": 1720
     },
     {
       "file": "99-shell-after.png",
       "height": 1080,
-      "sha256": "928f3696bbfa43e78fdee246d1de20667a9dfb724f56088fa2160840af86eff0",
-      "size": 480325,
+      "sha256": "e67478d3832992c49668837a2e711fdeb53699863fe80b08dd1e9d224bd6721b",
+      "size": 480678,
       "stationID": "99-shell-after",
       "width": 1720
     }
