@@ -171,12 +171,12 @@
   "kind": "cmdy-release-qualification",
   "publication": {
     "approval": {
-      "approvalReference": "Project owner replied 'yes!' on 2026-10-15 to shipping 1.0.11 (built-in pane keys without a named keymap, session restore off by default), 'pass through' to letting multiplexers keep their keys, and 'yes!!!' on 2026-10-15 to the 14-station zoo contact sheet of the final source and the release.",
-      "approvedPublicWording": "Engineering qualification passed for the exact cmdy 1.0.11 source and evidence set: Core parity across 17 seeds and 53,992 cases, 40/40 exact renderer pixel parity against the owner-approved reference corpus v2, performance gates in normal and maximized windows, a three-run resource plateau with no zombie processes, and an owner-reviewed 14-station TUI zoo. Project-owner approval; this is not an independent authorship or legal clean-room review.",
+      "approvalReference": "Project owner replied 'yes plese' on 2026-10-16 to building restart-to-update (install the verified release over the existing app) and shipping it with the small corner update badge as 1.0.12, and 'yes, ship this' on 2026-10-16 to the 14-station zoo contact sheet of the final source and the release.",
+      "approvedPublicWording": "Engineering qualification passed for the exact cmdy 1.0.12 source and evidence set: Core parity across 17 seeds and 53,992 cases, 40/40 exact renderer pixel parity against the owner-approved reference corpus v2, performance gates in normal and maximized windows, a three-run resource plateau with no zombie processes, and an owner-reviewed 14-station TUI zoo. Project-owner approval; this is not an independent authorship or legal clean-room review.",
       "decision": "approved",
       "engineeringDigestSha256": "59d978046d86256413b02d20ef4afe260486f0b5581892ecf201df750b8118d5",
-      "evidenceDigestSha256": "69db588bf8a0b0eb0d29c1655e91197a09bcc96eb165f89d19059b4a2bac39f1",
-      "reviewedAtUTC": "2026-10-16T03:57:43Z",
+      "evidenceDigestSha256": "eb65d34ab2a718207e7c75b5f64b5ba454db44e76020669e9f6268e3c5f40e17",
+      "reviewedAtUTC": "2026-10-16T17:53:43Z",
       "reviewerAffiliation": "cmdy project owner",
       "reviewerIndependentFromImplementation": false,
       "reviewerKind": "human",
@@ -186,16 +186,16 @@
       "core": {
         "record": {
           "path": "docs/independence/qualification/core-17-seed.json",
-          "sha256": "e14fd9ee8908328ac92ef2d073e7639e1d4f60c7ef210e62870ffd0b1b82f294"
+          "sha256": "4fd8888779e971595a5b7d25689c10e05bddb897efeaeeb8fca417440ddd15fb"
         },
-        "sourceManifestSha256": "718f0f97c4eb4c9d8d3ef364f91c78ccd51868c2230a95afb07c5a8be86e13e7"
+        "sourceManifestSha256": "067ba923bb359cb6bad3662215ae6fa9bc702bfbdd983fb652a2ec2aade46b4e"
       },
       "operational": {
         "record": {
           "path": "docs/independence/qualification/operational-review.json",
-          "sha256": "67f7772780610fba0a99fed0cb485d26bd660b8bd0239117d734a8bbd4ad9d41"
+          "sha256": "f2eddb9ce03fd12b514d7c3b73e4538be8d222298cb9cca67833d5fd1f613e43"
         },
-        "sourceManifestSha256": "718f0f97c4eb4c9d8d3ef364f91c78ccd51868c2230a95afb07c5a8be86e13e7"
+        "sourceManifestSha256": "067ba923bb359cb6bad3662215ae6fa9bc702bfbdd983fb652a2ec2aade46b4e"
       },
       "renderer": {
         "checkerSha256": "af729dfd1e17143879fda24a35b5312d735b9e10907b65c9f85d7bb0428c7b49",
@@ -205,22 +205,22 @@
         },
         "environment": {
           "path": "docs/independence/qualification/renderer-environment.json",
-          "sha256": "2391dcc14ae035f9b73c2e2aebfab397b81b4f2c156a18204ae3f95cc2653254"
+          "sha256": "1539b8f8e8589a8057aa4251ceea5efbcde02d20f595a7a56953e598da723418"
         },
-        "sourceManifestSha256": "718f0f97c4eb4c9d8d3ef364f91c78ccd51868c2230a95afb07c5a8be86e13e7"
+        "sourceManifestSha256": "067ba923bb359cb6bad3662215ae6fa9bc702bfbdd983fb652a2ec2aade46b4e"
       }
     },
     "source": {
       "activeSourceManifest": {
         "path": "docs/independence/qualification/active-terminal-sources.json",
-        "sha256": "718f0f97c4eb4c9d8d3ef364f91c78ccd51868c2230a95afb07c5a8be86e13e7"
+        "sha256": "067ba923bb359cb6bad3662215ae6fa9bc702bfbdd983fb652a2ec2aade46b4e"
       },
       "provenanceReport": {
         "path": "docs/independence/qualification/working-tree-provenance.json",
-        "sha256": "862bf31e9d60d83491c021d7c0dc41d074a5fb76c773c7dc948e3edb72f4fb49"
+        "sha256": "4fc56e5e4316b3b472d3e674f1ca46e61f7cf81d004ab251fe066244e03c6090"
       },
-      "sourceCommit": "d097da59f741ef8957b7d0d3c1793ca831f5f4f3",
-      "sourceTree": "5517d1ff32ac31e3b3e1fe91412825c0e5aec0f2"
+      "sourceCommit": "c7ac4015bee75aff2254803a7d8b2df3cbd81183",
+      "sourceTree": "7194e3ce37770ce0b9fe88664b22f28812170d69"
     },
     "state": "approved"
   },

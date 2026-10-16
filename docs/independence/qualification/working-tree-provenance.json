@@ -18,11 +18,15 @@
     },
     {
       "path": "App/AppDelegate.swift",
-      "sha256": "b99058af7aaac661e061d67492d5d15bb70a6be06a97e29ddd086b0c7a6f3bfd"
+      "sha256": "70f29afbf8fa75f27cbcf098f397544ac52ccd6158c99bf09cd70fbfd9e9e280"
+    },
+    {
+      "path": "App/AppUpdateInstall.swift",
+      "sha256": "92925e9d005b451e0d8018fabc8195d9d2660297e78c0cb0be7727a8586726f7"
     },
     {
       "path": "App/AppUpdateWindow.swift",
-      "sha256": "2510960dd22f5736451ff3c60fc73bcdaf4cc5927215c4faab19623f8c8277e0"
+      "sha256": "7abcaf34f591e30404c0e3aa2cb8bb5e4cb4955fd5280e17bd0a910a1564aa4b"
     },
     {
       "path": "App/ApplicationSettings.swift",
@@ -263,6 +267,10 @@
     {
       "path": "App/ToolbarCustomizationView.swift",
       "sha256": "7063ca6be7d263a9cbe1d172a135ef29daef4287a3303ecfd74543078f0577c0"
+    },
+    {
+      "path": "App/UpdateBadge.swift",
+      "sha256": "90a74f4cbc65a57717fc837e375d7ad903ae62418538259e56251ac2504d95cb"
     },
     {
       "path": "App/WindowChromeLayout.swift",
@@ -998,7 +1006,7 @@
     },
     {
       "path": "Kit/Sources/CmdyKit/AppUpdates.swift",
-      "sha256": "d843efbfa26eb22ec5dc88a55dec7c78930808601d99bc72877f38484ce165be"
+      "sha256": "3a84a94cb979558ae1c00cce8d561104033c7ca4c137f889f41910d93fd05529"
     },
     {
       "path": "Kit/Sources/CmdyKit/AssistantCredentials.swift",
@@ -1018,7 +1026,7 @@
     },
     {
       "path": "Kit/Sources/CmdyKit/BrowserComponentInstaller.swift",
-      "sha256": "78c62afedd524ec58a70a9b47ac87845940859c4ea7e605713cc9f966c32975c"
+      "sha256": "07b0df80bb2f7d312d11fe6546a334666bdf82ad088ed9c0bf2118fb558b1ff4"
     },
     {
       "path": "Kit/Sources/CmdyKit/BrowserEdition.swift",
@@ -7343,10 +7351,10 @@
       "sourceCount": 111
     }
   },
-  "reportSHA256": "e6a33ba36c82a5956ac2326531e75821778fb9a70bd521d70ac2c7ff623cd242",
+  "reportSHA256": "c10554a7e094aee734eef2ad5a2b816946bf39b039eb44f79ff91a75ecad6b1a",
   "schemaVersion": 2,
   "summary": {
-    "activeSourceCount": 336,
+    "activeSourceCount": 338,
     "classifiedMatchCount": 315,
     "issueCount": 0,
     "matchCount": 315,

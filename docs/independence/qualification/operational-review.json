@@ -5,7 +5,7 @@
       "exceptions": [],
       "log": {
         "path": "docs/independence/qualification/performance-normal.log",
-        "sha256": "8a0f9ec2174c774a14c92cc65ec8b24fcf5b26aaad838b8abf76e68d2e007025"
+        "sha256": "4cbf22745f80b9306f9153be57e78c164d8be01fb76269c1c644490e041cc655"
       },
       "mode": "normal",
       "passed": true,
@@ -15,7 +15,7 @@
       "exceptions": [],
       "log": {
         "path": "docs/independence/qualification/performance-maximized.log",
-        "sha256": "aec2c5f5fd38477c7696f1a0fc7829a74ffe10d4687b5e38e14b8258ac6777d7"
+        "sha256": "f9a76c68962f692a3b25fef60aa30626cb76bf4486858fab660cc0e382aa613a"
       },
       "mode": "maximized",
       "passed": true,
@@ -26,7 +26,7 @@
     "exceptions": [],
     "log": {
       "path": "docs/independence/qualification/resource-plateau.log",
-      "sha256": "ec35a1fd6ec60f3a823951dacede8b8a2b2dd0275a546663039c7ecfb0be4f91"
+      "sha256": "a869b1afa986fa6061cfa87c3fd187df1b1bde2f219ddec1cb06fc7f50508e1e"
     },
     "monotonicGrowth": false,
     "passed": true,
@@ -36,24 +36,24 @@
   },
   "review": {
     "decision": "approved",
-    "reference": "cmdy 1.0.11 owner approval ('yes!!!'); contact-sheet-sha256:f425aca7654ae0a3483a9ad6f322a2d4a58943e4b9405a2a8705cdacdb11314f",
-    "reviewedAtUTC": "2026-10-16T03:57:43Z",
+    "reference": "cmdy 1.0.12 owner approval ('yes, ship this'); contact-sheet-sha256:a34a93df5cd8b650e4d9b4cea5f578dac74006489373a4c465d329cd63e0b6f2",
+    "reviewedAtUTC": "2026-10-16T17:53:43Z",
     "reviewerName": "Andreas Pihlström"
   },
   "schemaVersion": 1,
-  "sourceManifestSha256": "718f0f97c4eb4c9d8d3ef364f91c78ccd51868c2230a95afb07c5a8be86e13e7",
+  "sourceManifestSha256": "067ba923bb359cb6bad3662215ae6fa9bc702bfbdd983fb652a2ec2aade46b4e",
   "zoo": {
     "captureCount": 14,
     "captureManifest": {
       "path": "docs/independence/qualification/zoo-capture-manifest.json",
-      "sha256": "2f43c71189d67076c936f76dc21385897372541664796d16603abc974edf51d3"
+      "sha256": "acf748919abfa2e6cab4fa6fc9379d69c9f37ecd8ce91726db1f55f5fa818ac8"
     },
     "exceptions": [],
     "passed": true,
     "scriptSha256": "4a9f9d67c46556f38eeb0df5689315b89da35a957b1bab0adaf574301bf75d2b",
     "visualReview": {
       "path": "docs/independence/qualification/zoo-visual-review.json",
-      "sha256": "c0d5191682a6f03719673d84bc4eaaa02dd3e9e845de4db2f87044ad29902c55"
+      "sha256": "a7a6ab134456eaee09c7fb70f94833e2923387945307c046090399dba36f9ea6"
     }
   }
 }
