@@ -129,9 +129,10 @@ final class AppUpdateWindow: NSObject, NSWindowDelegate {
     @objc private func downloadPressed() {
         guard let release else { return }
         switch AppUpdateMonitor.shared.downloadState {
-        case .ready(let url):
-            NSWorkspace.shared.activateFileViewerSelecting([url])
+        case .ready:
+            let parent = parentWindow
             dismiss()
+            AppUpdateInstall.restartToUpdate(relativeTo: parent)
         case .failed:
             AppUpdateMonitor.shared.retryAutomaticDownload()
         case .downloading:
@@ -209,10 +210,10 @@ final class AppUpdateWindow: NSObject, NSWindowDelegate {
         case .ready:
             progressIndicator.stopAnimation(nil)
             explanationLabel.stringValue =
-                "The update downloaded automatically and its SHA-256 checksum passed. "
-                + "Show it in Finder when you are ready to replace the app."
-            primaryButton.title = "Show in Finder"
-            primaryButton.isEnabled = true
+                "Downloaded and checksum-verified. Restarting checks its Developer ID "
+                + "and notarization, installs it in place, and reopens \(product)."
+            primaryButton.title = AppUpdateInstall.isInstalling ? "Installing…" : "Restart to Update"
+            primaryButton.isEnabled = !AppUpdateInstall.isInstalling
         case .failed(let message):
             progressIndicator.stopAnimation(nil)
             explanationLabel.stringValue =

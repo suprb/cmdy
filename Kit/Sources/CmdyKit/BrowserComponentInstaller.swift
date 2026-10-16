@@ -552,8 +552,119 @@ public enum BrowserComponentInstaller {
             throw BrowserComponentSwitchError.releaseUnavailable(
                 "release \(release.version) is older than installed version \(current.version)")
         }
-        let archive = download.archive
+        let prepared = try stageCandidate(
+            archive: download.archive,
+            assetName: assetName,
+            version: release.version,
+            variant: variant,
+            requiredBrowserVersion: requiredBrowserVersion,
+            currentApp: currentApp,
+            transactionURL: transactionURL,
+            lockDirectory: lockDirectory,
+            token: token,
+            readyMessage: "ready to restart and \(variant == .browser ? "install" : "remove") Browser ✓",
+            progress: progress)
+        preparedOwnsLock = true
+        return prepared
+    }
 
+    /// Stage a downloaded, checksum-verified release of this same edition as
+    /// an in-place update. The candidate must be newer, carry the installed
+    /// app's bundle identifier, Developer ID Team ID and hardened runtime, and
+    /// pass Gatekeeper; the restart helper then swaps it in, relaunches, and
+    /// rolls back unless the new app confirms it started.
+    public static func prepareAppUpdate(
+        archive archiveURL: URL,
+        version: String,
+        progress: (String) -> Void = { _ in }
+    ) throws -> PreparedSwitch {
+        refreshPendingState()
+        guard pendingState.snapshot == nil else {
+            throw BrowserComponentSwitchError.switchAlreadyPending
+        }
+        guard let currentApp = currentAppBundleURL() else {
+            throw BrowserComponentSwitchError.appBundleNotFound
+        }
+        let current = try inspectBundle(at: currentApp)
+        guard AppUpdateMonitor.isVersion(version, newerThan: current.version) else {
+            throw BrowserComponentSwitchError.releaseUnavailable(
+                "release \(version) is not newer than installed version \(current.version)")
+        }
+        let appValues = try currentApp.resourceValues(
+            forKeys: [.isDirectoryKey, .isSymbolicLinkKey])
+        let parent = currentApp.deletingLastPathComponent()
+        guard appValues.isDirectory == true, appValues.isSymbolicLink != true,
+              parent.path != "/", FileManager.default.isWritableFile(atPath: parent.path) else {
+            throw BrowserComponentSwitchError.appIsNotReplaceable(
+                "move cmdy.app to Applications or another folder you can write to")
+        }
+        let size = (try? archiveURL.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+        guard size > 0, size <= maximumArchiveBytes else {
+            throw BrowserComponentSwitchError.invalidArchive("the downloaded update is missing or too large")
+        }
+        let archive = try Data(contentsOf: archiveURL)
+
+        let transactionDirectory = ConfigFile.directory
+        try FileManager.default.createDirectory(
+            at: transactionDirectory, withIntermediateDirectories: true)
+        let token = UUID().uuidString
+        let transactionURL = transactionDirectory.appendingPathComponent(
+            "browser-component-switch-\(token).json")
+        let lockDirectory = switchLockDirectory()
+        try FileManager.default.createDirectory(
+            at: lockDirectory.deletingLastPathComponent(),
+            withIntermediateDirectories: true,
+            attributes: [.posixPermissions: 0o700])
+        try acquireSwitchLock(
+            at: lockDirectory, token: token, transactionURL: transactionURL)
+        var preparedOwnsLock = false
+        defer {
+            if !preparedOwnsLock { releaseSwitchLock(at: lockDirectory, token: token) }
+        }
+        let variant: BrowserComponentVariant = current.browserEdition ? .browser : .lean
+        progress("verifying \(ProductIdentity.current.displayName) \(version)…")
+        let prepared = try stageCandidate(
+            archive: archive,
+            assetName: archiveURL.lastPathComponent,
+            version: version,
+            variant: variant,
+            requiredBrowserVersion: variant == .browser ? current.browserVersion : nil,
+            currentApp: currentApp,
+            transactionURL: transactionURL,
+            lockDirectory: lockDirectory,
+            token: token,
+            readyMessage: "ready to restart into \(version) ✓",
+            progress: progress)
+        preparedOwnsLock = true
+        return prepared
+    }
+
+    /// Hand a staged update to the restart helper; the caller then quits.
+    public static func scheduleAppUpdate(_ prepared: PreparedSwitch) throws {
+        try schedule(prepared, activation: nil)
+    }
+
+    /// Release a staged update that will not be installed.
+    public static func discardAppUpdate(_ prepared: PreparedSwitch) {
+        discard(prepared)
+    }
+
+    /// Verify a release ZIP against the installed app and stage it beside the
+    /// app with the signed restart helper. The caller owns the switch lease.
+    private static func stageCandidate(
+        archive: Data,
+        assetName: String,
+        version: String,
+        variant: BrowserComponentVariant,
+        requiredBrowserVersion: String?,
+        currentApp: URL,
+        transactionURL: URL,
+        lockDirectory: URL,
+        token: String,
+        readyMessage: String,
+        progress: (String) -> Void
+    ) throws -> PreparedSwitch {
+        let parent = currentApp.deletingLastPathComponent()
         let temporary = FileManager.default.temporaryDirectory
             .appendingPathComponent(
                 "cmdy-component-\(UUID().uuidString)", isDirectory: true)
@@ -581,7 +692,7 @@ public enum BrowserComponentInstaller {
             candidate,
             replacing: currentApp,
             expectedVariant: variant,
-            expectedVersion: release.version,
+            expectedVersion: version,
             requiredBrowserVersion: requiredBrowserVersion)
         progress("Developer ID, Team ID, and app layout verified ✓")
 
@@ -593,7 +704,7 @@ public enum BrowserComponentInstaller {
                 stagedApp,
                 replacing: currentApp,
                 expectedVariant: variant,
-                expectedVersion: release.version,
+                expectedVersion: version,
                 requiredBrowserVersion: requiredBrowserVersion)
         } catch {
             try? FileManager.default.removeItem(at: stagedApp)
@@ -635,10 +746,10 @@ public enum BrowserComponentInstaller {
             try Marketplace.run(
                 "/usr/bin/codesign", "--verify", "--deep", "--strict",
                 helperBundle.path)
-            progress("ready to restart and \(variant == .browser ? "install" : "remove") Browser ✓")
+            progress(readyMessage)
             let prepared = PreparedSwitch(
                 variant: variant,
-                version: release.version,
+                version: version,
                 build: candidateInspection.build,
                 browserVersion: variant == .browser
                     ? candidateInspection.browserVersion : nil,
@@ -651,7 +762,6 @@ public enum BrowserComponentInstaller {
                 transactionURL: transactionURL,
                 lockDirectory: lockDirectory,
                 token: token)
-            preparedOwnsLock = true
             return prepared
         } catch {
             try? FileManager.default.removeItem(at: stagedApp)

@@ -39,7 +39,13 @@ final class UpdateBadgeController {
         }
         let view = badge ?? UpdateBadgeView()
         badge = view
-        view.onAction = { [weak self] in self?.onOpen?() }
+        view.onAction = { [weak self, weak window] in
+            if case .ready = AppUpdateMonitor.shared.downloadState {
+                AppUpdateInstall.restartToUpdate(relativeTo: window)
+            } else {
+                self?.onOpen?()
+            }
+        }
         view.onClose = { [weak self] in
             AppUpdateMonitor.shared.dismissBadge(for: release.version)
             self?.remove()
@@ -165,8 +171,11 @@ final class UpdateBadgeView: NSView {
         let name = "\(ProductIdentity.current.displayName) \(release.version)"
         switch state {
         case .ready:
-            messageLabel.stringValue = "\(name) is ready to install"
-            actionButton.title = "Install"
+            let installing = AppUpdateInstall.isInstalling
+            messageLabel.stringValue = installing ? "Installing \(name)…" : "\(name) is ready"
+            actionButton.title = "Restart"
+            actionButton.isEnabled = !installing
+            actionButton.alphaValue = installing ? 0.5 : 1
         case .downloading:
             messageLabel.stringValue = "Downloading \(name)…"
             actionButton.title = "Details"

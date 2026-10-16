@@ -1111,6 +1111,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         CmdyPerformanceTrace.record(
             event: "startup.post-window", started: postWindowStarted)
+        if let index = CommandLine.arguments.firstIndex(of: "--ui-test-restart-to-update"),
+           index + 2 < CommandLine.arguments.count {
+            // Packaged-app smoke: install the given release ZIP through the
+            // same restart path as the update badge.
+            let archive = URL(fileURLWithPath: CommandLine.arguments[index + 1])
+            let version = CommandLine.arguments[index + 2]
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                do {
+                    let prepared = try BrowserComponentInstaller.prepareAppUpdate(
+                        archive: archive, version: version)
+                    try BrowserComponentInstaller.scheduleAppUpdate(prepared)
+                    print("UIRESTARTUPDATE scheduled")
+                    fflush(stdout)
+                    MainActor.assumeIsolated { BrowserComponentInstaller.requestRelaunchIfScheduled() }
+                } catch {
+                    print("UIRESTARTUPDATE failed \(error.localizedDescription)")
+                    fflush(stdout)
+                    exit(1)
+                }
+            }
+        }
         if CommandLine.arguments.contains("--ui-test-update-badge") {
             // The update state file in CMDY_CONFIG_DIR supplies a newer cached
             // release. Report the badge and the window frame for a screenshot.
@@ -5697,7 +5718,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                     item.title = "Downloading \(ProductIdentity.current.displayName) "
                         + "\(release.version)…"
                 case .ready:
-                    item.title = "Show Downloaded Update…"
+                    item.title = "Restart to Update \(ProductIdentity.current.displayName) "
+                        + "\(release.version)…"
                 case .failed:
                     item.title = "Retry Update Download…"
                 }
