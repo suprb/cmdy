@@ -11,6 +11,8 @@ be called out here with a migration path before a versioned release.
 
 ## [Unreleased]
 
+## [1.0.12] - 2026-10-16
+
 ### Added
 
 - A small badge in the window's corner when a newer version is available.
