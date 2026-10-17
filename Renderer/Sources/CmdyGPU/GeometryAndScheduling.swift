@@ -244,6 +244,9 @@ private struct CursorGlideTrajectory {
         let cellUnits = SIMD2<Float>(
             retainedOffset.x / max(1, cellSize.x),
             retainedOffset.y / max(1, cellSize.y))
+        // A move that changes both row and column (a line break, a wrap)
+        // jumps: the cursor never slides diagonally across lines.
+        if abs(cellUnits.x) >= 0.5, abs(cellUnits.y) >= 0.5 { return false }
         return maximumCellDistance <= 0
             || Self.squaredLength(cellUnits)
                 <= maximumCellDistance * maximumCellDistance

@@ -2491,6 +2491,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     @objc private func preferencesDidChange() {
         windowGridCoordinator.preferencesDidChange()
         refreshMenuStates()
+        Task { @MainActor in PaneKeyMenu.refresh() }
         PluginManager.shared.emitThemeChanged()
     }
 
@@ -5304,6 +5305,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     @objc func splitDown(_ sender: Any?) { currentController?.splitFocusedPane(vertical: false) }
     @objc func focusNextPane(_ sender: Any?) { currentController?.focusNextPane(offset: 1) }
     @objc func focusPreviousPane(_ sender: Any?) { currentController?.focusNextPane(offset: -1) }
+    /// Pane-key menu items (PaneKeyMenu) run the same action as the key.
+    @objc func performPaneKey(_ sender: NSMenuItem) {
+        guard let action = sender.representedObject as? StandardKeybindings.Action else { return }
+        _ = standardKeybindings?.perform(menuAction: action)
+    }
     @objc func beamSelection(_ sender: Any?) { BeamManager.shared.beamSelection() }
     @objc func beamScreenshot(_ sender: Any?) { BeamManager.shared.beamScreenshot() }
     @objc func breakPaneOut(_ sender: Any?) { currentController?.breakOutFocusedPane(asTab: false) }

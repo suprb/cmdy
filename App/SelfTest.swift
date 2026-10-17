@@ -470,6 +470,25 @@ enum SelfTest {
                 && paneRoot(36, [.option], command: true) == "nil"
                 && paneRoot(36, [.command, .option], command: true) == "nil",
               "pane keys on Cmd: Cmd+Left/Right stay line moves and Alt is free")
+        // The menu bar shows the pane keys; each shown key must do what the item says.
+        for command in [false, true] {
+            let keyCodes: [String: UInt16] = ["\r": 36, "\u{1b}": 53,
+                "\u{F702}": 123, "\u{F703}": 124, "\u{F700}": 126, "\u{F701}": 125]
+            let all = PaneKeyMenu.paneItems() + PaneKeyMenu.windowItems()
+            PaneKeyMenu.refresh(usesCommand: command)
+            let items = all.filter { !$0.isSeparatorItem && !$0.keyEquivalent.isEmpty }
+            let wrong = items.filter { item in
+                guard let code = keyCodes[item.keyEquivalent],
+                      let action = item.representedObject as? StandardKeybindings.Action
+                else { return true }
+                return paneRoot(code, item.keyEquivalentModifierMask, command: command)
+                    != String(describing: action)
+            }.map(\.title)
+            check(items.count >= (command ? 11 : 13) && wrong.isEmpty,
+                  "pane-key menu items show the key that runs them (\(command ? "Cmd" : "Alt"))"
+                    + (wrong.isEmpty ? "" : ": \(wrong)"))
+        }
+        PaneKeyMenu.refresh()
         check(PaneKeys.isPrefix(keyCode: 49, modifiers: [.control])
                 && !PaneKeys.isPrefix(keyCode: 49, modifiers: [.control, .shift])
                 && panePrefix(" ", 49, [.control]) == "send(\"\\0\")",

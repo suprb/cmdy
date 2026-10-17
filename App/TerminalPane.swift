@@ -635,12 +635,19 @@ final class TerminalPane: DropView, InlinePanelHost, ExtensionSurfaceHost,
         }
 
         // OSC 133 semantic prompt markers -> BlockStore.
-        surface.engine.registerOscHandler(code: 133) { [weak self] slice in
+        // The marker's position is read while the parser is at the marker:
+        // typed-ahead input can put a whole prompt and command in one chunk,
+        // so the cursor has moved on by the time the main thread runs.
+        surface.engine.registerOscHandler(code: 133) { [weak self, weak engine = surface.engine] slice in
             let payload = String(decoding: slice, as: UTF8.self)
+            guard let engine else { return }
+            let mark = OSC133Mark(row: engine.scrollInvariantCursorRow,
+                                  column: engine.cursorColumn,
+                                  droppedLines: engine.scrollbackDroppedLines)
             if Thread.isMainThread {
-                self?.handleOSC133(payload)
+                self?.handleOSC133(payload, at: mark)
             } else {
-                DispatchQueue.main.async { self?.handleOSC133(payload) }
+                DispatchQueue.main.async { self?.handleOSC133(payload, at: mark) }
             }
         }
         blockStore.onChange = { [weak self] in
@@ -1680,10 +1687,17 @@ final class TerminalPane: DropView, InlinePanelHost, ExtensionSurfaceHost,
 
     // MARK: - Blocks
 
-    private func handleOSC133(_ payload: String) {
+    private struct OSC133Mark {
+        let row: Int
+        let column: Int
+        let droppedLines: Int
+    }
+
+    private func handleOSC133(_ payload: String, at mark: OSC133Mark) {
         guard let (kind, exit) = BlockStore.parse(payload) else { return }
         checkForClear()   // catches `clear` instantly (its D marker fires right after the wipe)
-        let row = surface.engine.scrollInvariantCursorRow
+        // Stored rows are rebased to lastDroppedLines; the mark may predate it.
+        let row = mark.row + mark.droppedLines - lastDroppedLines
         switch kind {
         case "A": blockStore.promptStarted(row: row)
         case "C":
@@ -1718,7 +1732,7 @@ final class TerminalPane: DropView, InlinePanelHost, ExtensionSurfaceHost,
         case "B":
             // Prompt just ended: user input starts here (ghost-text anchor).
             emptyPromptReflowInputRevision = nil
-            inputStart = (row, surface.engine.cursorColumn)
+            inputStart = (row, mark.column)
             promptDraft = ""
             promptDraftIsReliable = true
         default: break

@@ -127,7 +127,10 @@ pub fn cursorStep(from: Vec2, to: Vec2, should_draw: bool, smooth: bool, live_re
     const offset = Vec2{ .x = from.x - to.x, .y = from.y - to.y };
     const units = Vec2{ .x = offset.x / smax(f32, 1, cell.x), .y = offset.y / smax(f32, 1, cell.y) };
     const fits = maximum_distance <= 0 or lengthSquared(units) <= maximum_distance * maximum_distance;
-    if (!(lengthSquared(offset) > 0.25 and fits)) return .{ .position = to, .is_animating = false };
+    // A move that changes both row and column (a line break, a wrap) jumps:
+    // the cursor never slides diagonally across lines.
+    const diagonal = @abs(units.x) >= 0.5 and @abs(units.y) >= 0.5;
+    if (!(lengthSquared(offset) > 0.25 and fits) or diagonal) return .{ .position = to, .is_animating = false };
     const seconds = clamp(f32, elapsed, 0.001, 0.05);
     const response = clamp(f32, speed, 0.1, 8);
     const retention = expf(-(seconds * (response * 40)));

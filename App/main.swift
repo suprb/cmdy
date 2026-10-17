@@ -190,10 +190,8 @@ private func buildMainMenu(delegate: AppDelegate) -> NSMenu {
                              accessibilityDescription: "Panes")
     let paneMenu = NSMenu(title: "Panes")
     paneItem.submenu = paneMenu
-    paneMenu.addItem(item("Split Right", #selector(AppDelegate.splitRight(_:)), "d",
-                          symbol: "rectangle.split.1x2"))
-    paneMenu.addItem(item("Split Down", #selector(AppDelegate.splitDown(_:)), "d",
-                          modifiers: [.command, .shift], symbol: "rectangle.split.2x1"))
+    // The pane keys (⌘D and ⌘⇧D still split as well).
+    for paneKeyItem in PaneKeyMenu.paneItems() { paneMenu.addItem(paneKeyItem) }
     paneMenu.addItem(.separator())
     paneMenu.addItem(item("Focus Next Pane", #selector(AppDelegate.focusNextPane(_:)), "]",
                           symbol: "chevron.right"))
@@ -495,6 +493,8 @@ private func buildMainMenu(delegate: AppDelegate) -> NSMenu {
     windowMenu.addItem(item(
         "Combine Grid Windows into Splits",
         #selector(AppDelegate.combineGridWindowsIntoSplits(_:))))
+    windowMenu.addItem(.separator())
+    for paneKeyItem in PaneKeyMenu.windowItems() { windowMenu.addItem(paneKeyItem) }
     windowMenu.addItem(.separator())
     let mergeWithItem = NSMenuItem(title: "Merge With", action: nil, keyEquivalent: "")
     let mergeWithMenu = NSMenu(title: "Merge With")
@@ -840,6 +840,43 @@ if CommandLine.arguments.contains("--wheel-test") {
 
     print(failures == 0 ? "ALL WHEEL TESTS PASS" : "\(failures) FAILURE(S)")
     exit(failures == 0 ? 0 : 1)
+}
+
+if CommandLine.arguments.contains("--typeahead-blocks-test") {
+    MainActor.assumeIsolated {
+        // Typed-ahead input reaches the terminal as one chunk: prompt, command,
+        // output and the next prompt together. Each block, and each failed-prompt
+        // highlight, must still sit on its own prompt row.
+        let pane = TerminalPane(cwd: nil)
+        pane.frame = NSRect(x: 0, y: 0, width: 800, height: 600)
+        pane.layoutSubtreeIfNeeded()
+        let tv = pane.surface
+        let term = tv.engine
+        var burst = ""
+        for i in 1...20 {
+            burst += "\u{1b}]133;A\u{7}PROMPT\(i)> \u{1b}]133;B\u{7}cmd\(i)\r\n\u{1b}]133;C\u{7}"
+                + "zsh: command not found: cmd\(i)\r\n\u{1b}]133;D;127\u{7}"
+        }
+        // Off the main thread, as PTY output is parsed.
+        let parsed = DispatchSemaphore(value: 0)
+        DispatchQueue.global().async { term.feed(text: burst); parsed.signal() }
+        parsed.wait()
+        RunLoop.main.run(until: Date().addingTimeInterval(0.3))
+        pane.updateBlockStyles()
+        let store = pane.blockStore
+        let bad = store.blocks.compactMap { b -> String? in
+            let text = term.scrollbackLineText(row: b.promptRow) ?? ""
+            return text.contains("PROMPT\(b.index)>") ? nil : "block \(b.index) -> row \(b.promptRow): '\(text.prefix(30))'"
+        }
+        let failedRows = (tv as? CmdyTerminalSurface)?.failedBlockRows ?? []
+        let highlighted = failedRows.map { term.scrollbackLineText(row: $0) ?? "" }
+        let stray = highlighted.filter { !$0.hasPrefix("PROMPT") }
+        let ok = store.blocks.count == 20 && bad.isEmpty && failedRows.count == 20 && stray.isEmpty
+        print("TYPEAHEAD_BLOCKS blocks=\(store.blocks.count) misanchored=\(bad.count) highlighted=\(failedRows.count) stray=\(stray.count) ok=\(ok)")
+        if let first = bad.first { print("  \(first)") }
+        if let first = stray.first { print("  highlighted non-prompt row: '\(first.prefix(40))'") }
+        exit(ok ? 0 : 1)
+    }
 }
 
 if CommandLine.arguments.contains("--reflow-test") {
@@ -1406,6 +1443,7 @@ let (app, delegate) = autoreleasepool {
         // its live local delegate so dynamic menus receive their weak owner.
         let mainMenu = buildMainMenu(delegate: delegate)
         app.mainMenu = mainMenu
+        PaneKeyMenu.refresh()
         // Install the dynamic icon observer only after AppKit knows which menu is
         // the menu bar. During construction NSApp.mainMenu is nil, so observing
         // item additions early makes the icon installer mistake File/Edit/View

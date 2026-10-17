@@ -11,6 +11,17 @@ be called out here with a migration path before a versioned release.
 
 ## [Unreleased]
 
+## [Unreleased]
+
+### Fixed
+
+- Failed-command highlights stay on their prompt when commands are typed
+  ahead; they no longer land on the line below.
+- The smooth cursor jumps on a line break or wrap instead of sliding
+  diagonally across lines.
+- The menu bar shows the pane, tab and window keys (File › Panes and the
+  Window menu), following pane-key-modifier.
+
 ## [1.0.12] - 2026-10-16
 
 ### Added

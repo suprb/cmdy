@@ -1,4 +1,5 @@
 import AppKit
+import CmdyKit
 
 /// tmux-style pane, tab and window keys. A tmux pane is a split, a tmux window
 /// is a tab, and a tmux session is a window. Ctrl+Space is the prefix.
@@ -123,5 +124,109 @@ enum PaneKeys {
         ("prefix q", "Reload configuration"),
         ("prefix ?", "Show these keys"),
         ]
+    }
+}
+
+/// The pane keys as native menu items, so the menu bar shows them. A typed key
+/// is handled by StandardKeybindings before the menu sees it; choosing an item
+/// runs the same action.
+@MainActor
+enum PaneKeyMenu {
+    typealias Action = StandardKeybindings.Action
+
+    private struct Entry {
+        let title: String
+        let action: Action
+        let key: String
+        let modifiers: NSEvent.ModifierFlags   // besides Alt (or ⌘)
+        /// ⌘←/⌘→ keep moving to the start and end of the line.
+        var unboundWithCommand = false
+    }
+
+    private static let left = String(UnicodeScalar(0xF702)!)
+    private static let right = String(UnicodeScalar(0xF703)!)
+    private static let up = String(UnicodeScalar(0xF700)!)
+    private static let down = String(UnicodeScalar(0xF701)!)
+
+    private static let paneEntries: [Entry] = [
+        Entry(title: "Split Down", action: .splitDown, key: "\r", modifiers: []),
+        Entry(title: "Split Right", action: .splitRight, key: "\r", modifiers: [.shift]),
+        Entry(title: "Focus Pane Left", action: .focus(.left), key: left, modifiers: [.control]),
+        Entry(title: "Focus Pane Right", action: .focus(.right), key: right, modifiers: [.control]),
+        Entry(title: "Focus Pane Up", action: .focus(.up), key: up, modifiers: [.control]),
+        Entry(title: "Focus Pane Down", action: .focus(.down), key: down, modifiers: [.control]),
+        Entry(title: "Close Pane", action: .closeSurface, key: "\u{1b}", modifiers: []),
+    ]
+
+    private static let windowEntries: [Entry] = [
+        Entry(title: "Previous Tab", action: .previousTab, key: left, modifiers: [],
+              unboundWithCommand: true),
+        Entry(title: "Next Tab", action: .nextTab, key: right, modifiers: [],
+              unboundWithCommand: true),
+        Entry(title: "Move Tab Left", action: .moveTab(-1), key: left, modifiers: [.shift]),
+        Entry(title: "Move Tab Right", action: .moveTab(1), key: right, modifiers: [.shift]),
+        Entry(title: "Previous Window", action: .switchWindow(-1), key: up, modifiers: []),
+        Entry(title: "Next Window", action: .switchWindow(1), key: down, modifiers: []),
+    ]
+
+    private static var installed: [(item: NSMenuItem, entry: Entry)] = []
+
+    /// Split items first, a separator, then focus and close.
+    static func paneItems() -> [NSMenuItem] {
+        var items = paneEntries.prefix(2).map(makeItem)
+        items.append(.separator())
+        items += paneEntries.dropFirst(2).map(makeItem)
+        return items
+    }
+
+    static func windowItems() -> [NSMenuItem] {
+        var items = windowEntries.map(makeItem)
+        let help = NSMenuItem(title: "Pane, Tab and Window Keys",
+                              action: #selector(AppDelegate.performPaneKey(_:)),
+                              keyEquivalent: "")
+        help.representedObject = Action.keymapHelp
+        items.append(.separator())
+        items.append(help)
+        return items
+    }
+
+    private static func makeItem(_ entry: Entry) -> NSMenuItem {
+        let item = NSMenuItem(title: entry.title,
+                              action: #selector(AppDelegate.performPaneKey(_:)),
+                              keyEquivalent: "")
+        item.representedObject = entry.action
+        installed.append((item, entry))
+        apply(entry, to: item, usesCommand: Preferences.shared.paneKeysUseCommand)
+        return item
+    }
+
+    /// Follows pane-key-modifier.
+    static func refresh(usesCommand: Bool = Preferences.shared.paneKeysUseCommand) {
+        for (item, entry) in installed { apply(entry, to: item, usesCommand: usesCommand) }
+        // With ⌘, ⌘↑/⌘↓ switch windows, so the prompt items give those keys up.
+        let promptKeys: [Selector: String] = [
+            #selector(AppDelegate.previousPrompt(_:)): up,
+            #selector(AppDelegate.nextPrompt(_:)): down,
+        ]
+        func visit(_ menu: NSMenu) {
+            for item in menu.items {
+                if let action = item.action, let key = promptKeys[action] {
+                    item.keyEquivalent = usesCommand ? "" : key
+                    item.keyEquivalentModifierMask = usesCommand ? [] : [.command]
+                }
+                if let submenu = item.submenu { visit(submenu) }
+            }
+        }
+        if let menu = NSApp.mainMenu { visit(menu) }
+    }
+
+    private static func apply(_ entry: Entry, to item: NSMenuItem, usesCommand: Bool) {
+        if usesCommand && entry.unboundWithCommand {
+            item.keyEquivalent = ""
+            item.keyEquivalentModifierMask = []
+            return
+        }
+        item.keyEquivalent = entry.key
+        item.keyEquivalentModifierMask = entry.modifiers.union(usesCommand ? .command : .option)
     }
 }

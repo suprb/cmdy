@@ -81,10 +81,19 @@ final class StandardKeybindings {
         // does nothing, as in tmux, instead of reaching the shell.
         if let action = PaneKeys.root(
             keyCode: event.keyCode, modifiers: event.modifierFlags,
-            usesCommand: Preferences.shared.paneKeysUseCommand),
-           paneKeysApply(event) {
-            _ = perform(action, event: event)
-            return true
+            usesCommand: Preferences.shared.paneKeysUseCommand) {
+            if paneKeysApply(event) {
+                _ = perform(action, event: event)
+                return true
+            }
+            // The menus list these keys. A multiplexer or a text field keeps
+            // them: deliver the key to the focused view, not the menu.
+            if let window = event.window, let responder = window.firstResponder,
+               responder !== window {
+                responder.keyDown(with: event)
+                return true
+            }
+            return false
         }
         guard let action = Self.resolve(event) else { return false }
         return perform(action, event: event)
@@ -355,9 +364,18 @@ final class StandardKeybindings {
         (eventWindow ?? keyWindow)?.windowController as? TerminalWindowController
     }
 
+    /// A pane-key menu item: the same action, in the key window.
+    func perform(menuAction action: Action) -> Bool {
+        perform(action, eventWindow: nil)
+    }
+
     private func perform(_ action: Action, event: NSEvent) -> Bool {
+        perform(action, eventWindow: event.window)
+    }
+
+    private func perform(_ action: Action, eventWindow: NSWindow?) -> Bool {
         guard let delegate else { return false }
-        let targetWindow = event.window ?? NSApp.keyWindow
+        let targetWindow = eventWindow ?? NSApp.keyWindow
         // Settings owns its keyboard even while a terminal retains its last
         // first responder. Never send its editing/close shortcuts to that pane.
         if let window = targetWindow,
@@ -369,7 +387,7 @@ final class StandardKeybindings {
             default: return false
             }
         }
-        let eventController = Self.terminalController(eventWindow: event.window, keyWindow: NSApp.keyWindow)
+        let eventController = Self.terminalController(eventWindow: eventWindow, keyWindow: NSApp.keyWindow)
 
         // A text document is a first-class surface. Consume normal editing
         // commands here so the fallback terminal controller can never receive

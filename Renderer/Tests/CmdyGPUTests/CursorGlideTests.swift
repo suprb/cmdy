@@ -211,6 +211,25 @@ final class CursorGlideTests: XCTestCase {
         XCTAssertTrue(visible.isAnimating)
     }
 
+    func testLineBreakJumpsInsteadOfSlidingAcrossLines() {
+        // Return or a wrap: from the end of a line to column 0 of the next.
+        let target = SIMD2<Float>(0, 20)
+        let step = CursorGlide.step(from: SIMD2(300, 0), to: target,
+                                    deltaTime: 1 / 60, speed: 1, maxDistance: 0,
+                                    cellSize: SIMD2(10, 20))
+        XCTAssertEqual(step.position, target)
+        XCTAssertFalse(step.isAnimating)
+    }
+
+    func testStraightVerticalMoveStillGlides() {
+        let step = CursorGlide.step(from: SIMD2(30, 0), to: SIMD2(30, 60),
+                                    deltaTime: 1 / 60, speed: 1, maxDistance: 0,
+                                    cellSize: SIMD2(10, 20))
+        XCTAssertLessThan(step.position.y, 60)
+        XCTAssertEqual(step.position.x, 30)
+        XCTAssertTrue(step.isAnimating)
+    }
+
     func testDisabledGlideTracksTheNewestTargetExactly() {
         let target = SIMD2<Float>(80, 40)
         let step = CursorGlide.resolvedStep(
