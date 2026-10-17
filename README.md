@@ -472,7 +472,7 @@ launches), or export `ANTHROPIC_API_KEY`. Its model is configurable via `ai-mode
 `~/.config/cmdy/config` (created by ⌘,):
 
 ```ini
-theme = Light
+theme = Tokyo Night
 font-family = FragmentMono-Regular
 font-size = 13
 line-height = 1.15

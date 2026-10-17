@@ -1319,25 +1319,41 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                         MainActor.assumeIsolated { surface.send(txt: "nosuch\(i)\r") }
                     }
                 }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 7.5) {
+                    MainActor.assumeIsolated { window.orderFrontRegardless() }
+                }
+                let term = surface.engine
+                func text(_ row: Int) -> String { term.scrollbackLineText(row: row) ?? "" }
+                // Separators drawn on non-prompt rows, read back as drawn.
+                func strayRows() -> (count: Int, stray: [Int]) {
+                    let rows = pane.blockOverlayForTesting.separatorRowsForTesting()
+                    let stray = rows.filter { !(text($0).contains("% ") || text($0).hasSuffix("%")) }
+                    for row in stray { print("  separator on row \(row): '\(text(row).prefix(50))'") }
+                    return (rows.count, stray)
+                }
                 DispatchQueue.main.asyncAfter(deadline: .now() + 8.0) {
                     MainActor.assumeIsolated {
-                        let term = surface.engine
-                        func text(_ row: Int) -> String { term.scrollbackLineText(row: row) ?? "" }
-                        let separators = pane.blockOverlayForTesting.separatorRowsForTesting()
+                        let live = strayRows()
                         let failed = surface.failedBlockRows.sorted()
-                        let isPrompt: (Int) -> Bool = { text($0).contains("% ") || text($0).hasSuffix("%") }
-                        let badSeparators = separators.filter { !isPrompt($0) }
                         let badFailed = failed.filter { !text($0).contains("nosuch") }
-                        for row in badSeparators { print("  separator on row \(row): '\(text(row).prefix(50))'") }
                         for row in badFailed { print("  highlight on row \(row): '\(text(row).prefix(50))'") }
-                        let ok = badSeparators.isEmpty && badFailed.isEmpty && failed.count == 16
-                        print("UITYPEAHEADSEPARATORS separators=\(separators.count) badSeparators=\(badSeparators.count) "
-                              + "highlighted=\(failed.count) badHighlights=\(badFailed.count) ok=\(ok)")
-                        fflush(stdout)
-                        // Left on screen for a window capture when asked.
-                        let hold = ProcessInfo.processInfo.environment["CMDY_UI_TEST_HOLD_SECONDS"]
-                            .flatMap(Double.init) ?? 0
-                        DispatchQueue.main.asyncAfter(deadline: .now() + hold) { exit(ok ? 0 : 1) }
+                        // Scrolled back through history the separators must follow.
+                        surface.scrollUp(lines: 6)
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                            MainActor.assumeIsolated {
+                                let scrolled = strayRows()
+                                let ok = live.stray.isEmpty && scrolled.stray.isEmpty && live.count > 0
+                                    && scrolled.count > 0 && badFailed.isEmpty && failed.count == 16
+                                print("UITYPEAHEADSEPARATORS separators=\(live.count) badSeparators=\(live.stray.count) "
+                                      + "scrolledSeparators=\(scrolled.count) badScrolled=\(scrolled.stray.count) "
+                                      + "highlighted=\(failed.count) badHighlights=\(badFailed.count) ok=\(ok)")
+                                fflush(stdout)
+                                // Left on screen for a window capture when asked.
+                                let hold = ProcessInfo.processInfo.environment["CMDY_UI_TEST_HOLD_SECONDS"]
+                                    .flatMap(Double.init) ?? 0
+                                DispatchQueue.main.asyncAfter(deadline: .now() + hold) { exit(ok ? 0 : 1) }
+                            }
+                        }
                     }
                 }
             }

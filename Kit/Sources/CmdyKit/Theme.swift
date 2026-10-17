@@ -133,7 +133,7 @@ public struct Theme: Sendable {
     public static let light = make("Light",
         ansi: ["#000000", "#c82829", "#008e00", "#7a6a00", "#0043c8", "#a51ca5", "#00838b", "#d8d8d8",
                "#707070", "#f05050", "#30c030", "#c0a000", "#4080f0", "#d060d0", "#40b0b0", "#1a1a1a"],
-        bg: "#fafaf5", fg: "#1a1a1a", cursor: "#0043c8", border: "#e0e0da")
+        bg: "#ffffff", fg: "#1a1a1a", cursor: "#0043c8", border: "#e3e3e3")
 
     // MARK: - Gallery (faithful ports of the classics)
 

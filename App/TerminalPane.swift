@@ -804,6 +804,22 @@ final class TerminalPane: DropView, InlinePanelHost, ExtensionSurfaceHost,
 
     deinit {
         TerminalPaneKeyRouter.shared.unregister(self)
+        if let occlusionObserver { NotificationCenter.default.removeObserver(occlusionObserver) }
+    }
+
+    private var occlusionObserver: NSObjectProtocol?
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        if let occlusionObserver { NotificationCenter.default.removeObserver(occlusionObserver) }
+        occlusionObserver = nil
+        guard let window else { return }
+        // Overlays skip work while the window is hidden; catch up on return.
+        occlusionObserver = NotificationCenter.default.addObserver(
+            forName: NSWindow.didChangeOcclusionStateNotification, object: window,
+            queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.refreshOverlayState() }
+        }
     }
 
     /// Unmodified Tab accepts fish-style ghost text. When no hint is visible,
@@ -1644,10 +1660,15 @@ final class TerminalPane: DropView, InlinePanelHost, ExtensionSurfaceHost,
         surface.caretColor = theme.ns(theme.foreground)
         surface.caretTextColor = theme.ns(theme.background)   // char under a block cursor
         surface.selectedTextBackgroundColor = theme.ns(theme.foreground).withAlphaComponent(0.30)
-        let backgroundBrightness = theme.ns(theme.background)
-            .usingColorSpace(.deviceGray)?.whiteComponent ?? 0
-        scrollIndicator.knobStyle = backgroundBrightness < 0.5
-            ? .light : .dark
+        // The knob follows the terminal background, not the system appearance:
+        // AppKit draws it for the scroller's appearance, so set both.
+        let ground = theme.ns(theme.background).usingColorSpace(.sRGB)
+        let backgroundBrightness = ground.map {
+            0.2126 * $0.redComponent + 0.7152 * $0.greenComponent + 0.0722 * $0.blueComponent
+        } ?? 0
+        let darkGround = backgroundBrightness < 0.5
+        scrollIndicator.appearance = NSAppearance(named: darkGround ? .darkAqua : .aqua)
+        scrollIndicator.knobStyle = darkGround ? .light : .dark
         surface.failedBlockForegroundColor = NSColor.systemRed
         surface.failedBlockBackgroundColor = NSColor.systemRed.withAlphaComponent(0.16)
         surface.engine.setCursorStyle(p.cursorStyle)

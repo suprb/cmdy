@@ -278,8 +278,8 @@
     {
       "mode": "100644",
       "path": "App/AppDelegate.swift",
-      "sha256": "70f29afbf8fa75f27cbcf098f397544ac52ccd6158c99bf09cd70fbfd9e9e280",
-      "size": 300419
+      "sha256": "c919eb48ea658e7a359293930af252ae543803b807c3f7abe27123bccb1de09e",
+      "size": 305141
     },
     {
       "mode": "100644",
@@ -308,8 +308,8 @@
     {
       "mode": "100644",
       "path": "App/BlockOverlayView.swift",
-      "sha256": "f05f9e94674edeef05ca45234ffc15aec19ca484a8c16a490f684b58cf11ba00",
-      "size": 17540
+      "sha256": "ae284400495d198c8fb1f64465e8ee11b0cafa5346c69fd2c63db8b7d2944cf9",
+      "size": 18916
     },
     {
       "mode": "100644",
@@ -536,8 +536,8 @@
     {
       "mode": "100644",
       "path": "App/PaneKeys.swift",
-      "sha256": "78031019cc271979292120027f31b378088db589dcd90497c9cde429ee60bdca",
-      "size": 5397
+      "sha256": "f50d73d392e2bde9df04bad484fd29ed53bedb695f217e53c3ba80f6d7915db4",
+      "size": 10162
     },
     {
       "mode": "100644",
@@ -548,8 +548,8 @@
     {
       "mode": "100644",
       "path": "App/SelfTest.swift",
-      "sha256": "6078134438bace81d1238434e1e1681516386e16e084b10d012b3af2d1686a4d",
-      "size": 78644
+      "sha256": "2aa9caedd2bdd3d98f186d4fc3aba925aa6ed9cf0451e95954ee605c99add3f5",
+      "size": 79833
     },
     {
       "mode": "100644",
@@ -596,8 +596,8 @@
     {
       "mode": "100644",
       "path": "App/StandardKeybindings.swift",
-      "sha256": "fd0d91650529840dee737808a7e7d175ceacb0e45ce809e95d2091c3bb5efe28",
-      "size": 24130
+      "sha256": "7956afd474c587cd67d4eea28daad048d9d8284f24cd6833aa3dc492b4a97b39",
+      "size": 24842
     },
     {
       "mode": "100644",
@@ -614,8 +614,8 @@
     {
       "mode": "100644",
       "path": "App/TerminalPane.swift",
-      "sha256": "7620e5f9ff7d0736328fc65346b5b60a92d4c3ce4e917c3794bd84e2bfb6fea2",
-      "size": 91418
+      "sha256": "c998cb55baf1be4ed8ad71eecbc7d294356996642c8dbb7307873f4e58f19000",
+      "size": 93289
     },
     {
       "mode": "100644",
@@ -692,8 +692,8 @@
     {
       "mode": "100644",
       "path": "App/main.swift",
-      "sha256": "bf7547a43e09d3d9d170c27dbec6b313b71bef579874665f3132be3cc4c4cfa1",
-      "size": 72591
+      "sha256": "e483c12b127f34ecb2e3362c6241a8216358f4099cc60f692c7fcd39861a2d94",
+      "size": 74713
     },
     {
       "mode": "100644",
@@ -1424,8 +1424,8 @@
     {
       "mode": "100644",
       "path": "Core/Zig/render_geometry.zig",
-      "sha256": "713b39ba6686deadd807d93337cc3336470a6e1104b94da7b315dbedb48b8529",
-      "size": 13732
+      "sha256": "9355057313cdb66e13f21cf72f2cf7312c4279ea8a7b1367a6ff2ae2f52a7534",
+      "size": 13945
     },
     {
       "mode": "100644",
@@ -1934,8 +1934,8 @@
     {
       "mode": "100644",
       "path": "Kit/Sources/CmdyKit/Preferences.swift",
-      "sha256": "2adebaa27947c0005511b40a0cf6f32f394c03f863b56702e2ceda6c359eb77a",
-      "size": 29437
+      "sha256": "41271ecefae2cc9c8fd6c8da7db804091c3a4e938b64287e8a7807fcf9fd45bb",
+      "size": 29443
     },
     {
       "mode": "100644",
@@ -1982,7 +1982,7 @@
     {
       "mode": "100644",
       "path": "Kit/Sources/CmdyKit/Theme.swift",
-      "sha256": "47777477c4f85db3cb4b5ed59ccba3f3cba8ee0e4a2c998cef7bff0768ed0a40",
+      "sha256": "8b8c4ecc3ccc90da643576c7219618ccba3f3a782882aa3797c74191519a765f",
       "size": 10221
     },
     {
@@ -2096,8 +2096,8 @@
     {
       "mode": "100644",
       "path": "Renderer/Sources/CmdyGPU/GeometryAndScheduling.swift",
-      "sha256": "7a3642ba83d37b4e24fab721afbd4a195fc3d6399000ab8d3d27a85946b6a79c",
-      "size": 22013
+      "sha256": "9c57588d4844e6cc06507f27230d825d2731cd7255c95bd39261444474c9f656",
+      "size": 22231
     },
     {
       "mode": "100644",

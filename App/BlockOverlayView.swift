@@ -139,7 +139,7 @@ final class BlockOverlayView: NSView {
     /// it (output not yet drawn); separators placed from the engine's row sit
     /// rows above their prompts until the next refresh.
     private func displayedTopRow(_ term: any TerminalEngine) -> Int {
-        (surface as? CmdyTerminalSurface)?.displayedTopRow ?? term.currentTopRow
+        (surface as? CmdyTerminalSurface)?.displayedTopRowForTesting ?? term.currentTopRow
     }
 
     override func hitTest(_ point: NSPoint) -> NSView? { nil }

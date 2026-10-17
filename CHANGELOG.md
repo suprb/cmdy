@@ -9,7 +9,7 @@ and this project intends to follow
 Public APIs and protocols follow semantic versioning. Breaking changes should
 be called out here with a migration path before a versioned release.
 
-## [Unreleased]
+## [1.0.13] - 2026-10-17
 
 ## [Unreleased]
 
@@ -23,6 +23,8 @@ be called out here with a migration path before a versioned release.
   Window menu), following pane-key-modifier.
 - Command separators sit on their prompt rows again; they were mirrored and
   could run through the error explanation text.
+- The scroll knob follows the terminal background, so it stays visible on
+  light themes while macOS is in dark mode.
 - Window Grid ⌃⌘G, Break Splits into Grid Windows ⌃⌘B and Combine Grid
   Windows into Splits ⌃⌘J.
 

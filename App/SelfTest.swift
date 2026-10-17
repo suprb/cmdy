@@ -384,14 +384,14 @@ enum SelfTest {
         check(Theme.builtins.allSatisfy { $0.ansi.count == 16 }, "every builtin has 16 ANSI colors")
         check(Theme.hex("#ff8000")?.green == 0x80 * 257, "hex parses")
         check(Theme.hex("nope") == nil, "bad hex -> nil")
-        check(Preferences.defaultThemeName == "Light"
+        check(Preferences.defaultThemeName == "Tokyo Night"
                 && Preferences.defaultFontName == "FragmentMono-Regular"
                 && Preferences.defaultFontSize == 13,
               "first-launch appearance defaults stay canonical")
         if ProductIdentity.current.environmentValue("DEFAULTS_DOMAIN") != nil {
             let defaults = Preferences.shared
-            check(defaults.themeName == "Light" && defaults.theme.name == "Light",
-                  "isolated first launch resolves the Light theme")
+            check(defaults.themeName == "Tokyo Night" && defaults.theme.name == "Tokyo Night",
+                  "isolated first launch resolves the Tokyo Night theme")
             check(defaults.fontName == "FragmentMono-Regular"
                     && defaults.fontSize == 13
                     && defaults.resolvedFont().fontName == "FragmentMono-Regular",

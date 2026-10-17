@@ -12,7 +12,7 @@ extension Notification.Name {
 /// re-apply on change, so tweaking font/theme updates every open tab at once.
 public final class Preferences {
     nonisolated(unsafe) public static let shared = Preferences()
-    public static let defaultThemeName = "Light"
+    public static let defaultThemeName = "Tokyo Night"
     public static let defaultFontName = "FragmentMono-Regular"
     public static let defaultFontSize: CGFloat = 13
     @available(*, deprecated, message: "The startup banner was removed in cmdy 1.0.2.")
