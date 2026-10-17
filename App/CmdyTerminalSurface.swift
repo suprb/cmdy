@@ -236,7 +236,8 @@ final class CmdyTerminalSurface: NSView,
     }
     private(set) var visualScrollOffset: CGFloat = 0
     /// The top row of the snapshot the renderer is drawing.
-    var displayedTopRowForTesting: Int { renderSnapshot.grid.displayTopRow }
+    var displayedTopRow: Int { renderSnapshot.grid.displayTopRow }
+    var displayedTopRowForTesting: Int { displayedTopRow }
     var onVisualScrollChanged: (() -> Void)?
     var activityKeypressTime: Double = 0 {
         didSet { publishInputActivity() }
@@ -1499,7 +1500,10 @@ final class CmdyTerminalSurface: NSView,
         // Model publication can request renderer activity without queueDisplay.
         frameContentGeneration &+= 1
         let widthChanged = snapshot.grid.cols != renderSnapshot.grid.cols
+        let topChanged = snapshot.grid.displayTopRow != renderSnapshot.grid.displayTopRow
         renderSnapshot = snapshot
+        // Overlays (command separators) follow the frame on screen.
+        if topChanged { onVisualScrollChanged?() }
         pendingDirtyRows = union(pendingDirtyRows, snapshot.dirtyRows)
         if notifyRenderer { metalRenderer?.sourceDidChange() }
         if widthChanged {

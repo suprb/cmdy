@@ -80,7 +80,7 @@ final class BlockOverlayView: NSView {
         guard let store, let surface else { return 0 }
         let term = surface.engine
         let cellHeight = surface.cellSize.height
-        let top = term.currentTopRow
+        let top = displayedTopRow(term)
         let rows = term.rows
         let origin = contentTopInset + surface.visualScrollOffset
         var expected: [CGFloat] = []
@@ -90,13 +90,31 @@ final class BlockOverlayView: NSView {
             expected.append(origin + CGFloat(screenRow) * cellHeight)
         }
         expected.sort()
-        let translation = separatorContainerLayer.affineTransform().ty
+        // Converted into the view's layer: what the screen shows, flips included.
+        guard let viewLayer = layer else { return .infinity }
         let actual = separatorLayers
             .filter { !$0.isHidden }
-            .map { $0.frame.minY + translation }
+            .map { $0.convert($0.bounds, to: viewLayer).minY }
             .sorted()
         guard expected.count == actual.count else { return .infinity }
         return zip(expected, actual).map { abs($0 - $1) }.max() ?? 0
+    }
+
+    /// Absolute rows the visible separators are drawn on, read back from the
+    /// cached layers.
+    func separatorRowsForTesting() -> [Int] {
+        guard let surface else { return [] }
+        let cellHeight = surface.cellSize.height
+        guard cellHeight > 0 else { return [] }
+        guard let viewLayer = layer else { return [] }
+        let origin = contentTopInset + surface.visualScrollOffset
+        let top = displayedTopRow(surface.engine)
+        // Converted into the view's layer, so flips and the scroll translation
+        // count exactly as they do on screen.
+        return separatorLayers.filter { !$0.isHidden }.map {
+            let y = $0.convert($0.bounds, to: viewLayer).minY
+            return top + Int(((y - origin) / cellHeight).rounded())
+        }.sorted()
     }
 
     override init(frame frameRect: NSRect) {
@@ -116,6 +134,13 @@ final class BlockOverlayView: NSView {
     }
 
     override var isFlipped: Bool { true }   // top-left origin → simpler row math
+
+    /// The top row of the frame on screen. The engine can already be ahead of
+    /// it (output not yet drawn); separators placed from the engine's row sit
+    /// rows above their prompts until the next refresh.
+    private func displayedTopRow(_ term: any TerminalEngine) -> Int {
+        (surface as? CmdyTerminalSurface)?.displayedTopRow ?? term.currentTopRow
+    }
 
     override func hitTest(_ point: NSPoint) -> NSView? { nil }
 
@@ -140,7 +165,7 @@ final class BlockOverlayView: NSView {
             return
         }
         guard let term = surface?.engine else { return }
-        let top = term.currentTopRow
+        let top = displayedTopRow(term)
         // Command separators belong to the shell's normal screen. A full-screen
         // program on the alternate screen (vim, herdr, tmux) owns every row.
         let alternate = term.isCurrentBufferAlternate
@@ -230,14 +255,15 @@ final class BlockOverlayView: NSView {
                     withAttributes: attrs)
             }
         }
-        let top = term.currentTopRow
+        let top = displayedTopRow(term)
         drawCommandAssistance(on: tv, topRow: top, originX: originX,
                               visualOffset: visualOffset)
     }
 
     private func configureSeparatorContainer() {
         separatorContainerLayer.name = "cmdy command separators"
-        separatorContainerLayer.isGeometryFlipped = true
+        // The view's backing layer is already flipped (isFlipped); flipping
+        // this container again would place separators from the bottom.
         separatorContainerLayer.actions = [
             "bounds": NSNull(), "position": NSNull(), "transform": NSNull(),
             "sublayers": NSNull(),

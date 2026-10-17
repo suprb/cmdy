@@ -690,6 +690,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             }
         } else if CommandLine.arguments.contains("--ui-test-separator-alignment") {
             runSeparatorAlignmentCheck()
+        } else if CommandLine.arguments.contains("--ui-test-typeahead-separators") {
+            runTypeaheadSeparatorCheck()
         } else if CommandLine.arguments.contains("--ui-test-dense-scroll-profile") {
             runDenseScrollPerformanceProfile()
         } else if CommandLine.arguments.contains("--ui-test-dense-selection-profile") {
@@ -1287,6 +1289,58 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                     }
             }
             feedNextCommand()
+        }
+    }
+
+    /// Real shell, typed ahead: failing commands queued while another runs
+    /// arrive with their prompts in one PTY read. Every separator and every
+    /// failed-prompt highlight must sit on a prompt row.
+    private func runTypeaheadSeparatorCheck() {
+        Preferences.shared.workspaceNavigatorVisible = false
+        Preferences.shared.workspaceInspectorVisible = false
+        Preferences.shared.ghostText = false
+        Preferences.shared.sounds = false
+        Preferences.shared.automaticErrorHelp = true
+        newWindow(nil)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
+            MainActor.assumeIsolated {
+                guard let controller = self?.controllers.first,
+                      let pane = controller.focusedPane ?? controller.panes.first,
+                      let surface = pane.surface as? CmdyTerminalSurface,
+                      let window = controller.window else { exit(1) }
+                window.setFrame(NSRect(x: 120, y: 80, width: 900, height: 760), display: true)
+                window.makeKeyAndOrderFront(nil)
+                var typed = "for i in {1..40}; do echo line$i; done; sleep 1\r"
+                for i in 1...8 { typed += "nosuch\(i)\r" }
+                surface.send(txt: typed)
+                // Then one at a time, as typed by hand.
+                for i in 9...16 {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 3.0 + Double(i - 9) * 0.45) {
+                        MainActor.assumeIsolated { surface.send(txt: "nosuch\(i)\r") }
+                    }
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 8.0) {
+                    MainActor.assumeIsolated {
+                        let term = surface.engine
+                        func text(_ row: Int) -> String { term.scrollbackLineText(row: row) ?? "" }
+                        let separators = pane.blockOverlayForTesting.separatorRowsForTesting()
+                        let failed = surface.failedBlockRows.sorted()
+                        let isPrompt: (Int) -> Bool = { text($0).contains("% ") || text($0).hasSuffix("%") }
+                        let badSeparators = separators.filter { !isPrompt($0) }
+                        let badFailed = failed.filter { !text($0).contains("nosuch") }
+                        for row in badSeparators { print("  separator on row \(row): '\(text(row).prefix(50))'") }
+                        for row in badFailed { print("  highlight on row \(row): '\(text(row).prefix(50))'") }
+                        let ok = badSeparators.isEmpty && badFailed.isEmpty && failed.count == 16
+                        print("UITYPEAHEADSEPARATORS separators=\(separators.count) badSeparators=\(badSeparators.count) "
+                              + "highlighted=\(failed.count) badHighlights=\(badFailed.count) ok=\(ok)")
+                        fflush(stdout)
+                        // Left on screen for a window capture when asked.
+                        let hold = ProcessInfo.processInfo.environment["CMDY_UI_TEST_HOLD_SECONDS"]
+                            .flatMap(Double.init) ?? 0
+                        DispatchQueue.main.asyncAfter(deadline: .now() + hold) { exit(ok ? 0 : 1) }
+                    }
+                }
+            }
         }
     }
 

@@ -485,14 +485,16 @@ private func buildMainMenu(delegate: AppDelegate) -> NSMenu {
     windowMenu.addItem(item("Zoom", #selector(NSWindow.performZoom(_:))))
     windowMenu.addItem(.separator())
     windowMenu.addItem(item(
-        "Window Grid", #selector(AppDelegate.toggleWindowGrid(_:)), "",
-        modifiers: [], symbol: "rectangle.split.2x2"))
+        "Window Grid", #selector(AppDelegate.toggleWindowGrid(_:)), "g",
+        modifiers: [.control, .command], symbol: "rectangle.split.2x2"))
     windowMenu.addItem(item(
         "Break Splits into Grid Windows",
-        #selector(AppDelegate.breakSplitsIntoGridWindows(_:))))
+        #selector(AppDelegate.breakSplitsIntoGridWindows(_:)), "b",
+        modifiers: [.control, .command]))
     windowMenu.addItem(item(
         "Combine Grid Windows into Splits",
-        #selector(AppDelegate.combineGridWindowsIntoSplits(_:))))
+        #selector(AppDelegate.combineGridWindowsIntoSplits(_:)), "j",
+        modifiers: [.control, .command]))
     windowMenu.addItem(.separator())
     for paneKeyItem in PaneKeyMenu.windowItems() { windowMenu.addItem(paneKeyItem) }
     windowMenu.addItem(.separator())

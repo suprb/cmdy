@@ -21,6 +21,10 @@ be called out here with a migration path before a versioned release.
   diagonally across lines.
 - The menu bar shows the pane, tab and window keys (File › Panes and the
   Window menu), following pane-key-modifier.
+- Command separators sit on their prompt rows again; they were mirrored and
+  could run through the error explanation text.
+- Window Grid ⌃⌘G, Break Splits into Grid Windows ⌃⌘B and Combine Grid
+  Windows into Splits ⌃⌘J.
 
 ## [1.0.12] - 2026-10-16
 
