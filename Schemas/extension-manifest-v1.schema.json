@@ -18,6 +18,7 @@
       "not": {"pattern": "(^/|(^|/)\\.\\.(/|$))"}
     },
     "enabled": {"type": "boolean", "default": true},
+    "activation": {"enum": ["startup", "on-demand"], "default": "startup"},
     "description": {"type": "string"},
     "guide": {
       "type": "object",

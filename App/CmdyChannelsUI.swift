@@ -171,7 +171,7 @@ extension AppDelegate {
                             state = .degraded
                             summary = "connector failed\(suffix)"
                             detail = status.displayText
-                        case .stopped, .ready:
+                        case .stopped, .sleeping, .ready:
                             state = .offline
                             summary = "connector offline\(suffix)"
                             detail = reportedDetail.isEmpty ? status.displayText : reportedDetail

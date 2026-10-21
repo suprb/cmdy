@@ -692,6 +692,15 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
     private var terminalSplitItem: NSSplitViewItem?
     private var workspaceContentSplitItem: NSSplitViewItem?
     private var embeddedBrowserSplitItem: NSSplitViewItem?
+    /// A hidden Browser keeps its page (and Chromium's renderer processes)
+    /// only briefly, so a quick re-toggle is instant but a toggled-away
+    /// Browser stops costing CPU and memory.
+    private var embeddedBrowserCloseWorkItem: DispatchWorkItem?
+    private var embeddedBrowserResumeURL: String?
+    static let hiddenBrowserCloseDelay: TimeInterval = {
+        ProcessInfo.processInfo.environment["CMDY_HIDDEN_BROWSER_CLOSE_SECONDS"]
+            .flatMap(TimeInterval.init) ?? 15
+    }()
     private weak var embeddedBrowserControlBar: ExtensionControlBar?
     private weak var embeddedBrowserControlPane: TerminalPane?
     private struct LiveResizeWorkspaceState {
@@ -1102,6 +1111,10 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
     func showEmbeddedBrowser(url: String? = nil, focusLocation: Bool = false) -> Bool {
         guard EmbeddedChromiumRuntime.shared.isAvailable,
               let window else { return false }
+        embeddedBrowserCloseWorkItem?.cancel()
+        embeddedBrowserCloseWorkItem = nil
+        let resumeURL = embeddedBrowserController.hasBrowser ? nil : embeddedBrowserResumeURL
+        embeddedBrowserResumeURL = nil
         let wasCollapsed = embeddedBrowserSplitItem?.isCollapsed == true
         if wasCollapsed {
             embeddedBrowserSplitItem?.isCollapsed = false
@@ -1125,7 +1138,7 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
         // and lay out the item before creating Chromium's child NSView.
         let windowNumber = CGWindowID(window.windowNumber)
         guard embeddedBrowserController.ensureBrowser(
-            windowNumber: windowNumber, initialURL: url) else {
+            windowNumber: windowNumber, initialURL: url ?? resumeURL) else {
             if wasCollapsed {
                 embeddedBrowserSplitItem?.isCollapsed = true
                 refreshEmbeddedBrowserChromeExclusion()
@@ -1146,6 +1159,24 @@ final class TerminalWindowController: NSWindowController, NSWindowDelegate,
         focusedPane?.focus()
         container.needsLayout = true
         refreshEmbeddedBrowserChromeExclusion()
+        scheduleHiddenBrowserClose()
+    }
+
+    private func scheduleHiddenBrowserClose() {
+        embeddedBrowserCloseWorkItem?.cancel()
+        let work = DispatchWorkItem { [weak self] in
+            guard let self, !self.isEmbeddedBrowserVisible,
+                  self.embeddedBrowserController.hasBrowser,
+                  let window = self.window else { return }
+            self.embeddedBrowserCloseWorkItem = nil
+            let url = self.embeddedBrowserController.lastLoadedURL
+            self.embeddedBrowserResumeURL = url.isEmpty ? nil : url
+            self.embeddedBrowserController.close(
+                windowNumber: CGWindowID(window.windowNumber))
+        }
+        embeddedBrowserCloseWorkItem = work
+        DispatchQueue.main.asyncAfter(
+            deadline: .now() + Self.hiddenBrowserCloseDelay, execute: work)
     }
 
     func toggleEmbeddedBrowser(focusLocation: Bool = false) {

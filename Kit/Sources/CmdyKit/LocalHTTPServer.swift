@@ -28,6 +28,7 @@ final class LocalHTTPServer {
     }
     private var pluginCredentials: [String: PluginCredential] = [:]
     private var pluginAuthenticationHandler: ((String) -> Void)?
+    private var eventStreamHandler: ((String) -> Void)?
     private let credentialLock = NSLock()
 
     /// Called after a per-launch Extension credential authenticates. The
@@ -42,6 +43,22 @@ final class LocalHTTPServer {
         set {
             credentialLock.lock()
             pluginAuthenticationHandler = newValue
+            credentialLock.unlock()
+        }
+    }
+
+    /// Called once an Extension's /v1/events stream is attached. The SDK
+    /// registers its commands before it subscribes, so this is the moment a
+    /// freshly woken Extension can receive the command that woke it.
+    var onEventStreamSubscribed: ((String) -> Void)? {
+        get {
+            credentialLock.lock()
+            defer { credentialLock.unlock() }
+            return eventStreamHandler
+        }
+        set {
+            credentialLock.lock()
+            eventStreamHandler = newValue
             credentialLock.unlock()
         }
     }
@@ -351,7 +368,10 @@ final class LocalHTTPServer {
                 publishSubscriberCount()
                 return true
             }
-            if established { authenticationCompleted?() }
+            if established {
+                authenticationCompleted?()
+                if let pluginOwner { onEventStreamSubscribed?(pluginOwner) }
+            }
             return established
         }
 

@@ -29,6 +29,40 @@ final class ExtensionProtocolTests: XCTestCase {
         XCTAssertEqual(try ExtensionManifest.decode(manifest.encoded()), manifest)
     }
 
+    func testManifestActivationDefaultsToStartupAndRoundTrips() throws {
+        func manifest(_ activation: String?) throws -> ExtensionManifest {
+            let field = activation.map { "\"activation\": \"\($0)\"," } ?? ""
+            return try ExtensionManifest.decode(Data("""
+            {"manifestVersion": 1, "id": "dev.example.sim", "name": "Sim",
+             "version": "1.0.0", "entrypoint": "sim", \(field) "capabilities": []}
+            """.utf8))
+        }
+        XCTAssertEqual(try manifest(nil).activation, .startup)
+        let onDemand = try manifest("on-demand")
+        XCTAssertEqual(onDemand.activation, .onDemand)
+        XCTAssertEqual(try ExtensionManifest.decode(onDemand.encoded()), onDemand)
+        XCTAssertThrowsError(try manifest("lazy"))
+    }
+
+    func testContributionCacheOnlyTrustsTheSameVersion() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString).appendingPathComponent("c.json")
+        defer { try? FileManager.default.removeItem(at: url.deletingLastPathComponent()) }
+        let cache = ExtensionContributionCache(url: url)
+        cache.save(ExtensionContributions(
+            version: "1.0.0",
+            commands: [.init(id: "sim.dock", title: "Dock the Simulator")],
+            hotKeys: [.init(id: "sim.dock", keyCode: 1, modifiers: 6144)]),
+                   for: "dev.example.sim")
+        let current = try ExtensionManifest(
+            id: "dev.example.sim", name: "Sim", version: "1.0.0",
+            entrypoint: "sim", capabilities: [], activation: .onDemand)
+        XCTAssertEqual(cache.contributions(for: current)?.hotKeys.first?.modifiers, 6144)
+        var updated = current
+        updated.version = "1.1.0"
+        XCTAssertNil(cache.contributions(for: updated))
+    }
+
     func testLegacyManifestKeepsCompatibilityWithoutPersistingFullGrant() throws {
         let manifest = try ExtensionManifest.decode(Data("""
         {"name":"Old Tool","exec":"run.sh","enabled":true}

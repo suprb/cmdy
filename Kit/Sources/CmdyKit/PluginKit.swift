@@ -155,6 +155,9 @@ public enum ExtensionRuntimePhase: String {
     case ready
     case failed
     case stopped
+    /// An on-demand Extension whose process is not running; its commands and
+    /// hotkeys are armed and start it on first use.
+    case sleeping
 }
 
 public struct ExtensionRuntimeStatus {
@@ -174,6 +177,8 @@ public struct ExtensionRuntimeStatus {
             return processIdentifier.map { "ready (pid \($0))" } ?? "ready"
         case .stopped:
             return "stopped"
+        case .sleeping:
+            return "sleeping (starts when used)"
         case .failed:
             let reason = message ?? "process stopped unexpectedly"
             guard let lastLog, !lastLog.isEmpty, lastLog != reason else {
@@ -299,6 +304,31 @@ public final class PluginManager: PluginHost {
     private var pendingHooks: [String: PendingHook] = [:]
     private let pendingHookLock = NSLock()
     private var externalHotKeys: [String: (owner: String, registration: UInt32)] = [:]
+    private var externalHotKeySpecs: [String: (keyCode: UInt32, modifiers: UInt32)] = [:]
+
+    // On-demand activation (manifest `activation: on-demand`).
+    private struct SleepingExtension {
+        let manifest: ExtensionManifest
+        let hotKeyRegistrations: [UInt32]
+    }
+    /// Sleeping Extensions by directory: placeholder commands and hotkeys are
+    /// armed and start the process on first use.
+    private var sleepingExtensions: [URL: SleepingExtension] = [:]
+    /// The command or hotkey that woke an Extension, delivered once its new
+    /// process has registered and attached its event stream.
+    private var pendingWakeEvents: [URL: [(kind: String, payload: [String: Any])]] = [:]
+    private var lastExtensionActivity: [String: Date] = [:]
+    private var lastExtensionRelease: [String: Date] = [:]
+    private var busyExtensionOwners = Set<String>()
+    private var idleSweepTimer: Timer?
+    private lazy var contributionCache = ExtensionContributionCache(
+        url: ConfigFile.directory.appendingPathComponent("extension-contributions.json"))
+    /// An on-demand Extension that holds no UI sleeps after this much quiet.
+    public static let extensionIdleSeconds: TimeInterval = ProductIdentity.current
+        .environmentValue("EXTENSION_IDLE_SECONDS").flatMap(TimeInterval.init) ?? 120
+    /// After the user puts its UI away (companion undocked), a shorter grace.
+    public static let extensionReleaseSeconds: TimeInterval = ProductIdentity.current
+        .environmentValue("EXTENSION_RELEASE_SECONDS").flatMap(TimeInterval.init) ?? 10
     /// Main-thread-owned replacement state. A marketplace install may finish
     /// before a stubborn old process exits; launch that replacement only after
     /// every terminating process for the same directory is gone.
@@ -824,7 +854,13 @@ public final class PluginManager: PluginHost {
         isDeactivating = false
         server.onPluginAuthenticated = { [weak self] owner in
             DispatchQueue.main.async {
+                self?.lastExtensionActivity[owner] = Date()
                 self?.markExtensionReady(owner: owner)
+            }
+        }
+        server.onEventStreamSubscribed = { [weak self] owner in
+            DispatchQueue.main.async {
+                self?.extensionEventStreamAttached(owner: owner)
             }
         }
         server.route("GET", "/health") { _ in
@@ -899,6 +935,14 @@ public final class PluginManager: PluginHost {
             hotKeys.unregister(hotKey.registration)
         }
         externalHotKeys.removeAll()
+        externalHotKeySpecs.removeAll()
+        for directory in Array(sleepingExtensions.keys) { removeSleepingStubs(at: directory) }
+        pendingWakeEvents.removeAll()
+        lastExtensionActivity.removeAll()
+        lastExtensionRelease.removeAll()
+        busyExtensionOwners.removeAll()
+        idleSweepTimer?.invalidate()
+        idleSweepTimer = nil
         sdkPanels.values.forEach { $0.panel.dismiss() }
         sdkPanels.removeAll()
         sdkControlBars.values.forEach { record in
@@ -951,6 +995,11 @@ public final class PluginManager: PluginHost {
             dockReservations[owner, default: [:]][target] = DockReservation(
                 right: right, minHeight: minHeight)
         } else {
+            if dockReservations[owner]?[target] != nil {
+                // The user put the companion away; an on-demand owner may
+                // now sleep after the short release grace.
+                lastExtensionRelease[owner] = Date()
+            }
             dockReservations[owner]?[target] = nil
             if dockReservations[owner]?.isEmpty == true { dockReservations[owner] = nil }
         }
@@ -983,7 +1032,11 @@ public final class PluginManager: PluginHost {
             if let registration = externalHotKeys.removeValue(forKey: id)?.registration {
                 hotKeys.unregister(registration)
             }
+            externalHotKeySpecs[id] = nil
         }
+        lastExtensionActivity[owner] = nil
+        lastExtensionRelease[owner] = nil
+        busyExtensionOwners.remove(owner)
 
         let panelIDs = sdkPanels.compactMap { key, value in
             value.owner == owner ? key : nil
@@ -1165,6 +1218,7 @@ public final class PluginManager: PluginHost {
             }
             hotKeys.unregister(previous.registration)
             externalHotKeys[id] = nil
+            externalHotKeySpecs[id] = nil
         }
         let registration = hotKeys.register(
             keyCode: carbonKeyCode, modifiers: carbonModifiers
@@ -1179,6 +1233,7 @@ public final class PluginManager: PluginHost {
         }
         guard let registration else { return .badRequest("hotkey registration failed") }
         externalHotKeys[id] = (owner: owner, registration: registration)
+        externalHotKeySpecs[id] = (keyCode: carbonKeyCode, modifiers: carbonModifiers)
         return .ok(["ok": true])
     }
 
@@ -1595,6 +1650,18 @@ public final class PluginManager: PluginHost {
             }
             return .ok(["ok": true, "commands": commands.count,
                         "hotkeys": hotkeys.count, "hooks": hooks.count])
+        }
+
+        // An on-demand Extension doing work the host cannot see (a mirror, a
+        // download) holds itself awake; idle sleep resumes when it clears.
+        server.route("POST", "/v1/extensions/busy") { [weak self] req in
+            guard let self, let owner = req.pluginOwner,
+                  let busy = req.json?["busy"] as? Bool else {
+                return .badRequest("need {busy}; requires a launched extension")
+            }
+            if busy { self.busyExtensionOwners.insert(owner) }
+            else { self.busyExtensionOwners.remove(owner) }
+            return .ok(["ok": true, "busy": busy])
         }
 
         // Register a palette/menu command; invocations arrive on /v1/events.
@@ -2779,8 +2846,159 @@ public final class PluginManager: PluginHost {
             at: Self.extensionsDirectory, includingPropertiesForKeys: [.isDirectoryKey],
             options: [.skipsHiddenFiles]) else { return }
         for dir in entries {
+            if let manifest = try? ExtensionManifest.load(from: dir),
+               manifest.enabled, manifest.activation == .onDemand,
+               manifest.hostComponent == nil,
+               let contributions = contributionCache.contributions(for: manifest) {
+                installSleepingStubs(at: dir, manifest: manifest,
+                                     contributions: contributions)
+                continue
+            }
             _ = launchPlugin(at: dir)
         }
+    }
+
+    // MARK: - On-demand activation
+
+    /// Arm placeholder commands and hotkeys for a sleeping Extension. Using
+    /// one starts the process and hands it the same command event.
+    private func installSleepingStubs(at dir: URL, manifest: ExtensionManifest,
+                                      contributions: ExtensionContributions) {
+        let key = dir.standardizedFileURL
+        removeSleepingStubs(at: key)
+        let stubOwner = "sleeping:\(manifest.id)"
+        for command in contributions.commands
+        where !commands.contains(where: { $0.id == command.id }) {
+            commands.append((id: command.id, title: command.title, plugin: manifest.name,
+                             owner: stubOwner,
+                             run: { [weak self] in
+                                 self?.wakeExtension(at: key, kind: "command",
+                                                     id: command.id)
+                             }))
+        }
+        var registrations: [UInt32] = []
+        for hotKey in contributions.hotKeys where externalHotKeys[hotKey.id] == nil {
+            if let registration = hotKeys.register(
+                keyCode: hotKey.keyCode, modifiers: hotKey.modifiers,
+                { [weak self] in
+                    self?.wakeExtension(at: key, kind: "hotkey", id: hotKey.id)
+                }) {
+                registrations.append(registration)
+            }
+        }
+        sleepingExtensions[key] = SleepingExtension(
+            manifest: manifest, hotKeyRegistrations: registrations)
+        log("[\(manifest.name)] sleeping until used")
+        notifyExtensionRuntimeChanged(at: key)
+    }
+
+    private func removeSleepingStubs(at dir: URL) {
+        let key = dir.standardizedFileURL
+        guard let sleeping = sleepingExtensions.removeValue(forKey: key) else { return }
+        commands.removeAll { $0.owner == "sleeping:\(sleeping.manifest.id)" }
+        sleeping.hotKeyRegistrations.forEach { hotKeys.unregister($0) }
+    }
+
+    private func wakeExtension(at key: URL, kind: String, id: String) {
+        precondition(Thread.isMainThread, "plugin processes are main-thread owned")
+        var payload: [String: Any] = ["id": id]
+        if let windowNumber = focusedPane?.windowNumber, windowNumber > 0 {
+            payload["window"] = windowNumber
+        }
+        pendingWakeEvents[key, default: []].append((kind: kind, payload: payload))
+        guard !isPluginRunning(at: key) else { return }
+        let name = sleepingExtensions[key]?.manifest.name ?? key.lastPathComponent
+        log("[\(name)] waking for \(kind) \(id)")
+        if !launchPlugin(at: key) {
+            pendingWakeEvents[key] = nil
+        }
+    }
+
+    /// The SDK registers before it subscribes, so an attached stream means the
+    /// Extension is ready: remember what it contributes (on-demand only) and
+    /// deliver whatever woke it.
+    private func extensionEventStreamAttached(owner: String) {
+        guard let external = externalProcesses.first(where: {
+            $0.owner == owner && $0.process.isRunning
+        }) else { return }
+        lastExtensionActivity[owner] = Date()
+        let key = external.dir.standardizedFileURL
+        if external.manifest.activation == .onDemand {
+            let contributions = ExtensionContributions(
+                version: external.manifest.version,
+                commands: commands.filter { $0.owner == owner }
+                    .map { .init(id: $0.id, title: $0.title) },
+                hotKeys: externalHotKeys.compactMap { id, value in
+                    guard value.owner == owner,
+                          let spec = externalHotKeySpecs[id] else { return nil }
+                    return .init(id: id, keyCode: spec.keyCode, modifiers: spec.modifiers)
+                }.sorted { $0.id < $1.id })
+            if !contributions.isEmpty {
+                contributionCache.save(contributions, for: external.manifest.id)
+            }
+        }
+        for event in pendingWakeEvents.removeValue(forKey: key) ?? [] {
+            emit(event.kind, event.payload, toOwner: owner)
+        }
+    }
+
+    /// Whether an Extension still has something on screen or in flight that
+    /// the user would lose if its process stopped.
+    private func extensionHoldsWork(owner: String) -> Bool {
+        dockReservations[owner] != nil
+            || busyExtensionOwners.contains(owner)
+            || sdkPanels.values.contains { $0.owner == owner }
+            || sdkControlBars.keys.contains { $0.owner == owner }
+            || sdkSurfaces.keys.contains { $0.owner == owner }
+            || sdkWorkspaceContributions.keys.contains { $0.owner == owner }
+            || hooks.contains { $0.owner == owner }
+            || !channelRegistry.channelRuntimes(owner: owner).isEmpty
+    }
+
+    private func scheduleIdleSweepIfNeeded() {
+        let onDemandRunning = externalProcesses.contains {
+            $0.manifest.activation == .onDemand && $0.process.isRunning
+        }
+        if !onDemandRunning {
+            idleSweepTimer?.invalidate()
+            idleSweepTimer = nil
+            return
+        }
+        guard idleSweepTimer == nil else { return }
+        let interval = max(1, min(5, Self.extensionReleaseSeconds / 2))
+        let timer = Timer(timeInterval: interval, repeats: true) { [weak self] _ in
+            self?.sleepIdleExtensions()
+        }
+        timer.tolerance = interval / 2
+        RunLoop.main.add(timer, forMode: .common)
+        idleSweepTimer = timer
+    }
+
+    /// Stop on-demand Extensions that hold no UI or work and have gone quiet:
+    /// shortly after the user put their UI away, otherwise after the idle
+    /// timeout. Their commands and hotkeys stay armed.
+    private func sleepIdleExtensions() {
+        precondition(Thread.isMainThread, "plugin processes are main-thread owned")
+        let now = Date()
+        for external in externalProcesses
+        where external.manifest.activation == .onDemand
+            && external.process.isRunning
+            && readyExternalOwners.contains(external.owner)
+            && !stoppingProcessIDs.contains(ObjectIdentifier(external.process)) {
+            let owner = external.owner
+            let key = external.dir.standardizedFileURL
+            guard pendingWakeEvents[key] == nil, !extensionHoldsWork(owner: owner)
+            else { continue }
+            let activity = lastExtensionActivity[owner] ?? .distantPast
+            let released = lastExtensionRelease[owner].map { $0 >= activity.addingTimeInterval(-1) }
+                ?? false
+            let quiet = now.timeIntervalSince(activity)
+            guard quiet >= (released ? Self.extensionReleaseSeconds
+                                     : Self.extensionIdleSeconds) else { continue }
+            log("[\(external.manifest.name)] idle; sleeping until used")
+            stopPlugin(at: key)
+        }
+        scheduleIdleSweepIfNeeded()
     }
 
     /// Reconcile `.cmdy/extensions` against every open pane. Untrusted
@@ -3157,6 +3375,16 @@ public final class PluginManager: PluginHost {
                 message: nil,
                 lastLog: lastExtensionLogLine(at: key))
         }
+        if sleepingExtensions[key] != nil {
+            return ExtensionRuntimeStatus(
+                directory: key,
+                id: id,
+                name: name,
+                phase: .sleeping,
+                processIdentifier: nil,
+                message: nil,
+                lastLog: lastExtensionLogLine(at: key))
+        }
         if let failure = extensionFailures[key] {
             return ExtensionRuntimeStatus(
                 directory: key,
@@ -3183,6 +3411,7 @@ public final class PluginManager: PluginHost {
         var directories = Set(externalProcesses.map { $0.dir.standardizedFileURL })
         directories.formUnion(activeHostComponents.keys)
         directories.formUnion(extensionFailures.keys)
+        directories.formUnion(sleepingExtensions.keys)
         return directories.map(extensionRuntimeStatus(at:)).sorted {
             $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
         }
@@ -3230,6 +3459,8 @@ public final class PluginManager: PluginHost {
         } else {
             clearExtensionFailure(at: dir)
             pendingProcessLaunches[dir.standardizedFileURL] = nil
+            pendingWakeEvents[dir.standardizedFileURL] = nil
+            removeSleepingStubs(at: dir)
             stopPlugin(at: dir)
             notifyExtensionRuntimeChanged(at: dir)
         }
@@ -3346,6 +3577,7 @@ public final class PluginManager: PluginHost {
             log("[\(name)] \(message)")
             return false
         }
+        removeSleepingStubs(at: pluginKey)
         let process = Process()
         process.executableURL = execURL
         process.currentDirectoryURL = dir
@@ -3401,7 +3633,10 @@ public final class PluginManager: PluginHost {
                 self.readyExternalOwners.remove(owner)
                 self.cleanupPluginResources(owner: owner)
                 self.server.revokePluginCredential(owner)
-                if !self.isDeactivating, !wasStopping {
+                let sleepsOnExit = manifest.activation == .onDemand
+                    && terminated.terminationReason == .exit
+                    && terminated.terminationStatus == 0
+                if !self.isDeactivating, !wasStopping, !sleepsOnExit {
                     let message: String
                     switch terminated.terminationReason {
                     case .exit:
@@ -3413,10 +3648,25 @@ public final class PluginManager: PluginHost {
                     }
                     self.extensionFailures[pluginKey] = message
                 }
-                self.notifyExtensionRuntimeChanged(at: pluginKey)
                 let replacementIsRunning = self.externalProcesses.contains {
                     $0.dir.standardizedFileURL == pluginKey && $0.process.isRunning
                 }
+                if !self.isDeactivating, !replacementIsRunning,
+                   self.pendingProcessLaunches[pluginKey] == nil,
+                   self.extensionFailures[pluginKey] == nil,
+                   let current = try? ExtensionManifest.load(from: pluginKey),
+                   current.enabled, current.activation == .onDemand,
+                   let contributions = self.contributionCache.contributions(for: current) {
+                    self.installSleepingStubs(at: pluginKey, manifest: current,
+                                              contributions: contributions)
+                    // A command used while the old process was exiting
+                    // wakes the new one now.
+                    if self.pendingWakeEvents[pluginKey] != nil {
+                        _ = self.launchPlugin(at: pluginKey, scope: scope)
+                    }
+                }
+                self.scheduleIdleSweepIfNeeded()
+                self.notifyExtensionRuntimeChanged(at: pluginKey)
                 guard !self.isDeactivating, !replacementIsRunning,
                       let pending = self.pendingProcessLaunches.removeValue(forKey: pluginKey)
                 else { return }
@@ -3433,6 +3683,7 @@ public final class PluginManager: PluginHost {
                                                        outputPipe: outputPipe))
             let compatibility = manifest.isLegacy ? ", legacy full access" : ""
             log("[\(name)] launched (pid \(process.processIdentifier), \(scope)\(compatibility))")
+            scheduleIdleSweepIfNeeded()
             notifyExtensionRuntimeChanged(at: pluginKey)
             return true
         } catch {

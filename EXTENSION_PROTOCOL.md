@@ -77,8 +77,38 @@ Rules:
 - `enabled: false` prevents launch and immediately stops a running installed
   extension when changed from cmdy's Extensions window.
 
+- `activation` is `"startup"` (the default) or `"on-demand"`; see below.
+
 The machine-readable schema is
 [`Schemas/extension-manifest-v1.schema.json`](Schemas/extension-manifest-v1.schema.json).
+
+### Activation
+
+`"activation": "startup"` runs the extension for as long as cmdy is open. Use
+it when the extension must watch panes, answer hooks, run a Channel, or serve
+tools in the background.
+
+`"activation": "on-demand"` runs it only while it is in use:
+
+1. The first launch runs normally. Once the extension attaches its event
+   stream, cmdy remembers the commands and hotkeys it registered (in
+   `~/.config/cmdy/extension-contributions.json`, per extension version).
+2. On later launches cmdy does not start the process. The remembered commands
+   stay in the palette and the hotkeys stay armed; the Extensions window shows
+   the extension as sleeping.
+3. Using one of them starts the process. When its event stream attaches, it
+   receives the same `command` or `hotkey` event that woke it.
+4. cmdy stops it again once it holds nothing the user would lose (no dock
+   inset, panel, control bar, Surface, workspace contribution, hook, or
+   Channel) and it has made no API request for 120 seconds, or 10 seconds
+   after the user put its companion away (released its dock inset). Call
+   `POST /v1/extensions/busy {"busy": true}` while doing work cmdy cannot see,
+   and `false` when done.
+5. Exiting with status 0 is also a clean sleep, not a failure.
+
+A local client holding the discovery credential (for example an MCP server
+for the extension's tools) can wake it with `POST /v1/extensions/reload
+{"id": "…"}`.
 
 Legacy `{name, exec, enabled}` manifests still launch with their historical
 full access and are visibly labeled **legacy full access**. That frozen grant

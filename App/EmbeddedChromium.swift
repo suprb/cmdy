@@ -620,6 +620,7 @@ final class EmbeddedChromiumViewController: NSViewController {
     var chromeBackground: TermColor { chromeTheme.background }
     private(set) var lastLoadedURL = ""
     var onPageLoaded: ((String) -> Void)?
+    var hasBrowser: Bool { session?.browser != nil }
     var topContentInset: CGFloat = 0 {
         didSet {
             let normalized = max(0, topContentInset)

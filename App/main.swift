@@ -593,6 +593,10 @@ if CommandLine.arguments.contains("--ai-compose-test") {
     exit(0)
 }
 
+if CommandLine.arguments.contains("--extension-activation-test") {
+    ExtensionActivationTest.run()
+}
+
 if CommandLine.arguments.contains("--plugin-menu") {
     // Headless dump of the Extensions menu grouping (activates Extensions, no
     // UI). Their HTTP registrations synchronously hop to the main queue, so a

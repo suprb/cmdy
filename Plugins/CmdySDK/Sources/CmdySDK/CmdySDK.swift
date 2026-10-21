@@ -377,6 +377,13 @@ public final class Cmdy: NSObject, URLSessionDataDelegate, @unchecked Sendable {
         post("/v1/notify", ["title": title, "body": body])
     }
 
+    /// An on-demand Extension (manifest `activation: on-demand`) sleeps once
+    /// it holds no UI and goes quiet. Mark work cmdy cannot see, such as a
+    /// running mirror or download, as busy so it stays awake until cleared.
+    public func setBusy(_ busy: Bool) {
+        post("/v1/extensions/busy", ["busy": busy])
+    }
+
     public func panes(completion: @escaping ([[String: Any]]) -> Void) {
         get("/v1/panes") { completion($0?["panes"] as? [[String: Any]] ?? []) }
     }

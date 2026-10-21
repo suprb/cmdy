@@ -99,6 +99,17 @@ public enum ExtensionManifestError: LocalizedError, Equatable {
     }
 }
 
+/// When cmdy starts an Extension's process. `startup` (the default) runs it
+/// for the app's lifetime, which an Extension that watches panes or serves
+/// tools in the background needs. `on-demand` runs it only while it is used:
+/// cmdy remembers the commands and hotkeys it registered, shows them while
+/// the process sleeps, starts it on first use, and stops it once the user
+/// has put its UI away and it has gone idle.
+public enum ExtensionActivation: String, Sendable {
+    case startup
+    case onDemand = "on-demand"
+}
+
 /// The install and launch contract. `manifestVersion: 1` is capability scoped.
 /// Old `{name, exec, enabled}` manifests remain readable as version 0 and keep
 /// their historical full access so existing Cmdy installations do not break.
@@ -123,6 +134,7 @@ public struct ExtensionManifest: Equatable, Sendable {
     /// executable-shaped entrypoint for a uniform install contract, but the
     /// app allow-lists the manifest identity and owns the component lifecycle.
     public var hostComponent: String?
+    public var activation: ExtensionActivation
     public var description: String?
     public var guide: CmdyProductGuide?
     public var homepage: String?
@@ -135,6 +147,7 @@ public struct ExtensionManifest: Equatable, Sendable {
                 enabled: Bool = true,
                 capabilities: [ExtensionCapability],
                 hostComponent: String? = nil,
+                activation: ExtensionActivation = .startup,
                 description: String? = nil,
                 guide: CmdyProductGuide? = nil,
                 homepage: String? = nil) throws {
@@ -146,6 +159,7 @@ public struct ExtensionManifest: Equatable, Sendable {
         self.enabled = enabled
         self.capabilities = capabilities
         self.hostComponent = hostComponent
+        self.activation = activation
         self.description = description
         self.guide = guide
         self.homepage = homepage
@@ -246,6 +260,17 @@ public struct ExtensionManifest: Equatable, Sendable {
                 }
             } catch { throw error }
         }
+        let activation: ExtensionActivation
+        if let raw = object["activation"] {
+            guard let name = raw as? String,
+                  let value = ExtensionActivation(rawValue: name) else {
+                throw ExtensionManifestError.invalidJSON(
+                    "activation must be \"startup\" or \"on-demand\"")
+            }
+            activation = value
+        } else {
+            activation = .startup
+        }
 
         return try ExtensionManifest(
             manifestVersion: manifestVersion,
@@ -256,6 +281,7 @@ public struct ExtensionManifest: Equatable, Sendable {
             enabled: object["enabled"] as? Bool ?? true,
             capabilities: capabilities,
             hostComponent: object["hostComponent"] as? String,
+            activation: activation,
             description: object["description"] as? String,
             guide: CmdyProductGuide.decode(object["guide"]),
             homepage: object["homepage"] as? String)
@@ -272,6 +298,7 @@ public struct ExtensionManifest: Equatable, Sendable {
             "capabilities": capabilities.map(\.rawValue),
         ]
         if let hostComponent { object["hostComponent"] = hostComponent }
+        if activation != .startup { object["activation"] = activation.rawValue }
         if let description { object["description"] = description }
         if let guide { object["guide"] = guide.jsonObject }
         if let homepage { object["homepage"] = homepage }
