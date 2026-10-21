@@ -290,7 +290,11 @@ final class BlockOverlayView: NSView {
     ) {
         CATransaction.begin()
         CATransaction.setDisableActions(true)
-        separatorContainerLayer.frame = bounds
+        // Not `frame`: with a scroll translation applied, assigning the frame
+        // bakes the inverse offset into `position`, leaving every separator
+        // shifted once the translation returns to zero.
+        separatorContainerLayer.bounds = CGRect(origin: .zero, size: bounds.size)
+        separatorContainerLayer.position = CGPoint(x: bounds.midX, y: bounds.midY)
         let visible = blocks.filter {
             let screenRow = $0.promptRow - top
             return screenRow >= -1 && screenRow <= rows
