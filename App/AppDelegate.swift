@@ -848,6 +848,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                     || CommandLine.arguments.contains("--ui-test-custom-toolbar-palette")
                     || CommandLine.arguments.contains("--ui-test-custom-toolbar-customizer")
                     || CommandLine.arguments.contains("--ui-test-custom-toolbar-customizer-hold") {
+            // The reference tile colors are the light palette; the default
+            // theme is dark since 1.0.13, so pin the fixture to Light.
+            Preferences.shared.themeName = "Light"
             Preferences.shared.workspaceNavigatorVisible = false
             Preferences.shared.workspaceInspectorVisible = true
             newWindow(nil)
@@ -1480,7 +1483,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                     guard eventIndex == eventCount else { return }
                     timer.cancel()
 
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                    // A slow CI runner can still be gliding 0.8 s after the
+                    // burst; measure once the separators settle (bounded),
+                    // which is what the user sees.
+                    let settleDeadline = ProcessInfo.processInfo.systemUptime + 6
+                    func whenSettled(_ body: @escaping () -> Void) {
+                        if pane.blockOverlayForTesting.separatorMisalignmentForTesting() < 0.5
+                            || ProcessInfo.processInfo.systemUptime >= settleDeadline {
+                            body()
+                            return
+                        }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                            whenSettled(body)
+                        }
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { whenSettled {
                         func percentile(_ samples: [Double], _ p: Double) -> Double {
                             guard !samples.isEmpty else { return 0 }
                             let sorted = samples.sorted()
@@ -1591,7 +1608,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                             "--ui-test-dense-scroll-hold") {
                             exit(ok ? 0 : 1)
                         }
-                    }
+                    } }
                 }
                 timer.resume()
             }
