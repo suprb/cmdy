@@ -18,7 +18,7 @@
     },
     {
       "path": "App/AppDelegate.swift",
-      "sha256": "70f29afbf8fa75f27cbcf098f397544ac52ccd6158c99bf09cd70fbfd9e9e280"
+      "sha256": "94a3b12904799127a02b2eb20cb48611b65ece5c5abae0456d564e6db091c036"
     },
     {
       "path": "App/AppUpdateInstall.swift",
@@ -38,7 +38,7 @@
     },
     {
       "path": "App/BlockOverlayView.swift",
-      "sha256": "f05f9e94674edeef05ca45234ffc15aec19ca484a8c16a490f684b58cf11ba00"
+      "sha256": "ae284400495d198c8fb1f64465e8ee11b0cafa5346c69fd2c63db8b7d2944cf9"
     },
     {
       "path": "App/ChannelManagerWindow.swift",
@@ -54,7 +54,7 @@
     },
     {
       "path": "App/CmdyChannelsUI.swift",
-      "sha256": "c445398d55b423172fa8dbd6db329339774bf1fd770d2a8454a4a927afc8f9e8"
+      "sha256": "66b75408e6ce354418e8d96ec02e849d5e3ea9b72d4040a2b7a208f0a33c83a3"
     },
     {
       "path": "App/CmdyCoreAdapter.swift",
@@ -110,15 +110,15 @@
     },
     {
       "path": "App/CmdySurfaceContractHarness.swift",
-      "sha256": "b7643d32ba1cb410bc5ba0f316342e707ce095f85eb06d24d633ffae0a789470"
+      "sha256": "1a501a08ec462be646b0d8d793a7afc98b15c04ccdef757ca9e3e5c75491d824"
     },
     {
       "path": "App/CmdyTerminalSurface.swift",
-      "sha256": "767a9dff83f11806566df122479afb875c360b95a1faa762e7d49b2865307c89"
+      "sha256": "29d9396169632c5a4f336dac870056f42c65fb49d35a67cc3fadb613d2bc45c4"
     },
     {
       "path": "App/CommandCatalog.swift",
-      "sha256": "3f50ce13b6b116b06aba1fb62ae81bafb140275a89bde92d2e8125e741560e6a"
+      "sha256": "cdc0d73a43c391ed77f17706412da4f76c744557381956ba8b8e077603e68883"
     },
     {
       "path": "App/CrashLogger.swift",
@@ -130,7 +130,7 @@
     },
     {
       "path": "App/EmbeddedChromium.swift",
-      "sha256": "4fea1145b9d24f033524ffbed0c37e5b0a53222526300651a4593f61a6a30b9f"
+      "sha256": "e79d054d61e8a0abf440e1d5a4420120402082d8ad43955731fcf7244fa40513"
     },
     {
       "path": "App/EngineFactory.swift",
@@ -139,6 +139,10 @@
     {
       "path": "App/ErrorAssistant.swift",
       "sha256": "bd0ca2feba6a87e7732aeb7b4f70f89e1cdf638e951fb3d3a6daa44b9a8a4c46"
+    },
+    {
+      "path": "App/ExtensionActivationTest.swift",
+      "sha256": "b20e9d522acdf397a9405c4632ce55d8300a5082e5b2bd5e26879c7e2c1c6cb7"
     },
     {
       "path": "App/FindBar.swift",
@@ -190,7 +194,7 @@
     },
     {
       "path": "App/PaneKeys.swift",
-      "sha256": "78031019cc271979292120027f31b378088db589dcd90497c9cde429ee60bdca"
+      "sha256": "f50d73d392e2bde9df04bad484fd29ed53bedb695f217e53c3ba80f6d7915db4"
     },
     {
       "path": "App/Retrobleeps.swift",
@@ -198,7 +202,7 @@
     },
     {
       "path": "App/SelfTest.swift",
-      "sha256": "6078134438bace81d1238434e1e1681516386e16e084b10d012b3af2d1686a4d"
+      "sha256": "2aa9caedd2bdd3d98f186d4fc3aba925aa6ed9cf0451e95954ee605c99add3f5"
     },
     {
       "path": "App/SessionLifecycle.swift",
@@ -210,7 +214,7 @@
     },
     {
       "path": "App/SettingsUI.swift",
-      "sha256": "5662218bc46bf91dc40b4ec8a0873422400ca5fd52deb9a4c4d066a56af1ba99"
+      "sha256": "5c9e1bb9498909ef00f4065f7ac9c088c560b3f30e644cf9a806cd093b57e390"
     },
     {
       "path": "App/ShellIntegration.swift",
@@ -230,11 +234,11 @@
     },
     {
       "path": "App/StandardKeybindings.swift",
-      "sha256": "fd0d91650529840dee737808a7e7d175ceacb0e45ce809e95d2091c3bb5efe28"
+      "sha256": "7956afd474c587cd67d4eea28daad048d9d8284f24cd6833aa3dc492b4a97b39"
     },
     {
       "path": "App/TerminalLinkOpener.swift",
-      "sha256": "64390c54e918990d9692552de9a22a7ba2685b250f8d9b161dc71ed115a0689d"
+      "sha256": "9649977958bb764b0386c603cf3dde31d21b56ca01cf5f136d1cd7f2db98dce2"
     },
     {
       "path": "App/TerminalModel.swift",
@@ -242,7 +246,7 @@
     },
     {
       "path": "App/TerminalPane.swift",
-      "sha256": "7620e5f9ff7d0736328fc65346b5b60a92d4c3ce4e917c3794bd84e2bfb6fea2"
+      "sha256": "c998cb55baf1be4ed8ad71eecbc7d294356996642c8dbb7307873f4e58f19000"
     },
     {
       "path": "App/TerminalScreenExport.swift",
@@ -262,7 +266,7 @@
     },
     {
       "path": "App/TerminalWindowController.swift",
-      "sha256": "d7ed7a01c3c5e1171dc2534c1f5fb63abd7958ecfb30ae6a817f9f2685371f51"
+      "sha256": "c8cbc47e3766432e8f588ca1798b1ca3937dd28c567ab52c638074262ba73ab4"
     },
     {
       "path": "App/ToolbarCustomizationView.swift",
@@ -294,7 +298,7 @@
     },
     {
       "path": "App/main.swift",
-      "sha256": "bf7547a43e09d3d9d170c27dbec6b313b71bef579874665f3132be3cc4c4cfa1"
+      "sha256": "b51c62e720be24cd4d62af5da6e6daff84eb27926bf9b96bef08f2ff358e9145"
     },
     {
       "path": "Core/Platform/platform_gpu.h",
@@ -782,7 +786,7 @@
     },
     {
       "path": "Core/Zig/render_geometry.zig",
-      "sha256": "713b39ba6686deadd807d93337cc3336470a6e1104b94da7b315dbedb48b8529"
+      "sha256": "9355057313cdb66e13f21cf72f2cf7312c4279ea8a7b1367a6ff2ae2f52a7534"
     },
     {
       "path": "Core/Zig/render_gpu.zig",
@@ -1058,15 +1062,19 @@
     },
     {
       "path": "Kit/Sources/CmdyKit/ConfigFile.swift",
-      "sha256": "6e59c142deff671312167e268a8d1e1a05ca423106a6a78df96370c561e4acb5"
+      "sha256": "8d6f88521419ca2e7c1dbac89fca05a55dd4a61bd9c8c45f04fb03583df525fb"
     },
     {
       "path": "Kit/Sources/CmdyKit/ConfigValidation.swift",
-      "sha256": "bee697cd3b3e8c193862920542da2e191ec7ed17be1d974bb203d4a1d5f630d7"
+      "sha256": "f9ddc1b18a46d0e9d96731a07b6c64fc16167618517b7848a78752c1e9268bd0"
     },
     {
       "path": "Kit/Sources/CmdyKit/ExtensionCLI.swift",
       "sha256": "760fa9d28fe99aeb2967abe0fd09d201c353257282fb365d8f38df2c646c4301"
+    },
+    {
+      "path": "Kit/Sources/CmdyKit/ExtensionContributionCache.swift",
+      "sha256": "752961b73e96a55e322307561c3408d0a1202e1b0aab234d4696dfe2bd401cab"
     },
     {
       "path": "Kit/Sources/CmdyKit/ExtensionControlBar.swift",
@@ -1074,7 +1082,7 @@
     },
     {
       "path": "Kit/Sources/CmdyKit/ExtensionProtocol.swift",
-      "sha256": "2ebbb351ea483274fb6bfccf1575663e88356f34c641e2980e552cc618cc2179"
+      "sha256": "350926862c37e90ade4eef4a2335c72ccc84fd2b66d7053d98f9cce9f05aecc3"
     },
     {
       "path": "Kit/Sources/CmdyKit/FontLoader.swift",
@@ -1094,7 +1102,7 @@
     },
     {
       "path": "Kit/Sources/CmdyKit/LocalHTTPServer.swift",
-      "sha256": "854cac90ccbd4ab94f4c8e69d53793ed731d4936a611714c151f156f9acf21fb"
+      "sha256": "ec379023f53cd693d9903ad8af5ac7e08de237e7fa2508465be57e6619f7af89"
     },
     {
       "path": "Kit/Sources/CmdyKit/Marketplace.swift",
@@ -1114,7 +1122,7 @@
     },
     {
       "path": "Kit/Sources/CmdyKit/PluginKit.swift",
-      "sha256": "1f77a85b3567ba53aec22bc47820e585f475e37385a892fa549d29613d82106b"
+      "sha256": "4f459f2a7175296841f0da7d91331441f568f0574e06560080e9a9978906e7c3"
     },
     {
       "path": "Kit/Sources/CmdyKit/PluginsWindow.swift",
@@ -1122,7 +1130,7 @@
     },
     {
       "path": "Kit/Sources/CmdyKit/Preferences.swift",
-      "sha256": "2adebaa27947c0005511b40a0cf6f32f394c03f863b56702e2ceda6c359eb77a"
+      "sha256": "439dfb5da9e50ac56f66e13a9ee7e31b9854c458be91b74bdf207a37a137dfa5"
     },
     {
       "path": "Kit/Sources/CmdyKit/ProcessCapture.swift",
@@ -1154,7 +1162,7 @@
     },
     {
       "path": "Kit/Sources/CmdyKit/Theme.swift",
-      "sha256": "47777477c4f85db3cb4b5ed59ccba3f3cba8ee0e4a2c998cef7bff0768ed0a40"
+      "sha256": "8b8c4ecc3ccc90da643576c7219618ccba3f3a782882aa3797c74191519a765f"
     },
     {
       "path": "Kit/Sources/CmdyKit/UserShaders.swift",
@@ -1186,7 +1194,7 @@
     },
     {
       "path": "Plugins/CmdySDK/Sources/CmdySDK/CmdySDK.swift",
-      "sha256": "f372858e9f67ead6daa5bc40a4da8b46ce4c0922168a79d6236e3236e79a6cc3"
+      "sha256": "17dd0b3a5a20d8951c2bf687edff482ea49452350b19c9417d1a4ed093cf5ba9"
     },
     {
       "path": "Plugins/CmdySDK/Sources/CmdySDK/Feedback.swift",
@@ -1230,7 +1238,7 @@
     },
     {
       "path": "Renderer/Sources/CmdyGPU/GeometryAndScheduling.swift",
-      "sha256": "7a3642ba83d37b4e24fab721afbd4a195fc3d6399000ab8d3d27a85946b6a79c"
+      "sha256": "9c57588d4844e6cc06507f27230d825d2731cd7255c95bd39261444474c9f656"
     },
     {
       "path": "Renderer/Sources/CmdyGPU/InteractiveDrawRequests.swift",
@@ -1396,8 +1404,8 @@
     {
       "active": "App/StandardKeybindings.swift",
       "activeLines": [
-        160,
-        172
+        169,
+        181
       ],
       "classificationId": "vendor-app-keybinding-switch-projection",
       "disposition": "data-plumbing",
@@ -1415,8 +1423,8 @@
     {
       "active": "App/StandardKeybindings.swift",
       "activeLines": [
-        180,
-        205
+        189,
+        214
       ],
       "classificationId": "vendor-app-keybinding-switch-projection",
       "disposition": "data-plumbing",
@@ -1434,8 +1442,8 @@
     {
       "active": "App/TerminalWindowController.swift",
       "activeLines": [
-        1524,
-        1534
+        1555,
+        1565
       ],
       "classificationId": "vendor-app-toolbar-list-structural-collision",
       "disposition": "non-substantive-structural-collision",
@@ -1643,8 +1651,8 @@
     {
       "active": "Kit/Sources/CmdyKit/Preferences.swift",
       "activeLines": [
-        388,
-        405
+        396,
+        413
       ],
       "classificationId": "vendor-kit-shader-list-structural-collision",
       "disposition": "non-substantive-structural-collision",
@@ -1662,8 +1670,8 @@
     {
       "active": "Kit/Sources/CmdyKit/Preferences.swift",
       "activeLines": [
-        564,
-        569
+        572,
+        577
       ],
       "classificationId": "vendor-kit-cursor-style-projection",
       "disposition": "data-plumbing",
@@ -1890,8 +1898,8 @@
     {
       "active": "App/CmdyTerminalSurface.swift",
       "activeLines": [
-        415,
-        423
+        419,
+        427
       ],
       "classificationId": "retained-cmdyterminalsurface-from-termitecoresurface",
       "disposition": "cmdy-original-retained-source",
@@ -1909,8 +1917,8 @@
     {
       "active": "App/CmdyTerminalSurface.swift",
       "activeLines": [
-        489,
-        494
+        493,
+        498
       ],
       "classificationId": "retained-cmdyterminalsurface-from-termitecoresurface",
       "disposition": "cmdy-original-retained-source",
@@ -1928,8 +1936,8 @@
     {
       "active": "App/CmdyTerminalSurface.swift",
       "activeLines": [
-        1064,
-        1073
+        1068,
+        1077
       ],
       "classificationId": "retained-cmdyterminalsurface-from-termitecoresurface",
       "disposition": "cmdy-original-retained-source",
@@ -1947,8 +1955,8 @@
     {
       "active": "App/CmdyTerminalSurface.swift",
       "activeLines": [
-        1333,
-        1342
+        1375,
+        1384
       ],
       "classificationId": "retired-app-process-forwarding",
       "disposition": "data-plumbing",
@@ -1966,8 +1974,8 @@
     {
       "active": "App/CmdyTerminalSurface.swift",
       "activeLines": [
-        1969,
-        1994
+        2012,
+        2037
       ],
       "classificationId": "retired-app-observer-platform-forwarding",
       "disposition": "data-plumbing",
@@ -1985,8 +1993,8 @@
     {
       "active": "App/CmdyTerminalSurface.swift",
       "activeLines": [
-        1998,
-        2011
+        2041,
+        2054
       ],
       "classificationId": "retired-app-observer-process-forwarding",
       "disposition": "data-plumbing",
@@ -2004,8 +2012,8 @@
     {
       "active": "App/CmdyTerminalSurface.swift",
       "activeLines": [
-        2091,
-        2102
+        2134,
+        2145
       ],
       "classificationId": "retired-app-kitty-render-projection",
       "disposition": "data-plumbing",
@@ -2023,8 +2031,8 @@
     {
       "active": "App/CmdyTerminalSurface.swift",
       "activeLines": [
-        2110,
-        2129
+        2153,
+        2172
       ],
       "classificationId": "retired-app-kitty-render-projection",
       "disposition": "data-plumbing",
@@ -2042,8 +2050,8 @@
     {
       "active": "App/CmdyTerminalSurface.swift",
       "activeLines": [
-        2158,
-        2166
+        2201,
+        2209
       ],
       "classificationId": "retired-app-kitty-render-projection",
       "disposition": "data-plumbing",
@@ -2099,8 +2107,8 @@
     {
       "active": "App/TerminalWindowController.swift",
       "activeLines": [
-        1524,
-        1534
+        1555,
+        1565
       ],
       "classificationId": "retired-app-toolbar-list-structural-collision",
       "disposition": "non-substantive-structural-collision",
@@ -7351,10 +7359,10 @@
       "sourceCount": 111
     }
   },
-  "reportSHA256": "c10554a7e094aee734eef2ad5a2b816946bf39b039eb44f79ff91a75ecad6b1a",
+  "reportSHA256": "12111e7a04b3401638f1b4e361ae8a3173a811fe5de2a2ee77459d1b64addffc",
   "schemaVersion": 2,
   "summary": {
-    "activeSourceCount": 338,
+    "activeSourceCount": 340,
     "classifiedMatchCount": 315,
     "issueCount": 0,
     "matchCount": 315,

@@ -3,13 +3,13 @@
     "kind": "build",
     "moduleSha256": "3c143c9e892c64bba1b3125e919bfb72435f78f3d38c0beb17e168cc4d223ecb",
     "native": {
-      "archiveSha256": "70828903fd1fc3d8230836a887194c297e3ec976284433ded3c277a31cbf3567",
-      "bridgeObjectSetSha256": "4497e5fe06b8c2f5982eaff27d3b49a09f9e98f6e11cb8bfa1cf65ce3ac839bd",
+      "archiveSha256": "7a37a8058cd5004341e950da5394b476153a91c3c3ba2658806b4588513f1fc2",
+      "bridgeObjectSetSha256": "9ad041da3471203b814288ec2bfbe277993a00ebcf84f971d829fecb0a586c57",
       "optimize": "ReleaseFast",
-      "receiptSha256": "374bcec2c5ed01e0f09a1efe2e6becdd89bf0acfd7254026f246dc969b659922",
-      "sourceKey": "6802d174821196cfaf6dbad9591b3ed9310572001e1b309ffd90feaae06dab4c"
+      "receiptSha256": "fc2351cf3d724841912482017bf0a8f547a9b830b3a3d656cb4e71ac3061e2c1",
+      "sourceKey": "0b3f744aadde2347f9e3cdba50aec357cd0644f2e807a06a3076e2a3c66c152b"
     },
-    "objectSetSha256": "97d84cedf6aeefa124c699bfee9d9dac8734ce1ea53f77dcf7717651e5ea6d9c",
+    "objectSetSha256": "aa672983a1dbac5897dce7be0ac731f9d996cc3dc10809115e6c08cf35eb7082",
     "releaseBuild": "Renderer/.build/arm64-apple-macosx/release"
   },
   "fixtureSourceSha256": "aad4c214230f0106246bb54c58479dfa492cfc3f03093934511ab6d84a81cc8f",

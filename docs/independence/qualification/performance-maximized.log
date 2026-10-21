@@ -1,11 +1,11 @@
-2026-10-16 10:10:59.441 cmdy[54044:84146901] cmdy: plugin API listening on 127.0.0.1:4666
-cmdy perf gate — pid 54044, port 4666
+2026-10-21 15:42:04.371 cmdy[89290:99533070] cmdy: plugin API listening on 127.0.0.1:4666
+cmdy perf gate — pid 89290, port 4666
 power policy — lowPower=0 thermalState=0
   ✓ idle frames / 6s (settled)              0  (budget <= 2)
   ✓ frames for 200-line burst               3  (budget <= 120)
   ✓ rows rebuilt for 200-line scroll       55  (budget <= 500)
-  ✓ rows rebuilt for prompt edit            2  (budget <= 8)
-  ✓ rows reused ≥ rebuilt (cache wins)    163  (budget >= 2)
+  ✓ rows rebuilt for prompt edit            1  (budget <= 8)
+  ✓ rows reused ≥ rebuilt (cache wins)    109  (budget >= 1)
   ✓ rows rebuilt for 20 prompt redraws      0  (budget <= 80)
   ✓ rows advanced for 20 Returns (min)     20  (budget >= 20)
   ✓ rows advanced for 20 Returns (max)     20  (budget <= 20)
@@ -13,12 +13,12 @@ power policy — lowPower=0 thermalState=0
   ✓ rows rebuilt for 20 one-line scroll-ups      0  (budget <= 60)
   ✓ rows rebuilt for 20 one-line scroll-downs      0  (budget <= 60)
   ✓ idle frames / 5s (re-settled)           0  (budget <= 2)
-  ✓ 3MB dump wall-time (ms)               294  (budget <= 6000)
+  ✓ 3MB dump wall-time (ms)               301  (budget <= 6000)
   ✓ static-shader idle / 6s                 0  (budget <= 2)
-  ✓ plasma focused frames / 5s (min)      603  (budget >= 360)
-  ✓ plasma focused frames / 5s (max)      603  (budget <= 720)
+  ✓ plasma focused frames / 5s (min)      601  (budget >= 360)
+  ✓ plasma focused frames / 5s (max)      601  (budget <= 720)
   ✓ two-pane concurrent drain markers       2  (budget >= 2)
-  ✓ two-pane concurrent 2MB (ms)          204  (budget <= 6000)
+  ✓ two-pane concurrent 2MB (ms)          154  (budget <= 6000)
 
 passed 18 · failed 0
-Tests/perf-gate.sh: line 19: 54044 Terminated: 15          CMDY_DEFAULTS_DOMAIN="$DEFAULTS_DOMAIN" CMDY_CONFIG_DIR="$GATE" ZDOTDIR="$GATE/zsh" "$BIN" "${APP_ARGS[@]}"
+Tests/perf-gate.sh: line 19: 89290 Terminated: 15          CMDY_DEFAULTS_DOMAIN="$DEFAULTS_DOMAIN" CMDY_CONFIG_DIR="$GATE" ZDOTDIR="$GATE/zsh" "$BIN" "${APP_ARGS[@]}"

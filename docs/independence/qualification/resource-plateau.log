@@ -1,22 +1,22 @@
-RUN 1 pid=55610 executableSha256=ac4c25eea26569f41a80fa9284acf44a9adf087b320ef58533e9946431aabb20
-RUN 1 SAMPLE +2s rssKB=127856 threads=12 fds=55 children=1 zombies=0
-RUN 1 SAMPLE +10s rssKB=162032 threads=8 fds=58 children=1 zombies=0
-RUN 1 SAMPLE +20s rssKB=161216 threads=6 fds=58 children=1 zombies=0
-2026-10-16 10:12:03.473 cmdy[55610:84152377] cmdy: plugin API listening on 127.0.0.1:4665
+RUN 1 pid=75138 executableSha256=344d3b9df3a902bde07b7c46807ae3105048c8164bf22693e43a20ecedbb4217
+RUN 1 SAMPLE +2s rssKB=124640 threads=10 fds=55 children=1 zombies=0
+RUN 1 SAMPLE +10s rssKB=164160 threads=6 fds=58 children=1 zombies=0
+RUN 1 SAMPLE +20s rssKB=163504 threads=6 fds=58 children=1 zombies=0
+2026-10-21 15:30:26.297 cmdy[75138:99480266] cmdy: plugin API listening on 127.0.0.1:4665
 UIWINDOWGRIDSTRESS pairs=10 burst=8 interleaved=true peak=true one=true shells=true shellCount=18 uniqueShellCount=18 fills=true leaves=1 frame={{0, 0}, {1728, 1084}} visible={{0, 0}, {1728, 1084}} ok=true
 RUN 1 PASS exit=0 lingeringChildren=0
-RUN 2 pid=57085 executableSha256=ac4c25eea26569f41a80fa9284acf44a9adf087b320ef58533e9946431aabb20
-RUN 2 SAMPLE +2s rssKB=168144 threads=18 fds=63 children=9 zombies=0
-RUN 2 SAMPLE +10s rssKB=181216 threads=6 fds=58 children=1 zombies=0
-RUN 2 SAMPLE +20s rssKB=180624 threads=7 fds=58 children=1 zombies=0
-2026-10-16 10:12:38.208 cmdy[57085:84155948] cmdy: plugin API listening on 127.0.0.1:4665
+RUN 2 pid=76879 executableSha256=344d3b9df3a902bde07b7c46807ae3105048c8164bf22693e43a20ecedbb4217
+RUN 2 SAMPLE +2s rssKB=137600 threads=11 fds=55 children=1 zombies=0
+RUN 2 SAMPLE +10s rssKB=181984 threads=7 fds=58 children=1 zombies=0
+RUN 2 SAMPLE +20s rssKB=181312 threads=6 fds=58 children=1 zombies=0
+2026-10-21 15:31:01.053 cmdy[76879:99484586] cmdy: plugin API listening on 127.0.0.1:4665
 UIWINDOWGRIDSTRESS pairs=10 burst=8 interleaved=true peak=true one=true shells=true shellCount=18 uniqueShellCount=18 fills=true leaves=1 frame={{0, 0}, {1728, 1084}} visible={{0, 0}, {1728, 1084}} ok=true
 RUN 2 PASS exit=0 lingeringChildren=0
-RUN 3 pid=58591 executableSha256=ac4c25eea26569f41a80fa9284acf44a9adf087b320ef58533e9946431aabb20
-RUN 3 SAMPLE +2s rssKB=134800 threads=12 fds=55 children=1 zombies=0
-RUN 3 SAMPLE +10s rssKB=160992 threads=8 fds=58 children=1 zombies=0
-RUN 3 SAMPLE +20s rssKB=160240 threads=7 fds=58 children=1 zombies=0
-2026-10-16 10:13:12.939 cmdy[58591:84159318] cmdy: plugin API listening on 127.0.0.1:4665
+RUN 3 pid=78414 executableSha256=344d3b9df3a902bde07b7c46807ae3105048c8164bf22693e43a20ecedbb4217
+RUN 3 SAMPLE +2s rssKB=144816 threads=17 fds=58 children=4 zombies=0
+RUN 3 SAMPLE +10s rssKB=161680 threads=6 fds=58 children=1 zombies=0
+RUN 3 SAMPLE +20s rssKB=161088 threads=6 fds=58 children=1 zombies=0
+2026-10-21 15:31:35.801 cmdy[78414:99488573] cmdy: plugin API listening on 127.0.0.1:4665
 UIWINDOWGRIDSTRESS pairs=10 burst=8 interleaved=true peak=true one=true shells=true shellCount=18 uniqueShellCount=18 fills=true leaves=1 frame={{0, 0}, {1728, 1084}} visible={{0, 0}, {1728, 1084}} ok=true
 RUN 3 PASS exit=0 lingeringChildren=0
-RESOURCE_PLATEAU runs=3 samples=9 zombieCount=0 strictMonotonicGrowth=false rssKB=[127856,162032,161216,168144,181216,180624,134800,160992,160240]
+RESOURCE_PLATEAU runs=3 samples=9 zombieCount=0 strictMonotonicGrowth=false rssKB=[124640,164160,163504,137600,181984,181312,144816,161680,161088]
