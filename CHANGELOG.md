@@ -9,9 +9,30 @@ and this project intends to follow
 Public APIs and protocols follow semantic versioning. Breaking changes should
 be called out here with a migration path before a versioned release.
 
-## [1.0.13] - 2026-10-17
+## [1.0.14] - 2026-10-21
 
-## [Unreleased]
+### Added
+
+- Open ⌘-clicked links in the Browser split or in your default browser:
+  Settings › Keyboard and scrolling, the Terminal menu, the command palette,
+  or `open-links-in-browser` in the config.
+- Extensions can start on demand (`"activation": "on-demand"` in the
+  manifest). cmdy keeps their commands and hotkeys ready while they sleep,
+  starts them on first use, and stops them once their UI is put away and
+  they go quiet. Extensions without the field start at launch as before.
+
+### Changed
+
+- A Browser split that stays hidden for 15 seconds closes its page, so
+  Chromium stops using CPU and memory; showing it again reopens the page.
+
+### Fixed
+
+- Apps that track mouse drags (herdr, tmux) receive the drag, so their own
+  text selection shows while you drag. Shift or Option still makes a cmdy
+  selection.
+
+## [1.0.13] - 2026-10-17
 
 ### Fixed
 
