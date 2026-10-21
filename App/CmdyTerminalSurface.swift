@@ -263,6 +263,10 @@ final class CmdyTerminalSurface: NSView,
     private var gestureReportsMouse = false
     private var gestureDragged = false
     private var gestureClickCount = 0
+    /// Drag-tracking apps (1002/1003) got the press at mouse-down and see
+    /// the whole drag; this is the last cell reported to them.
+    private var gestureReportedCell: GridPoint?
+    private var lastHoverReportCell: GridPoint?
     private var scrollAccumulator: CGFloat = 0
     private var routedWheelAccumulator: CGFloat = 0
     private var searchTerm = ""
@@ -1105,7 +1109,21 @@ final class CmdyTerminalSurface: NSView,
             }
         } else {
             gestureReportsMouse = true
+            if tracksMouseDrag {
+                // Drag-tracking apps (tmux, herdr) draw their own selection,
+                // so they get the press now and every cell of the drag.
+                if selectionAnchor != nil { clearSelection(notify: true) }
+                terminal.sendMouseEvent(button: 0, pressed: true, motion: false,
+                                        modifiers: mouseModifiers(event.modifierFlags),
+                                        col: point.col, row: point.row)
+                gestureReportedCell = point
+            }
         }
+    }
+
+    /// 1002 (button-event) and 1003 (any-event) tracking report drags.
+    private var tracksMouseDrag: Bool {
+        terminal.mouseMode == .buttonEvent || terminal.mouseMode == .anyEvent
     }
 
     override func mouseDragged(with event: NSEvent) {
@@ -1117,6 +1135,15 @@ final class CmdyTerminalSurface: NSView,
         // cell is still a click, not the start of a selection.
         if !gestureDragged,
            point.absoluteRow == origin.absoluteRow, point.col == origin.col { return }
+        if let reported = gestureReportedCell {
+            gestureDragged = true
+            guard point.row != reported.row || point.col != reported.col else { return }
+            terminal.sendMouseEvent(button: 0, pressed: true, motion: true,
+                                    modifiers: mouseModifiers(event.modifierFlags),
+                                    col: point.col, row: point.row)
+            gestureReportedCell = point
+            return
+        }
         let beganTrackedDrag = gestureReportsMouse
         if gestureReportsMouse {
             gestureReportsMouse = false
@@ -1138,7 +1165,11 @@ final class CmdyTerminalSurface: NSView,
         guard let origin = gestureOrigin else { return }
         let final = gridPoint(
             at: convert(event.locationInWindow, from: nil), clamp: true) ?? origin
-        if gestureReportsMouse && !gestureDragged {
+        if gestureReportedCell != nil {
+            terminal.sendMouseEvent(button: 0, pressed: false, motion: false,
+                                    modifiers: mouseModifiers(event.modifierFlags),
+                                    col: final.col, row: final.row)
+        } else if gestureReportsMouse && !gestureDragged {
             // A plain click dismisses a selection even when the app tracks the mouse.
             if selectionAnchor != nil { clearSelection(notify: true) }
             let modifiers = mouseModifiers(event.modifierFlags)
@@ -1246,9 +1277,20 @@ final class CmdyTerminalSurface: NSView,
     }
 
     override func mouseMoved(with event: NSEvent) {
-        updatePointerCursor(
-            at: convert(event.locationInWindow, from: nil),
-            modifiers: event.modifierFlags)
+        let local = convert(event.locationInWindow, from: nil)
+        updatePointerCursor(at: local, modifiers: event.modifierFlags)
+        // 1003 any-event tracking also wants plain hover, as button 3.
+        guard terminal.mouseMode == .anyEvent,
+              let point = gridPoint(at: local, clamp: false) else {
+            lastHoverReportCell = nil
+            return
+        }
+        guard point.row != lastHoverReportCell?.row
+                || point.col != lastHoverReportCell?.col else { return }
+        lastHoverReportCell = point
+        terminal.sendMouseEvent(button: 3, pressed: true, motion: true,
+                                modifiers: mouseModifiers(event.modifierFlags),
+                                col: point.col, row: point.row)
     }
 
     override func mouseExited(with event: NSEvent) { NSCursor.arrow.set() }
@@ -1809,6 +1851,7 @@ final class CmdyTerminalSurface: NSView,
         gestureReportsMouse = false
         gestureDragged = false
         gestureClickCount = 0
+        gestureReportedCell = nil
     }
 
     private func removeWindowObservers() {

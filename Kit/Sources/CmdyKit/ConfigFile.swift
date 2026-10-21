@@ -206,6 +206,7 @@ public enum ConfigFile {
         if let v = kv["option-as-meta"].flatMap(bool) { p.optionAsMeta = v }
         if let v = kv["copy-on-select"].flatMap(bool) { p.copyOnSelect = v }
         if let v = kv["pane-key-modifier"]?.lowercased(), Preferences.paneKeyModifiers.contains(v) { p.paneKeyModifier = v }
+        if let v = kv["open-links-in-browser"].flatMap(bool) { p.openLinksInBrowser = v }
         if let v = kv["attention-signals"].flatMap(bool) { p.attentionSignals = v }
         if let v = kv["shell-integration"].flatMap(bool) { p.shellIntegration = v }
         if let v = kv["clean-prompt"].flatMap(bool) { p.cleanPrompt = v }
@@ -501,6 +502,8 @@ public enum ConfigFile {
         pane-key-modifier = \(p.paneKeyModifier)
         # Copy a mouse selection to the clipboard as soon as you release the button.
         copy-on-select = \(p.copyOnSelect)
+        # Cmd-clicked links open in the Browser split; false = the default macOS browser.
+        open-links-in-browser = \(p.openLinksInBrowser)
         # OSC 133 shell integration: command blocks, durations, jump-to-command,
         # finished-while-away notifications. Off = a plain terminal.
         shell-integration = \(p.shellIntegration)

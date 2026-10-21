@@ -483,6 +483,7 @@ cursor-style = block        # block | bar | underline
 cursor-blink = true
 option-as-meta = true
 copy-on-select = true       # a mouse selection goes straight to the clipboard
+open-links-in-browser = true # ⌘-click opens links in the Browser split; false = default browser
 shell-integration = true
 clean-prompt = true
 hide-traffic-lights = false # AppKit's native window controls

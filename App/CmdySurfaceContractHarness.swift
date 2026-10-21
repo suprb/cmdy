@@ -351,6 +351,46 @@ enum CmdySurfaceContractHarness {
                 && clickReport.contains("M") && clickReport.contains("m"),
               "independent seam: tracked primary click emits press then release")
 
+        selection.feed(text: "\u{1b}[?1002h")
+        drain()
+        mouseBytes.removeAll()
+        selection.mouseDown(with: mouse(.leftMouseDown, x: 1))
+        selection.mouseDragged(with: mouse(
+            .leftMouseDragged, x: selection.cellSize.width * 2.5))
+        selection.mouseDragged(with: mouse(
+            .leftMouseDragged, x: selection.cellSize.width * 2.7))
+        selection.mouseDragged(with: mouse(
+            .leftMouseDragged, x: selection.cellSize.width * 4.5))
+        selection.mouseUp(with: mouse(
+            .leftMouseUp, x: selection.cellSize.width * 4.5))
+        drain()
+        let dragReport = String(decoding: mouseBytes, as: UTF8.self)
+        check(dragReport == "\u{1b}[<0;1;1M\u{1b}[<32;3;1M\u{1b}[<32;5;1M\u{1b}[<0;5;1m"
+                && selection.selectedText().isEmpty,
+              "independent seam: 1002 drag reports press, one motion per cell, release")
+        mouseBytes.removeAll()
+        selection.mouseMoved(with: mouse(.mouseMoved, x: selection.cellSize.width * 3.5))
+        drain()
+        check(mouseBytes.isEmpty, "independent seam: 1002 does not report hover")
+        selection.feed(text: "\u{1b}[?1003h")
+        drain()
+        selection.mouseMoved(with: mouse(.mouseMoved, x: selection.cellSize.width * 3.5))
+        selection.mouseMoved(with: mouse(.mouseMoved, x: selection.cellSize.width * 3.6))
+        drain()
+        check(String(decoding: mouseBytes, as: UTF8.self) == "\u{1b}[<35;4;1M",
+              "independent seam: 1003 reports hover once per cell as button 3")
+        mouseBytes.removeAll()
+        selection.mouseDown(with: mouse(.leftMouseDown, x: 1, modifiers: .shift))
+        selection.mouseDragged(with: mouse(
+            .leftMouseDragged, x: selection.cellSize.width * 4.5, modifiers: .shift))
+        selection.mouseUp(with: mouse(
+            .leftMouseUp, x: selection.cellSize.width * 4.5, modifiers: .shift))
+        drain()
+        check(mouseBytes.isEmpty && selection.selectedText() == "alpha",
+              "independent seam: Shift drag stays native selection under 1003")
+        selection.feed(text: "\u{1b}[?1003l\u{1b}[?1002l\u{1b}[?1000l")
+        drain()
+
         let links = CmdyTerminalSurface(
             frame: NSRect(x: 0, y: 0, width: 600, height: 120))
         links.feed(text: "\u{1b}]8;;https://example.com/a\u{7}docs\u{1b}]8;;\u{7} localhost:4173/x")

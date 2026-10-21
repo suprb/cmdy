@@ -2624,6 +2624,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                     ? .on : .off
             case #selector(toggleOptionAsMeta(_:)): item.state = p.optionAsMeta ? .on : .off
             case #selector(toggleCopyOnSelect(_:)): item.state = p.copyOnSelect ? .on : .off
+            case #selector(toggleOpenLinksInBrowser(_:)): item.state = p.openLinksInBrowser ? .on : .off
             case #selector(toggleShellIntegration(_:)): item.state = p.shellIntegration ? .on : .off
             case #selector(toggleAutomaticErrorHelp(_:)): item.state = p.automaticErrorHelp ? .on : .off
             case #selector(toggleCleanPrompt(_:)): item.state = p.cleanPrompt ? .on : .off
@@ -5277,6 +5278,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
     @objc func toggleOptionAsMeta(_ sender: Any?) { Preferences.shared.optionAsMeta.toggle() }
     @objc func toggleCopyOnSelect(_ sender: Any?) { Preferences.shared.copyOnSelect.toggle() }
+    @objc func toggleOpenLinksInBrowser(_ sender: Any?) { Preferences.shared.openLinksInBrowser.toggle() }
     func showKeymapHelp(relativeTo parent: NSWindow?) {
         let alert = NSAlert()
         alert.messageText = "Pane, Tab and Window Keys"
@@ -5841,6 +5843,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             item.state = p.optionAsMeta ? .on : .off
         case #selector(toggleCopyOnSelect(_:)):
             item.state = p.copyOnSelect ? .on : .off
+        case #selector(toggleOpenLinksInBrowser(_:)):
+            item.state = p.openLinksInBrowser ? .on : .off
         case #selector(toggleShellIntegration(_:)):
             item.state = p.shellIntegration ? .on : .off
         case #selector(toggleAutomaticErrorHelp(_:)):

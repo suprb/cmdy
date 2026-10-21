@@ -38,6 +38,7 @@ public final class Preferences {
         static let optionAsMeta = "optionAsMeta"
         static let copyOnSelect = "copyOnSelect"
         static let paneKeyModifier = "paneKeyModifier"
+        static let openLinksInBrowser = "openLinksInBrowser"
         static let attentionSignals = "attentionSignals"
         static let shellIntegration = "shellIntegration"
         static let cleanPrompt = "cleanPrompt"
@@ -238,6 +239,13 @@ public final class Preferences {
         get { d.object(forKey: Key.copyOnSelect) == nil ? true : d.bool(forKey: Key.copyOnSelect) }
         set { guard newValue != copyOnSelect else { return }
               d.set(newValue, forKey: Key.copyOnSelect); sync("copy-on-select", "\(newValue)"); changed() }
+    }
+    /// ⌘-clicked links open in the Browser split when it is installed; off
+    /// sends them to the default macOS browser. On unless the config says otherwise.
+    public var openLinksInBrowser: Bool {
+        get { d.object(forKey: Key.openLinksInBrowser) == nil ? true : d.bool(forKey: Key.openLinksInBrowser) }
+        set { guard newValue != openLinksInBrowser else { return }
+              d.set(newValue, forKey: Key.openLinksInBrowser); sync("open-links-in-browser", "\(newValue)"); changed() }
     }
     public var optionAsMeta: Bool {
         get { d.bool(forKey: Key.optionAsMeta) }

@@ -184,7 +184,9 @@ Modifier parameter `<m>` starts at 1 and adds 1 for Shift, 2 for Option, and 4 f
 - Command-click on a recognized link opens it instead of selecting/reporting.
 - With mouse tracking off, a single primary drag creates native selection; double-click selects the contiguous non-whitespace run; triple-click selects the full terminal row.
 - Shift or Option, and any multiple click, force native selection even when a TUI enabled mouse reporting.
-- With mouse tracking on, a plain primary down is held. If released without dragging, the surface sends primary press at the original cell followed by release at the final cell. If dragged, no press reaches the TUI and the gesture becomes native selection from the original absolute cell.
+- With click-only mouse tracking (1000) on, a plain primary down is held. If released without dragging, the surface sends primary press at the original cell followed by release at the final cell. If dragged, no press reaches the TUI and the gesture becomes native selection from the original absolute cell.
+- With drag tracking (1002 button-event or 1003 any-event) on, a plain primary down sends the press immediately and clears any native selection; each drag into a new cell sends one primary motion report; mouse-up sends the release at the final cell. The TUI draws its own selection.
+- With 1003 any-event tracking on, plain pointer movement sends one no-button motion report (button 3) per cell change.
 - Shift, Control, and Option map to terminal mouse shift, control, and meta modifiers. Command is reserved for host links and does not become a terminal mouse modifier.
 - A primary gesture state ends on mouse-up. A persistent old selection cannot be accidentally extended by a later window drag.
 

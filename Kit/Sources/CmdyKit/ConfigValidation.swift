@@ -27,7 +27,7 @@ extension ConfigFile {
     /// forward compatible, and messages never echo user-supplied values.
     public static func validationIssues(for values: [String: String]) -> [ConfigValidationIssue] {
         let booleans: Set<String> = [
-            "marketplace-update-checks", "cursor-blink", "option-as-meta", "copy-on-select",
+            "marketplace-update-checks", "cursor-blink", "option-as-meta", "copy-on-select", "open-links-in-browser",
             "attention-signals", "shell-integration", "clean-prompt",
             "hide-traffic-lights", "window-grid", "workspace-navigator",
             "workspace-inspector", "blur", "ghost-text", "crt", "smooth-cursor",

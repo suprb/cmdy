@@ -377,6 +377,7 @@ private func buildMainMenu(delegate: AppDelegate) -> NSMenu {
     terminalItem.submenu = terminalMenu
     terminalMenu.addItem(item("Option as Meta", #selector(AppDelegate.toggleOptionAsMeta(_:)), "", modifiers: []))
     terminalMenu.addItem(item("Copy on Select", #selector(AppDelegate.toggleCopyOnSelect(_:)), "", modifiers: []))
+    terminalMenu.addItem(item("Open Links in Browser Split", #selector(AppDelegate.toggleOpenLinksInBrowser(_:)), "", modifiers: []))
     terminalMenu.addItem(item("Shell Integration", #selector(AppDelegate.toggleShellIntegration(_:)), "", modifiers: []))
     terminalMenu.addItem(item("Automatic Error Help", #selector(AppDelegate.toggleAutomaticErrorHelp(_:)), "", modifiers: []))
     terminalMenu.addItem(item("Clean Prompt (no user@host)", #selector(AppDelegate.toggleCleanPrompt(_:)), "", modifiers: []))

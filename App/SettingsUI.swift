@@ -276,6 +276,10 @@ private struct CmdySettingsView: View {
             Toggle("Ghost text from shell history", isOn: model.binding(\.ghostText))
             Toggle("Smooth cursor", isOn: model.binding(\.smoothCursor))
             Toggle("Smooth scrollback", isOn: model.binding(\.smoothScroll))
+            Picker("Open ⌘-clicked links in", selection: model.binding(\.openLinksInBrowser)) {
+                Text("Browser split").tag(true)
+                Text("Default browser").tag(false)
+            }
             Stepper(value: model.binding(\.scrollSpeed), in: 0.2...5, step: 0.1) {
                 LabeledContent("Scroll speed", value: String(format: "%.1f×", model.preferences.scrollSpeed))
             }

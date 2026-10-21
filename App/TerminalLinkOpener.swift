@@ -4,14 +4,15 @@ import ProductIdentity
 import CmdyKit
 
 /// Opens Command-clicked terminal links in the Browser sidecar attached to
-/// the originating Cmdy window. If Browser is unavailable, fall back to
-/// the user's normal macOS URL handler.
+/// the originating Cmdy window. If Browser is unavailable, or the
+/// open-links-in-browser setting is off, use the normal macOS URL handler.
 enum TerminalLinkOpener {
     private static let discoveryURL = ProductIdentity.current
         .configurationDirectory().appendingPathComponent("browser-api.json")
 
     static func open(_ url: URL, windowNumber: Int?) {
-        guard ["http", "https"].contains(url.scheme?.lowercased() ?? ""),
+        guard Preferences.shared.openLinksInBrowser,
+              ["http", "https"].contains(url.scheme?.lowercased() ?? ""),
               let data = try? BoundedFileReader.data(
                 at: discoveryURL, maxBytes: 64 * 1024),
               let discovery = try? JSONSerialization.jsonObject(with: data) as? [String: Any],

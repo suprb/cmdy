@@ -227,6 +227,10 @@ extension AppDelegate {
                      booleanPaletteItems(current: p.smoothCursor) { p.smoothCursor = $0 }),
             .section("Smooth Scroll", p.smoothScroll ? "on" : "off",
                      booleanPaletteItems(current: p.smoothScroll) { p.smoothScroll = $0 }),
+            .section("Open Links In", p.openLinksInBrowser ? "Browser split" : "default browser", [
+                item("Browser split", p.openLinksInBrowser ? "current" : "") { p.openLinksInBrowser = true },
+                item("Default browser", p.openLinksInBrowser ? "" : "current") { p.openLinksInBrowser = false },
+            ]),
             .section("Scroll Speed", Self.scrollSpeedLabel(p.scrollSpeed),
                      Self.scrollSpeedOptions.map { label, value in
                          item(
